@@ -1,13 +1,100 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@import "tailwindcss";
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
+   /* =========================================
+      2. Global CSS variables
+      ========================================= */
+   :root {
+     --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+       Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+       "Apple Color Emoji", "Segoe UI Emoji";
+     --color-primary: #3b82f6;   /* Tailwind blue-500 */
+     --color-secondary: #8b5cf6; /* Tailwind violet-500 */
+     --color-accent: #f59e0b;    /* Tailwind amber-500 */
+     --color-background: #f8fafc; /* light gray */
+     --color-dark: #1e293b;       /* dark navy */
+   }
+   
+   /* =========================================
+      3. Base styles
+      ========================================= */
+   body {
+     font-family: var(--font-sans);
+     background-color: var(--color-background);
+     color: var(--color-dark);
+     margin: 0;
+     padding: 0;
+   }
+   
+   h1, h2, h3, h4, h5, h6 {
+     font-weight: 700;
+     color: var(--color-dark);
+   }
+   
+   /* =========================================
+      4. Utility classes using @apply
+      ========================================= */
+   
+   /* --- Buttons --- */
+   .btn-primary {
+     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg
+            font-medium text-white bg-blue-600 hover:bg-blue-700 transition;
+   }
+   
+   .btn-secondary {
+     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg
+            font-medium text-white bg-violet-600 hover:bg-violet-700 transition;
+   }
+   
+   /* --- Cards --- */
+   .card {
+     @apply bg-white rounded-xl shadow-md p-6 transition;
+   }
+   
+   .card-hover:hover {
+     @apply shadow-lg -translate-y-1;
+   }
+   
+   /* --- Job Cards --- */
+   .job-card {
+     @apply bg-white rounded-lg shadow-md p-6 transition;
+   }
+   
+   .job-card:hover {
+     @apply shadow-lg -translate-y-0.5;
+   }
+   
+   /* --- Feature Cards --- */
+   .feature-card {
+     @apply bg-white rounded-xl shadow-md p-6 text-center transition;
+   }
+   
+   .feature-card:hover {
+     @apply shadow-lg -translate-y-1;
+   }
+   
+   /* =========================================
+      5. Custom backgrounds & transitions
+      ========================================= */
+   
+   /* Gradient hero section */
+   .hero-gradient {
+     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+   }
+   
+   /* Logo hover effects */
+   .logo-container img {
+     filter: grayscale(100%);
+     opacity: 0.7;
+     transition: all 0.3s ease;
+   }
+   
+   .logo-container img:hover {
+     filter: grayscale(0%);
+     opacity: 1;
+   }
+   
+   /* Smooth mobile menu transition */
+   #mobile-menu {
+     transition: transform 0.3s ease-in-out;
+   }
+   
