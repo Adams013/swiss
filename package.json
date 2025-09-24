@@ -9,6 +9,7 @@
     "@craco/craco": "^7.1.0",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/postcss": "^4.1.13",
+    "@supabase/supabase-js": "^2.45.4",
     "autoprefixer": "^10.4.21",
     "lucide-react": "^0.469.0",
     "postcss": "^8.5.6",

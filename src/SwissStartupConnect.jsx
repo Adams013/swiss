@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
+import { supabase } from './supabaseClient';
 
 const mockJobs = [
   {
@@ -342,7 +343,11 @@ const SwissStartupConnect = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
+  const [savedJobs, setSavedJobs] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = window.localStorage.getItem('ssc_saved_jobs');
+    return stored ? JSON.parse(stored) : [];
+  });
   const [selectedJob, setSelectedJob] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -362,23 +367,21 @@ const SwissStartupConnect = () => {
     const stored = window.localStorage.getItem('ssc_applied_jobs');
     return stored ? JSON.parse(stored) : [];
   });
+  const [authLoading, setAuthLoading] = useState(true);
   const loading = false;
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const storedUser = window.localStorage.getItem('ssc_user');
-    const storedSaved = window.localStorage.getItem('ssc_saved_jobs');
-
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      setUserType(parsedUser.type);
-    }
-
-    if (storedSaved) {
-      setSavedJobs(JSON.parse(storedSaved));
-    }
-  }, []);
+  const mapSupabaseUser = (supabaseUser) => {
+    if (!supabaseUser) return null;
+    return {
+      id: supabaseUser.id,
+      name:
+        supabaseUser.user_metadata?.name ||
+        supabaseUser.email?.split('@')[0] ||
+        'Member',
+      email: supabaseUser.email ?? '',
+      type: supabaseUser.user_metadata?.type || 'student',
+    };
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -391,9 +394,49 @@ const SwissStartupConnect = () => {
   }, [appliedJobs]);
 
   useEffect(() => {
-    if (!user || typeof window === 'undefined') return;
-    window.localStorage.setItem('ssc_user', JSON.stringify(user));
-  }, [user]);
+    let isMounted = true;
+
+    const initialiseSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!isMounted) return;
+
+      if (session?.user) {
+        const formatted = mapSupabaseUser(session.user);
+        setUser(formatted);
+        setUserType(formatted.type);
+      } else {
+        setUser(null);
+        setUserType('student');
+      }
+
+      setAuthLoading(false);
+    };
+
+    initialiseSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+
+      if (session?.user) {
+        const formatted = mapSupabaseUser(session.user);
+        setUser(formatted);
+        setUserType(formatted.type);
+      } else {
+        setUser(null);
+        setUserType('student');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!feedback) return;
@@ -592,71 +635,87 @@ const SwissStartupConnect = () => {
     setSelectedJob(null);
   };
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
-
-    const demoAccounts = [
-      {
-        email: 'student@example.com',
-        password: 'password123',
-        name: 'Demo Student',
-        type: 'student',
-      },
-      {
-        email: 'startup@example.com',
-        password: 'password123',
-        name: 'Demo Startup',
-        type: 'startup',
-      },
-    ];
-
-    const match = demoAccounts.find(
-      (account) =>
-        account.email.toLowerCase() === loginForm.email.trim().toLowerCase() &&
-        account.password === loginForm.password
-    );
-
-    if (!match) {
-      setAuthError('Those credentials did not match our demo accounts. Try again or register.');
-      return;
-    }
-
-    setUser({ name: match.name, email: match.email, type: match.type });
-    setUserType(match.type);
-    setLoginForm({ email: '', password: '' });
     setAuthError('');
-    setShowLoginModal(false);
-    setFeedback({ type: 'success', message: `Welcome back, ${match.name}!` });
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginForm.email.trim(),
+        password: loginForm.password,
+      });
+
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
+
+      if (data.user) {
+        const formatted = mapSupabaseUser(data.user);
+        setUser(formatted);
+        setUserType(formatted.type);
+        setFeedback({ type: 'success', message: `Welcome back, ${formatted.name}!` });
+      }
+
+      setLoginForm({ email: '', password: '' });
+      setShowLoginModal(false);
+    } catch (error) {
+      setAuthError(error.message);
+    }
   };
 
-  const handleRegister = (event) => {
+  const handleRegister = async (event) => {
     event.preventDefault();
+    setAuthError('');
 
     if (!registerForm.name.trim()) {
       setAuthError('Please add your name so startups know who to contact.');
       return;
     }
 
-    const profile = {
-      name: registerForm.name.trim(),
-      email: registerForm.email.trim(),
-      type: registerForm.type,
-    };
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: registerForm.email.trim(),
+        password: registerForm.password,
+        options: {
+          data: {
+            name: registerForm.name.trim(),
+            type: registerForm.type,
+          },
+        },
+      });
 
-    setUser(profile);
-    setUserType(profile.type);
-    setRegisterForm({ name: '', email: '', password: '', type: 'student' });
-    setAuthError('');
-    setShowLoginModal(false);
-    setFeedback({ type: 'success', message: 'Profile created. Let’s find your first match.' });
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
+
+      setRegisterForm({ name: '', email: '', password: '', type: 'student' });
+
+      if (data.user) {
+        const formatted = mapSupabaseUser(data.user);
+        setUser(formatted);
+        setUserType(formatted.type);
+        setFeedback({
+          type: 'success',
+          message: 'Profile created. Let’s find your first match.',
+        });
+        setShowLoginModal(false);
+      } else {
+        setFeedback({
+          type: 'success',
+          message: 'Registration complete. Check your email to confirm your account.',
+        });
+      }
+    } catch (error) {
+      setAuthError(error.message);
+    }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setUserType('student');
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('ssc_user');
-    }
     setFeedback({ type: 'info', message: 'Signed out. Your saved roles stay here for you.' });
   };
 
