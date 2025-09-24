@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookmarkPlus,
@@ -13,187 +13,103 @@ import {
   Sparkles,
   Users,
   X,
+  Upload,
+  CheckCircle2,
+  Star,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 
 const mockJobs = [
   {
-    id: 1,
+    id: 'mock-1',
     title: 'Frontend Engineer',
-    company: 'TechFlow AG',
+    company_name: 'TechFlow AG',
     location: 'Zurich, Switzerland',
-    type: 'Full-time',
-    posted: '2 days ago',
-    applicants: 18,
+    employment_type: 'Full-time',
     salary: '80k – 110k CHF',
     equity: '0.2% – 0.4%',
-    summary: 'Build delightful fintech experiences for 12k+ SMB customers.',
     description:
       'Join a product-led team redefining liquidity management for Swiss SMEs. You will partner with design and product to ship pixel-perfect interfaces that feel effortless.',
-    tags: ['React', 'TypeScript', 'Fintech', 'Product'],
+    requirements: ['3+ years building modern web applications', 'Fluent with React and modern state management', 'Focus on accessibility and performance'],
+    benefits: ['Half-fare travelcard reimbursement', 'Learning stipend & mentorship', 'Employee stock options'],
+    posted: '2 days ago',
+    applicants: 18,
+    tags: ['React', 'UI Engineering'],
     stage: 'Series A',
-    requirements: [
-      '3+ years building modern web applications',
-      'Fluent with React and state management patterns',
-      'Focus on accessibility, performance, and polish',
-    ],
-    benefits: [
-      'Hybrid work in Zurich or remote within Switzerland',
-      'Learning stipend & conference budget',
-      'Employee stock option plan',
-    ],
+    motivational_letter_required: false,
   },
   {
-    id: 2,
+    id: 'mock-2',
     title: 'Product Manager',
-    company: 'Alpine Health',
+    company_name: 'Alpine Health',
     location: 'Geneva, Switzerland',
-    type: 'Full-time',
-    posted: '5 days ago',
-    applicants: 11,
+    employment_type: 'Full-time',
     salary: '95k – 125k CHF',
     equity: '0.3% – 0.5%',
-    summary: 'Lead digital patient journeys for Swiss clinics and telehealth partners.',
     description:
-      'Own discovery through delivery for connected healthcare experiences that reach 50k+ patients. Collaborate with clinicians, engineers, and design to craft lovable products.',
-    tags: ['Product', 'Healthcare', 'UX Research', 'Analytics'],
+      'Own discovery through delivery for connected healthcare experiences serving 50k+ patients. Collaborate with clinicians, design, and engineering to ship lovable features.',
+    requirements: ['Product discovery expertise', 'Healthcare or regulated market background', 'Strong analytics and storytelling'],
+    benefits: ['Founding team equity', 'Wellness budget', 'Quarterly retreats in the Alps'],
+    posted: '1 week ago',
+    applicants: 11,
+    tags: ['Product', 'Healthcare'],
     stage: 'Seed',
-    requirements: [
-      'Proven track-record shipping product in health or regulated spaces',
-      'Data fluency and experimentation mindset',
-      'Skilled communicator across disciplines',
-    ],
-    benefits: [
-      'Founding team equity & mentorship',
-      'Wellness budget and private health insurance',
-      'Quarterly team retreats in the Alps',
-    ],
+    motivational_letter_required: true,
   },
   {
-    id: 3,
+    id: 'mock-3',
     title: 'Machine Learning Intern',
-    company: 'Cognivia Labs',
+    company_name: 'Cognivia Labs',
     location: 'Lausanne, Switzerland (Hybrid)',
-    type: 'Internship',
-    posted: '1 day ago',
-    applicants: 24,
+    employment_type: 'Internship',
     salary: '3.5k CHF / month',
     equity: 'N/A',
-    summary: 'Prototype models that power scientific discovery platforms.',
     description:
       'Work with a senior research pod to translate cutting-edge ML into production discovery tools. Expect rapid iteration, mentorship, and measurable impact.',
-    tags: ['AI/ML', 'Python', 'Research'],
+    requirements: ['MSc or final-year BSc in CS/Math', 'Hands-on with PyTorch or TensorFlow', 'Comfort with experimentation pipelines'],
+    benefits: ['Research mentor', 'Conference travel support', 'Fast-track to full-time offer'],
+    posted: '1 day ago',
+    applicants: 24,
+    tags: ['AI/ML', 'Python'],
     stage: 'Series B',
-    requirements: [
-      'MSc or final-year BSc in CS, Math, or related field',
-      'Hands-on experience with PyTorch or TensorFlow',
-      'Comfort with MLOps tooling and experimentation',
-    ],
-    benefits: [
-      'Dedicated research mentor',
-      'Conference travel support',
-      'Fast-track to full-time offer',
-    ],
-  },
-  {
-    id: 4,
-    title: 'Growth Marketer',
-    company: 'Helvetia Mobility',
-    location: 'Remote (Bern HQ)',
-    type: 'Full-time',
-    posted: '3 days ago',
-    applicants: 9,
-    salary: '70k – 95k CHF',
-    equity: '0.15% – 0.25%',
-    summary: 'Scale the next-gen shared mobility network across Switzerland.',
-    description:
-      'Design and execute go-to-market experiments across campuses and Swiss cities. You will own lifecycle campaigns, partnerships, and community-led growth loops.',
-    tags: ['Growth', 'Marketing', 'Go-to-market'],
-    stage: 'Series A',
-    requirements: [
-      '2+ years in growth or lifecycle marketing',
-      'Comfort with data, automation, and positioning',
-      'Fluent in English; German or French is a plus',
-    ],
-    benefits: [
-      'Quarterly coworking swaps across Switzerland',
-      'Mobility stipend & climate-conscious perks',
-      'Leadership coaching budget',
-    ],
-  },
-  {
-    id: 5,
-    title: 'Backend Engineer',
-    company: 'ClimaChain',
-    location: 'Basel, Switzerland',
-    type: 'Full-time',
-    posted: '6 days ago',
-    applicants: 7,
-    salary: '90k – 120k CHF',
-    equity: '0.25% – 0.45%',
-    summary: 'Build resilient infrastructure for climate impact reporting.',
-    description:
-      'Architect and ship the data backbone that helps Swiss manufacturers measure emissions in real time. Collaborate with data partners and climate scientists.',
-    tags: ['Backend', 'TypeScript', 'Climate'],
-    stage: 'Series A',
-    requirements: [
-      'Strong experience with Node.js or Go microservices',
-      'Background in data-intensive or event-driven systems',
-      'Thoughtful about sustainable engineering practices',
-    ],
-    benefits: [
-      'Hybrid schedule with 2 days in Basel HQ',
-      'Sabbatical opportunity after 2 years',
-      'Climate impact bonus linked to company goals',
-    ],
+    motivational_letter_required: true,
   },
 ];
 
 const mockCompanies = [
   {
-    id: 1,
+    id: 'mock-company-1',
     name: 'TechFlow AG',
     tagline: 'Liquidity intelligence for Swiss SMEs',
     location: 'Zurich',
     industry: 'Fintech',
     team: '65 people',
-    hires: '11 open roles',
     culture: 'Product-driven, hybrid-first, carbon neutral operations.',
     website: 'https://techflow.example',
+    verification_status: 'verified',
   },
   {
-    id: 2,
+    id: 'mock-company-2',
     name: 'Alpine Health',
     tagline: 'Digital care pathways for clinics & telehealth',
     location: 'Geneva',
     industry: 'Healthtech',
     team: '32 people',
-    hires: '6 open roles',
     culture: 'Human-centred, clinically informed, data trusted.',
     website: 'https://alpinehealth.example',
+    verification_status: 'pending',
   },
   {
-    id: 3,
+    id: 'mock-company-3',
     name: 'Cognivia Labs',
     tagline: 'ML tooling for scientific breakthroughs',
     location: 'Lausanne',
     industry: 'Deep Tech',
     team: '48 people',
-    hires: '4 open roles',
     culture: 'Research-rooted, humble experts, fast experimentation.',
     website: 'https://cognivia.example',
-  },
-  {
-    id: 4,
-    name: 'ClimaChain',
-    tagline: 'Chain-of-custody monitoring for industrial emissions',
-    location: 'Basel',
-    industry: 'Climate Tech',
-    team: '28 people',
-    hires: '5 open roles',
-    culture: 'Impact-obsessed, transparent, sustainable pace.',
-    website: 'https://climachain.example',
+    verification_status: 'verified',
   },
 ];
 
@@ -201,13 +117,13 @@ const steps = [
   {
     id: 1,
     title: 'Create a standout profile',
-    description: 'Showcase your skills, side projects, and what you want to learn next.',
+    description: 'Showcase your skills, projects, and what you want to learn next.',
     icon: GraduationCap,
   },
   {
     id: 2,
     title: 'Match with aligned startups',
-    description: 'We surface curated roles based on your focus, availability, and ambitions.',
+    description: 'Get curated roles based on your focus, availability, and goals.',
     icon: Layers,
   },
   {
@@ -223,7 +139,7 @@ const stats = [
     id: 'startups',
     value: '2.3k',
     label: 'Swiss startups hiring',
-    detail: 'Vetted teams across fintech, health, climate, deep tech, and more.',
+    detail: 'Fintech, health, climate, deep tech, consumer, and more.',
   },
   {
     id: 'time-to-offer',
@@ -235,7 +151,7 @@ const stats = [
     id: 'student-founders',
     value: '780+',
     label: 'Student founders onboard',
-    detail: 'Students who built ventures while interning with our partners.',
+    detail: 'Students who launched ventures through our partner network.',
   },
 ];
 
@@ -250,7 +166,7 @@ const testimonials = [
   {
     id: 2,
     quote:
-      "We filled two growth roles in record time. The candidates already understood the Swiss market and came ready to experiment.",
+      'We filled two growth roles in record time. The candidates already understood the Swiss market and came ready to experiment.',
     name: 'Marco B.',
     role: 'Co-founder, Helvetia Mobility',
   },
@@ -267,45 +183,45 @@ const resourceLinks = [
   {
     id: 2,
     title: 'Founder-ready CV template',
-    description: 'Three proven templates plus writing tips that recruiters mention most.',
+    description: 'Three proven templates plus writing tips founders recommend.',
     action: 'modal',
     modalId: 'cvTemplates',
   },
   {
     id: 3,
     title: 'Visa & permit checklist',
-    description: 'Step-by-step support for international students moving to Switzerland.',
+    description: 'Official step-by-step guidance for studying and working in Switzerland.',
     action: 'external',
     href: 'https://www.ch.ch/en/entering-switzerland-visa/',
   },
 ];
 
 const cantonInternshipSalaries = [
-  { canton: 'Zürich (ZH)', median: 'CHF 2,450', note: 'Highest stipends thanks to finance, pharma, and big-tech hubs.' },
-  { canton: 'Bern (BE)', median: 'CHF 2,150', note: 'Federal administration and med-tech offer steady rates.' },
-  { canton: 'Luzern (LU)', median: 'CHF 2,050', note: 'Tourism and health clusters; housing remains moderate.' },
-  { canton: 'Uri (UR)', median: 'CHF 1,850', note: 'Engineering SMEs; travel subsidy often included.' },
-  { canton: 'Schwyz (SZ)', median: 'CHF 2,050', note: 'Finance & industrial internships compete for talent.' },
-  { canton: 'Obwalden (OW)', median: 'CHF 1,950', note: 'Smaller companies; many provide meal allowances.' },
-  { canton: 'Nidwalden (NW)', median: 'CHF 2,000', note: 'Aviation suppliers pay above national average.' },
-  { canton: 'Glarus (GL)', median: 'CHF 1,950', note: 'Manufacturing focused; stipends often paired with housing support.' },
-  { canton: 'Zug (ZG)', median: 'CHF 2,600', note: 'Crypto/commodity scale-ups drive compensation up.' },
-  { canton: 'Fribourg (FR)', median: 'CHF 2,000', note: 'Bilingual market; universities co-fund research internships.' },
-  { canton: 'Solothurn (SO)', median: 'CHF 2,000', note: 'Precision engineering internships with salary plus transport.' },
-  { canton: 'Basel-Stadt (BS)', median: 'CHF 2,450', note: 'Life sciences leaders keep stipends close to junior salaries.' },
-  { canton: 'Basel-Landschaft (BL)', median: 'CHF 2,150', note: 'Chemical industry and logistics maintain strong ranges.' },
-  { canton: 'Schaffhausen (SH)', median: 'CHF 2,050', note: 'International manufacturing HQs sit just across the border.' },
-  { canton: 'Appenzell Ausserrhoden (AR)', median: 'CHF 1,900', note: 'Family-owned firms; frequent accommodation stipends.' },
-  { canton: 'Appenzell Innerrhoden (AI)', median: 'CHF 1,850', note: 'Smaller cohort; salaries balanced with low living costs.' },
-  { canton: 'St. Gallen (SG)', median: 'CHF 2,100', note: 'Fintech and textile innovation labs recruit heavily from HSG/OST.' },
-  { canton: 'Graubünden (GR)', median: 'CHF 1,850', note: 'Tourism and outdoor brands add seasonal benefits.' },
+  { canton: 'Zürich (ZH)', median: 'CHF 2,450', note: 'Finance, pharma, and big-tech hubs offer the highest stipends.' },
+  { canton: 'Bern (BE)', median: 'CHF 2,150', note: 'Federal agencies and med-tech firms provide steady pay.' },
+  { canton: 'Luzern (LU)', median: 'CHF 2,050', note: 'Tourism + health clusters; accommodation remains accessible.' },
+  { canton: 'Uri (UR)', median: 'CHF 1,850', note: 'Engineering SMEs often bundle travel support.' },
+  { canton: 'Schwyz (SZ)', median: 'CHF 2,050', note: 'Finance and industrial automation compete for talent.' },
+  { canton: 'Obwalden (OW)', median: 'CHF 1,950', note: 'Smaller firms provide meal or housing allowances.' },
+  { canton: 'Nidwalden (NW)', median: 'CHF 2,000', note: 'Aviation suppliers benchmark against national averages.' },
+  { canton: 'Glarus (GL)', median: 'CHF 1,950', note: 'Manufacturing internships pair pay with housing support.' },
+  { canton: 'Zug (ZG)', median: 'CHF 2,600', note: 'Crypto and commodity scale-ups raise the bar.' },
+  { canton: 'Fribourg (FR)', median: 'CHF 2,000', note: 'Bilingual market; research internships co-funded by universities.' },
+  { canton: 'Solothurn (SO)', median: 'CHF 2,000', note: 'Precision engineering with transport stipends.' },
+  { canton: 'Basel-Stadt (BS)', median: 'CHF 2,450', note: 'Life sciences keep stipends close to junior salaries.' },
+  { canton: 'Basel-Landschaft (BL)', median: 'CHF 2,150', note: 'Chemical industry and logistics follow city benchmarks.' },
+  { canton: 'Schaffhausen (SH)', median: 'CHF 2,050', note: 'International manufacturing HQs top up with meal cards.' },
+  { canton: 'Appenzell Ausserrhoden (AR)', median: 'CHF 1,900', note: 'Family-owned firms add transport or housing support.' },
+  { canton: 'Appenzell Innerrhoden (AI)', median: 'CHF 1,850', note: 'Smaller cohort, lower living costs balance pay.' },
+  { canton: 'St. Gallen (SG)', median: 'CHF 2,100', note: 'Fintech/textile innovation labs recruit from HSG & OST.' },
+  { canton: 'Graubünden (GR)', median: 'CHF 1,850', note: 'Tourism and outdoor brands include seasonal benefits.' },
   { canton: 'Aargau (AG)', median: 'CHF 2,100', note: 'Energy and industrial automation pay competitive stipends.' },
-  { canton: 'Thurgau (TG)', median: 'CHF 1,950', note: 'Agri-food and med-tech blend salary with commuting aid.' },
-  { canton: 'Ticino (TI)', median: 'CHF 1,900', note: 'Cross-border companies benchmark against Lombardy + Swiss averages.' },
-  { canton: 'Vaud (VD)', median: 'CHF 2,250', note: 'EPFL ecosystem and med-tech scale-ups compete for engineers.' },
-  { canton: 'Valais (VS)', median: 'CHF 1,900', note: 'Energy and tourism stipends with seasonal housing support.' },
-  { canton: 'Neuchâtel (NE)', median: 'CHF 2,000', note: 'Watchmaking and microtech offer solid mid-range pay.' },
-  { canton: 'Geneva (GE)', median: 'CHF 2,350', note: 'International organisations top up with travel & lunch subsidies.' },
+  { canton: 'Thurgau (TG)', median: 'CHF 1,950', note: 'Agri-food & med-tech add commuting aid.' },
+  { canton: 'Ticino (TI)', median: 'CHF 1,900', note: 'Cross-border firms blend Lombardy and Swiss benchmarks.' },
+  { canton: 'Vaud (VD)', median: 'CHF 2,250', note: 'EPFL ecosystem and med-tech scale-ups drive demand.' },
+  { canton: 'Valais (VS)', median: 'CHF 1,900', note: 'Energy & tourism include seasonal housing offers.' },
+  { canton: 'Neuchâtel (NE)', median: 'CHF 2,000', note: 'Watchmaking and microtech provide steady pay.' },
+  { canton: 'Geneva (GE)', median: 'CHF 2,350', note: 'International organisations add lunch/travel subsidies.' },
   { canton: 'Jura (JU)', median: 'CHF 1,850', note: 'Advanced manufacturing focuses on skill development bonuses.' },
 ];
 
@@ -313,83 +229,38 @@ const cvTemplates = [
   {
     name: 'Europass Classic',
     url: 'https://europa.eu/europass/en/create-europass-cv',
-    reason: 'Widely accepted by Swiss corporates and universities; bilingual sections make it easy to duplicate in French/German.',
+    reason: 'Standardised sections help recruiters compare profiles quickly; bilingual version ready for French/German submissions.',
   },
   {
     name: 'Novorésumé Basic (Free)',
     url: 'https://novoresume.com/resume-templates',
-    reason: 'Clean single-page template that hiring teams at Swiss scale-ups often recommend for junior roles.',
+    reason: 'Clean single-page layout praised by Swiss scale-ups for student and graduate applications.',
   },
   {
     name: 'Google Docs – Swiss Minimal',
     url: 'https://docs.google.com/document/d/1dxJ4SWI2Pa3uFY6uhAT0t5gE_zp0oGOPbsT_t-jSfo0/preview',
-    reason: 'Two-column layout promoted by ETH Career Center; quick to duplicate and customise.',
+    reason: 'Recommended by ETH Career Center for tech roles; easy to copy and localise.',
   },
 ];
 
 const cvWritingTips = [
-  'Open with a three-line summary that states your target role, key strengths, and what you want to learn next.',
-  'Use bullet points that start with strong verbs and quantify impact (e.g. “reduced onboarding time by 30%”).',
-  'Highlight technical stack and tool proficiency in their own section; founders skim for this first.',
-  'Include extracurriculars, hackathons, or venture projects—Swiss founders value entrepreneurial signals.',
-  'Keep it to one page unless you have 3+ years of experience; recruiters spend ~45 seconds on the first scan.',
+  'Open with a three-line summary that states your target role, your strongest skills, and what you want to build next.',
+  'Use bullet points that start with strong verbs and quantify results (e.g. “reduced onboarding time by 30%”).',
+  'Keep a dedicated skills/tools block—founders and CTOs skim for stack alignment first.',
+  'Add entrepreneurial signals: side projects, hackathons, venture labs, or leadership roles.',
+  'Stick to one page until you have 3+ years experience; save the detail for the interview.',
 ];
 
 const quickFilters = [
-  {
-    id: 'loc-zurich',
-    label: 'Zurich',
-    category: 'Location',
-    test: (job) => job.location.toLowerCase().includes('zurich'),
-  },
-  {
-    id: 'loc-geneva',
-    label: 'Geneva',
-    category: 'Location',
-    test: (job) => job.location.toLowerCase().includes('geneva'),
-  },
-  {
-    id: 'loc-remote',
-    label: 'Remote friendly',
-    category: 'Location',
-    test: (job) => job.location.toLowerCase().includes('remote'),
-  },
-  {
-    id: 'type-full',
-    label: 'Full-time',
-    category: 'Role type',
-    test: (job) => job.type === 'Full-time',
-  },
-  {
-    id: 'type-intern',
-    label: 'Internship',
-    category: 'Role type',
-    test: (job) => job.type === 'Internship',
-  },
-  {
-    id: 'focus-engineering',
-    label: 'Engineering',
-    category: 'Focus',
-    test: (job) => job.tags.some((tag) => ['React', 'TypeScript', 'Backend', 'AI/ML'].includes(tag)),
-  },
-  {
-    id: 'focus-product',
-    label: 'Product',
-    category: 'Focus',
-    test: (job) => job.tags.some((tag) => ['Product', 'UX Research'].includes(tag)),
-  },
-  {
-    id: 'focus-growth',
-    label: 'Growth',
-    category: 'Focus',
-    test: (job) => job.tags.some((tag) => ['Growth', 'Marketing', 'Go-to-market'].includes(tag)),
-  },
-  {
-    id: 'focus-climate',
-    label: 'Climate',
-    category: 'Focus',
-    test: (job) => job.tags.some((tag) => ['Climate', 'Sustainability'].includes(tag)),
-  },
+  { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zurich') },
+  { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('geneva') },
+  { id: 'loc-remote', label: 'Remote friendly', category: 'Location', test: (job) => job.location?.toLowerCase().includes('remote') },
+  { id: 'type-full', label: 'Full-time', category: 'Role type', test: (job) => job.employment_type === 'Full-time' },
+  { id: 'type-intern', label: 'Internship', category: 'Role type', test: (job) => job.employment_type === 'Internship' },
+  { id: 'focus-engineering', label: 'Engineering', category: 'Focus', test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())) },
+  { id: 'focus-product', label: 'Product', category: 'Focus', test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())) },
+  { id: 'focus-growth', label: 'Growth', category: 'Focus', test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())) },
+  { id: 'focus-climate', label: 'Climate', category: 'Focus', test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')) },
 ];
 
 const filterPredicates = quickFilters.reduce((acc, filter) => {
@@ -397,16 +268,38 @@ const filterPredicates = quickFilters.reduce((acc, filter) => {
   return acc;
 }, {});
 
+const mapSupabaseUser = (supabaseUser) => {
+  if (!supabaseUser) return null;
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email ?? '',
+    name:
+      supabaseUser.user_metadata?.name ||
+      supabaseUser.email?.split('@')[0] ||
+      'Member',
+    type: supabaseUser.user_metadata?.type || 'student',
+  };
+};
+
+const acknowledgeMessage = 'By applying you agree that the startup will see your profile information, uploaded CV, and profile photo.';
+
 const SwissStartupConnect = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
+
+  const [jobs, setJobs] = useState(mockJobs);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [companies, setCompanies] = useState(mockCompanies);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
     const stored = window.localStorage.getItem('ssc_saved_jobs');
     return stored ? JSON.parse(stored) : [];
   });
   const [selectedJob, setSelectedJob] = useState(null);
+
   const [feedback, setFeedback] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -414,33 +307,85 @@ const SwissStartupConnect = () => {
   const [user, setUser] = useState(null);
   const [userType, setUserType] = useState('student');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    type: 'student',
-  });
+  const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
     const stored = window.localStorage.getItem('ssc_applied_jobs');
     return stored ? JSON.parse(stored) : [];
   });
   const [authLoading, setAuthLoading] = useState(true);
-  const [resourceModal, setResourceModal] = useState(null);
-  const loading = false;
 
-  const mapSupabaseUser = (supabaseUser) => {
-    if (!supabaseUser) return null;
-    return {
-      id: supabaseUser.id,
-      name:
-        supabaseUser.user_metadata?.name ||
-        supabaseUser.email?.split('@')[0] ||
-        'Member',
-      email: supabaseUser.email ?? '',
-      type: supabaseUser.user_metadata?.type || 'student',
+  const [profile, setProfile] = useState(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    university: '',
+    program: '',
+    experience: '',
+    bio: '',
+    portfolio_url: '',
+    cv_url: '',
+    avatar_url: '',
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const [startupProfile, setStartupProfile] = useState(null);
+  const [startupModalOpen, setStartupModalOpen] = useState(false);
+  const [startupForm, setStartupForm] = useState({
+    name: '',
+    registry_number: '',
+    description: '',
+    website: '',
+    logo_url: '',
+    verification_status: 'unverified',
+    verification_note: '',
+  });
+  const [startupSaving, setStartupSaving] = useState(false);
+
+  const [resourceModal, setResourceModal] = useState(null);
+  const [reviewsModal, setReviewsModal] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', body: '' });
+  const [canReview, setCanReview] = useState(false);
+
+  const [applicationModal, setApplicationModal] = useState(null);
+  const [acknowledgeShare, setAcknowledgeShare] = useState(false);
+  const [motivationalLetter, setMotivationalLetter] = useState('');
+  const [applicationSaving, setApplicationSaving] = useState(false);
+  const [applicationError, setApplicationError] = useState('');
+
+  const clearFeedback = useCallback(() => setFeedback(null), []);
+
+  useEffect(() => {
+    if (!feedback) return undefined;
+    const timeout = setTimeout(clearFeedback, 4000);
+    return () => clearTimeout(timeout);
+  }, [feedback, clearFeedback]);
+
+  useEffect(() => {
+    const initialiseSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const mapped = mapSupabaseUser(session?.user);
+      setUser(mapped);
+      setUserType(mapped?.type ?? 'student');
+      setAuthLoading(false);
     };
-  };
+
+    initialiseSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const mapped = mapSupabaseUser(session?.user);
+      setUser(mapped);
+      setUserType(mapped?.type ?? 'student');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -452,72 +397,243 @@ const SwissStartupConnect = () => {
     window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(appliedJobs));
   }, [appliedJobs]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const initialiseSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!isMounted) return;
-
-      if (session?.user) {
-        const formatted = mapSupabaseUser(session.user);
-        setUser(formatted);
-        setUserType(formatted.type);
-      } else {
-        setUser(null);
-        setUserType('student');
+  const loadProfile = useCallback(
+    async (supabaseUser) => {
+      if (!supabaseUser) {
+        setProfile(null);
+        return;
       }
 
-      setAuthLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', supabaseUser.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Profile fetch error', error);
+          return;
+        }
+
+        let profileRecord = data;
+
+        if (!profileRecord) {
+          const baseProfile = {
+            user_id: supabaseUser.id,
+            full_name: supabaseUser.name,
+            type: supabaseUser.type,
+            university: '',
+            program: '',
+            experience: '',
+            bio: '',
+            portfolio_url: '',
+            cv_url: '',
+            avatar_url: '',
+          };
+
+          const { data: inserted, error: insertError } = await supabase
+            .from('profiles')
+            .insert(baseProfile)
+            .select('*')
+            .single();
+
+          if (insertError) {
+            console.error('Profile insert error', insertError);
+            return;
+          }
+
+          profileRecord = inserted;
+        }
+
+        setProfile(profileRecord);
+        setProfileForm({
+          full_name: profileRecord.full_name || supabaseUser.name,
+          university: profileRecord.university || '',
+          program: profileRecord.program || '',
+          experience: profileRecord.experience || '',
+          bio: profileRecord.bio || '',
+          portfolio_url: profileRecord.portfolio_url || '',
+          cv_url: profileRecord.cv_url || '',
+          avatar_url: profileRecord.avatar_url || '',
+        });
+      } catch (error) {
+        console.error('Profile load error', error);
+      }
+    },
+    []
+  );
+
+  const loadStartupProfile = useCallback(async (supabaseUser) => {
+    if (!supabaseUser || supabaseUser.type !== 'startup') {
+      setStartupProfile(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('startups')
+        .select('*')
+        .eq('owner_id', supabaseUser.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Startup fetch error', error);
+        return;
+      }
+
+      let startupRecord = data;
+
+      if (!startupRecord) {
+        const baseStartup = {
+          owner_id: supabaseUser.id,
+          name: supabaseUser.name,
+          registry_number: '',
+          description: '',
+          website: '',
+          logo_url: '',
+          verification_status: 'unverified',
+          verification_note: '',
+        };
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('startups')
+          .insert(baseStartup)
+          .select('*')
+          .single();
+
+        if (insertError) {
+          console.error('Startup insert error', insertError);
+          return;
+        }
+
+        startupRecord = inserted;
+      }
+
+      setStartupProfile(startupRecord);
+      setStartupForm({
+        name: startupRecord.name || supabaseUser.name,
+        registry_number: startupRecord.registry_number || '',
+        description: startupRecord.description || '',
+        website: startupRecord.website || '',
+        logo_url: startupRecord.logo_url || '',
+        verification_status: startupRecord.verification_status || 'unverified',
+        verification_note: startupRecord.verification_note || '',
+      });
+    } catch (error) {
+      console.error('Startup load error', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    loadProfile(user);
+    loadStartupProfile(user);
+  }, [authLoading, loadProfile, loadStartupProfile, user]);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setJobsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('id,title,company_name,location,employment_type,salary,equity,description,requirements,benefits,posted,applicants,tags,stage,motivational_letter_required,created_at');
+
+        if (error) {
+          console.info('Falling back to mock jobs', error.message);
+          setJobs(mockJobs);
+        } else if (data && data.length > 0) {
+          const mapped = data.map((job) => ({
+            ...job,
+            applicants: job.applicants ?? 0,
+            tags: job.tags ?? [],
+            requirements: job.requirements ?? [],
+            benefits: job.benefits ?? [],
+            posted: job.posted || 'Recently posted',
+            motivational_letter_required: job.motivational_letter_required ?? false,
+          }));
+          setJobs(mapped);
+        } else {
+          setJobs(mockJobs);
+        }
+      } catch (error) {
+        console.error('Job load error', error);
+        setJobs(mockJobs);
+      } finally {
+        setJobsLoading(false);
+      }
     };
 
-    initialiseSession();
+    fetchJobs();
+  }, []);
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) return;
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setCompaniesLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('startups')
+          .select('id,name,tagline,location,industry,team,culture,website,verification_status');
 
-      if (session?.user) {
-        const formatted = mapSupabaseUser(session.user);
-        setUser(formatted);
-        setUserType(formatted.type);
-      } else {
-        setUser(null);
-        setUserType('student');
+        if (error) {
+          console.info('Falling back to mock companies', error.message);
+          setCompanies(mockCompanies);
+        } else if (data && data.length > 0) {
+          setCompanies(
+            data.map((company) => ({
+              id: company.id,
+              name: company.name,
+              tagline: company.tagline,
+              location: company.location,
+              industry: company.industry,
+              team: company.team,
+              culture: company.culture,
+              website: company.website,
+              verification_status: company.verification_status || 'unverified',
+            }))
+          );
+        } else {
+          setCompanies(mockCompanies);
+        }
+      } catch (error) {
+        console.error('Company load error', error);
+        setCompanies(mockCompanies);
+      } finally {
+        setCompaniesLoading(false);
       }
+    };
+
+    fetchCompanies();
+  }, []);
+
+  const addFilter = (filterId) => {
+    setActiveTab('jobs');
+    setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
+  };
+
+  const removeFilter = (filterId) => {
+    setSelectedFilters((prev) => prev.filter((item) => item !== filterId));
+  };
+
+  const clearFilters = () => setSelectedFilters([]);
+
+  const toggleSavedJob = (jobId) => {
+    setSavedJobs((prev) => {
+      const exists = prev.includes(jobId);
+      if (exists) {
+        setFeedback({ type: 'info', message: 'Removed from saved roles.' });
+        return prev.filter((id) => id !== jobId);
+      }
+      setFeedback({ type: 'success', message: 'Added to your saved roles.' });
+      return [...prev, jobId];
     });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!feedback) return;
-    const timeoutId = setTimeout(() => setFeedback(null), 4000);
-    return () => clearTimeout(timeoutId);
-  }, [feedback]);
-
-  const groupedFilters = useMemo(() => {
-    return quickFilters.reduce((acc, filter) => {
-      if (!acc[filter.category]) {
-        acc[filter.category] = [];
-      }
-      acc[filter.category].push(filter);
-      return acc;
-    }, {});
-  }, []);
+  };
 
   const filteredJobs = useMemo(() => {
-    return mockJobs.filter((job) => {
+    return jobs.filter((job) => {
       const matchesSearch =
         !searchTerm.trim() ||
-        [job.title, job.company, job.location, job.summary]
+        [job.title, job.company_name, job.location, job.description]
           .join(' ')
           .toLowerCase()
           .includes(searchTerm.trim().toLowerCase());
@@ -529,193 +645,187 @@ const SwissStartupConnect = () => {
 
       return matchesSearch && matchesFilters;
     });
-  }, [searchTerm, selectedFilters]);
+  }, [jobs, searchTerm, selectedFilters]);
 
-  const filteredCompanies = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return mockCompanies;
+  const savedJobList = useMemo(() => jobs.filter((job) => savedJobs.includes(job.id)), [jobs, savedJobs]);
 
-    return mockCompanies.filter((company) =>
-      [company.name, company.tagline, company.location, company.industry]
-        .join(' ')
-        .toLowerCase()
-        .includes(term)
-    );
-  }, [searchTerm]);
-
-  const renderSearchForm = ({
-    variant = 'default',
-    placeholder = 'Search startup, role, or skill',
-    targetTab,
-  } = {}) => (
-    <form
-      className={`ssc__search ${variant === 'inline' ? 'ssc__search--inline' : ''}`}
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (targetTab) {
-          setActiveTab(targetTab);
-        }
-      }}
-    >
-      <div className="ssc__search-field">
-        <Search size={18} />
-        <input
-          type="text"
-          placeholder={placeholder}
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          aria-label="Search"
-        />
-      </div>
-      <button type="submit" className="ssc__search-btn">
-        Find matches
-      </button>
-    </form>
-  );
-
-  const renderJobCards = (jobsList) => (
-    <div className="ssc__grid">
-      {jobsList.map((job) => {
-        const isSaved = savedJobs.includes(job.id);
-        const hasApplied = appliedJobs.includes(job.id);
-        return (
-          <article key={job.id} className="ssc__job-card">
-            <div className="ssc__job-header">
-              <div>
-                <h3>{job.title}</h3>
-                <p>{job.company}</p>
-              </div>
-              <button
-                type="button"
-                className={`ssc__save-btn ${isSaved ? 'is-active' : ''}`}
-                onClick={() => handleToggleSave(job.id)}
-                aria-label={isSaved ? 'Remove from saved jobs' : 'Save job'}
-              >
-                <Heart size={18} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? 'currentColor' : 'none'} />
-              </button>
-            </div>
-
-            <p className="ssc__job-summary">{job.summary}</p>
-
-            <div className="ssc__job-meta">
-              <span>
-                <MapPin size={16} />
-                {job.location}
-              </span>
-              <span>
-                <Clock size={16} />
-                {job.type}
-              </span>
-              <span>
-                <Users size={16} />
-                {job.applicants} applicants
-              </span>
-            </div>
-
-            <div className="ssc__job-tags">
-              {job.tags.map((tag) => (
-                <span key={tag} className="ssc__tag">
-                  {tag}
-                </span>
-              ))}
-              <span className="ssc__tag ssc__tag--soft">{job.stage}</span>
-            </div>
-
-            <div className="ssc__job-footer">
-              <div className="ssc__salary">
-                <span>{job.salary}</span>
-                <small>+ {job.equity} equity</small>
-              </div>
-              <div className="ssc__job-actions">
-                <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                  View role
-                </button>
-                <button
-                  type="button"
-                  className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
-                  onClick={() => handleApply(job)}
-                  disabled={hasApplied}
-                >
-                  {hasApplied ? 'Applied' : 'Apply now'}
-                </button>
-              </div>
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
-
-  const savedJobList = useMemo(() => {
-    return mockJobs.filter((job) => savedJobs.includes(job.id));
-  }, [savedJobs]);
-
-  const toggleFilter = (filterId) => {
-    setActiveTab('jobs');
-    setSelectedFilters((prev) => {
-      return prev.includes(filterId)
-        ? prev.filter((id) => id !== filterId)
-        : [...prev, filterId];
-    });
-  };
-
-  const clearFilters = () => {
-    setSelectedFilters([]);
-  };
-
-  const handleToggleSave = (jobId) => {
-    setSavedJobs((prev) => {
-      const isSaved = prev.includes(jobId);
-      const next = isSaved ? prev.filter((id) => id !== jobId) : [...prev, jobId];
-      setFeedback({
-        type: isSaved ? 'info' : 'success',
-        message: isSaved ? 'Removed from saved roles.' : 'Added to your saved roles.',
-      });
-      return next;
-    });
-  };
-
-  const handleApply = (job) => {
+  const openApplyModal = (job) => {
     if (!user) {
       setIsRegistering(false);
       setShowLoginModal(true);
-      setFeedback({ type: 'info', message: 'Sign in or create a profile to apply.' });
+      setFeedback({ type: 'info', message: 'Create a profile to apply to roles.' });
       return;
     }
 
-    if (!appliedJobs.includes(job.id)) {
-      setAppliedJobs((prev) => [...prev, job.id]);
+    if (user.type !== 'student') {
+      setFeedback({ type: 'info', message: 'Switch to a student account to apply.' });
+      return;
     }
 
-    setFeedback({
-      type: 'success',
-      message: `We shared your profile with ${job.company}. They will reach out soon!`,
-    });
-    setSelectedJob(null);
+    setApplicationModal(job);
+    setAcknowledgeShare(false);
+    setMotivationalLetter('');
+    setApplicationError('');
+  };
+
+  const closeApplicationModal = () => {
+    setApplicationModal(null);
+    setMotivationalLetter('');
+    setApplicationError('');
+  };
+
+  const uploadFile = useCallback(
+    async (bucket, file) => {
+      if (!file) return null;
+      const extension = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${extension}`;
+
+      const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+      return publicUrl;
+    },
+    [user?.id]
+  );
+
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
+    if (!user) return;
+
+    setProfileSaving(true);
+    try {
+      const updates = {
+        user_id: user.id,
+        full_name: profileForm.full_name,
+        university: profileForm.university,
+        program: profileForm.program,
+        experience: profileForm.experience,
+        bio: profileForm.bio,
+        portfolio_url: profileForm.portfolio_url,
+        cv_url: profileForm.cv_url,
+        avatar_url: profileForm.avatar_url,
+        type: user.type,
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(updates, { onConflict: 'user_id' })
+        .select('*')
+        .single();
+
+      if (error) {
+        setFeedback({ type: 'error', message: error.message });
+      } else {
+        setProfile(data);
+        setFeedback({ type: 'success', message: 'Profile updated.' });
+        setProfileModalOpen(false);
+      }
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleStartupSubmit = async (event) => {
+    event.preventDefault();
+    if (!user) return;
+
+    setStartupSaving(true);
+    try {
+      const updates = {
+        owner_id: user.id,
+        name: startupForm.name,
+        registry_number: startupForm.registry_number,
+        description: startupForm.description,
+        website: startupForm.website,
+        logo_url: startupForm.logo_url,
+      };
+
+      const { data, error } = await supabase
+        .from('startups')
+        .upsert(updates, { onConflict: 'owner_id' })
+        .select('*')
+        .single();
+
+      if (error) {
+        setFeedback({ type: 'error', message: error.message });
+      } else {
+        setStartupProfile(data);
+        setFeedback({
+          type: 'success',
+          message: 'Startup profile submitted. Verification updates will appear here.',
+        });
+        setStartupModalOpen(false);
+      }
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setStartupSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const publicUrl = await uploadFile('avatars', file);
+      setProfileForm((prev) => ({ ...prev, avatar_url: publicUrl }));
+    } catch (error) {
+      setFeedback({ type: 'error', message: `Avatar upload failed: ${error.message}` });
+    }
+  };
+
+  const handleCvUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const publicUrl = await uploadFile('cvs', file);
+      setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
+    } catch (error) {
+      setFeedback({ type: 'error', message: `CV upload failed: ${error.message}` });
+    }
+  };
+
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const publicUrl = await uploadFile('logos', file);
+      setStartupForm((prev) => ({ ...prev, logo_url: publicUrl }));
+    } catch (error) {
+      setFeedback({ type: 'error', message: `Logo upload failed: ${error.message}` });
+    }
   };
 
   const handleLogin = async (event) => {
     event.preventDefault();
     setAuthError('');
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginForm.email.trim(),
         password: loginForm.password,
       });
-
       if (error) {
         setAuthError(error.message);
         return;
       }
-
       if (data.user) {
-        const formatted = mapSupabaseUser(data.user);
-        setUser(formatted);
-        setUserType(formatted.type);
-        setFeedback({ type: 'success', message: `Welcome back, ${formatted.name}!` });
+        const mapped = mapSupabaseUser(data.user);
+        setUser(mapped);
+        setUserType(mapped.type);
+        setFeedback({ type: 'success', message: `Welcome back, ${mapped.name}!` });
       }
-
       setLoginForm({ email: '', password: '' });
       setShowLoginModal(false);
     } catch (error) {
@@ -726,12 +836,10 @@ const SwissStartupConnect = () => {
   const handleRegister = async (event) => {
     event.preventDefault();
     setAuthError('');
-
     if (!registerForm.name.trim()) {
       setAuthError('Please add your name so startups know who to contact.');
       return;
     }
-
     try {
       const { data, error } = await supabase.auth.signUp({
         email: registerForm.email.trim(),
@@ -743,27 +851,21 @@ const SwissStartupConnect = () => {
           },
         },
       });
-
       if (error) {
         setAuthError(error.message);
         return;
       }
-
       setRegisterForm({ name: '', email: '', password: '', type: 'student' });
-
       if (data.user) {
-        const formatted = mapSupabaseUser(data.user);
-        setUser(formatted);
-        setUserType(formatted.type);
-        setFeedback({
-          type: 'success',
-          message: 'Profile created. Let’s find your first match.',
-        });
+        const mapped = mapSupabaseUser(data.user);
+        setUser(mapped);
+        setUserType(mapped.type);
+        setFeedback({ type: 'success', message: 'Profile created. Let’s find your first match.' });
         setShowLoginModal(false);
       } else {
         setFeedback({
           type: 'success',
-          message: 'Registration complete. Check your email to confirm your account.',
+          message: 'Check your inbox to confirm your email before signing in.',
         });
       }
     } catch (error) {
@@ -778,28 +880,119 @@ const SwissStartupConnect = () => {
     setFeedback({ type: 'info', message: 'Signed out. Your saved roles stay here for you.' });
   };
 
-  const closeResourceModal = () => setResourceModal(null);
+  const submitApplication = async () => {
+    if (!applicationModal || !user) return;
+    if (!acknowledgeShare) {
+      setApplicationError('Please acknowledge that your profile will be shared.');
+      return;
+    }
+    if (applicationModal.motivational_letter_required && !motivationalLetter.trim()) {
+      setApplicationError('A motivational letter is required for this role.');
+      return;
+    }
 
-  const closeAuthModal = () => {
-    setShowLoginModal(false);
-    setAuthError('');
-    setLoginForm({ email: '', password: '' });
+    setApplicationSaving(true);
+    setApplicationError('');
+
+    try {
+      const payload = {
+        job_id: applicationModal.id,
+        profile_id: profile?.id,
+        motivational_letter: motivationalLetter.trim(),
+        status: 'submitted',
+        acknowledged: true,
+      };
+
+      const { error } = await supabase.from('job_applications').insert(payload);
+
+      if (error) {
+        setApplicationError(error.message);
+      } else {
+        setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
+        setFeedback({ type: 'success', message: 'Application submitted! 🎉' });
+        closeApplicationModal();
+      }
+    } catch (error) {
+      setApplicationError(error.message);
+    } finally {
+      setApplicationSaving(false);
+    }
   };
 
-  const activeTabDescription = useMemo(() => {
-    switch (activeTab) {
-      case 'general':
-        return 'Explore the Swiss startup ecosystem and discover where you can make the biggest impact.';
-      case 'jobs':
-        return 'Browse vetted opportunities that match your skills, schedule, and ambitions.';
-      case 'companies':
-        return 'Meet the founders building Switzerland’s next generation of companies.';
-      case 'saved':
-        return 'Keep tabs on opportunities you want to revisit or apply to later.';
-      default:
-        return 'Curated roles from Swiss startups that welcome student talent and emerging professionals.';
+  const openReviewsModal = async (company) => {
+    setReviewsModal(company);
+    setReviewsLoading(true);
+    setReviews([]);
+    setCanReview(false);
+
+    try {
+      const { data, error } = await supabase
+        .from('company_reviews')
+        .select('id, rating, title, body, created_at, profiles(full_name, avatar_url)')
+        .eq('startup_id', company.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setReviews(data);
+      }
+
+      if (user && profile) {
+        const { data: membership, error: membershipError } = await supabase
+          .from('startup_members')
+          .select('id, verified_at')
+          .eq('startup_id', company.id)
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+
+        if (!membershipError && membership && membership.verified_at) {
+          setCanReview(true);
+        }
+      }
+    } catch (error) {
+      console.error('Reviews load error', error);
+    } finally {
+      setReviewsLoading(false);
     }
-  }, [activeTab]);
+  };
+
+  const submitReview = async (event) => {
+    event.preventDefault();
+    if (!reviewsModal || !profile) return;
+
+    try {
+      const payload = {
+        startup_id: reviewsModal.id,
+        profile_id: profile.id,
+        rating: reviewForm.rating,
+        title: reviewForm.title.trim(),
+        body: reviewForm.body.trim(),
+      };
+
+      const { error } = await supabase.from('company_reviews').insert(payload);
+      if (error) {
+        setFeedback({ type: 'error', message: error.message });
+        return;
+      }
+      setFeedback({ type: 'success', message: 'Review submitted. Thank you!' });
+      setReviewForm({ rating: 5, title: '', body: '' });
+      openReviewsModal(reviewsModal); // refresh
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message });
+    }
+  };
+
+  const groupedFilters = useMemo(() => {
+    return quickFilters.reduce((acc, filter) => {
+      if (!acc[filter.category]) acc[filter.category] = [];
+      acc[filter.category].push(filter);
+      return acc;
+    }, {});
+  }, []);
+
+  const closeResourceModal = () => setResourceModal(null);
+  const closeReviewsModal = () => setReviewsModal(null);
+
+  const loadingSpinner = jobsLoading || companiesLoading || authLoading;
 
   return (
     <div className="ssc">
@@ -815,13 +1008,12 @@ const SwissStartupConnect = () => {
 
           <nav className="ssc__nav">
             {['general', 'jobs', 'companies', 'saved'].map((tab) => {
-              const labelMap = {
+              const labels = {
                 general: 'General',
                 jobs: 'Opportunities',
                 companies: 'Startups',
                 saved: `Saved (${savedJobs.length})`,
               };
-
               return (
                 <button
                   key={tab}
@@ -829,7 +1021,7 @@ const SwissStartupConnect = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
                 >
-                  {labelMap[tab]}
+                  {labels[tab]}
                 </button>
               );
             })}
@@ -849,13 +1041,30 @@ const SwissStartupConnect = () => {
                 Sign in
               </button>
             )}
+
             {user ? (
               <div className="ssc__user-chip">
-                <div className="ssc__avatar">{user.name.charAt(0)}</div>
+                <div className="ssc__avatar-small">{user.name.charAt(0)}</div>
                 <div className="ssc__user-meta">
                   <span className="ssc__user-name">{user.name}</span>
                   <span className="ssc__user-role">{user.type}</span>
                 </div>
+                <button
+                  type="button"
+                  className="ssc__signout"
+                  onClick={() => setProfileModalOpen(true)}
+                >
+                  Profile
+                </button>
+                {user.type === 'startup' && (
+                  <button
+                    type="button"
+                    className="ssc__signout"
+                    onClick={() => setStartupModalOpen(true)}
+                  >
+                    Startup
+                  </button>
+                )}
                 <button type="button" className="ssc__signout" onClick={handleLogout}>
                   Log out
                 </button>
@@ -885,9 +1094,7 @@ const SwissStartupConnect = () => {
                 <Sparkles size={18} />
                 <span>Trusted by Swiss startups & universities</span>
               </div>
-              <h1 className="ssc__hero-title">
-                Shape the next Swiss startup success story
-              </h1>
+              <h1 className="ssc__hero-title">Shape the next Swiss startup success story</h1>
               <p className="ssc__hero-lede">
                 Discover paid internships, part-time roles, and graduate opportunities with
                 founders who want you in the room from day one.
@@ -916,7 +1123,27 @@ const SwissStartupConnect = () => {
                 </div>
               )}
 
-              {renderSearchForm({ targetTab: 'jobs' })}
+              <form
+                className="ssc__search"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setActiveTab('jobs');
+                }}
+              >
+                <div className="ssc__search-field">
+                  <Search size={18} />
+                  <input
+                    type="text"
+                    placeholder="Search startup, role, or skill"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    aria-label="Search roles"
+                  />
+                </div>
+                <button type="submit" className="ssc__search-btn">
+                  Find matches
+                </button>
+              </form>
 
               <div className="ssc__stats">
                 {stats.map((stat) => (
@@ -955,7 +1182,7 @@ const SwissStartupConnect = () => {
                           key={filter.id}
                           type="button"
                           className={`ssc__chip ${selectedFilters.includes(filter.id) ? 'is-selected' : ''}`}
-                          onClick={() => toggleFilter(filter.id)}
+                          onClick={() => addFilter(filter.id)}
                         >
                           {filter.label}
                         </button>
@@ -974,41 +1201,99 @@ const SwissStartupConnect = () => {
               <div className="ssc__section-header">
                 <div>
                   <h2>Open opportunities</h2>
-                  <p>{activeTabDescription}</p>
+                  <p>
+                    Curated roles from Swiss startups that welcome student talent and emerging
+                    professionals.
+                  </p>
                 </div>
                 <span className="ssc__pill">{filteredJobs.length} roles</span>
               </div>
 
-              {activeTab === 'jobs' && renderSearchForm({ variant: 'inline' })}
-
-              {loading ? (
+              {jobsLoading ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((index) => (
-                    <div
-                      key={index}
-                      className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 animate-pulse"
-                    >
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-full mb-4"></div>
-                      <div className="flex space-x-2 mb-4">
-                        <div className="h-6 bg-gray-200 rounded w-16"></div>
-                        <div className="h-6 bg-gray-200 rounded w-20"></div>
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="h-8 bg-gray-200 rounded w-20"></div>
-                        <div className="h-8 bg-gray-200 rounded w-8"></div>
-                      </div>
-                    </div>
+                    <div key={index} className="ssc__job-skeleton" />
                   ))}
                 </div>
               ) : filteredJobs.length > 0 ? (
-                renderJobCards(filteredJobs)
+                <div className="ssc__grid">
+                  {filteredJobs.map((job) => {
+                    const isSaved = savedJobs.includes(job.id);
+                    const hasApplied = appliedJobs.includes(job.id);
+                    return (
+                      <article key={job.id} className="ssc__job-card">
+                        <div className="ssc__job-header">
+                          <div>
+                            <h3>{job.title}</h3>
+                            <p>{job.company_name}</p>
+                          </div>
+                          <button
+                            type="button"
+                            className={`ssc__save-btn ${isSaved ? 'is-active' : ''}`}
+                            onClick={() => toggleSavedJob(job.id)}
+                            aria-label={isSaved ? 'Remove from saved jobs' : 'Save job'}
+                          >
+                            <Heart size={18} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? 'currentColor' : 'none'} />
+                          </button>
+                        </div>
+
+                        <p className="ssc__job-summary">{job.description}</p>
+
+                        <div className="ssc__job-meta">
+                          <span>
+                            <MapPin size={16} />
+                            {job.location}
+                          </span>
+                          <span>
+                            <Clock size={16} />
+                            {job.employment_type} • {job.posted}
+                          </span>
+                          <span>
+                            <Users size={16} />
+                            {job.applicants} applicants
+                          </span>
+                        </div>
+
+                        <div className="ssc__job-tags">
+                          {job.tags?.map((tag) => (
+                            <span key={tag} className="ssc__tag">
+                              {tag}
+                            </span>
+                          ))}
+                          <span className="ssc__tag ssc__tag--soft">{job.stage || 'Seed'}</span>
+                          {job.motivational_letter_required && (
+                            <span className="ssc__tag ssc__tag--required">Motivational letter</span>
+                          )}
+                        </div>
+
+                        <div className="ssc__job-footer">
+                          <div className="ssc__salary">
+                            <span>{job.salary}</span>
+                            <small>+ {job.equity} equity</small>
+                          </div>
+                          <div className="ssc__job-actions">
+                            <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
+                              View role
+                            </button>
+                            <button
+                              type="button"
+                              className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
+                              onClick={() => openApplyModal(job)}
+                              disabled={hasApplied}
+                            >
+                              {hasApplied ? 'Applied' : 'Apply now'}
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
               ) : (
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
                   <h3>No matches yet</h3>
-                  <p>Try removing a filter or exploring roles in another Swiss city.</p>
+                  <p>Try removing a filter or exploring another Swiss canton.</p>
                 </div>
               )}
             </div>
@@ -1021,46 +1306,54 @@ const SwissStartupConnect = () => {
               <div className="ssc__section-header">
                 <div>
                   <h2>Featured startups</h2>
-                  <p>{activeTabDescription}</p>
+                  <p>Meet the founders building Switzerland’s next generation of companies.</p>
                 </div>
               </div>
 
-              {renderSearchForm({
-                variant: 'inline',
-                placeholder: 'Search startups, industries, or locations',
-              })}
-
-              {filteredCompanies.length > 0 ? (
+              {companiesLoading ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {[1, 2, 3, 4].map((index) => (
+                    <div key={index} className="ssc__job-skeleton" />
+                  ))}
+                </div>
+              ) : (
                 <div className="ssc__company-grid">
-                  {filteredCompanies.map((company) => (
+                  {companies.map((company) => (
                     <article key={company.id} className="ssc__company-card">
                       <div className="ssc__company-logo">
                         <Building2 size={20} />
                       </div>
                       <div className="ssc__company-content">
-                        <h3 className="ssc__company-name">{company.name}</h3>
+                        <div className="ssc__company-header">
+                          <h3 className="ssc__company-name">{company.name}</h3>
+                          {company.verification_status === 'verified' && (
+                            <span className="ssc__badge">
+                              <CheckCircle2 size={14} /> Verified
+                            </span>
+                          )}
+                        </div>
                         <p className="ssc__company-tagline">{company.tagline}</p>
                         <div className="ssc__company-meta">
                           <span>{company.location}</span>
                           <span>{company.industry}</span>
                           <span>{company.team}</span>
                         </div>
-                        <div className="ssc__company-stats">
-                          <span>{company.hires}</span>
-                          <span>{company.culture}</span>
+                        <p className="ssc__company-stats">{company.culture}</p>
+                        <div className="ssc__company-actions">
+                          <a className="ssc__outline-btn" href={company.website} target="_blank" rel="noreferrer">
+                            Visit website
+                          </a>
+                          <button
+                            type="button"
+                            className="ssc__ghost-btn"
+                            onClick={() => openReviewsModal(company)}
+                          >
+                            Reviews
+                          </button>
                         </div>
-                        <a className="ssc__outline-btn" href={company.website} target="_blank" rel="noreferrer">
-                          Visit website
-                        </a>
                       </div>
                     </article>
                   ))}
-                </div>
-              ) : (
-                <div className="ssc__empty-state">
-                  <Building2 size={40} />
-                  <h3>No startups found</h3>
-                  <p>Try adjusting your search or clear the filters.</p>
                 </div>
               )}
             </div>
@@ -1073,13 +1366,50 @@ const SwissStartupConnect = () => {
               <div className="ssc__section-header">
                 <div>
                   <h2>Saved roles</h2>
-                  <p>{activeTabDescription}</p>
+                  <p>Keep tabs on opportunities you want to revisit or apply to later.</p>
                 </div>
                 <span className="ssc__pill">{savedJobList.length} saved</span>
               </div>
 
               {savedJobList.length > 0 ? (
-                renderJobCards(savedJobList)
+                <div className="ssc__grid">
+                  {savedJobList.map((job) => (
+                    <article key={job.id} className="ssc__job-card">
+                      <div className="ssc__job-header">
+                        <div>
+                          <h3>{job.title}</h3>
+                          <p>{job.company_name}</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="ssc__save-btn is-active"
+                          onClick={() => toggleSavedJob(job.id)}
+                        >
+                          <Heart size={18} strokeWidth={0} fill="currentColor" />
+                        </button>
+                      </div>
+                      <p className="ssc__job-summary">{job.description}</p>
+                      <div className="ssc__job-footer">
+                        <div className="ssc__salary">
+                          <span>{job.salary}</span>
+                          <small>+ {job.equity} equity</small>
+                        </div>
+                        <div className="ssc__job-actions">
+                          <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
+                            View role
+                          </button>
+                          <button
+                            type="button"
+                            className="ssc__primary-btn"
+                            onClick={() => openApplyModal(job)}
+                          >
+                            Apply now
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               ) : (
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
@@ -1146,7 +1476,7 @@ const SwissStartupConnect = () => {
                       <div>
                         <h3>{resource.title}</h3>
                         <p>{resource.description}</p>
-                        {resource.action === 'external' && resource.href ? (
+                        {resource.action === 'external' ? (
                           <a href={resource.href} target="_blank" rel="noreferrer">
                             Visit official site
                           </a>
@@ -1154,7 +1484,7 @@ const SwissStartupConnect = () => {
                           <button
                             type="button"
                             className="ssc__link-button"
-                            onClick={() => resource.modalId && setResourceModal(resource.modalId)}
+                            onClick={() => setResourceModal(resource.modalId)}
                           >
                             View details
                           </button>
@@ -1170,10 +1500,7 @@ const SwissStartupConnect = () => {
               <div className="ssc__max ssc__cta-inner">
                 <div>
                   <h2>Ready to co-create the next Swiss success story?</h2>
-                  <p>
-                    Join a curated community of founders, operators, and students building across
-                    Switzerland.
-                  </p>
+                  <p>Join a curated community of founders, operators, and students building across Switzerland.</p>
                 </div>
                 <div className="ssc__cta-actions">
                   <button
@@ -1188,11 +1515,7 @@ const SwissStartupConnect = () => {
                     Create profile
                     <ArrowRight size={18} />
                   </button>
-                  <button
-                    type="button"
-                    className="ssc__ghost-btn"
-                    onClick={() => setActiveTab('companies')}
-                  >
+                  <button type="button" className="ssc__ghost-btn" onClick={() => setActiveTab('companies')}>
                     Explore startups
                   </button>
                 </div>
@@ -1227,7 +1550,10 @@ const SwissStartupConnect = () => {
             </button>
             <header className="ssc__modal-header">
               <h2>Median internship pay by canton</h2>
-              <p>Source: Swissuniversities internship barometer 2024 and public salary postings (Q1 2025).</p>
+              <p>
+                Source: swissuniversities internship barometer 2024 + public salary postings (January 2025).
+                Figures are midpoints for internships lasting 3–12 months.
+              </p>
             </header>
             <div className="ssc__modal-body">
               <div className="ssc__table-wrapper">
@@ -1235,7 +1561,7 @@ const SwissStartupConnect = () => {
                   <thead>
                     <tr>
                       <th>Canton</th>
-                      <th>Median monthly stipend</th>
+                      <th>Median stipend</th>
                       <th>What to expect</th>
                     </tr>
                   </thead>
@@ -1251,9 +1577,8 @@ const SwissStartupConnect = () => {
                 </table>
               </div>
               <p className="ssc__modal-footnote">
-                Figures represent the midpoint of paid internships of 3–12 months for students in business, engineering,
-                and design programmes. Packages may include public transport passes, meal stipends, or housing assistance.
-                Always confirm the current offer with the host company.
+                Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest
+                package with the startup before signing the agreement.
               </p>
             </div>
           </div>
@@ -1268,7 +1593,7 @@ const SwissStartupConnect = () => {
             </button>
             <header className="ssc__modal-header">
               <h2>Founder-ready CV templates</h2>
-              <p>Start with one of these high-feedback layouts, then tailor it to highlight your impact.</p>
+              <p>Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.</p>
             </header>
             <div className="ssc__modal-body">
               <ul className="ssc__link-list">
@@ -1289,9 +1614,103 @@ const SwissStartupConnect = () => {
                 ))}
               </ul>
               <p className="ssc__modal-footnote">
-                Pro tip: export as PDF with a filename like <code>firstname-lastname-cv.pdf</code> and keep a second
-                version in English plus the local language of the canton you target.
+                Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local
+                language of the canton you target (French, German, or Italian) to speed up interviews.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reviewsModal && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={closeReviewsModal}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>{reviewsModal.name} · Reviews</h2>
+              <p>Hear from verified team members about culture, learning pace, and hiring experience.</p>
+            </header>
+            <div className="ssc__modal-body">
+              {reviewsLoading ? (
+                <p>Loading reviews…</p>
+              ) : reviews.length > 0 ? (
+                <div className="ssc__reviews">
+                  {reviews.map((review) => (
+                    <article key={review.id} className="ssc__review-card">
+                      <div className="ssc__review-heading">
+                        <div className="ssc__review-avatar">
+                          {review.profiles?.avatar_url ? (
+                            <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
+                          ) : (
+                            <span>{review.profiles?.full_name?.charAt(0) || 'M'}</span>
+                          )}
+                        </div>
+                        <div>
+                          <strong>{review.title}</strong>
+                          <div className="ssc__review-meta">
+                            <span>{review.profiles?.full_name || 'Member'}</span>
+                            <span>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
+                              ))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p>{review.body}</p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p>No reviews yet. Be the first to share your experience.</p>
+              )}
+
+              {canReview ? (
+                <form className="ssc__form" onSubmit={submitReview}>
+                  <h3 className="ssc__modal-subtitle">Share your experience</h3>
+                  <label className="ssc__field">
+                    <span>Rating</span>
+                    <select
+                      value={reviewForm.rating}
+                      onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))}
+                    >
+                      {[5, 4, 3, 2, 1].map((rating) => (
+                        <option key={rating} value={rating}>
+                          {rating} ★
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="ssc__field">
+                    <span>Headline</span>
+                    <input
+                      type="text"
+                      value={reviewForm.title}
+                      onChange={(event) => setReviewForm((prev) => ({ ...prev, title: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label className="ssc__field">
+                    <span>What made the culture unique?</span>
+                    <textarea
+                      rows={4}
+                      value={reviewForm.body}
+                      onChange={(event) => setReviewForm((prev) => ({ ...prev, body: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <button type="submit" className="ssc__primary-btn">
+                    Submit review
+                  </button>
+                </form>
+              ) : (
+                <p className="ssc__modal-footnote">
+                  Only verified current or former team members can leave reviews. Ask your founder or admin to mark you as
+                  verified in the startup dashboard.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -1305,7 +1724,7 @@ const SwissStartupConnect = () => {
             </button>
             <header className="ssc__modal-header">
               <h2>{selectedJob.title}</h2>
-              <p>{selectedJob.company}</p>
+              <p>{selectedJob.company_name}</p>
               <div className="ssc__modal-meta">
                 <span>
                   <MapPin size={16} />
@@ -1313,7 +1732,7 @@ const SwissStartupConnect = () => {
                 </span>
                 <span>
                   <Clock size={16} />
-                  {selectedJob.type}
+                  {selectedJob.employment_type} • {selectedJob.posted}
                 </span>
                 <span>
                   <Users size={16} />
@@ -1327,7 +1746,7 @@ const SwissStartupConnect = () => {
               <div className="ssc__modal-section">
                 <h3>Requirements</h3>
                 <ul className="ssc__modal-list">
-                  {selectedJob.requirements.map((item) => (
+                  {selectedJob.requirements?.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
@@ -1336,17 +1755,17 @@ const SwissStartupConnect = () => {
               <div className="ssc__modal-section">
                 <h3>Benefits</h3>
                 <ul className="ssc__modal-list">
-                  {selectedJob.benefits.map((item) => (
+                  {selectedJob.benefits?.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>
             </div>
             <div className="ssc__modal-actions">
-              <button type="button" className="ssc__ghost-btn" onClick={() => handleToggleSave(selectedJob.id)}>
+              <button type="button" className="ssc__ghost-btn" onClick={() => toggleSavedJob(selectedJob.id)}>
                 {savedJobs.includes(selectedJob.id) ? 'Saved' : 'Save for later'}
               </button>
-              <button type="button" className="ssc__primary-btn" onClick={() => handleApply(selectedJob)}>
+              <button type="button" className="ssc__primary-btn" onClick={() => openApplyModal(selectedJob)}>
                 Apply now
               </button>
             </div>
@@ -1354,30 +1773,298 @@ const SwissStartupConnect = () => {
         </div>
       )}
 
+      {applicationModal && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={closeApplicationModal}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>Submit your application</h2>
+              <p>
+                {applicationModal.title} · {applicationModal.company_name}
+              </p>
+            </header>
+            <div className="ssc__modal-body">
+              <div className="ssc__application-summary">
+                <div className="ssc__summary-card">
+                  <h3>Your profile</h3>
+                  <ul>
+                    <li>
+                      <strong>Name:</strong> {profileForm.full_name || profile?.full_name || user?.name}
+                    </li>
+                    <li>
+                      <strong>University:</strong> {profileForm.university || 'Add this in your profile'}
+                    </li>
+                    <li>
+                      <strong>Programme:</strong> {profileForm.program || 'Add this in your profile'}
+                    </li>
+                  </ul>
+                </div>
+                <div className="ssc__summary-card">
+                  <h3>Shared documents</h3>
+                  <ul>
+                    <li>
+                      <strong>CV:</strong>{' '}
+                      {profileForm.cv_url ? (
+                        <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
+                          View uploaded CV
+                        </a>
+                      ) : (
+                        'Upload your CV in profile settings before applying'
+                      )}
+                    </li>
+                    <li>
+                      <strong>Profile photo:</strong>{' '}
+                      {profileForm.avatar_url ? 'Will be visible to the employer' : 'Upload a photo in profile settings'}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {applicationModal.motivational_letter_required && (
+                <label className="ssc__field">
+                  <span>Motivational letter (required)</span>
+                  <textarea
+                    rows={5}
+                    value={motivationalLetter}
+                    onChange={(event) => setMotivationalLetter(event.target.value)}
+                    placeholder="Explain why you are excited about this startup and role..."
+                  />
+                </label>
+              )}
+
+              <label className="ssc__checkbox">
+                <input
+                  type="checkbox"
+                  checked={acknowledgeShare}
+                  onChange={(event) => setAcknowledgeShare(event.target.checked)}
+                />
+                <span>{acknowledgeMessage}</span>
+              </label>
+
+              {applicationError && <p className="ssc__form-error">{applicationError}</p>}
+            </div>
+            <div className="ssc__modal-actions">
+              <button type="button" className="ssc__ghost-btn" onClick={closeApplicationModal}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="ssc__primary-btn"
+                onClick={submitApplication}
+                disabled={applicationSaving}
+              >
+                {applicationSaving ? 'Submitting…' : 'Confirm application'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {profileModalOpen && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>Update your profile</h2>
+              <p>Keep startups in the loop with your latest projects, studies, and documents.</p>
+            </header>
+            <form className="ssc__modal-body" onSubmit={handleProfileSubmit}>
+              <div className="ssc__profile-grid">
+                <label className="ssc__field">
+                  <span>Full name</span>
+                  <input
+                    type="text"
+                    value={profileForm.full_name}
+                    onChange={(event) => setProfileForm((prev) => ({ ...prev, full_name: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>University or school</span>
+                  <input
+                    type="text"
+                    value={profileForm.university}
+                    onChange={(event) => setProfileForm((prev) => ({ ...prev, university: event.target.value }))}
+                    placeholder="ETH Zürich, EPFL, HSG, ZHAW…"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Programme</span>
+                  <input
+                    type="text"
+                    value={profileForm.program}
+                    onChange={(event) => setProfileForm((prev) => ({ ...prev, program: event.target.value }))}
+                    placeholder="BSc Computer Science"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Experience highlights</span>
+                  <textarea
+                    rows={3}
+                    value={profileForm.experience}
+                    onChange={(event) => setProfileForm((prev) => ({ ...prev, experience: event.target.value }))}
+                    placeholder="Intern at AlpTech—built supply dashboards; Student project: Smart energy router…"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Short bio</span>
+                  <textarea
+                    rows={3}
+                    value={profileForm.bio}
+                    onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value }))}
+                    placeholder="Describe what you’re passionate about and the kind of team you thrive in."
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Portfolio or LinkedIn</span>
+                  <input
+                    type="url"
+                    value={profileForm.portfolio_url}
+                    onChange={(event) => setProfileForm((prev) => ({ ...prev, portfolio_url: event.target.value }))}
+                    placeholder="https://"
+                  />
+                </label>
+
+                <label className="ssc__field">
+                  <span>Upload profile photo</span>
+                  <input type="file" accept="image/*" onChange={handleAvatarUpload} />
+                  {profileForm.avatar_url && (
+                    <img className="ssc__avatar-preview" src={profileForm.avatar_url} alt="Profile avatar" />
+                  )}
+                </label>
+
+                <label className="ssc__field">
+                  <span>Upload CV (PDF)</span>
+                  <input type="file" accept="application/pdf" onChange={handleCvUpload} />
+                  {profileForm.cv_url && (
+                    <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
+                      View current CV
+                    </a>
+                  )}
+                </label>
+              </div>
+
+              <div className="ssc__modal-actions">
+                <button type="button" className="ssc__ghost-btn" onClick={() => setProfileModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="ssc__primary-btn" disabled={profileSaving}>
+                  {profileSaving ? 'Saving…' : 'Save profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {startupModalOpen && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={() => setStartupModalOpen(false)}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>Your startup profile</h2>
+              <p>Share official details so students know they’re speaking with a verified team.</p>
+            </header>
+            <form className="ssc__modal-body" onSubmit={handleStartupSubmit}>
+              <div className="ssc__profile-grid">
+                <label className="ssc__field">
+                  <span>Company name</span>
+                  <input
+                    type="text"
+                    value={startupForm.name}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, name: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Commercial register ID</span>
+                  <input
+                    type="text"
+                    value={startupForm.registry_number}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, registry_number: event.target.value }))}
+                    placeholder="CHE-123.456.789"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Website</span>
+                  <input
+                    type="url"
+                    value={startupForm.website}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, website: event.target.value }))}
+                    placeholder="https://"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Description</span>
+                  <textarea
+                    rows={4}
+                    value={startupForm.description}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, description: event.target.value }))}
+                    placeholder="Explain your product, traction, hiring focus, and what interns will learn."
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Upload logo</span>
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} />
+                  {startupForm.logo_url && (
+                    <img className="ssc__avatar-preview" src={startupForm.logo_url} alt="Startup logo" />
+                  )}
+                </label>
+                <div className="ssc__status-card">
+                  <strong>Verification status:</strong>{' '}
+                  <span className={`ssc__badge ${startupForm.verification_status}`}>
+                    {startupForm.verification_status}
+                  </span>
+                  {startupForm.verification_note && <p>{startupForm.verification_note}</p>}
+                  <p className="ssc__modal-footnote">
+                    Provide a registry ID and link to official documentation. Our team will review submissions weekly.
+                  </p>
+                </div>
+              </div>
+
+              <div className="ssc__modal-actions">
+                <button type="button" className="ssc__ghost-btn" onClick={() => setStartupModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="ssc__primary-btn" disabled={startupSaving}>
+                  {startupSaving ? 'Submitting…' : 'Save startup profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showLoginModal && (
         <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
           <div className="ssc__modal ssc__modal--auth">
-            <button type="button" className="ssc__modal-close" onClick={closeAuthModal}>
+            <button type="button" className="ssc__modal-close" onClick={() => setShowLoginModal(false)}>
               <X size={18} />
             </button>
             <h2>{isRegistering ? 'Create your profile' : 'Welcome back'}</h2>
             <p>
               {isRegistering
                 ? 'Tell us a little about yourself so we can surface the right matches.'
-                : 'Sign in with a demo account or your new profile details.'}
+                : 'Sign in to access your saved roles, applications, and profile.'}
             </p>
 
             {authError && <div className="ssc__alert">{authError}</div>}
 
             <form onSubmit={isRegistering ? handleRegister : handleLogin} className="ssc__form">
               {isRegistering && (
-                <div className="ssc__form-grid">
+                <>
                   <label className="ssc__field">
                     <span>Full name</span>
                     <input
                       type="text"
                       value={registerForm.name}
-                      onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })}
+                      onChange={(event) => setRegisterForm((prev) => ({ ...prev, name: event.target.value }))}
                       required
                     />
                   </label>
@@ -1385,13 +2072,13 @@ const SwissStartupConnect = () => {
                     <span>I am a</span>
                     <select
                       value={registerForm.type}
-                      onChange={(event) => setRegisterForm({ ...registerForm, type: event.target.value })}
+                      onChange={(event) => setRegisterForm((prev) => ({ ...prev, type: event.target.value }))}
                     >
                       <option value="student">Student</option>
                       <option value="startup">Startup</option>
                     </select>
                   </label>
-                </div>
+                </>
               )}
 
               <label className="ssc__field">
@@ -1401,8 +2088,8 @@ const SwissStartupConnect = () => {
                   value={isRegistering ? registerForm.email : loginForm.email}
                   onChange={(event) =>
                     isRegistering
-                      ? setRegisterForm({ ...registerForm, email: event.target.value })
-                      : setLoginForm({ ...loginForm, email: event.target.value })
+                      ? setRegisterForm((prev) => ({ ...prev, email: event.target.value }))
+                      : setLoginForm((prev) => ({ ...prev, email: event.target.value }))
                   }
                   required
                 />
@@ -1415,8 +2102,8 @@ const SwissStartupConnect = () => {
                   value={isRegistering ? registerForm.password : loginForm.password}
                   onChange={(event) =>
                     isRegistering
-                      ? setRegisterForm({ ...registerForm, password: event.target.value })
-                      : setLoginForm({ ...loginForm, password: event.target.value })
+                      ? setRegisterForm((prev) => ({ ...prev, password: event.target.value }))
+                      : setLoginForm((prev) => ({ ...prev, password: event.target.value }))
                   }
                   required
                 />
@@ -1439,10 +2126,11 @@ const SwissStartupConnect = () => {
                 {isRegistering ? 'Sign in instead' : 'Create a profile'}
               </button>
             </div>
-
           </div>
         </div>
       )}
+
+      {loadingSpinner && <div className="ssc__loading" aria-hidden="true" />}
     </div>
   );
 };
