@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookmarkPlus,
+  Briefcase,
   Building2,
   Clock,
   GraduationCap,
@@ -251,6 +252,8 @@ const cvWritingTips = [
   'Stick to one page until you have 3+ years experience; save the detail for the interview.',
 ];
 
+const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
+
 const quickFilters = [
   { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zurich') },
   { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('geneva') },
@@ -354,6 +357,10 @@ const SwissStartupConnect = () => {
   const [motivationalLetter, setMotivationalLetter] = useState('');
   const [applicationSaving, setApplicationSaving] = useState(false);
   const [applicationError, setApplicationError] = useState('');
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
+  const [applicationsVersion, setApplicationsVersion] = useState(0);
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
 
@@ -605,6 +612,41 @@ const SwissStartupConnect = () => {
 
     fetchCompanies();
   }, []);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      if (!user || user.type !== 'startup') {
+        setApplications([]);
+        return;
+      }
+
+      setApplicationsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select(
+            `id, status, motivational_letter, created_at,
+             profiles ( id, full_name, university, program, avatar_url, cv_url ),
+             jobs ( id, title, company_name )`
+          )
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setApplications(data);
+        } else if (error) {
+          console.error('Applications load error', error);
+          setApplications([]);
+        }
+      } catch (error) {
+        console.error('Applications load error', error);
+        setApplications([]);
+      } finally {
+        setApplicationsLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, [user, applicationsVersion]);
 
   const addFilter = (filterId) => {
     setActiveTab('jobs');
@@ -919,6 +961,28 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const updateApplicationStatus = async (applicationId, nextStatus) => {
+    setApplicationStatusUpdating(applicationId);
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .update({ status: nextStatus })
+        .eq('id', applicationId);
+
+      if (error) {
+        setFeedback({ type: 'error', message: error.message });
+        return;
+      }
+
+      setFeedback({ type: 'success', message: `Application marked as ${nextStatus}.` });
+      setApplicationsVersion((prev) => prev + 1);
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setApplicationStatusUpdating(null);
+    }
+  };
+
   const openReviewsModal = async (company) => {
     setReviewsModal(company);
     setReviewsLoading(true);
@@ -994,6 +1058,15 @@ const SwissStartupConnect = () => {
 
   const loadingSpinner = jobsLoading || companiesLoading || authLoading;
 
+  const navTabs = useMemo(() => {
+    const baseTabs = ['general', 'jobs', 'companies'];
+    if (user?.type === 'startup') {
+      baseTabs.push('applications');
+    }
+    baseTabs.push('saved');
+    return baseTabs;
+  }, [user?.type]);
+
   return (
     <div className="ssc">
       <header className="ssc__header">
@@ -1007,11 +1080,12 @@ const SwissStartupConnect = () => {
           </div>
 
           <nav className="ssc__nav">
-            {['general', 'jobs', 'companies', 'saved'].map((tab) => {
+            {navTabs.map((tab) => {
               const labels = {
                 general: 'General',
                 jobs: 'Opportunities',
                 companies: 'Startups',
+                applications: 'Applicants',
                 saved: `Saved (${savedJobs.length})`,
               };
               return (
@@ -1354,6 +1428,100 @@ const SwissStartupConnect = () => {
                       </div>
                     </article>
                   ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'applications' && user?.type === 'startup' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>Applicants</h2>
+                  <p>Track progress, review motivational letters, and manage your hiring pipeline.</p>
+                </div>
+                <span className="ssc__pill">{applications.length} applicants</span>
+              </div>
+
+              {applicationsLoading ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {[1, 2, 3, 4].map((index) => (
+                    <div key={index} className="ssc__job-skeleton" />
+                  ))}
+                </div>
+              ) : applications.length > 0 ? (
+                <div className="ssc__applications-grid">
+                  {applications.map((application) => {
+                    const candidate = application.profiles;
+                    const job = application.jobs;
+                    return (
+                      <article key={application.id} className="ssc__application-card">
+                        <header className="ssc__application-header">
+                          <div>
+                            <h3>{job?.title}</h3>
+                            <p>{job?.company_name}</p>
+                          </div>
+                          <div className="ssc__status-select">
+                            <label>
+                              Status
+                              <select
+                                value={application.status}
+                                onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
+                                disabled={applicationStatusUpdating === application.id}
+                              >
+                                {applicationStatuses.map((status) => (
+                                  <option key={status} value={status}>
+                                    {status.replace('_', ' ')}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        </header>
+
+                        <div className="ssc__candidate">
+                          <div className="ssc__avatar-medium">
+                            {candidate?.avatar_url ? (
+                              <img src={candidate.avatar_url} alt={candidate.full_name || 'Candidate'} />
+                            ) : (
+                              <span>{candidate?.full_name?.charAt(0) || 'C'}</span>
+                            )}
+                          </div>
+                          <div>
+                            <strong>{candidate?.full_name || 'Candidate'}</strong>
+                            <ul>
+                              <li>{candidate?.university || 'University not provided'}</li>
+                              <li>{candidate?.program || 'Program not provided'}</li>
+                            </ul>
+                            {candidate?.cv_url && (
+                              <a href={candidate.cv_url} target="_blank" rel="noreferrer">
+                                View CV
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {application.motivational_letter && (
+                          <details className="ssc__letter">
+                            <summary>Motivational letter</summary>
+                            <p>{application.motivational_letter}</p>
+                          </details>
+                        )}
+
+                        <footer className="ssc__application-footer">
+                          <span>Applied {new Date(application.created_at).toLocaleDateString()}</span>
+                        </footer>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Briefcase size={40} />
+                  <h3>No applicants yet</h3>
+                  <p>Share your job link or post a new role to start receiving applications.</p>
                 </div>
               )}
             </div>

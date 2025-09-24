@@ -1143,6 +1143,108 @@
   fill: currentColor;
 }
 
+.ssc__applications-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.ssc__application-card {
+  border: 1px solid var(--ssc-border);
+  border-radius: 18px;
+  padding: 1.4rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.ssc__application-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ssc__status-select label {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--ssc-muted);
+  gap: 0.35rem;
+}
+
+.ssc__status-select select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--ssc-border);
+  font-size: 0.9rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__status-select select:focus {
+  outline: none;
+  border-color: var(--ssc-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.ssc__candidate {
+  display: flex;
+  gap: 1rem;
+}
+
+.ssc__avatar-medium {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--ssc-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.ssc__avatar-medium img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ssc__candidate ul {
+  margin: 0.4rem 0;
+  padding-left: 1rem;
+  color: var(--ssc-muted);
+  font-size: 0.9rem;
+}
+
+.ssc__letter {
+  background: rgba(15, 23, 42, 0.04);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+}
+
+.ssc__letter summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ssc-ink);
+}
+
+.ssc__letter p {
+  margin: 0.75rem 0 0;
+  color: var(--ssc-muted);
+}
+
+.ssc__application-footer {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--ssc-muted);
+  font-size: 0.85rem;
+}
+
 .ssc__loading {
   position: fixed;
   inset: 0;
