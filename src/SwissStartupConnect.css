@@ -1143,6 +1143,61 @@
   fill: currentColor;
 }
 
+.ssc__cv-options {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ssc__radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ssc__upload-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ssc__upload-inline input[type='file'] {
+  border: 1px dashed var(--ssc-border);
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.ssc__notice {
+  margin: 1rem auto 0;
+  max-width: 900px;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--ssc-ink);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ssc__notice button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  background: linear-gradient(135deg, var(--ssc-primary), var(--ssc-accent));
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ssc__notice button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .ssc__applications-grid {
   display: grid;
   gap: 1.5rem;

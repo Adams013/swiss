@@ -317,6 +317,7 @@ const SwissStartupConnect = () => {
     return stored ? JSON.parse(stored) : [];
   });
   const [authLoading, setAuthLoading] = useState(true);
+  const [emailVerified, setEmailVerified] = useState(true);
 
   const [profile, setProfile] = useState(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -357,10 +358,14 @@ const SwissStartupConnect = () => {
   const [motivationalLetter, setMotivationalLetter] = useState('');
   const [applicationSaving, setApplicationSaving] = useState(false);
   const [applicationError, setApplicationError] = useState('');
+  const [useExistingCv, setUseExistingCv] = useState(true);
+  const [applicationCvUrl, setApplicationCvUrl] = useState('');
+  const [applicationCvName, setApplicationCvName] = useState('');
   const [applications, setApplications] = useState([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
   const [applicationsVersion, setApplicationsVersion] = useState(0);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
 
@@ -378,6 +383,7 @@ const SwissStartupConnect = () => {
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
       setUserType(mapped?.type ?? 'student');
+      setEmailVerified(!!session?.user?.email_confirmed_at);
       setAuthLoading(false);
     };
 
@@ -389,6 +395,7 @@ const SwissStartupConnect = () => {
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
       setUserType(mapped?.type ?? 'student');
+      setEmailVerified(!!session?.user?.email_confirmed_at);
     });
 
     return () => subscription.unsubscribe();
@@ -622,14 +629,20 @@ const SwissStartupConnect = () => {
 
       setApplicationsLoading(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('job_applications')
           .select(
-            `id, status, motivational_letter, created_at,
+            `id, status, motivational_letter, created_at, cv_override_url,
              profiles ( id, full_name, university, program, avatar_url, cv_url ),
-             jobs ( id, title, company_name )`
+             jobs ( id, title, company_name, startup_id )`
           )
           .order('created_at', { ascending: false });
+
+        if (startupProfile?.id) {
+          query = query.eq('jobs.startup_id', startupProfile.id);
+        }
+
+        const { data, error } = await query;
 
         if (!error && data) {
           setApplications(data);
@@ -646,7 +659,7 @@ const SwissStartupConnect = () => {
     };
 
     fetchApplications();
-  }, [user, applicationsVersion]);
+  }, [user, startupProfile?.id, applicationsVersion]);
 
   const addFilter = (filterId) => {
     setActiveTab('jobs');
@@ -704,16 +717,28 @@ const SwissStartupConnect = () => {
       return;
     }
 
+    if (!emailVerified) {
+      setFeedback({ type: 'info', message: 'Please verify your email address before applying.' });
+      return;
+    }
+
     setApplicationModal(job);
     setAcknowledgeShare(false);
     setMotivationalLetter('');
     setApplicationError('');
+    const hasProfileCv = !!profileForm.cv_url;
+    setUseExistingCv(hasProfileCv);
+    setApplicationCvUrl('');
+    setApplicationCvName('');
   };
 
   const closeApplicationModal = () => {
     setApplicationModal(null);
     setMotivationalLetter('');
     setApplicationError('');
+    setUseExistingCv(!!profileForm.cv_url);
+    setApplicationCvUrl('');
+    setApplicationCvName('');
   };
 
   const uploadFile = useCallback(
@@ -850,6 +875,43 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handleApplicationCvUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const publicUrl = await uploadFile('cvs', file);
+      setApplicationCvUrl(publicUrl);
+      setApplicationCvName(file.name);
+      setUseExistingCv(false);
+    } catch (error) {
+      setApplicationError(`CV upload failed: ${error.message}`);
+    }
+  };
+
+  const resendVerificationEmail = async () => {
+    if (!user?.email) return;
+    setResendingEmail(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+      });
+
+      if (error) {
+        setFeedback({ type: 'error', message: error.message });
+      } else {
+        setFeedback({
+          type: 'success',
+          message: 'Verification email sent. Check your inbox and spam folder.',
+        });
+      }
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   const handleLogin = async (event) => {
     event.preventDefault();
     setAuthError('');
@@ -866,6 +928,13 @@ const SwissStartupConnect = () => {
         const mapped = mapSupabaseUser(data.user);
         setUser(mapped);
         setUserType(mapped.type);
+        setEmailVerified(!!data.user.email_confirmed_at);
+        if (!data.user.email_confirmed_at) {
+          setFeedback({
+            type: 'info',
+            message: 'Check your inbox and confirm your email to unlock all features.',
+          });
+        }
         setFeedback({ type: 'success', message: `Welcome back, ${mapped.name}!` });
       }
       setLoginForm({ email: '', password: '' });
@@ -902,6 +971,7 @@ const SwissStartupConnect = () => {
         const mapped = mapSupabaseUser(data.user);
         setUser(mapped);
         setUserType(mapped.type);
+        setEmailVerified(!!data.user.email_confirmed_at);
         setFeedback({ type: 'success', message: 'Profile created. Let’s find your first match.' });
         setShowLoginModal(false);
       } else {
@@ -937,12 +1007,21 @@ const SwissStartupConnect = () => {
     setApplicationError('');
 
     try {
+      const selectedCvUrl = useExistingCv ? profileForm.cv_url : applicationCvUrl;
+
+      if (!selectedCvUrl) {
+        setApplicationError('Upload your CV or select the one saved in your profile before applying.');
+        setApplicationSaving(false);
+        return;
+      }
+
       const payload = {
         job_id: applicationModal.id,
         profile_id: profile?.id,
         motivational_letter: motivationalLetter.trim(),
         status: 'submitted',
         acknowledged: true,
+        cv_override_url: useExistingCv ? null : selectedCvUrl,
       };
 
       const { error } = await supabase.from('job_applications').insert(payload);
@@ -1161,6 +1240,18 @@ const SwissStartupConnect = () => {
       </header>
 
       <main>
+        {user && !emailVerified && (
+          <div className="ssc__notice">
+            <p>
+              Please confirm your email address to unlock all features. Once confirmed, refresh this page and you can
+              apply to roles.
+            </p>
+            <button type="button" onClick={resendVerificationEmail} disabled={resendingEmail}>
+              {resendingEmail ? 'Sending…' : 'Resend verification email'}
+            </button>
+          </div>
+        )}
+
         {activeTab === 'general' && (
           <section className="ssc__hero">
             <div className="ssc__max">
@@ -1453,11 +1544,12 @@ const SwissStartupConnect = () => {
                 </div>
               ) : applications.length > 0 ? (
                 <div className="ssc__applications-grid">
-                  {applications.map((application) => {
-                    const candidate = application.profiles;
-                    const job = application.jobs;
-                    return (
-                      <article key={application.id} className="ssc__application-card">
+                    {applications.map((application) => {
+                      const candidate = application.profiles;
+                      const job = application.jobs;
+                      const cvLink = application.cv_override_url || candidate?.cv_url;
+                      return (
+                        <article key={application.id} className="ssc__application-card">
                         <header className="ssc__application-header">
                           <div>
                             <h3>{job?.title}</h3>
@@ -1495,10 +1587,12 @@ const SwissStartupConnect = () => {
                               <li>{candidate?.university || 'University not provided'}</li>
                               <li>{candidate?.program || 'Program not provided'}</li>
                             </ul>
-                            {candidate?.cv_url && (
-                              <a href={candidate.cv_url} target="_blank" rel="noreferrer">
+                            {cvLink ? (
+                              <a href={cvLink} target="_blank" rel="noreferrer">
                                 View CV
                               </a>
+                            ) : (
+                              <span>No CV provided</span>
                             )}
                           </div>
                         </div>
@@ -1976,10 +2070,10 @@ const SwissStartupConnect = () => {
                       <strong>CV:</strong>{' '}
                       {profileForm.cv_url ? (
                         <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
-                          View uploaded CV
+                          View profile CV
                         </a>
                       ) : (
-                        'Upload your CV in profile settings before applying'
+                        'No CV stored in profile yet'
                       )}
                     </li>
                     <li>
@@ -1987,20 +2081,52 @@ const SwissStartupConnect = () => {
                       {profileForm.avatar_url ? 'Will be visible to the employer' : 'Upload a photo in profile settings'}
                     </li>
                   </ul>
+                  <div className="ssc__cv-options">
+                    {profileForm.cv_url && (
+                      <label className="ssc__radio">
+                        <input
+                          type="radio"
+                          name="cv-option"
+                          checked={useExistingCv}
+                          onChange={() => setUseExistingCv(true)}
+                        />
+                        <span>Use profile CV</span>
+                      </label>
+                    )}
+                    <label className="ssc__radio">
+                      <input
+                        type="radio"
+                        name="cv-option"
+                        checked={!useExistingCv || !profileForm.cv_url}
+                        onChange={() => setUseExistingCv(false)}
+                      />
+                      <span>Upload a CV for this application</span>
+                    </label>
+                    {!useExistingCv || !profileForm.cv_url ? (
+                      <div className="ssc__upload-inline">
+                        <input type="file" accept="application/pdf" onChange={handleApplicationCvUpload} />
+                        {applicationCvName && <small>{applicationCvName}</small>}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
-              {applicationModal.motivational_letter_required && (
-                <label className="ssc__field">
-                  <span>Motivational letter (required)</span>
-                  <textarea
-                    rows={5}
-                    value={motivationalLetter}
-                    onChange={(event) => setMotivationalLetter(event.target.value)}
-                    placeholder="Explain why you are excited about this startup and role..."
-                  />
-                </label>
-              )}
+              <label className="ssc__field">
+                <span>
+                  Motivational letter {applicationModal.motivational_letter_required ? '(required)' : '(optional)'}
+                </span>
+                <textarea
+                  rows={5}
+                  value={motivationalLetter}
+                  onChange={(event) => setMotivationalLetter(event.target.value)}
+                  placeholder={
+                    applicationModal.motivational_letter_required
+                      ? 'Explain why you are excited about this startup and role...'
+                      : 'Add extra context (optional) if you want to stand out...'
+                  }
+                />
+              </label>
 
               <label className="ssc__checkbox">
                 <input
