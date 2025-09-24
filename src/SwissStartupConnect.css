@@ -132,6 +132,14 @@
   transform: translateY(-12px);
 }
 
+.ssc__auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .ssc__signin {
   border: 1px solid var(--ssc-border);
   background: #fff;
@@ -248,7 +256,7 @@
   position: absolute;
   top: calc(100% + 0.6rem);
   right: 0;
-  width: min(220px, 80vw);
+  width: min(240px, 80vw);
   background: #fff;
   border-radius: 16px;
   border: 1px solid var(--ssc-border);
@@ -731,6 +739,13 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.ssc__job-note {
+  font-size: 0.8rem;
+  color: var(--ssc-muted);
+  font-weight: 600;
 }
 
 .ssc__ghost-btn {
@@ -1394,6 +1409,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.ssc__user-menu-role {
+  display: block;
+  text-transform: capitalize;
+  font-size: 0.78rem;
+  color: var(--ssc-muted);
 }
 
 .ssc__candidate ul {

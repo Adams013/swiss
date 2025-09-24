@@ -1480,21 +1480,32 @@ const SwissStartupConnect = () => {
           </nav>
 
           <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
-            {!user && (
-              <button
-                type="button"
-                className="ssc__signin"
-                onClick={() => {
-                  setIsRegistering(false);
-                  setShowLoginModal(true);
-                  setAuthError('');
-                }}
-              >
-                Sign in
-              </button>
-            )}
-
-            {user ? (
+            {!user ? (
+              <div className="ssc__auth-buttons">
+                <button
+                  type="button"
+                  className="ssc__cta-btn"
+                  onClick={() => {
+                    setIsRegistering(true);
+                    setShowLoginModal(true);
+                    setAuthError('');
+                  }}
+                >
+                  Join us
+                </button>
+                <button
+                  type="button"
+                  className="ssc__signin"
+                  onClick={() => {
+                    setIsRegistering(false);
+                    setShowLoginModal(true);
+                    setAuthError('');
+                  }}
+                >
+                  Sign in
+                </button>
+              </div>
+            ) : (
               <div className="ssc__user-chip">
                 <button
                   type="button"
@@ -1511,10 +1522,10 @@ const SwissStartupConnect = () => {
                 {showUserMenu && (
                   <div className="ssc__user-menu">
                     <header className="ssc__user-menu-header">
-                      <div className="ssc__avatar-small">{user.name.charAt(0)}</div>
+                      <div className="ssc__avatar-medium">{user.name.charAt(0)}</div>
                       <div>
                         <strong>{user.name}</strong>
-                        <span>{user.email}</span>
+                        <span className="ssc__user-menu-role">{user.type}</span>
                       </div>
                     </header>
                     <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
@@ -1551,18 +1562,6 @@ const SwissStartupConnect = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <button
-                type="button"
-                className="ssc__cta-btn"
-                onClick={() => {
-                  setIsRegistering(true);
-                  setShowLoginModal(true);
-                  setAuthError('');
-                }}
-              >
-                Join the network
-              </button>
             )}
           </div>
         </div>
@@ -1769,14 +1768,18 @@ const SwissStartupConnect = () => {
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
                               View role
                             </button>
-                            <button
-                              type="button"
-                              className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
-                              onClick={() => openApplyModal(job)}
-                              disabled={hasApplied}
-                            >
-                              {hasApplied ? 'Applied' : 'Apply now'}
-                            </button>
+                            {isStudent ? (
+                              <button
+                                type="button"
+                                className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
+                                onClick={() => openApplyModal(job)}
+                                disabled={hasApplied}
+                              >
+                                {hasApplied ? 'Applied' : 'Apply now'}
+                              </button>
+                            ) : (
+                              <span className="ssc__job-note">Student applicants only</span>
+                            )}
                           </div>
                         </div>
                       </article>
@@ -1985,10 +1988,11 @@ const SwissStartupConnect = () => {
                           <span>{job.salary}</span>
                           <small>+ {job.equity} equity</small>
                         </div>
-                        <div className="ssc__job-actions">
-                          <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                            View role
-                          </button>
+                      <div className="ssc__job-actions">
+                        <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
+                          View role
+                        </button>
+                        {isStudent ? (
                           <button
                             type="button"
                             className="ssc__primary-btn"
@@ -1996,10 +2000,13 @@ const SwissStartupConnect = () => {
                           >
                             Apply now
                           </button>
-                        </div>
+                        ) : (
+                          <span className="ssc__job-note">Student applicants only</span>
+                        )}
                       </div>
-                    </article>
-                  ))}
+                    </div>
+                  </article>
+                ))}
                 </div>
               ) : (
                 <div className="ssc__empty-state">
