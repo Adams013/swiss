@@ -132,6 +132,10 @@
   padding: 0.55rem 1.25rem;
   font-weight: 600;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .ssc__signin:hover {
