@@ -4,6 +4,7 @@ import {
   BookmarkPlus,
   Briefcase,
   Building2,
+  ChevronDown,
   Clock,
   GraduationCap,
   Heart,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
+import { useRef } from 'react';
 
 const mockJobs = [
   {
@@ -378,6 +380,9 @@ const SwissStartupConnect = () => {
   const [securityConfirmPassword, setSecurityConfirmPassword] = useState('');
   const [securitySaving, setSecuritySaving] = useState(false);
   const [securityError, setSecurityError] = useState('');
+  const [securityEmail, setSecurityEmail] = useState('');
+  const [securityEmailSaving, setSecurityEmailSaving] = useState(false);
+  const [securityEmailMessage, setSecurityEmailMessage] = useState('');
 
   const [registerConfirm, setRegisterConfirm] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -440,6 +445,31 @@ const SwissStartupConnect = () => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user?.email) {
+      setSecurityEmail(user.email);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (actionsRef.current && !actionsRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setCompactHeader(window.scrollY > 140);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -795,6 +825,12 @@ const SwissStartupConnect = () => {
     setSecurityNewPassword('');
     setSecurityConfirmPassword('');
     setSecurityError('');
+    setSecurityEmail(user?.email ?? '');
+    setSecurityEmailMessage('');
+    setSecurityEmailSaving(false);
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setShowNewConfirm(false);
   };
 
   const uploadFile = useCallback(
@@ -1291,6 +1327,35 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handleSecurityEmailChange = async (event) => {
+    event.preventDefault();
+    setSecurityEmailMessage('');
+
+    const nextEmail = securityEmail.trim();
+    if (!nextEmail) {
+      setSecurityEmailMessage('Enter a valid email address.');
+      return;
+    }
+    if (nextEmail === user?.email) {
+      setSecurityEmailMessage('This is already your current email.');
+      return;
+    }
+
+    setSecurityEmailSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: nextEmail });
+      if (error) {
+        setSecurityEmailMessage(error.message);
+      } else {
+        setSecurityEmailMessage('Check your new inbox to confirm the change.');
+      }
+    } catch (error) {
+      setSecurityEmailMessage(error.message);
+    } finally {
+      setSecurityEmailSaving(false);
+    }
+  };
+
   const openReviewsModal = async (company) => {
     setReviewsModal(company);
     setReviewsLoading(true);
@@ -1376,6 +1441,9 @@ const SwissStartupConnect = () => {
   }, [user?.type]);
 
   const isStudent = userType === 'student';
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [compactHeader, setCompactHeader] = useState(false);
+  const actionsRef = useRef(null);
 
   return (
     <div className="ssc">
@@ -1411,7 +1479,7 @@ const SwissStartupConnect = () => {
             })}
           </nav>
 
-          <div className="ssc__actions">
+          <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
             {!user && (
               <button
                 type="button"
@@ -1428,48 +1496,60 @@ const SwissStartupConnect = () => {
 
             {user ? (
               <div className="ssc__user-chip">
-                <div className="ssc__avatar-small">{user.name.charAt(0)}</div>
-                <div className="ssc__user-meta">
-                  <span className="ssc__user-name">{user.name}</span>
-                  <span className="ssc__user-role">{user.type}</span>
-                </div>
-                <div className="ssc__user-actions">
-                  <button
-                    type="button"
-                    className="ssc__signout"
-                    onClick={() => setProfileModalOpen(true)}
-                  >
-                    Profile
-                  </button>
-                  <button
-                    type="button"
-                    className="ssc__signout"
-                    onClick={() => setSecurityModalOpen(true)}
-                  >
-                    Security
-                  </button>
-                  {user.type === 'startup' && (
-                    <>
-                      <button
-                        type="button"
-                        className="ssc__signout"
-                        onClick={() => setStartupModalOpen(true)}
-                      >
-                        Company
-                      </button>
-                      <button
-                        type="button"
-                        className="ssc__signout"
-                        onClick={() => setPostJobModalOpen(true)}
-                      >
-                        Post vacancy
-                      </button>
-                    </>
-                  )}
-                  <button type="button" className="ssc__signout" onClick={handleLogout}>
-                    Log out
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="ssc__user-menu-toggle"
+                  onClick={() => setShowUserMenu((prev) => !prev)}
+                >
+                  <div className="ssc__avatar-small">{user.name.charAt(0)}</div>
+                  <div className="ssc__user-meta">
+                    <span className="ssc__user-name">{user.name}</span>
+                    <span className="ssc__user-role">{user.type}</span>
+                  </div>
+                  <ChevronDown className={`ssc__caret ${showUserMenu ? 'is-open' : ''}`} size={16} />
+                </button>
+                {showUserMenu && (
+                  <div className="ssc__user-menu">
+                    <header className="ssc__user-menu-header">
+                      <div className="ssc__avatar-small">{user.name.charAt(0)}</div>
+                      <div>
+                        <strong>{user.name}</strong>
+                        <span>{user.email}</span>
+                      </div>
+                    </header>
+                    <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
+                      Profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSecurityEmail(user.email || '');
+                        setSecurityEmailMessage('');
+                        setSecurityEmailSaving(false);
+                        setSecurityModalOpen(true);
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      Privacy & security
+                    </button>
+                    {user.type === 'startup' && (
+                      <>
+                        <button type="button" onClick={() => { setStartupModalOpen(true); setShowUserMenu(false); }}>
+                          Company profile
+                        </button>
+                        <button type="button" onClick={() => { setPostJobModalOpen(true); setShowUserMenu(false); }}>
+                          Post vacancy
+                        </button>
+                        <button type="button" onClick={() => { setActiveTab('applications'); setShowUserMenu(false); }}>
+                          View applicants
+                        </button>
+                      </>
+                    )}
+                    <button type="button" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
+                      Log out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button
@@ -2940,34 +3020,24 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <h2>Privacy & security</h2>
-            <p>Your email and shared data are listed below. Update your password at any time for extra safety.</p>
+            <p>Keep your contact email up to date and rotate your password regularly for extra safety.</p>
 
-            <div className="ssc__security-summary">
-              <ul>
-                <li>
-                  <strong>Email:</strong> {user?.email}
-                </li>
-                {isStudent ? (
-                  <>
-                    <li>
-                      <strong>Shared CV:</strong> {profileForm.cv_url ? 'Available to employers' : 'Not uploaded yet'}
-                    </li>
-                    <li>
-                      <strong>Shared profile fields:</strong> full name, university, programme, experience, bio
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li>
-                      <strong>Shared profile fields:</strong> full name, school (optional), skills/hobbies, startup role
-                    </li>
-                    <li>
-                      <strong>Company data:</strong> registry details, website, job listings
-                    </li>
-                  </>
-                )}
-              </ul>
-            </div>
+            <form className="ssc__form" onSubmit={handleSecurityEmailChange}>
+              <h3 className="ssc__modal-subtitle">Change email</h3>
+              <label className="ssc__field">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={securityEmail}
+                  onChange={(event) => setSecurityEmail(event.target.value)}
+                  required
+                />
+              </label>
+              {securityEmailMessage && <div className="ssc__info">{securityEmailMessage}</div>}
+              <button type="submit" className="ssc__primary-btn ssc__primary-btn--full" disabled={securityEmailSaving}>
+                {securityEmailSaving ? 'Saving…' : 'Save email'}
+              </button>
+            </form>
 
             <form className="ssc__form" onSubmit={handleSecurityPasswordChange}>
               <h3 className="ssc__modal-subtitle">Change password</h3>
