@@ -901,6 +901,19 @@
   font-weight: 600;
 }
 
+.ssc__link-button {
+  border: none;
+  background: none;
+  color: var(--ssc-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ssc__link-button:hover {
+  text-decoration: underline;
+}
+
 .ssc__cta {
   padding: 4rem 0;
 }
@@ -993,6 +1006,10 @@
   box-shadow: 0 32px 64px rgba(15, 23, 42, 0.3);
 }
 
+.ssc__modal--wide {
+  width: min(780px, 100%);
+}
+
 .ssc__modal--auth {
   width: min(520px, 100%);
 }
@@ -1052,6 +1069,73 @@
   gap: 1.6rem;
   color: var(--ssc-muted);
   line-height: 1.6;
+}
+
+.ssc__table-wrapper {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid var(--ssc-border);
+}
+
+.ssc__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.ssc__table th,
+.ssc__table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ssc__table thead {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--ssc-primary);
+  font-weight: 600;
+}
+
+.ssc__table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.ssc__link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ssc__link-list li a {
+  font-weight: 600;
+  color: var(--ssc-primary);
+}
+
+.ssc__link-list li span {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.ssc__bullet-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ssc__modal-subtitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__modal-footnote {
+  font-size: 0.85rem;
+  color: var(--ssc-muted);
 }
 
 .ssc__modal-section h3 {

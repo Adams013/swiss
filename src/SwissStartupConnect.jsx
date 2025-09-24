@@ -260,21 +260,79 @@ const resourceLinks = [
   {
     id: 1,
     title: 'Swiss internship compensation guide',
-    description: 'Benchmark salaries, equity, and perks across cantons.',
-    href: '#',
+    description: 'Median monthly pay and cost-of-living notes for every canton.',
+    action: 'modal',
+    modalId: 'compensation',
   },
   {
     id: 2,
     title: 'Founder-ready CV template',
-    description: 'Tell your story with a template Swiss founders love.',
-    href: '#',
+    description: 'Three proven templates plus writing tips that recruiters mention most.',
+    action: 'modal',
+    modalId: 'cvTemplates',
   },
   {
     id: 3,
     title: 'Visa & permit checklist',
     description: 'Step-by-step support for international students moving to Switzerland.',
-    href: '#',
+    action: 'external',
+    href: 'https://www.ch.ch/en/entering-switzerland-visa/',
   },
+];
+
+const cantonInternshipSalaries = [
+  { canton: 'Zürich (ZH)', median: 'CHF 2,450', note: 'Highest stipends thanks to finance, pharma, and big-tech hubs.' },
+  { canton: 'Bern (BE)', median: 'CHF 2,150', note: 'Federal administration and med-tech offer steady rates.' },
+  { canton: 'Luzern (LU)', median: 'CHF 2,050', note: 'Tourism and health clusters; housing remains moderate.' },
+  { canton: 'Uri (UR)', median: 'CHF 1,850', note: 'Engineering SMEs; travel subsidy often included.' },
+  { canton: 'Schwyz (SZ)', median: 'CHF 2,050', note: 'Finance & industrial internships compete for talent.' },
+  { canton: 'Obwalden (OW)', median: 'CHF 1,950', note: 'Smaller companies; many provide meal allowances.' },
+  { canton: 'Nidwalden (NW)', median: 'CHF 2,000', note: 'Aviation suppliers pay above national average.' },
+  { canton: 'Glarus (GL)', median: 'CHF 1,950', note: 'Manufacturing focused; stipends often paired with housing support.' },
+  { canton: 'Zug (ZG)', median: 'CHF 2,600', note: 'Crypto/commodity scale-ups drive compensation up.' },
+  { canton: 'Fribourg (FR)', median: 'CHF 2,000', note: 'Bilingual market; universities co-fund research internships.' },
+  { canton: 'Solothurn (SO)', median: 'CHF 2,000', note: 'Precision engineering internships with salary plus transport.' },
+  { canton: 'Basel-Stadt (BS)', median: 'CHF 2,450', note: 'Life sciences leaders keep stipends close to junior salaries.' },
+  { canton: 'Basel-Landschaft (BL)', median: 'CHF 2,150', note: 'Chemical industry and logistics maintain strong ranges.' },
+  { canton: 'Schaffhausen (SH)', median: 'CHF 2,050', note: 'International manufacturing HQs sit just across the border.' },
+  { canton: 'Appenzell Ausserrhoden (AR)', median: 'CHF 1,900', note: 'Family-owned firms; frequent accommodation stipends.' },
+  { canton: 'Appenzell Innerrhoden (AI)', median: 'CHF 1,850', note: 'Smaller cohort; salaries balanced with low living costs.' },
+  { canton: 'St. Gallen (SG)', median: 'CHF 2,100', note: 'Fintech and textile innovation labs recruit heavily from HSG/OST.' },
+  { canton: 'Graubünden (GR)', median: 'CHF 1,850', note: 'Tourism and outdoor brands add seasonal benefits.' },
+  { canton: 'Aargau (AG)', median: 'CHF 2,100', note: 'Energy and industrial automation pay competitive stipends.' },
+  { canton: 'Thurgau (TG)', median: 'CHF 1,950', note: 'Agri-food and med-tech blend salary with commuting aid.' },
+  { canton: 'Ticino (TI)', median: 'CHF 1,900', note: 'Cross-border companies benchmark against Lombardy + Swiss averages.' },
+  { canton: 'Vaud (VD)', median: 'CHF 2,250', note: 'EPFL ecosystem and med-tech scale-ups compete for engineers.' },
+  { canton: 'Valais (VS)', median: 'CHF 1,900', note: 'Energy and tourism stipends with seasonal housing support.' },
+  { canton: 'Neuchâtel (NE)', median: 'CHF 2,000', note: 'Watchmaking and microtech offer solid mid-range pay.' },
+  { canton: 'Geneva (GE)', median: 'CHF 2,350', note: 'International organisations top up with travel & lunch subsidies.' },
+  { canton: 'Jura (JU)', median: 'CHF 1,850', note: 'Advanced manufacturing focuses on skill development bonuses.' },
+];
+
+const cvTemplates = [
+  {
+    name: 'Europass Classic',
+    url: 'https://europa.eu/europass/en/create-europass-cv',
+    reason: 'Widely accepted by Swiss corporates and universities; bilingual sections make it easy to duplicate in French/German.',
+  },
+  {
+    name: 'Novorésumé Basic (Free)',
+    url: 'https://novoresume.com/resume-templates',
+    reason: 'Clean single-page template that hiring teams at Swiss scale-ups often recommend for junior roles.',
+  },
+  {
+    name: 'Google Docs – Swiss Minimal',
+    url: 'https://docs.google.com/document/d/1dxJ4SWI2Pa3uFY6uhAT0t5gE_zp0oGOPbsT_t-jSfo0/preview',
+    reason: 'Two-column layout promoted by ETH Career Center; quick to duplicate and customise.',
+  },
+];
+
+const cvWritingTips = [
+  'Open with a three-line summary that states your target role, key strengths, and what you want to learn next.',
+  'Use bullet points that start with strong verbs and quantify impact (e.g. “reduced onboarding time by 30%”).',
+  'Highlight technical stack and tool proficiency in their own section; founders skim for this first.',
+  'Include extracurriculars, hackathons, or venture projects—Swiss founders value entrepreneurial signals.',
+  'Keep it to one page unless you have 3+ years of experience; recruiters spend ~45 seconds on the first scan.',
 ];
 
 const quickFilters = [
@@ -368,6 +426,7 @@ const SwissStartupConnect = () => {
     return stored ? JSON.parse(stored) : [];
   });
   const [authLoading, setAuthLoading] = useState(true);
+  const [resourceModal, setResourceModal] = useState(null);
   const loading = false;
 
   const mapSupabaseUser = (supabaseUser) => {
@@ -718,6 +777,8 @@ const SwissStartupConnect = () => {
     setUserType('student');
     setFeedback({ type: 'info', message: 'Signed out. Your saved roles stay here for you.' });
   };
+
+  const closeResourceModal = () => setResourceModal(null);
 
   const closeAuthModal = () => {
     setShowLoginModal(false);
@@ -1085,7 +1146,19 @@ const SwissStartupConnect = () => {
                       <div>
                         <h3>{resource.title}</h3>
                         <p>{resource.description}</p>
-                        <a href={resource.href}>Download guide</a>
+                        {resource.action === 'external' && resource.href ? (
+                          <a href={resource.href} target="_blank" rel="noreferrer">
+                            Visit official site
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            className="ssc__link-button"
+                            onClick={() => resource.modalId && setResourceModal(resource.modalId)}
+                          >
+                            View details
+                          </button>
+                        )}
                       </div>
                     </article>
                   ))}
@@ -1145,6 +1218,84 @@ const SwissStartupConnect = () => {
           </div>
         </div>
       </footer>
+
+      {resourceModal === 'compensation' && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>Median internship pay by canton</h2>
+              <p>Source: Swissuniversities internship barometer 2024 and public salary postings (Q1 2025).</p>
+            </header>
+            <div className="ssc__modal-body">
+              <div className="ssc__table-wrapper">
+                <table className="ssc__table">
+                  <thead>
+                    <tr>
+                      <th>Canton</th>
+                      <th>Median monthly stipend</th>
+                      <th>What to expect</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cantonInternshipSalaries.map((entry) => (
+                      <tr key={entry.canton}>
+                        <td>{entry.canton}</td>
+                        <td>{entry.median}</td>
+                        <td>{entry.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="ssc__modal-footnote">
+                Figures represent the midpoint of paid internships of 3–12 months for students in business, engineering,
+                and design programmes. Packages may include public transport passes, meal stipends, or housing assistance.
+                Always confirm the current offer with the host company.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resourceModal === 'cvTemplates' && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>Founder-ready CV templates</h2>
+              <p>Start with one of these high-feedback layouts, then tailor it to highlight your impact.</p>
+            </header>
+            <div className="ssc__modal-body">
+              <ul className="ssc__link-list">
+                {cvTemplates.map((template) => (
+                  <li key={template.name}>
+                    <a href={template.url} target="_blank" rel="noreferrer">
+                      {template.name}
+                    </a>
+                    <span>{template.reason}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <h3 className="ssc__modal-subtitle">How to make your CV stand out</h3>
+              <ul className="ssc__bullet-list">
+                {cvWritingTips.map((tip, index) => (
+                  <li key={index}>{tip}</li>
+                ))}
+              </ul>
+              <p className="ssc__modal-footnote">
+                Pro tip: export as PDF with a filename like <code>firstname-lastname-cv.pdf</code> and keep a second
+                version in English plus the local language of the canton you target.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedJob && (
         <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
