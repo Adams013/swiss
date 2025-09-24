@@ -357,6 +357,11 @@ const SwissStartupConnect = () => {
     password: '',
     type: 'student',
   });
+  const [appliedJobs, setAppliedJobs] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = window.localStorage.getItem('ssc_applied_jobs');
+    return stored ? JSON.parse(stored) : [];
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -378,6 +383,11 @@ const SwissStartupConnect = () => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('ssc_saved_jobs', JSON.stringify(savedJobs));
   }, [savedJobs]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(appliedJobs));
+  }, [appliedJobs]);
 
   useEffect(() => {
     if (!user || typeof window === 'undefined') return;
@@ -464,7 +474,7 @@ const SwissStartupConnect = () => {
     <div className="ssc__grid">
       {jobsList.map((job) => {
         const isSaved = savedJobs.includes(job.id);
-        const hasApplied = applications.some((application) => application.jobId === job.id);
+        const hasApplied = appliedJobs.includes(job.id);
         return (
           <article key={job.id} className="ssc__job-card">
             <div className="ssc__job-header">
@@ -568,6 +578,10 @@ const SwissStartupConnect = () => {
       setShowLoginModal(true);
       setFeedback({ type: 'info', message: 'Sign in or create a profile to apply.' });
       return;
+    }
+
+    if (!appliedJobs.includes(job.id)) {
+      setAppliedJobs((prev) => [...prev, job.id]);
     }
 
     setFeedback({
