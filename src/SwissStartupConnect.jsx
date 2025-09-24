@@ -1230,13 +1230,6 @@ const SwissStartupConnect = () => {
               </button>
             </div>
 
-            <div className="ssc__demo-info">
-              <h3>Demo credentials</h3>
-              <ul>
-                <li>Student: student@example.com · password123</li>
-                <li>Startup: startup@example.com · password123</li>
-              </ul>
-            </div>
           </div>
         </div>
       )}
