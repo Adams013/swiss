@@ -2,7 +2,6 @@
   "name": "swiss-startup-connect",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://Adams013.github.io/Swiss_startup_connect",
   "resolutions": {
     "tailwindcss": "4.1.13"
   },
