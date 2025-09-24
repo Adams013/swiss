@@ -339,7 +339,7 @@ const filterPredicates = quickFilters.reduce((acc, filter) => {
 }, {});
 
 const SwissStartupConnect = () => {
-  const [activeTab, setActiveTab] = useState('jobs');
+  const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -418,11 +418,124 @@ const SwissStartupConnect = () => {
     });
   }, [searchTerm, selectedFilters]);
 
+  const filteredCompanies = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return mockCompanies;
+
+    return mockCompanies.filter((company) =>
+      [company.name, company.tagline, company.location, company.industry]
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [searchTerm]);
+
+  const renderSearchForm = ({
+    variant = 'default',
+    placeholder = 'Search startup, role, or skill',
+    targetTab,
+  } = {}) => (
+    <form
+      className={`ssc__search ${variant === 'inline' ? 'ssc__search--inline' : ''}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (targetTab) {
+          setActiveTab(targetTab);
+        }
+      }}
+    >
+      <div className="ssc__search-field">
+        <Search size={18} />
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          aria-label="Search"
+        />
+      </div>
+      <button type="submit" className="ssc__search-btn">
+        Find matches
+      </button>
+    </form>
+  );
+
+  const renderJobCards = (jobsList) => (
+    <div className="ssc__grid">
+      {jobsList.map((job) => {
+        const isSaved = savedJobs.includes(job.id);
+        const hasApplied = applications.some((application) => application.jobId === job.id);
+        return (
+          <article key={job.id} className="ssc__job-card">
+            <div className="ssc__job-header">
+              <div>
+                <h3>{job.title}</h3>
+                <p>{job.company}</p>
+              </div>
+              <button
+                type="button"
+                className={`ssc__save-btn ${isSaved ? 'is-active' : ''}`}
+                onClick={() => handleToggleSave(job.id)}
+                aria-label={isSaved ? 'Remove from saved jobs' : 'Save job'}
+              >
+                <Heart size={18} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? 'currentColor' : 'none'} />
+              </button>
+            </div>
+
+            <p className="ssc__job-summary">{job.summary}</p>
+
+            <div className="ssc__job-meta">
+              <span>
+                <MapPin size={16} />
+                {job.location}
+              </span>
+              <span>
+                <Clock size={16} />
+                {job.type}
+              </span>
+              <span>
+                <Users size={16} />
+                {job.applicants} applicants
+              </span>
+            </div>
+
+            <div className="ssc__job-tags">
+              {job.tags.map((tag) => (
+                <span key={tag} className="ssc__tag">
+                  {tag}
+                </span>
+              ))}
+              <span className="ssc__tag ssc__tag--soft">{job.stage}</span>
+            </div>
+
+            <div className="ssc__job-footer">
+              <div className="ssc__salary">
+                <span>{job.salary}</span>
+                <small>+ {job.equity} equity</small>
+              </div>
+              <div className="ssc__job-actions">
+                <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
+                  View role
+                </button>
+                <button
+                  type="button"
+                  className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
+                  onClick={() => handleApply(job)}
+                  disabled={hasApplied}
+                >
+                  {hasApplied ? 'Applied' : 'Apply now'}
+                </button>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+
   const savedJobList = useMemo(() => {
     return mockJobs.filter((job) => savedJobs.includes(job.id));
   }, [savedJobs]);
-
-  const displayedJobs = activeTab === 'saved' ? savedJobList : filteredJobs;
 
   const toggleFilter = (filterId) => {
     setActiveTab('jobs');
@@ -539,15 +652,18 @@ const SwissStartupConnect = () => {
   };
 
   const activeTabDescription = useMemo(() => {
-    if (activeTab === 'companies') {
-      return 'Meet the founders building Switzerland’s next generation of companies.';
+    switch (activeTab) {
+      case 'general':
+        return 'Explore the Swiss startup ecosystem and discover where you can make the biggest impact.';
+      case 'jobs':
+        return 'Browse vetted opportunities that match your skills, schedule, and ambitions.';
+      case 'companies':
+        return 'Meet the founders building Switzerland’s next generation of companies.';
+      case 'saved':
+        return 'Keep tabs on opportunities you want to revisit or apply to later.';
+      default:
+        return 'Curated roles from Swiss startups that welcome student talent and emerging professionals.';
     }
-
-    if (activeTab === 'saved') {
-      return 'Keep tabs on opportunities you want to revisit or apply to later.';
-    }
-
-    return 'Curated roles from Swiss startups that welcome student talent and emerging professionals.';
   }, [activeTab]);
 
   return (
@@ -563,18 +679,25 @@ const SwissStartupConnect = () => {
           </div>
 
           <nav className="ssc__nav">
-            {['jobs', 'companies', 'saved'].map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
-              >
-                {tab === 'jobs' && 'Opportunities'}
-                {tab === 'companies' && 'Startups'}
-                {tab === 'saved' && `Saved (${savedJobs.length})`}
-              </button>
-            ))}
+            {['general', 'jobs', 'companies', 'saved'].map((tab) => {
+              const labelMap = {
+                general: 'General',
+                jobs: 'Opportunities',
+                companies: 'Startups',
+                saved: `Saved (${savedJobs.length})`,
+              };
+
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
+                >
+                  {labelMap[tab]}
+                </button>
+              );
+            })}
           </nav>
 
           <div className="ssc__actions">
@@ -620,331 +743,331 @@ const SwissStartupConnect = () => {
       </header>
 
       <main>
-        <section className="ssc__hero">
-          <div className="ssc__max">
-            <div className="ssc__hero-badge">
-              <Sparkles size={18} />
-              <span>Trusted by Swiss startups & universities</span>
-            </div>
-            <h1 className="ssc__hero-title">
-              Shape the next Swiss startup success story
-            </h1>
-            <p className="ssc__hero-lede">
-              Discover paid internships, part-time roles, and graduate opportunities with
-              founders who want you in the room from day one.
-            </p>
-
-            <div className="ssc__audience">
-              <button
-                type="button"
-                className={userType === 'student' ? 'is-active' : ''}
-                onClick={() => setUserType('student')}
-              >
-                I’m a student
-              </button>
-              <button
-                type="button"
-                className={userType === 'startup' ? 'is-active' : ''}
-                onClick={() => setUserType('startup')}
-              >
-                I’m a startup
-              </button>
-            </div>
-
-            {feedback && (
-              <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
-                {feedback.message}
+        {activeTab === 'general' && (
+          <section className="ssc__hero">
+            <div className="ssc__max">
+              <div className="ssc__hero-badge">
+                <Sparkles size={18} />
+                <span>Trusted by Swiss startups & universities</span>
               </div>
-            )}
+              <h1 className="ssc__hero-title">
+                Shape the next Swiss startup success story
+              </h1>
+              <p className="ssc__hero-lede">
+                Discover paid internships, part-time roles, and graduate opportunities with
+                founders who want you in the room from day one.
+              </p>
 
-            <form
-              className="ssc__search"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setActiveTab('jobs');
-              }}
-            >
-              <div className="ssc__search-field">
-                <Search size={18} />
-                <input
-                  type="text"
-                  placeholder="Search startup, role, or skill"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  aria-label="Search roles"
-                />
-              </div>
-              <button type="submit" className="ssc__search-btn">
-                Find matches
-              </button>
-            </form>
-
-            <div className="ssc__stats">
-              {stats.map((stat) => (
-                <article key={stat.id} className="ssc__stat-card">
-                  <span className="ssc__stat-value">{stat.value}</span>
-                  <span className="ssc__stat-label">{stat.label}</span>
-                  <p>{stat.detail}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="ssc__filters">
-          <div className="ssc__max">
-            <div className="ssc__filters-header">
-              <div>
-                <h2>Tailor your results</h2>
-                <p>Pick a combination of location, role type, and focus areas.</p>
-              </div>
-              {selectedFilters.length > 0 && (
-                <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
-                  Clear filters
+              <div className="ssc__audience">
+                <button
+                  type="button"
+                  className={userType === 'student' ? 'is-active' : ''}
+                  onClick={() => setUserType('student')}
+                >
+                  I’m a student
                 </button>
+                <button
+                  type="button"
+                  className={userType === 'startup' ? 'is-active' : ''}
+                  onClick={() => setUserType('startup')}
+                >
+                  I’m a startup
+                </button>
+              </div>
+
+              {feedback && (
+                <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
+                  {feedback.message}
+                </div>
+              )}
+
+              {renderSearchForm({ targetTab: 'jobs' })}
+
+              <div className="ssc__stats">
+                {stats.map((stat) => (
+                  <article key={stat.id} className="ssc__stat-card">
+                    <span className="ssc__stat-value">{stat.value}</span>
+                    <span className="ssc__stat-label">{stat.label}</span>
+                    <p>{stat.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {(activeTab === 'general' || activeTab === 'jobs') && (
+          <section className="ssc__filters">
+            <div className="ssc__max">
+              <div className="ssc__filters-header">
+                <div>
+                  <h2>Tailor your results</h2>
+                  <p>Pick a combination of location, role type, and focus areas.</p>
+                </div>
+                {selectedFilters.length > 0 && (
+                  <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
+                    Clear filters
+                  </button>
+                )}
+              </div>
+              <div className="ssc__filters-grid">
+                {Object.entries(groupedFilters).map(([category, filters]) => (
+                  <div key={category} className="ssc__filter-group">
+                    <span className="ssc__filter-label">{category}</span>
+                    <div className="ssc__filter-chips">
+                      {filters.map((filter) => (
+                        <button
+                          key={filter.id}
+                          type="button"
+                          className={`ssc__chip ${selectedFilters.includes(filter.id) ? 'is-selected' : ''}`}
+                          onClick={() => toggleFilter(filter.id)}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {(activeTab === 'general' || activeTab === 'jobs') && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>Open opportunities</h2>
+                  <p>{activeTabDescription}</p>
+                </div>
+                <span className="ssc__pill">{filteredJobs.length} roles</span>
+              </div>
+
+              {activeTab === 'jobs' && renderSearchForm({ variant: 'inline' })}
+
+              {loading ? (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {[1, 2, 3, 4, 5, 6].map((index) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 animate-pulse"
+                    >
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-4"></div>
+                      <div className="flex space-x-2 mb-4">
+                        <div className="h-6 bg-gray-200 rounded w-16"></div>
+                        <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="h-8 bg-gray-200 rounded w-20"></div>
+                        <div className="h-8 bg-gray-200 rounded w-8"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredJobs.length > 0 ? (
+                renderJobCards(filteredJobs)
+              ) : (
+                <div className="ssc__empty-state">
+                  <BookmarkPlus size={40} />
+                  <h3>No matches yet</h3>
+                  <p>Try removing a filter or exploring roles in another Swiss city.</p>
+                </div>
               )}
             </div>
-            <div className="ssc__filters-grid">
-              {Object.entries(groupedFilters).map(([category, filters]) => (
-                <div key={category} className="ssc__filter-group">
-                  <span className="ssc__filter-label">{category}</span>
-                  <div className="ssc__filter-chips">
-                    {filters.map((filter) => (
-                      <button
-                        key={filter.id}
-                        type="button"
-                        className={`ssc__chip ${selectedFilters.includes(filter.id) ? 'is-selected' : ''}`}
-                        onClick={() => toggleFilter(filter.id)}
-                      >
-                        {filter.label}
-                      </button>
+          </section>
+        )}
+
+        {activeTab === 'companies' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>Featured startups</h2>
+                  <p>{activeTabDescription}</p>
+                </div>
+              </div>
+
+              {renderSearchForm({
+                variant: 'inline',
+                placeholder: 'Search startups, industries, or locations',
+              })}
+
+              {filteredCompanies.length > 0 ? (
+                <div className="ssc__company-grid">
+                  {filteredCompanies.map((company) => (
+                    <article key={company.id} className="ssc__company-card">
+                      <div className="ssc__company-logo">
+                        <Building2 size={20} />
+                      </div>
+                      <div className="ssc__company-content">
+                        <h3 className="ssc__company-name">{company.name}</h3>
+                        <p className="ssc__company-tagline">{company.tagline}</p>
+                        <div className="ssc__company-meta">
+                          <span>{company.location}</span>
+                          <span>{company.industry}</span>
+                          <span>{company.team}</span>
+                        </div>
+                        <div className="ssc__company-stats">
+                          <span>{company.hires}</span>
+                          <span>{company.culture}</span>
+                        </div>
+                        <a className="ssc__outline-btn" href={company.website} target="_blank" rel="noreferrer">
+                          Visit website
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Building2 size={40} />
+                  <h3>No startups found</h3>
+                  <p>Try adjusting your search or clear the filters.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'saved' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>Saved roles</h2>
+                  <p>{activeTabDescription}</p>
+                </div>
+                <span className="ssc__pill">{savedJobList.length} saved</span>
+              </div>
+
+              {savedJobList.length > 0 ? (
+                renderJobCards(savedJobList)
+              ) : (
+                <div className="ssc__empty-state">
+                  <BookmarkPlus size={40} />
+                  <h3>No saved roles yet</h3>
+                  <p>Tap the heart on an opportunity to keep it here for later.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'general' && (
+          <>
+            <section className="ssc__section">
+              <div className="ssc__max ssc__two-column">
+                <div className="ssc__steps">
+                  <h2>How it works</h2>
+                  <p>Three steps to land a role with a Swiss startup that shares your ambition.</p>
+                  <div className="ssc__step-grid">
+                    {steps.map((step) => (
+                      <article key={step.id} className="ssc__step-card">
+                        <div className="ssc__step-icon">
+                          <step.icon size={18} />
+                        </div>
+                        <div>
+                          <h3>{step.title}</h3>
+                          <p>{step.description}</p>
+                        </div>
+                      </article>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="ssc__section">
-          <div className="ssc__max">
-            <div className="ssc__section-header">
-              <div>
-                <h2>{activeTab === 'companies' ? 'Featured startups' : 'Open opportunities'}</h2>
-                <p>{activeTabDescription}</p>
-              </div>
-              {activeTab !== 'companies' && (
-                <span className="ssc__pill">{displayedJobs.length} roles</span>
-              )}
-            </div>
-
-            {activeTab === 'companies' ? (
-              <div className="ssc__company-grid">
-                {mockCompanies.map((company) => (
-                  <article key={company.id} className="ssc__company-card">
-                    <div className="ssc__company-logo">
-                      <Building2 size={20} />
-                    </div>
-                    <div className="ssc__company-content">
-                      <h3 className="ssc__company-name">{company.name}</h3>
-                      <p className="ssc__company-tagline">{company.tagline}</p>
-                      <div className="ssc__company-meta">
-                        <span>{company.location}</span>
-                        <span>{company.industry}</span>
-                        <span>{company.team}</span>
-                      </div>
-                      <div className="ssc__company-stats">
-                        <span>{company.hires}</span>
-                        <span>{company.culture}</span>
-                      </div>
-                      <a className="ssc__outline-btn" href={company.website} target="_blank" rel="noreferrer">
-                        Visit website
-                      </a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <>
-                {displayedJobs.length > 0 ? (
-                  <div className="ssc__grid">
-                    {displayedJobs.map((job) => {
-                      const isSaved = savedJobs.includes(job.id);
-                      return (
-                        <article key={job.id} className="ssc__job-card">
-                          <div className="ssc__job-header">
-                            <div>
-                              <h3>{job.title}</h3>
-                              <p>{job.company}</p>
-                            </div>
-                            <button
-                              type="button"
-                              className={`ssc__save-btn ${isSaved ? 'is-active' : ''}`}
-                              onClick={() => handleToggleSave(job.id)}
-                              aria-label={isSaved ? 'Remove from saved jobs' : 'Save job'}
-                            >
-                              <Heart size={18} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? 'currentColor' : 'none'} />
-                            </button>
-                          </div>
-
-                          <p className="ssc__job-summary">{job.summary}</p>
-
-                          <div className="ssc__job-meta">
-                            <span>
-                              <MapPin size={16} />
-                              {job.location}
-                            </span>
-                            <span>
-                              <Clock size={16} />
-                              {job.type}
-                            </span>
-                            <span>
-                              <Users size={16} />
-                              {job.applicants} applicants
-                            </span>
-                          </div>
-
-                          <div className="ssc__job-tags">
-                            {job.tags.map((tag) => (
-                              <span key={tag} className="ssc__tag">
-                                {tag}
-                              </span>
-                            ))}
-                            <span className="ssc__tag ssc__tag--soft">{job.stage}</span>
-                          </div>
-
-                          <div className="ssc__job-footer">
-                            <div className="ssc__salary">
-                              <span>{job.salary}</span>
-                              <small>+ {job.equity} equity</small>
-                            </div>
-                            <div className="ssc__job-actions">
-                              <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                                View role
-                              </button>
-                              <button type="button" className="ssc__primary-btn" onClick={() => handleApply(job)}>
-                                Apply now
-                              </button>
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })}
+                <div className="ssc__testimonials">
+                  <h2>Stories from our community</h2>
+                  <div className="ssc__testimonial-grid">
+                    {testimonials.map((testimonial) => (
+                      <blockquote key={testimonial.id} className="ssc__testimonial-card">
+                        <p>“{testimonial.quote}”</p>
+                        <footer>
+                          <strong>{testimonial.name}</strong>
+                          <span>{testimonial.role}</span>
+                        </footer>
+                      </blockquote>
+                    ))}
                   </div>
-                ) : (
-                  <div className="ssc__empty-state">
-                    <BookmarkPlus size={40} />
-                    <h3>No matches yet</h3>
-                    <p>Try removing a filter or exploring roles in another Swiss city.</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
+                </div>
+              </div>
+            </section>
 
-        <section className="ssc__section">
-          <div className="ssc__max ssc__two-column">
-            <div className="ssc__steps">
-              <h2>How it works</h2>
-              <p>Three steps to land a role with a Swiss startup that shares your ambition.</p>
-              <div className="ssc__step-grid">
-                {steps.map((step) => (
-                  <article key={step.id} className="ssc__step-card">
-                    <div className="ssc__step-icon">
-                      <step.icon size={18} />
-                    </div>
-                    <div>
-                      <h3>{step.title}</h3>
-                      <p>{step.description}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-            <div className="ssc__testimonials">
-              <h2>Stories from our community</h2>
-              <div className="ssc__testimonial-grid">
-                {testimonials.map((testimonial) => (
-                  <blockquote key={testimonial.id} className="ssc__testimonial-card">
-                    <p>“{testimonial.quote}”</p>
-                    <footer>
-                      <strong>{testimonial.name}</strong>
-                      <span>{testimonial.role}</span>
-                    </footer>
-                  </blockquote>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="ssc__section">
-          <div className="ssc__max">
-            <div className="ssc__section-header">
-              <div>
-                <h2>Resources to get you started</h2>
-                <p>Templates, benchmarks, and guides designed with Swiss founders.</p>
-              </div>
-            </div>
-            <div className="ssc__resource-grid">
-              {resourceLinks.map((resource) => (
-                <article key={resource.id} className="ssc__resource-card">
-                  <div className="ssc__resource-icon">
-                    <Sparkles size={18} />
-                  </div>
+            <section className="ssc__section">
+              <div className="ssc__max">
+                <div className="ssc__section-header">
                   <div>
-                    <h3>{resource.title}</h3>
-                    <p>{resource.description}</p>
-                    <a href={resource.href}>Download guide</a>
+                    <h2>Resources to get you started</h2>
+                    <p>Templates, benchmarks, and guides designed with Swiss founders.</p>
                   </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+                </div>
+                <div className="ssc__resource-grid">
+                  {resourceLinks.map((resource) => (
+                    <article key={resource.id} className="ssc__resource-card">
+                      <div className="ssc__resource-icon">
+                        <Sparkles size={18} />
+                      </div>
+                      <div>
+                        <h3>{resource.title}</h3>
+                        <p>{resource.description}</p>
+                        <a href={resource.href}>Download guide</a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
 
-        <section className="ssc__cta">
-          <div className="ssc__max ssc__cta-inner">
-            <div>
-              <h2>Ready to co-create the next Swiss success story?</h2>
-              <p>
-                Join a curated community of founders, operators, and students building across
-                Switzerland.
-              </p>
-            </div>
-            <div className="ssc__cta-actions">
-              <button
-                type="button"
-                className="ssc__primary-btn"
-                onClick={() => {
-                  setIsRegistering(true);
-                  setShowLoginModal(true);
-                  setAuthError('');
-                }}
-              >
-                Create profile
-                <ArrowRight size={18} />
-              </button>
-              <button
-                type="button"
-                className="ssc__ghost-btn"
-                onClick={() => setActiveTab('companies')}
-              >
-                Explore startups
-              </button>
-            </div>
-          </div>
-        </section>
+            <section className="ssc__cta">
+              <div className="ssc__max ssc__cta-inner">
+                <div>
+                  <h2>Ready to co-create the next Swiss success story?</h2>
+                  <p>
+                    Join a curated community of founders, operators, and students building across
+                    Switzerland.
+                  </p>
+                </div>
+                <div className="ssc__cta-actions">
+                  <button
+                    type="button"
+                    className="ssc__primary-btn"
+                    onClick={() => {
+                      setIsRegistering(true);
+                      setShowLoginModal(true);
+                      setAuthError('');
+                    }}
+                  >
+                    Create profile
+                    <ArrowRight size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="ssc__ghost-btn"
+                    onClick={() => setActiveTab('companies')}
+                  >
+                    Explore startups
+                  </button>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
       </main>
 
       <footer className="ssc__footer">
         <div className="ssc__max">
           <span>© {new Date().getFullYear()} SwissStartup Connect. Built in Switzerland.</span>
           <div className="ssc__footer-links">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Contact</a>
+            <a href="/privacy.html" target="_blank" rel="noreferrer">
+              Privacy
+            </a>
+            <a href="/terms.html" target="_blank" rel="noreferrer">
+              Terms
+            </a>
+            <a href="/contact.html" target="_blank" rel="noreferrer">
+              Contact
+            </a>
           </div>
         </div>
       </footer>
