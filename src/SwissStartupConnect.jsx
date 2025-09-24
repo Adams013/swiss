@@ -366,6 +366,43 @@ const SwissStartupConnect = () => {
   const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
   const [applicationsVersion, setApplicationsVersion] = useState(0);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordResetError, setPasswordResetError] = useState('');
+  const [passwordResetSaving, setPasswordResetSaving] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
+  const [securityOldPassword, setSecurityOldPassword] = useState('');
+  const [securityNewPassword, setSecurityNewPassword] = useState('');
+  const [securityConfirmPassword, setSecurityConfirmPassword] = useState('');
+  const [securitySaving, setSecuritySaving] = useState(false);
+  const [securityError, setSecurityError] = useState('');
+
+  const [registerConfirm, setRegisterConfirm] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showNewConfirm, setShowNewConfirm] = useState(false);
+
+  const [jobsVersion, setJobsVersion] = useState(0);
+  const [postJobModalOpen, setPostJobModalOpen] = useState(false);
+  const [postingJob, setPostingJob] = useState(false);
+  const [postJobError, setPostJobError] = useState('');
+  const [jobForm, setJobForm] = useState({
+    title: '',
+    location: '',
+    employment_type: 'Full-time',
+    salary: '',
+    equity: '',
+    description: '',
+    requirements: '',
+    benefits: '',
+    tags: '',
+    motivational_letter_required: false,
+  });
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
 
@@ -391,11 +428,15 @@ const SwissStartupConnect = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
       setUserType(mapped?.type ?? 'student');
       setEmailVerified(!!session?.user?.email_confirmed_at);
+      if (event === 'PASSWORD_RECOVERY') {
+        setResetPasswordModalOpen(true);
+        setShowLoginModal(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -579,7 +620,7 @@ const SwissStartupConnect = () => {
     };
 
     fetchJobs();
-  }, []);
+  }, [jobsVersion]);
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -741,6 +782,21 @@ const SwissStartupConnect = () => {
     setApplicationCvName('');
   };
 
+  const closeResetPasswordModal = () => {
+    setResetPasswordModalOpen(false);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordResetError('');
+  };
+
+  const closeSecurityModal = () => {
+    setSecurityModalOpen(false);
+    setSecurityOldPassword('');
+    setSecurityNewPassword('');
+    setSecurityConfirmPassword('');
+    setSecurityError('');
+  };
+
   const uploadFile = useCallback(
     async (bucket, file) => {
       if (!file) return null;
@@ -875,6 +931,67 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handlePostJobSubmit = async (event) => {
+    event.preventDefault();
+    if (!startupProfile?.id || !user) {
+      setPostJobError('Complete your startup profile before posting a job.');
+      return;
+    }
+
+    setPostingJob(true);
+    setPostJobError('');
+
+    try {
+      const payload = {
+        startup_id: startupProfile.id,
+        title: jobForm.title.trim(),
+        company_name: startupForm.name || startupProfile.name,
+        location: jobForm.location.trim(),
+        employment_type: jobForm.employment_type,
+        salary: jobForm.salary.trim(),
+        equity: jobForm.equity.trim(),
+        description: jobForm.description.trim(),
+        requirements: jobForm.requirements
+          ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
+          : [],
+        benefits: jobForm.benefits
+          ? jobForm.benefits.split('\n').map((item) => item.trim()).filter(Boolean)
+          : [],
+        tags: jobForm.tags
+          ? jobForm.tags.split(',').map((item) => item.trim()).filter(Boolean)
+          : [],
+        motivational_letter_required: jobForm.motivational_letter_required,
+        posted: 'Just now',
+      };
+
+      const { error } = await supabase.from('jobs').insert(payload);
+      if (error) {
+        setPostJobError(error.message);
+        return;
+      }
+
+      setFeedback({ type: 'success', message: 'Job posted successfully!' });
+      setPostJobModalOpen(false);
+      setJobForm({
+        title: '',
+        location: '',
+        employment_type: 'Full-time',
+        salary: '',
+        equity: '',
+        description: '',
+        requirements: '',
+        benefits: '',
+        tags: '',
+        motivational_letter_required: false,
+      });
+      setJobsVersion((prev) => prev + 1);
+    } catch (error) {
+      setPostJobError(error.message);
+    } finally {
+      setPostingJob(false);
+    }
+  };
+
   const handleApplicationCvUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -912,6 +1029,28 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!loginForm.email.trim()) {
+      setAuthError('Enter your email above so we can send reset instructions.');
+      return;
+    }
+
+    setForgotPasswordMessage('Sending reset email…');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginForm.email.trim(), {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
+      });
+
+      if (error) {
+        setForgotPasswordMessage(`Reset failed: ${error.message}`);
+      } else {
+        setForgotPasswordMessage('Check your inbox for a password reset link.');
+      }
+    } catch (error) {
+      setForgotPasswordMessage(`Reset failed: ${error.message}`);
+    }
+  };
+
   const handleLogin = async (event) => {
     event.preventDefault();
     setAuthError('');
@@ -938,6 +1077,7 @@ const SwissStartupConnect = () => {
         setFeedback({ type: 'success', message: `Welcome back, ${mapped.name}!` });
       }
       setLoginForm({ email: '', password: '' });
+      setForgotPasswordMessage('');
       setShowLoginModal(false);
     } catch (error) {
       setAuthError(error.message);
@@ -949,6 +1089,14 @@ const SwissStartupConnect = () => {
     setAuthError('');
     if (!registerForm.name.trim()) {
       setAuthError('Please add your name so startups know who to contact.');
+      return;
+    }
+    if (registerForm.password.length < 8) {
+      setAuthError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (registerForm.password !== registerConfirm) {
+      setAuthError('Passwords do not match.');
       return;
     }
     try {
@@ -967,6 +1115,7 @@ const SwissStartupConnect = () => {
         return;
       }
       setRegisterForm({ name: '', email: '', password: '', type: 'student' });
+      setRegisterConfirm('');
       if (data.user) {
         const mapped = mapSupabaseUser(data.user);
         setUser(mapped);
@@ -1062,6 +1211,86 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handlePasswordReset = async (event) => {
+    event.preventDefault();
+    if (newPassword.length < 8) {
+      setPasswordResetError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordResetError('Passwords do not match.');
+      return;
+    }
+
+    setPasswordResetSaving(true);
+    setPasswordResetError('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setPasswordResetError(error.message);
+        return;
+      }
+      setFeedback({ type: 'success', message: 'Password updated. You can now sign in.' });
+      setResetPasswordModalOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowLoginModal(true);
+    } catch (error) {
+      setPasswordResetError(error.message);
+    } finally {
+      setPasswordResetSaving(false);
+    }
+  };
+
+  const handleSecurityPasswordChange = async (event) => {
+    event.preventDefault();
+    setSecurityError('');
+
+    if (!user?.email) {
+      setSecurityError('User email not available.');
+      return;
+    }
+    if (securityNewPassword.length < 8) {
+      setSecurityError('New password must be at least 8 characters long.');
+      return;
+    }
+    if (securityNewPassword !== securityConfirmPassword) {
+      setSecurityError('New passwords do not match.');
+      return;
+    }
+
+    setSecuritySaving(true);
+    try {
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: securityOldPassword,
+      });
+
+      if (reauthError) {
+        setSecurityError('Current password is incorrect.');
+        setSecuritySaving(false);
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({ password: securityNewPassword });
+      if (updateError) {
+        setSecurityError(updateError.message);
+        setSecuritySaving(false);
+        return;
+      }
+
+      setFeedback({ type: 'success', message: 'Password updated successfully.' });
+      setSecurityOldPassword('');
+      setSecurityNewPassword('');
+      setSecurityConfirmPassword('');
+      setSecurityModalOpen(false);
+    } catch (error) {
+      setSecurityError(error.message);
+    } finally {
+      setSecuritySaving(false);
+    }
+  };
+
   const openReviewsModal = async (company) => {
     setReviewsModal(company);
     setReviewsLoading(true);
@@ -1146,6 +1375,8 @@ const SwissStartupConnect = () => {
     return baseTabs;
   }, [user?.type]);
 
+  const isStudent = userType === 'student';
+
   return (
     <div className="ssc">
       <header className="ssc__header">
@@ -1202,25 +1433,43 @@ const SwissStartupConnect = () => {
                   <span className="ssc__user-name">{user.name}</span>
                   <span className="ssc__user-role">{user.type}</span>
                 </div>
-                <button
-                  type="button"
-                  className="ssc__signout"
-                  onClick={() => setProfileModalOpen(true)}
-                >
-                  Profile
-                </button>
-                {user.type === 'startup' && (
+                <div className="ssc__user-actions">
                   <button
                     type="button"
                     className="ssc__signout"
-                    onClick={() => setStartupModalOpen(true)}
+                    onClick={() => setProfileModalOpen(true)}
                   >
-                    Startup
+                    Profile
                   </button>
-                )}
-                <button type="button" className="ssc__signout" onClick={handleLogout}>
-                  Log out
-                </button>
+                  <button
+                    type="button"
+                    className="ssc__signout"
+                    onClick={() => setSecurityModalOpen(true)}
+                  >
+                    Security
+                  </button>
+                  {user.type === 'startup' && (
+                    <>
+                      <button
+                        type="button"
+                        className="ssc__signout"
+                        onClick={() => setStartupModalOpen(true)}
+                      >
+                        Company
+                      </button>
+                      <button
+                        type="button"
+                        className="ssc__signout"
+                        onClick={() => setPostJobModalOpen(true)}
+                      >
+                        Post vacancy
+                      </button>
+                    </>
+                  )}
+                  <button type="button" className="ssc__signout" onClick={handleLogout}>
+                    Log out
+                  </button>
+                </div>
               </div>
             ) : (
               <button
@@ -2177,51 +2426,86 @@ const SwissStartupConnect = () => {
                     required
                   />
                 </label>
-                <label className="ssc__field">
-                  <span>University or school</span>
-                  <input
-                    type="text"
-                    value={profileForm.university}
-                    onChange={(event) => setProfileForm((prev) => ({ ...prev, university: event.target.value }))}
-                    placeholder="ETH Zürich, EPFL, HSG, ZHAW…"
-                  />
-                </label>
-                <label className="ssc__field">
-                  <span>Programme</span>
-                  <input
-                    type="text"
-                    value={profileForm.program}
-                    onChange={(event) => setProfileForm((prev) => ({ ...prev, program: event.target.value }))}
-                    placeholder="BSc Computer Science"
-                  />
-                </label>
-                <label className="ssc__field">
-                  <span>Experience highlights</span>
-                  <textarea
-                    rows={3}
-                    value={profileForm.experience}
-                    onChange={(event) => setProfileForm((prev) => ({ ...prev, experience: event.target.value }))}
-                    placeholder="Intern at AlpTech—built supply dashboards; Student project: Smart energy router…"
-                  />
-                </label>
-                <label className="ssc__field">
-                  <span>Short bio</span>
-                  <textarea
-                    rows={3}
-                    value={profileForm.bio}
-                    onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value }))}
-                    placeholder="Describe what you’re passionate about and the kind of team you thrive in."
-                  />
-                </label>
-                <label className="ssc__field">
-                  <span>Portfolio or LinkedIn</span>
-                  <input
-                    type="url"
-                    value={profileForm.portfolio_url}
-                    onChange={(event) => setProfileForm((prev) => ({ ...prev, portfolio_url: event.target.value }))}
-                    placeholder="https://"
-                  />
-                </label>
+
+                {isStudent ? (
+                  <>
+                    <label className="ssc__field">
+                      <span>University or school</span>
+                      <input
+                        type="text"
+                        value={profileForm.university}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, university: event.target.value }))}
+                        placeholder="ETH Zürich, EPFL, HSG, ZHAW…"
+                      />
+                    </label>
+                    <label className="ssc__field">
+                      <span>Programme</span>
+                      <input
+                        type="text"
+                        value={profileForm.program}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, program: event.target.value }))}
+                        placeholder="BSc Computer Science"
+                      />
+                    </label>
+                    <label className="ssc__field">
+                      <span>Experience highlights</span>
+                      <textarea
+                        rows={3}
+                        value={profileForm.experience}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, experience: event.target.value }))}
+                        placeholder="Intern at AlpTech—built supply dashboards; Student project: Smart energy router…"
+                      />
+                    </label>
+                    <label className="ssc__field">
+                      <span>Short bio</span>
+                      <textarea
+                        rows={3}
+                        value={profileForm.bio}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value }))}
+                        placeholder="Describe what you’re passionate about and the kind of team you thrive in."
+                      />
+                    </label>
+                    <label className="ssc__field">
+                      <span>Portfolio or LinkedIn</span>
+                      <input
+                        type="url"
+                        value={profileForm.portfolio_url}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, portfolio_url: event.target.value }))}
+                        placeholder="https://"
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label className="ssc__field">
+                      <span>School / University (optional)</span>
+                      <input
+                        type="text"
+                        value={profileForm.university}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, university: event.target.value }))}
+                        placeholder="Where did you graduate from?"
+                      />
+                    </label>
+                    <label className="ssc__field">
+                      <span>Role in this startup</span>
+                      <input
+                        type="text"
+                        value={profileForm.experience}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, experience: event.target.value }))}
+                        placeholder="Founder & CEO, Head of Growth…"
+                      />
+                    </label>
+                    <label className="ssc__field">
+                      <span>Skills & hobbies (optional)</span>
+                      <textarea
+                        rows={3}
+                        value={profileForm.bio}
+                        onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value }))}
+                        placeholder="Design sprints, skiing, product storytelling…"
+                      />
+                    </label>
+                  </>
+                )}
 
                 <label className="ssc__field">
                   <span>Upload profile photo</span>
@@ -2231,15 +2515,17 @@ const SwissStartupConnect = () => {
                   )}
                 </label>
 
-                <label className="ssc__field">
-                  <span>Upload CV (PDF)</span>
-                  <input type="file" accept="application/pdf" onChange={handleCvUpload} />
-                  {profileForm.cv_url && (
-                    <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
-                      View current CV
-                    </a>
-                  )}
-                </label>
+                {isStudent && (
+                  <label className="ssc__field">
+                    <span>Upload CV (PDF)</span>
+                    <input type="file" accept="application/pdf" onChange={handleCvUpload} />
+                    {profileForm.cv_url && (
+                      <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
+                        View current CV
+                      </a>
+                    )}
+                  </label>
+                )}
               </div>
 
               <div className="ssc__modal-actions">
@@ -2335,10 +2621,144 @@ const SwissStartupConnect = () => {
         </div>
       )}
 
+      {postJobModalOpen && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--wide">
+            <button type="button" className="ssc__modal-close" onClick={() => setPostJobModalOpen(false)}>
+              <X size={18} />
+            </button>
+            <header className="ssc__modal-header">
+              <h2>Post a new vacancy</h2>
+              <p>Share the essentials so students and graduates understand the opportunity.</p>
+            </header>
+            <form className="ssc__modal-body" onSubmit={handlePostJobSubmit}>
+              <div className="ssc__profile-grid">
+                <label className="ssc__field">
+                  <span>Role title</span>
+                  <input
+                    type="text"
+                    value={jobForm.title}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, title: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Location</span>
+                  <input
+                    type="text"
+                    value={jobForm.location}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, location: event.target.value }))}
+                    placeholder="Zurich, Remote within Switzerland…"
+                    required
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Employment type</span>
+                  <select
+                    value={jobForm.employment_type}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, employment_type: event.target.value }))}
+                  >
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </label>
+                <label className="ssc__field">
+                  <span>Salary range</span>
+                  <input
+                    type="text"
+                    value={jobForm.salary}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, salary: event.target.value }))}
+                    placeholder="e.g. CHF 80k – 110k"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Equity</span>
+                  <input
+                    type="text"
+                    value={jobForm.equity}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, equity: event.target.value }))}
+                    placeholder="Optional"
+                  />
+                </label>
+              </div>
+
+              <label className="ssc__field">
+                <span>Role description</span>
+                <textarea
+                  rows={4}
+                  value={jobForm.description}
+                  onChange={(event) => setJobForm((prev) => ({ ...prev, description: event.target.value }))}
+                  placeholder="What will the candidate work on?"
+                  required
+                />
+              </label>
+
+              <div className="ssc__profile-grid">
+                <label className="ssc__field">
+                  <span>Requirements (one per line)</span>
+                  <textarea
+                    rows={3}
+                    value={jobForm.requirements}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, requirements: event.target.value }))}
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Benefits (one per line)</span>
+                  <textarea
+                    rows={3}
+                    value={jobForm.benefits}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, benefits: event.target.value }))}
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Tags (comma separated)</span>
+                  <input
+                    type="text"
+                    value={jobForm.tags}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, tags: event.target.value }))}
+                    placeholder="React, Growth, Fintech"
+                  />
+                </label>
+                <label className="ssc__checkbox">
+                  <input
+                    type="checkbox"
+                    checked={jobForm.motivational_letter_required}
+                    onChange={(event) =>
+                      setJobForm((prev) => ({ ...prev, motivational_letter_required: event.target.checked }))
+                    }
+                  />
+                  <span>Require motivational letter for this role</span>
+                </label>
+              </div>
+
+              {postJobError && <p className="ssc__form-error">{postJobError}</p>}
+
+              <div className="ssc__modal-actions">
+                <button type="button" className="ssc__ghost-btn" onClick={() => setPostJobModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="ssc__primary-btn" disabled={postingJob}>
+                  {postingJob ? 'Posting…' : 'Publish job'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showLoginModal && (
         <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
           <div className="ssc__modal ssc__modal--auth">
-            <button type="button" className="ssc__modal-close" onClick={() => setShowLoginModal(false)}>
+            <button
+              type="button"
+              className="ssc__modal-close"
+              onClick={() => {
+                setShowLoginModal(false);
+                setForgotPasswordMessage('');
+              }}
+            >
               <X size={18} />
             </button>
             <h2>{isRegistering ? 'Create your profile' : 'Welcome back'}</h2>
@@ -2391,17 +2811,66 @@ const SwissStartupConnect = () => {
 
               <label className="ssc__field">
                 <span>Password</span>
-                <input
-                  type="password"
-                  value={isRegistering ? registerForm.password : loginForm.password}
-                  onChange={(event) =>
-                    isRegistering
-                      ? setRegisterForm((prev) => ({ ...prev, password: event.target.value }))
-                      : setLoginForm((prev) => ({ ...prev, password: event.target.value }))
-                  }
-                  required
-                />
+                <div className="ssc__password-input">
+                  <input
+                    type={isRegistering ? (showRegisterPassword ? 'text' : 'password') : showLoginPassword ? 'text' : 'password'}
+                    value={isRegistering ? registerForm.password : loginForm.password}
+                    onChange={(event) =>
+                      isRegistering
+                        ? setRegisterForm((prev) => ({ ...prev, password: event.target.value }))
+                        : setLoginForm((prev) => ({ ...prev, password: event.target.value }))
+                    }
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="ssc__link-button"
+                    onClick={() =>
+                      isRegistering
+                        ? setShowRegisterPassword((prev) => !prev)
+                        : setShowLoginPassword((prev) => !prev)
+                    }
+                  >
+                    {isRegistering
+                      ? showRegisterPassword
+                        ? 'Hide'
+                        : 'Show'
+                      : showLoginPassword
+                      ? 'Hide'
+                      : 'Show'}
+                  </button>
+                </div>
               </label>
+
+              {isRegistering && (
+                <label className="ssc__field">
+                  <span>Confirm password</span>
+                  <div className="ssc__password-input">
+                    <input
+                      type={showRegisterConfirm ? 'text' : 'password'}
+                      value={registerConfirm}
+                      onChange={(event) => setRegisterConfirm(event.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="ssc__link-button"
+                      onClick={() => setShowRegisterConfirm((prev) => !prev)}
+                    >
+                      {showRegisterConfirm ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </label>
+              )}
+
+              {!isRegistering && (
+                <div className="ssc__forgot">
+                  <button type="button" className="ssc__link-button" onClick={handleForgotPassword}>
+                    Forgot password?
+                  </button>
+                  {forgotPasswordMessage && <small>{forgotPasswordMessage}</small>}
+                </div>
+              )}
 
               <button type="submit" className="ssc__primary-btn ssc__primary-btn--full">
                 {isRegistering ? 'Create account' : 'Sign in'}
@@ -2415,11 +2884,152 @@ const SwissStartupConnect = () => {
                 onClick={() => {
                   setIsRegistering(!isRegistering);
                   setAuthError('');
+                  setForgotPasswordMessage('');
+                  setRegisterConfirm('');
                 }}
               >
                 {isRegistering ? 'Sign in instead' : 'Create a profile'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {resetPasswordModalOpen && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--auth">
+            <button type="button" className="ssc__modal-close" onClick={closeResetPasswordModal}>
+              <X size={18} />
+            </button>
+            <h2>Set a new password</h2>
+            <p>Enter and confirm your new password to complete the reset.</p>
+
+            {passwordResetError && <div className="ssc__alert">{passwordResetError}</div>}
+
+            <form className="ssc__form" onSubmit={handlePasswordReset}>
+              <label className="ssc__field">
+                <span>New password</span>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="ssc__field">
+                <span>Confirm password</span>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit" className="ssc__primary-btn ssc__primary-btn--full" disabled={passwordResetSaving}>
+                {passwordResetSaving ? 'Updating…' : 'Update password'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {securityModalOpen && (
+        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ssc__modal ssc__modal--auth">
+            <button type="button" className="ssc__modal-close" onClick={closeSecurityModal}>
+              <X size={18} />
+            </button>
+            <h2>Privacy & security</h2>
+            <p>Your email and shared data are listed below. Update your password at any time for extra safety.</p>
+
+            <div className="ssc__security-summary">
+              <ul>
+                <li>
+                  <strong>Email:</strong> {user?.email}
+                </li>
+                {isStudent ? (
+                  <>
+                    <li>
+                      <strong>Shared CV:</strong> {profileForm.cv_url ? 'Available to employers' : 'Not uploaded yet'}
+                    </li>
+                    <li>
+                      <strong>Shared profile fields:</strong> full name, university, programme, experience, bio
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <strong>Shared profile fields:</strong> full name, school (optional), skills/hobbies, startup role
+                    </li>
+                    <li>
+                      <strong>Company data:</strong> registry details, website, job listings
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            <form className="ssc__form" onSubmit={handleSecurityPasswordChange}>
+              <h3 className="ssc__modal-subtitle">Change password</h3>
+              {securityError && <div className="ssc__alert">{securityError}</div>}
+              <label className="ssc__field">
+                <span>Current password</span>
+                <div className="ssc__password-input">
+                  <input
+                    type={showOldPassword ? 'text' : 'password'}
+                    value={securityOldPassword}
+                    onChange={(event) => setSecurityOldPassword(event.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPassword((prev) => !prev)}
+                    className="ssc__link-button"
+                  >
+                    {showOldPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </label>
+              <label className="ssc__field">
+                <span>New password</span>
+                <div className="ssc__password-input">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={securityNewPassword}
+                    onChange={(event) => setSecurityNewPassword(event.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    className="ssc__link-button"
+                  >
+                    {showNewPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </label>
+              <label className="ssc__field">
+                <span>Confirm new password</span>
+                <div className="ssc__password-input">
+                  <input
+                    type={showNewConfirm ? 'text' : 'password'}
+                    value={securityConfirmPassword}
+                    onChange={(event) => setSecurityConfirmPassword(event.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewConfirm((prev) => !prev)}
+                    className="ssc__link-button"
+                  >
+                    {showNewConfirm ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </label>
+              <button type="submit" className="ssc__primary-btn ssc__primary-btn--full" disabled={securitySaving}>
+                {securitySaving ? 'Updating…' : 'Save password'}
+              </button>
+            </form>
           </div>
         </div>
       )}
