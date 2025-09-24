@@ -1165,7 +1165,7 @@ const SwissStartupConnect = () => {
                 jobs: 'Opportunities',
                 companies: 'Startups',
                 applications: 'Applicants',
-                saved: `Saved (${savedJobs.length})`,
+                saved: 'Saved',
               };
               return (
                 <button
