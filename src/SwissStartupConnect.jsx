@@ -1623,23 +1623,6 @@ const SwissStartupConnect = () => {
                   setActiveTab('jobs');
                 }}
               >
-                <div className="ssc__search-field">
-                  <Search size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search startup, role, or skill"
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    aria-label="Search roles"
-                  />
-                </div>
-                <button type="submit" className="ssc__search-btn">
-                  Find matches
-                </button>
-              </form>
-
-              <div className="ssc__stats">
-                {stats.map((stat) => (
                   <article key={stat.id} className="ssc__stat-card">
                     <span className="ssc__stat-value">{stat.value}</span>
                     <span className="ssc__stat-label">{stat.label}</span>
