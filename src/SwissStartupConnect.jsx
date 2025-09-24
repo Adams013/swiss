@@ -362,6 +362,7 @@ const SwissStartupConnect = () => {
     const stored = window.localStorage.getItem('ssc_applied_jobs');
     return stored ? JSON.parse(stored) : [];
   });
+  const loading = false;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
