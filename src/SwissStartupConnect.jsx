@@ -546,6 +546,9 @@ const SwissStartupConnect = () => {
     min: formatSalaryValue(defaultSalaryBounds[0]),
     max: formatSalaryValue(defaultSalaryBounds[1]),
   }));
+  const salarySliderRef = useRef(null);
+  const salarySliderDragState = useRef(null);
+  const [isSalarySliderDragging, setIsSalarySliderDragging] = useState(false);
 
   const [salaryMin, salaryMax] = salaryRange;
 
@@ -1009,31 +1012,53 @@ const SwissStartupConnect = () => {
     });
   };
 
+  const updateSalaryRange = useCallback(
+    (computeNext) => {
+      setActiveTab('jobs');
+      setSalaryRangeDirty(true);
+      setSalaryRange((prev) => {
+        const [boundMin, boundMax] = salaryBounds;
+        const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
+
+        if (!next || !Array.isArray(next) || next.length < 2) {
+          return prev;
+        }
+
+        let [nextMin, nextMax] = next;
+
+        if (!Number.isFinite(nextMin) || !Number.isFinite(nextMax)) {
+          return prev;
+        }
+
+        nextMin = clamp(Math.round(nextMin), boundMin, boundMax);
+        nextMax = clamp(Math.round(nextMax), boundMin, boundMax);
+
+        if (nextMin > nextMax) {
+          [nextMin, nextMax] = [nextMax, nextMin];
+        }
+
+        if (nextMin === prev[0] && nextMax === prev[1]) {
+          return prev;
+        }
+
+        return [nextMin, nextMax];
+      });
+    },
+    [salaryBounds]
+  );
+
   const handleSalarySliderChange = (bound) => (event) => {
     const rawValue = Number(event.target.value);
     if (!Number.isFinite(rawValue)) {
       return;
     }
 
-    const [boundMin, boundMax] = salaryBounds;
-    const limitedValue = clamp(Math.round(rawValue), boundMin, boundMax);
-
-    setActiveTab('jobs');
-    setSalaryRangeDirty(true);
-    setSalaryRange((prev) => {
+    updateSalaryRange((prev) => {
       if (bound === 'min') {
-        const nextMin = Math.min(limitedValue, prev[1]);
-        if (nextMin === prev[0]) {
-          return prev;
-        }
-        return [nextMin, prev[1]];
+        return [Math.min(rawValue, prev[1]), prev[1]];
       }
 
-      const nextMax = Math.max(limitedValue, prev[0]);
-      if (nextMax === prev[1]) {
-        return prev;
-      }
-      return [prev[0], nextMax];
+      return [prev[0], Math.max(rawValue, prev[0])];
     });
   };
 
@@ -1056,27 +1081,15 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    const [boundMin, boundMax] = salaryBounds;
-    const limitedValue = clamp(Math.round(numeric), boundMin, boundMax);
-
-    setActiveTab('jobs');
-    setSalaryRangeDirty(true);
-    setSalaryRange((prev) => {
+    updateSalaryRange((prev) => {
       if (bound === 'min') {
-        const nextMin = Math.min(limitedValue, prev[1]);
-        if (nextMin === prev[0]) {
-          return prev;
-        }
-        return [nextMin, prev[1]];
+        return [Math.min(numeric, prev[1]), prev[1]];
       }
 
-      const nextMax = Math.max(limitedValue, prev[0]);
-      if (nextMax === prev[1]) {
-        return prev;
-      }
-      return [prev[0], nextMax];
+      return [prev[0], Math.max(numeric, prev[0])];
     });
   };
+
 
   const toggleSavedJob = (jobId) => {
     setSavedJobs((prev) => {
@@ -2005,6 +2018,128 @@ const SwissStartupConnect = () => {
   const salaryRangeAtDefault = sliderMinValue === normalizedMinBound && sliderMaxValue === normalizedMaxBound;
   const filtersActive = selectedFilters.length > 0 || !salaryRangeAtDefault;
 
+  const handleSliderPointerMove = useCallback(
+    (event) => {
+      const dragState = salarySliderDragState.current;
+      if (!dragState || !salarySliderRef.current) {
+        return;
+      }
+
+      const rect = salarySliderRef.current.getBoundingClientRect();
+      if (rect.width === 0) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+      const value = normalizedMinBound + ratio * sliderRangeSpan;
+
+      if (dragState.type === 'range') {
+        const width = dragState.rangeWidth;
+        let nextMin = value - dragState.startOffset;
+        let nextMax = nextMin + width;
+
+        if (nextMin < normalizedMinBound) {
+          nextMin = normalizedMinBound;
+          nextMax = nextMin + width;
+        }
+
+        if (nextMax > normalizedMaxBound) {
+          nextMax = normalizedMaxBound;
+          nextMin = nextMax - width;
+        }
+
+        updateSalaryRange(() => [nextMin, nextMax]);
+        return;
+      }
+
+      if (dragState.type === 'min') {
+        updateSalaryRange((prev) => [Math.min(value, prev[1]), prev[1]]);
+        return;
+      }
+
+      updateSalaryRange((prev) => [prev[0], Math.max(value, prev[0])]);
+    },
+    [normalizedMinBound, normalizedMaxBound, sliderRangeSpan, updateSalaryRange]
+  );
+
+  const handleSliderPointerUp = useCallback(() => {
+    salarySliderDragState.current = null;
+    setIsSalarySliderDragging(false);
+    window.removeEventListener('pointermove', handleSliderPointerMove);
+    window.removeEventListener('pointerup', handleSliderPointerUp);
+  }, [handleSliderPointerMove]);
+
+  const handleSalarySliderPointerDown = useCallback(
+    (event) => {
+      if (salarySliderDisabled || salarySliderDragState.current) {
+        return;
+      }
+
+      if (typeof event.button === 'number' && event.button !== 0) {
+        return;
+      }
+
+      if (typeof HTMLInputElement !== 'undefined' && event.target instanceof HTMLInputElement) {
+        return;
+      }
+
+      if (!salarySliderRef.current) {
+        return;
+      }
+
+      const rect = salarySliderRef.current.getBoundingClientRect();
+      if (rect.width === 0) {
+        return;
+      }
+
+      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+      const value = normalizedMinBound + ratio * sliderRangeSpan;
+      const rangeWidth = sliderMaxValue - sliderMinValue;
+      const minRatio =
+        sliderRangeSpan === 0 ? 0 : (sliderMinValue - normalizedMinBound) / sliderRangeSpan;
+      const maxRatio =
+        sliderRangeSpan === 0 ? 0 : (sliderMaxValue - normalizedMinBound) / sliderRangeSpan;
+      const withinRange = rangeWidth > 0 && ratio >= minRatio && ratio <= maxRatio;
+
+      if (withinRange) {
+        salarySliderDragState.current = {
+          type: 'range',
+          startOffset: value - sliderMinValue,
+          rangeWidth,
+        };
+      } else {
+        const distanceToMin = Math.abs(value - sliderMinValue);
+        const distanceToMax = Math.abs(value - sliderMaxValue);
+        const target = distanceToMin <= distanceToMax ? 'min' : 'max';
+        salarySliderDragState.current = { type: target };
+        handleSliderPointerMove(event);
+      }
+
+      setIsSalarySliderDragging(true);
+      window.addEventListener('pointermove', handleSliderPointerMove);
+      window.addEventListener('pointerup', handleSliderPointerUp);
+      event.preventDefault();
+    },
+    [
+      handleSliderPointerMove,
+      handleSliderPointerUp,
+      normalizedMinBound,
+      salarySliderDisabled,
+      sliderMaxValue,
+      sliderMinValue,
+      sliderRangeSpan,
+    ]
+  );
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('pointermove', handleSliderPointerMove);
+      window.removeEventListener('pointerup', handleSliderPointerUp);
+    };
+  }, [handleSliderPointerMove, handleSliderPointerUp]);
+
   return (
     <div className="ssc">
       <header className="ssc__header">
@@ -2261,7 +2396,13 @@ const SwissStartupConnect = () => {
                     <span className="ssc__filter-label">Salary range</span>
                     <span className="ssc__filter-helper">CHF per month</span>
                   </div>
-                  <div className="ssc__salary-slider" style={sliderStyle}>
+                  <div
+                    className="ssc__salary-slider"
+                    style={sliderStyle}
+                    ref={salarySliderRef}
+                    onPointerDown={handleSalarySliderPointerDown}
+                    data-dragging={isSalarySliderDragging ? 'true' : undefined}
+                  >
                     <input
                       type="range"
                       min={normalizedMinBound}
