@@ -675,14 +675,17 @@ const deriveEquityBoundsFromJobs = (jobs) => {
     return [...EQUITY_FALLBACK_RANGE];
   }
 
-  if (min === max) {
-    const buffer = Math.max(min * 0.4, 0.2);
-    const lower = Math.max(0, min - buffer);
-    const upper = max + buffer;
+  const lowerBound = Math.max(0, Math.min(min, 0));
+  const upperBound = Math.max(max, lowerBound);
+
+  if (lowerBound === upperBound) {
+    const buffer = Math.max(upperBound * 0.4, 0.2);
+    const lower = Math.max(0, upperBound - buffer);
+    const upper = upperBound + buffer;
     return [roundDownToStep(lower, EQUITY_STEP), roundUpToStep(upper, EQUITY_STEP)];
   }
 
-  return [roundDownToStep(min, EQUITY_STEP), roundUpToStep(max, EQUITY_STEP)];
+  return [roundDownToStep(lowerBound, EQUITY_STEP), roundUpToStep(upperBound, EQUITY_STEP)];
 };
 
 const defaultSalaryBounds = deriveSalaryBoundsFromJobs(mockJobs);
