@@ -357,6 +357,7 @@ const SwissStartupConnect = () => {
     password: '',
     type: 'student',
   });
+  const [isMobileHeaderCondensed, setIsMobileHeaderCondensed] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -389,6 +390,39 @@ const SwissStartupConnect = () => {
     const timeoutId = setTimeout(() => setFeedback(null), 4000);
     return () => clearTimeout(timeoutId);
   }, [feedback]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    let ticking = false;
+
+    const updateCondensedState = () => {
+      ticking = false;
+      const shouldCondense = window.innerWidth <= 768 && window.scrollY > 24;
+      setIsMobileHeaderCondensed((prev) => {
+        if (prev === shouldCondense) {
+          return prev;
+        }
+        return shouldCondense;
+      });
+    };
+
+    const handleScrollOrResize = () => {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(updateCondensedState);
+      }
+    };
+
+    updateCondensedState();
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, []);
 
   const groupedFilters = useMemo(() => {
     return quickFilters.reduce((acc, filter) => {
@@ -552,7 +586,7 @@ const SwissStartupConnect = () => {
 
   return (
     <div className="ssc">
-      <header className="ssc__header">
+      <header className={`ssc__header ${isMobileHeaderCondensed ? 'ssc__header--condensed' : ''}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__brand">
             <div className="ssc__brand-badge">⌁</div>
