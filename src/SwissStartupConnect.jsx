@@ -92,6 +92,7 @@ const mockCompanies = [
     location: 'Zurich',
     industry: 'Fintech',
     team: '65 people',
+    fundraising: 'CHF 28M raised',
     culture: 'Product-driven, hybrid-first, carbon neutral operations.',
     website: 'https://techflow.example',
     verification_status: 'verified',
@@ -104,6 +105,7 @@ const mockCompanies = [
     location: 'Geneva',
     industry: 'Healthtech',
     team: '32 people',
+    fundraising: 'CHF 12M raised',
     culture: 'Human-centred, clinically informed, data trusted.',
     website: 'https://alpinehealth.example',
     verification_status: 'pending',
@@ -116,6 +118,7 @@ const mockCompanies = [
     location: 'Lausanne',
     industry: 'Deep Tech',
     team: '48 people',
+    fundraising: 'CHF 35M raised',
     culture: 'Research-rooted, humble experts, fast experimentation.',
     website: 'https://cognivia.example',
     verification_status: 'verified',
@@ -363,16 +366,32 @@ const SALARY_PERIOD_FIELDS = [
 const SALARY_FALLBACK_RANGE = [2000, 12000];
 const SALARY_STEP = 1;
 const EQUITY_FALLBACK_RANGE = [0, 5];
-const EQUITY_STEP = 0.1;
+const EQUITY_STEP = 0.01;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const roundToStep = (value, step) => {
+const getStepFactor = (step) => {
+  if (!Number.isFinite(step) || step <= 0) {
+    return 1;
+  }
+  return Math.pow(10, Math.max(0, Math.ceil(-Math.log10(step))));
+};
+
+const alignToStep = (value, step, strategy) => {
   if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) {
     return value;
   }
-  return Math.round(value / step) * step;
+  const factor = getStepFactor(step);
+  const scaled = strategy(value / step);
+  const rounded = Math.round(scaled * step * factor) / factor;
+  return Object.is(rounded, -0) ? 0 : rounded;
 };
+
+const roundToStep = (value, step) => alignToStep(value, step, Math.round);
+
+const roundDownToStep = (value, step) => alignToStep(value, step, Math.floor);
+
+const roundUpToStep = (value, step) => alignToStep(value, step, Math.ceil);
 
 const formatSalaryValue = (value) => {
   if (!Number.isFinite(value)) {
@@ -386,8 +405,11 @@ const formatEquityValue = (value) => {
     return '';
   }
 
-  const rounded = Math.round((value + Number.EPSILON) * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+  return rounded
+    .toFixed(2)
+    .replace(/\.00$/, '')
+    .replace(/(\.\d+?)0+$/, '$1');
 };
 
 const parseNumericValue = (value) => {
@@ -602,7 +624,7 @@ const computeEquityRange = (job) => {
   const min = Math.min(...values);
   const max = Math.max(...values);
 
-  return [Math.round(min * 10) / 10, Math.round(max * 10) / 10];
+  return [roundToStep(min, EQUITY_STEP), roundToStep(max, EQUITY_STEP)];
 };
 
 const deriveEquityBoundsFromJobs = (jobs) => {
@@ -635,10 +657,12 @@ const deriveEquityBoundsFromJobs = (jobs) => {
 
   if (min === max) {
     const buffer = Math.max(min * 0.4, 0.2);
-    return [Math.max(0, Math.floor((min - buffer) * 10) / 10), Math.ceil((max + buffer) * 10) / 10];
+    const lower = Math.max(0, min - buffer);
+    const upper = max + buffer;
+    return [roundDownToStep(lower, EQUITY_STEP), roundUpToStep(upper, EQUITY_STEP)];
   }
 
-  return [Math.floor(min * 10) / 10, Math.ceil(max * 10) / 10];
+  return [roundDownToStep(min, EQUITY_STEP), roundUpToStep(max, EQUITY_STEP)];
 };
 
 const defaultSalaryBounds = deriveSalaryBoundsFromJobs(mockJobs);
@@ -670,9 +694,6 @@ const SwissStartupConnect = () => {
     min: formatSalaryValue(defaultSalaryBounds[0]),
     max: formatSalaryValue(defaultSalaryBounds[1]),
   }));
-  const salarySliderRef = useRef(null);
-  const salarySliderDragState = useRef(null);
-  const [isSalarySliderDragging, setIsSalarySliderDragging] = useState(false);
   const [equityRange, setEquityRange] = useState(defaultEquityBounds);
   const [equityBounds, setEquityBounds] = useState(defaultEquityBounds);
   const [equityRangeDirty, setEquityRangeDirty] = useState(false);
@@ -680,9 +701,6 @@ const SwissStartupConnect = () => {
     min: formatEquityValue(defaultEquityBounds[0]),
     max: formatEquityValue(defaultEquityBounds[1]),
   }));
-  const equitySliderRef = useRef(null);
-  const equitySliderDragState = useRef(null);
-  const [isEquitySliderDragging, setIsEquitySliderDragging] = useState(false);
 
   const [salaryMin, salaryMax] = salaryRange;
   const [equityMin, equityMax] = equityRange;
@@ -1048,9 +1066,7 @@ const SwissStartupConnect = () => {
     const fetchCompanies = async () => {
       setCompaniesLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('startups')
-          .select('id,name,tagline,location,industry,team,culture,website,verification_status,created_at');
+        const { data, error } = await supabase.from('startups').select('*');
 
         if (error) {
           console.info('Falling back to mock companies', error.message);
@@ -1063,7 +1079,18 @@ const SwissStartupConnect = () => {
               tagline: company.tagline,
               location: company.location,
               industry: company.industry,
-              team: company.team,
+              team:
+                company.team ||
+                company.team_size ||
+                company.employees ||
+                company.headcount ||
+                '',
+              fundraising:
+                company.fundraising ||
+                company.total_funding ||
+                company.total_raised ||
+                company.funding ||
+                '',
               culture: company.culture,
               website: company.website,
               verification_status: company.verification_status || 'unverified',
@@ -1367,6 +1394,40 @@ const SwissStartupConnect = () => {
     return map;
   }, [companies]);
 
+  const companyMetaLookup = useMemo(() => {
+    const map = {};
+    companies.forEach((company) => {
+      const teamLabel =
+        company.team ||
+        company.team_size ||
+        company.employees ||
+        company.headcount ||
+        '';
+      const fundraisingLabel =
+        company.fundraising ||
+        company.total_funding ||
+        company.total_raised ||
+        company.funding ||
+        '';
+      const meta = {
+        team: teamLabel ? String(teamLabel) : '',
+        fundraising: fundraisingLabel ? String(fundraisingLabel) : '',
+      };
+
+      if (company.id != null) {
+        map[`id:${company.id}`] = meta;
+      }
+
+      if (company.name) {
+        const nameKey = company.name.trim().toLowerCase();
+        if (nameKey) {
+          map[`name:${nameKey}`] = meta;
+        }
+      }
+    });
+    return map;
+  }, [companies]);
+
   const normalizedJobs = useMemo(() => {
     return jobs.map((job) => {
       const idKey = job.startup_id ? String(job.startup_id) : null;
@@ -1374,6 +1435,11 @@ const SwissStartupConnect = () => {
       const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
       const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
       const [equityMinValue, equityMaxValue] = computeEquityRange(job);
+      const metaFromId = idKey ? companyMetaLookup[`id:${idKey}`] : null;
+      const metaFromName = ensuredName
+        ? companyMetaLookup[`name:${ensuredName.trim().toLowerCase()}`]
+        : null;
+      const companyMeta = metaFromId || metaFromName || {};
       return {
         ...job,
         company_name: ensuredName,
@@ -1381,9 +1447,24 @@ const SwissStartupConnect = () => {
         salary_max_value: Number.isFinite(job.salary_max_value) ? job.salary_max_value : salaryMaxValue,
         equity_min_value: Number.isFinite(job.equity_min_value) ? job.equity_min_value : equityMinValue,
         equity_max_value: Number.isFinite(job.equity_max_value) ? job.equity_max_value : equityMaxValue,
+        company_team:
+          job.company_team ||
+          job.team ||
+          job.team_size ||
+          job.employees ||
+          companyMeta.team ||
+          '',
+        company_fundraising:
+          job.company_fundraising ||
+          job.fundraising ||
+          job.total_funding ||
+          job.total_raised ||
+          job.funding ||
+          companyMeta.fundraising ||
+          '',
       };
     });
-  }, [jobs, companyNameLookup]);
+  }, [jobs, companyMetaLookup, companyNameLookup]);
 
   useEffect(() => {
     const nextBounds = deriveSalaryBoundsFromJobs(normalizedJobs);
@@ -1453,14 +1534,14 @@ const SwissStartupConnect = () => {
         return [boundMin, boundMax];
       }
 
-      if (
-        prev[0] === Math.round(clampedMin * 10) / 10 &&
-        prev[1] === Math.round(clampedMax * 10) / 10
-      ) {
+      const roundedMin = roundToStep(clampedMin, EQUITY_STEP);
+      const roundedMax = roundToStep(clampedMax, EQUITY_STEP);
+
+      if (prev[0] === roundedMin && prev[1] === roundedMax) {
         return prev;
       }
 
-      return [Math.round(clampedMin * 10) / 10, Math.round(clampedMax * 10) / 10];
+      return [roundedMin, roundedMax];
     });
   }, [normalizedJobs, equityRangeDirty]);
 
@@ -2457,257 +2538,6 @@ const SwissStartupConnect = () => {
   const filtersActive =
     selectedFilters.length > 0 || !salaryRangeAtDefault || !equityRangeAtDefault;
 
-  const handleSalarySliderPointerMove = useCallback(
-    (event) => {
-      const dragState = salarySliderDragState.current;
-      if (!dragState || !salarySliderRef.current) {
-        return;
-      }
-
-      const rect = salarySliderRef.current.getBoundingClientRect();
-      if (rect.width === 0) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-      const value = normalizedSalaryMinBound + ratio * salarySliderRangeSpan;
-
-      if (dragState.type === 'range') {
-        const width = dragState.rangeWidth;
-        let nextMin = value - dragState.startOffset;
-        let nextMax = nextMin + width;
-
-        if (nextMin < normalizedSalaryMinBound) {
-          nextMin = normalizedSalaryMinBound;
-          nextMax = nextMin + width;
-        }
-
-        if (nextMax > normalizedSalaryMaxBound) {
-          nextMax = normalizedSalaryMaxBound;
-          nextMin = nextMax - width;
-        }
-
-        updateSalaryRange(() => [nextMin, nextMax]);
-        return;
-      }
-
-      if (dragState.type === 'min') {
-        updateSalaryRange((prev) => [Math.min(value, prev[1]), prev[1]]);
-        return;
-      }
-
-      updateSalaryRange((prev) => [prev[0], Math.max(value, prev[0])]);
-    },
-    [normalizedSalaryMinBound, normalizedSalaryMaxBound, salarySliderRangeSpan, updateSalaryRange]
-  );
-
-  const handleSalarySliderPointerUp = useCallback(() => {
-    salarySliderDragState.current = null;
-    setIsSalarySliderDragging(false);
-    window.removeEventListener('pointermove', handleSalarySliderPointerMove);
-    window.removeEventListener('pointerup', handleSalarySliderPointerUp);
-  }, [handleSalarySliderPointerMove]);
-
-  const handleSalarySliderPointerDown = useCallback(
-    (event) => {
-      if (salarySliderDisabled || salarySliderDragState.current) {
-        return;
-      }
-
-      if (typeof event.button === 'number' && event.button !== 0) {
-        return;
-      }
-
-      if (typeof HTMLInputElement !== 'undefined' && event.target instanceof HTMLInputElement) {
-        return;
-      }
-
-      if (!salarySliderRef.current) {
-        return;
-      }
-
-      const rect = salarySliderRef.current.getBoundingClientRect();
-      if (rect.width === 0) {
-        return;
-      }
-
-      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-      const value = normalizedSalaryMinBound + ratio * salarySliderRangeSpan;
-      const rangeWidth = salarySliderMaxValue - salarySliderMinValue;
-      const minRatio =
-        salarySliderRangeSpan === 0
-          ? 0
-          : (salarySliderMinValue - normalizedSalaryMinBound) / salarySliderRangeSpan;
-      const maxRatio =
-        salarySliderRangeSpan === 0
-          ? 0
-          : (salarySliderMaxValue - normalizedSalaryMinBound) / salarySliderRangeSpan;
-      const withinRange = rangeWidth > 0 && ratio >= minRatio && ratio <= maxRatio;
-
-      if (withinRange) {
-        salarySliderDragState.current = {
-          type: 'range',
-          startOffset: value - salarySliderMinValue,
-          rangeWidth,
-        };
-      } else {
-        const distanceToMin = Math.abs(value - salarySliderMinValue);
-        const distanceToMax = Math.abs(value - salarySliderMaxValue);
-        const target = distanceToMin <= distanceToMax ? 'min' : 'max';
-        salarySliderDragState.current = { type: target };
-        handleSalarySliderPointerMove(event);
-      }
-
-      setIsSalarySliderDragging(true);
-      window.addEventListener('pointermove', handleSalarySliderPointerMove);
-      window.addEventListener('pointerup', handleSalarySliderPointerUp);
-      event.preventDefault();
-    },
-    [
-      handleSalarySliderPointerMove,
-      handleSalarySliderPointerUp,
-      normalizedSalaryMinBound,
-      salarySliderDisabled,
-      salarySliderMaxValue,
-      salarySliderMinValue,
-      salarySliderRangeSpan,
-    ]
-  );
-
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('pointermove', handleSalarySliderPointerMove);
-      window.removeEventListener('pointerup', handleSalarySliderPointerUp);
-    };
-  }, [handleSalarySliderPointerMove, handleSalarySliderPointerUp]);
-
-  const handleEquitySliderPointerMove = useCallback(
-    (event) => {
-      const dragState = equitySliderDragState.current;
-      if (!dragState || !equitySliderRef.current) {
-        return;
-      }
-
-      const rect = equitySliderRef.current.getBoundingClientRect();
-      if (rect.width === 0) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-      const value = normalizedEquityMinBound + ratio * equitySliderRangeSpan;
-
-      if (dragState.type === 'range') {
-        const width = dragState.rangeWidth;
-        let nextMin = value - dragState.startOffset;
-        let nextMax = nextMin + width;
-
-        if (nextMin < normalizedEquityMinBound) {
-          nextMin = normalizedEquityMinBound;
-          nextMax = nextMin + width;
-        }
-
-        if (nextMax > normalizedEquityMaxBound) {
-          nextMax = normalizedEquityMaxBound;
-          nextMin = nextMax - width;
-        }
-
-        updateEquityRange(() => [nextMin, nextMax]);
-        return;
-      }
-
-      if (dragState.type === 'min') {
-        updateEquityRange((prev) => [Math.min(value, prev[1]), prev[1]]);
-        return;
-      }
-
-      updateEquityRange((prev) => [prev[0], Math.max(value, prev[0])]);
-    },
-    [normalizedEquityMinBound, normalizedEquityMaxBound, equitySliderRangeSpan, updateEquityRange]
-  );
-
-  const handleEquitySliderPointerUp = useCallback(() => {
-    equitySliderDragState.current = null;
-    setIsEquitySliderDragging(false);
-    window.removeEventListener('pointermove', handleEquitySliderPointerMove);
-    window.removeEventListener('pointerup', handleEquitySliderPointerUp);
-  }, [handleEquitySliderPointerMove]);
-
-  const handleEquitySliderPointerDown = useCallback(
-    (event) => {
-      if (equitySliderDisabled || equitySliderDragState.current) {
-        return;
-      }
-
-      if (typeof event.button === 'number' && event.button !== 0) {
-        return;
-      }
-
-      if (typeof HTMLInputElement !== 'undefined' && event.target instanceof HTMLInputElement) {
-        return;
-      }
-
-      if (!equitySliderRef.current) {
-        return;
-      }
-
-      const rect = equitySliderRef.current.getBoundingClientRect();
-      if (rect.width === 0) {
-        return;
-      }
-
-      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-      const value = normalizedEquityMinBound + ratio * equitySliderRangeSpan;
-      const rangeWidth = equitySliderMaxValue - equitySliderMinValue;
-      const minRatio =
-        equitySliderRangeSpan === 0
-          ? 0
-          : (equitySliderMinValue - normalizedEquityMinBound) / equitySliderRangeSpan;
-      const maxRatio =
-        equitySliderRangeSpan === 0
-          ? 0
-          : (equitySliderMaxValue - normalizedEquityMinBound) / equitySliderRangeSpan;
-      const withinRange = rangeWidth > 0 && ratio >= minRatio && ratio <= maxRatio;
-
-      if (withinRange) {
-        equitySliderDragState.current = {
-          type: 'range',
-          startOffset: value - equitySliderMinValue,
-          rangeWidth,
-        };
-      } else {
-        const distanceToMin = Math.abs(value - equitySliderMinValue);
-        const distanceToMax = Math.abs(value - equitySliderMaxValue);
-        const target = distanceToMin <= distanceToMax ? 'min' : 'max';
-        equitySliderDragState.current = { type: target };
-        handleEquitySliderPointerMove(event);
-      }
-
-      setIsEquitySliderDragging(true);
-      window.addEventListener('pointermove', handleEquitySliderPointerMove);
-      window.addEventListener('pointerup', handleEquitySliderPointerUp);
-      event.preventDefault();
-    },
-    [
-      equitySliderDisabled,
-      equitySliderMaxValue,
-      equitySliderMinValue,
-      equitySliderRangeSpan,
-      handleEquitySliderPointerMove,
-      handleEquitySliderPointerUp,
-      normalizedEquityMinBound,
-    ]
-  );
-
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('pointermove', handleEquitySliderPointerMove);
-      window.removeEventListener('pointerup', handleEquitySliderPointerUp);
-    };
-  }, [handleEquitySliderPointerMove, handleEquitySliderPointerUp]);
 
   return (
     <div className="ssc">
@@ -2965,13 +2795,7 @@ const SwissStartupConnect = () => {
                     <span className="ssc__filter-label">Salary range</span>
                     <span className="ssc__filter-helper">CHF per month</span>
                   </div>
-                  <div
-                    className="ssc__salary-slider"
-                    style={salarySliderStyle}
-                    ref={salarySliderRef}
-                    onPointerDown={handleSalarySliderPointerDown}
-                    data-dragging={isSalarySliderDragging ? 'true' : undefined}
-                  >
+                  <div className="ssc__salary-slider" style={salarySliderStyle}>
                     <input
                       type="range"
                       min={normalizedSalaryMinBound}
@@ -3032,13 +2856,7 @@ const SwissStartupConnect = () => {
                     <span className="ssc__filter-label">Equity range</span>
                     <span className="ssc__filter-helper">Percent ownership</span>
                   </div>
-                  <div
-                    className="ssc__equity-slider"
-                    style={equitySliderStyle}
-                    ref={equitySliderRef}
-                    onPointerDown={handleEquitySliderPointerDown}
-                    data-dragging={isEquitySliderDragging ? 'true' : undefined}
-                  >
+                  <div className="ssc__equity-slider" style={equitySliderStyle}>
                     <input
                       type="range"
                       min={normalizedEquityMinBound}
@@ -3172,6 +2990,23 @@ const SwissStartupConnect = () => {
                           </span>
                         </div>
 
+                        {(job.company_team || job.company_fundraising) && (
+                          <div className="ssc__job-company-insights">
+                            {job.company_team && (
+                              <span className="ssc__company-pill ssc__company-pill--team">
+                                <Users size={14} />
+                                {job.company_team}
+                              </span>
+                            )}
+                            {job.company_fundraising && (
+                              <span className="ssc__company-pill ssc__company-pill--funding">
+                                <Sparkles size={14} />
+                                {job.company_fundraising}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="ssc__job-tags">
                           {job.tags?.map((tag) => (
                             <span key={tag} className="ssc__tag">
@@ -3275,10 +3110,25 @@ const SwissStartupConnect = () => {
                           </div>
                           <p className="ssc__company-tagline">{company.tagline}</p>
                           <div className="ssc__company-meta">
-                            <span>{company.location}</span>
-                            <span>{company.industry}</span>
-                            <span>{company.team}</span>
+                            {company.location && <span>{company.location}</span>}
+                            {company.industry && <span>{company.industry}</span>}
                           </div>
+                          {(company.team || company.fundraising) && (
+                            <div className="ssc__company-insights">
+                              {company.team && (
+                                <span className="ssc__company-pill ssc__company-pill--team">
+                                  <Users size={14} />
+                                  {company.team}
+                                </span>
+                              )}
+                              {company.fundraising && (
+                                <span className="ssc__company-pill ssc__company-pill--funding">
+                                  <Sparkles size={14} />
+                                  {company.fundraising}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           <p className="ssc__company-stats">{company.culture}</p>
                           <div className="ssc__company-foot">
                             <span className="ssc__company-jobs">{jobCountLabel}</span>
@@ -3964,6 +3814,22 @@ const SwissStartupConnect = () => {
                   {selectedJob.applicants} applicants
                 </span>
               </div>
+              {(selectedJob.company_team || selectedJob.company_fundraising) && (
+                <div className="ssc__modal-company-insights">
+                  {selectedJob.company_team && (
+                    <span className="ssc__company-pill ssc__company-pill--team">
+                      <Users size={14} />
+                      {selectedJob.company_team}
+                    </span>
+                  )}
+                  {selectedJob.company_fundraising && (
+                    <span className="ssc__company-pill ssc__company-pill--funding">
+                      <Sparkles size={14} />
+                      {selectedJob.company_fundraising}
+                    </span>
+                  )}
+                </div>
+              )}
             </header>
             <div className="ssc__modal-body">
               <p>{selectedJob.description}</p>
