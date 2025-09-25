@@ -13,6 +13,7 @@ import {
   Rocket,
   Search,
   Sparkles,
+  Trash2,
   Users,
   X,
   Upload,
@@ -22,6 +23,7 @@ import {
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 import { useRef } from 'react';
+import swissLocalities from './data/swissLocalities.json';
 
 const mockJobs = [
   {
@@ -29,7 +31,7 @@ const mockJobs = [
     title: 'Frontend Engineer',
     company_name: 'TechFlow AG',
     startup_id: 'mock-company-1',
-    location: 'Zurich, Switzerland',
+    location: 'Uraniastrasse 17, 8000 Zürich, Switzerland',
     employment_type: 'Full-time',
     salary: '80k – 110k CHF',
     equity: '0.2% – 0.4%',
@@ -39,16 +41,29 @@ const mockJobs = [
     benefits: ['Half-fare travelcard reimbursement', 'Learning stipend & mentorship', 'Employee stock options'],
     posted: '2 days ago',
     applicants: 18,
-    tags: ['React', 'UI Engineering'],
+    tags: [
+      'React',
+      'UI Engineering',
+      '__ssc:hours=40',
+      '__ssc:education=bachelor',
+      '__ssc:jobType=engineering',
+      '__ssc:locality=8000|Zürich|ZH',
+      '__ssc:address=Uraniastrasse%2017',
+    ],
     stage: 'Series A',
     motivational_letter_required: false,
+    weekly_hours: 40,
+    education_level: 'bachelor',
+    job_type: 'engineering',
+    location_locality_id: '8000|Zürich|ZH',
+    location_address: 'Uraniastrasse 17',
   },
   {
     id: 'mock-2',
     title: 'Product Manager',
     company_name: 'Alpine Health',
     startup_id: 'mock-company-2',
-    location: 'Geneva, Switzerland',
+    location: 'Quai du Mont-Blanc 1, 1200 Genève, Switzerland',
     employment_type: 'Full-time',
     salary: '95k – 125k CHF',
     equity: '0.3% – 0.5%',
@@ -58,16 +73,29 @@ const mockJobs = [
     benefits: ['Founding team equity', 'Wellness budget', 'Quarterly retreats in the Alps'],
     posted: '1 week ago',
     applicants: 11,
-    tags: ['Product', 'Healthcare'],
+    tags: [
+      'Product',
+      'Healthcare',
+      '__ssc:hours=42',
+      '__ssc:education=master',
+      '__ssc:jobType=product',
+      '__ssc:locality=1200|Genève|GE',
+      '__ssc:address=Quai%20du%20Mont-Blanc%201',
+    ],
     stage: 'Seed',
     motivational_letter_required: true,
+    weekly_hours: 42,
+    education_level: 'master',
+    job_type: 'product',
+    location_locality_id: '1200|Genève|GE',
+    location_address: 'Quai du Mont-Blanc 1',
   },
   {
     id: 'mock-3',
     title: 'Machine Learning Intern',
     company_name: 'Cognivia Labs',
     startup_id: 'mock-company-3',
-    location: 'Lausanne, Switzerland (Hybrid)',
+    location: 'Route Cantonale 1015 Lausanne, Switzerland (Hybrid)',
     employment_type: 'Internship',
     salary: '3.5k CHF / month',
     equity: 'N/A',
@@ -77,9 +105,20 @@ const mockJobs = [
     benefits: ['Research mentor', 'Conference travel support', 'Fast-track to full-time offer'],
     posted: '1 day ago',
     applicants: 24,
-    tags: ['AI/ML', 'Python'],
+    tags: [
+      'AI/ML',
+      'Python',
+      '__ssc:hours=24',
+      '__ssc:education=bachelor',
+      '__ssc:jobType=engineering',
+      '__ssc:locality=1000|Lausanne|VD',
+    ],
     stage: 'Series B',
     motivational_letter_required: true,
+    weekly_hours: 24,
+    education_level: 'bachelor',
+    job_type: 'engineering',
+    location_locality_id: '1000|Lausanne|VD',
   },
 ];
 
@@ -121,6 +160,165 @@ const mockCompanies = [
     created_at: '2024-01-18T14:45:00Z',
   },
 ];
+
+const JOB_METADATA_PREFIX = '__ssc:';
+
+const formatLocalityOption = (locality) => {
+  const details = [];
+  if (locality.zipCode) details.push(locality.zipCode);
+  if (locality.canton) details.push(locality.canton);
+  return details.length > 0 ? `${locality.name} (${details.join(', ')})` : locality.name;
+};
+
+const buildLocationString = (locality, address) => {
+  if (!locality) return address || '';
+  const segments = [];
+  if (locality.zipCode) segments.push(locality.zipCode);
+  segments.push(locality.name);
+  if (locality.canton) segments.push(locality.canton);
+  const localityText = segments.join(' ');
+  if (address) {
+    return `${address}, ${localityText}, Switzerland`;
+  }
+  return `${localityText}, Switzerland`;
+};
+
+const decodeJobMetadataFromTags = (tags = []) => {
+  const metadata = {
+    weeklyHours: null,
+    educationLevel: 'unspecified',
+    jobType: 'generalist',
+    localityId: '',
+    address: '',
+    displayTags: [],
+  };
+
+  tags.forEach((tag) => {
+    if (typeof tag !== 'string') return;
+    if (tag.startsWith(JOB_METADATA_PREFIX)) {
+      const raw = tag.slice(JOB_METADATA_PREFIX.length);
+      const [rawKey, ...rawValue] = raw.split('=');
+      const key = rawKey?.trim();
+      const value = rawValue.join('=').trim();
+      switch (key) {
+        case 'hours':
+          metadata.weeklyHours = Number(value) || null;
+          break;
+        case 'education':
+          metadata.educationLevel = value || 'unspecified';
+          break;
+        case 'jobType':
+          metadata.jobType = value || 'generalist';
+          break;
+        case 'locality':
+          metadata.localityId = value || '';
+          break;
+        case 'address':
+          metadata.address = value ? decodeURIComponent(value) : '';
+          break;
+        default:
+          break;
+      }
+    } else {
+      metadata.displayTags.push(tag);
+    }
+  });
+
+  return metadata;
+};
+
+const localityOptions = swissLocalities.map((locality) => ({
+  ...locality,
+  label: formatLocalityOption(locality),
+}));
+
+const localityMap = localityOptions.reduce((acc, locality) => {
+  acc[locality.id] = locality;
+  return acc;
+}, {});
+
+const EDUCATION_LEVEL_OPTIONS = [
+  { value: 'none', label: 'No formal studies required' },
+  { value: 'apprenticeship', label: 'Apprenticeship / Vocational training' },
+  { value: 'bachelor', label: 'Bachelor ongoing or completed' },
+  { value: 'master', label: 'Master ongoing or completed' },
+  { value: 'phd', label: 'PhD or doctorate' },
+];
+
+const EDUCATION_LABELS = EDUCATION_LEVEL_OPTIONS.reduce(
+  (acc, option) => ({
+    ...acc,
+    [option.value]: option.label,
+  }),
+  { unspecified: 'Not specified' }
+);
+
+const JOB_TYPE_OPTIONS = [
+  { value: 'engineering', label: 'Engineering' },
+  { value: 'product', label: 'Product' },
+  { value: 'design', label: 'Design & UX' },
+  { value: 'growth', label: 'Growth & Marketing' },
+  { value: 'operations', label: 'Operations & People' },
+  { value: 'generalist', label: 'Generalist / Multi-disciplinary' },
+  { value: 'other', label: 'Other focus' },
+];
+
+const JOB_TYPE_LABELS = JOB_TYPE_OPTIONS.reduce(
+  (acc, option) => ({
+    ...acc,
+    [option.value]: option.label,
+  }),
+  { unspecified: 'Not specified' }
+);
+
+const HOURS_FILTER_OPTIONS = [
+  { value: 'upto20', label: 'Up to 20 h/week' },
+  { value: '21to30', label: '21 – 30 h/week' },
+  { value: '31to40', label: '31 – 40 h/week' },
+  { value: '40plus', label: '40+ h/week' },
+];
+
+const matchHoursFilter = (hours, filterValue) => {
+  if (!filterValue) return true;
+  if (!Number.isFinite(hours)) return false;
+  switch (filterValue) {
+    case 'upto20':
+      return hours <= 20;
+    case '21to30':
+      return hours >= 21 && hours <= 30;
+    case '31to40':
+      return hours >= 31 && hours <= 40;
+    case '40plus':
+      return hours >= 41;
+    default:
+      return true;
+  }
+};
+
+const enrichJobRecord = (job) => {
+  const metadata = decodeJobMetadataFromTags(job.tags ?? []);
+  const weeklyHours = Number.isFinite(job.weekly_hours)
+    ? job.weekly_hours
+    : Number(metadata.weeklyHours) || null;
+  const educationLevel = job.education_level || metadata.educationLevel || 'unspecified';
+  const jobType = job.job_type || metadata.jobType || 'generalist';
+  const localityId = job.location_locality_id || metadata.localityId || '';
+  const locality = localityId ? localityMap[localityId] : null;
+  const address = job.location_address || metadata.address || '';
+  const location = job.location?.trim() || buildLocationString(locality, address);
+
+  return {
+    ...job,
+    tags: metadata.displayTags,
+    weekly_hours: weeklyHours,
+    education_level: educationLevel,
+    job_type: jobType,
+    location_locality_id: localityId,
+    location_address: address,
+    locality_label: locality ? locality.label : '',
+    location,
+  };
+};
 
 const steps = [
   {
@@ -263,10 +461,15 @@ const cvWritingTips = [
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
 
 const quickFilters = [
-  { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zurich') },
-  { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('geneva') },
+  { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zürich') || job.location?.toLowerCase().includes('zurich') },
+  { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('genève') || job.location?.toLowerCase().includes('geneva') },
+  { id: 'loc-basel', label: 'Basel', category: 'Location', test: (job) => job.location?.toLowerCase().includes('basel') },
+  { id: 'loc-lausanne', label: 'Lausanne', category: 'Location', test: (job) => job.location?.toLowerCase().includes('lausanne') },
+  { id: 'loc-bern', label: 'Bern', category: 'Location', test: (job) => job.location?.toLowerCase().includes('bern') },
+  { id: 'loc-zug', label: 'Zug', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zug') },
   { id: 'loc-remote', label: 'Remote friendly', category: 'Location', test: (job) => job.location?.toLowerCase().includes('remote') },
   { id: 'type-full', label: 'Full-time', category: 'Role type', test: (job) => job.employment_type === 'Full-time' },
+  { id: 'type-part', label: 'Part-time', category: 'Role type', test: (job) => job.employment_type === 'Part-time' },
   { id: 'type-intern', label: 'Internship', category: 'Role type', test: (job) => job.employment_type === 'Internship' },
   { id: 'focus-engineering', label: 'Engineering', category: 'Focus', test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())) },
   { id: 'focus-product', label: 'Product', category: 'Focus', test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())) },
@@ -403,16 +606,33 @@ const SwissStartupConnect = () => {
   const [postJobError, setPostJobError] = useState('');
   const [jobForm, setJobForm] = useState({
     title: '',
-    location: '',
+    localityLabel: '',
+    localityId: '',
+    address: '',
     employment_type: 'Full-time',
+    weekly_hours: '',
     salary: '',
     equity: '',
+    education_level: '',
+    job_type: '',
     description: '',
     requirements: '',
     benefits: '',
     tags: '',
     motivational_letter_required: false,
   });
+  const [locationFilterInput, setLocationFilterInput] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState('');
+  const [hoursFilter, setHoursFilter] = useState('');
+  const [educationFilter, setEducationFilter] = useState('');
+  const [jobTypeFilter, setJobTypeFilter] = useState('');
+  const [jobDeleting, setJobDeleting] = useState(null);
+  const [myApplications, setMyApplications] = useState([]);
+  const [myApplicationsLoading, setMyApplicationsLoading] = useState(false);
+  const [myApplicationsVersion, setMyApplicationsVersion] = useState(0);
+  const [myApplicationsLoaded, setMyApplicationsLoaded] = useState(false);
+  const [withdrawingApplicationId, setWithdrawingApplicationId] = useState(null);
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
 
@@ -736,6 +956,56 @@ const SwissStartupConnect = () => {
     fetchApplications();
   }, [user, startupProfile?.id, applicationsVersion]);
 
+  useEffect(() => {
+    const fetchMyApplications = async () => {
+      if (!user || user.type !== 'student' || !profile?.id) {
+        setMyApplications([]);
+        setMyApplicationsLoaded(false);
+        return;
+      }
+
+      setMyApplicationsLoading(true);
+      setMyApplicationsLoaded(false);
+      try {
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select(
+            `id, status, motivational_letter, created_at, job_id,
+             jobs ( id, title, company_name, location, employment_type, salary, equity, tags, stage, posted, applicants, startup_id, created_at )`
+          )
+          .eq('profile_id', profile.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setMyApplications(data);
+        } else if (error) {
+          console.error('Student applications load error', error);
+          setMyApplications([]);
+        }
+      } catch (error) {
+        console.error('Student applications load error', error);
+        setMyApplications([]);
+      } finally {
+        setMyApplicationsLoading(false);
+        setMyApplicationsLoaded(true);
+      }
+    };
+
+    fetchMyApplications();
+  }, [user, profile?.id, myApplicationsVersion]);
+
+  useEffect(() => {
+    if (user?.type !== 'student' || !myApplicationsLoaded) return;
+    const ids = myApplications
+      .map((application) => application.job_id || application.jobs?.id)
+      .filter(Boolean);
+    if (ids.length === 0) {
+      setAppliedJobs([]);
+      return;
+    }
+    setAppliedJobs(ids);
+  }, [myApplications, user?.type, myApplicationsLoaded]);
+
   const addFilter = (filterId) => {
     setActiveTab('jobs');
     setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
@@ -745,7 +1015,15 @@ const SwissStartupConnect = () => {
     setSelectedFilters((prev) => prev.filter((item) => item !== filterId));
   };
 
-  const clearFilters = () => setSelectedFilters([]);
+  const clearFilters = () => {
+    setSelectedFilters([]);
+    setLocationFilter('');
+    setLocationFilterInput('');
+    setEmploymentTypeFilter('');
+    setHoursFilter('');
+    setEducationFilter('');
+    setJobTypeFilter('');
+  };
 
   const toggleSavedJob = (jobId) => {
     setSavedJobs((prev) => {
@@ -771,11 +1049,12 @@ const SwissStartupConnect = () => {
 
   const normalizedJobs = useMemo(() => {
     return jobs.map((job) => {
-      const idKey = job.startup_id ? String(job.startup_id) : null;
+      const enriched = enrichJobRecord(job);
+      const idKey = enriched.startup_id ? String(enriched.startup_id) : null;
       const nameFromLookup = idKey ? companyNameLookup[idKey] : null;
-      const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
+      const ensuredName = enriched.company_name?.trim() || nameFromLookup || 'Verified startup';
       return {
-        ...job,
+        ...enriched,
         company_name: ensuredName,
       };
     });
@@ -827,22 +1106,63 @@ const SwissStartupConnect = () => {
   }, [isStartupVerified, startupId]);
 
   const filteredJobs = useMemo(() => {
+    const searchValue = searchTerm.trim().toLowerCase();
+    const locationSearch = locationFilterInput.trim().toLowerCase();
+
     return normalizedJobs.filter((job) => {
       const matchesSearch =
-        !searchTerm.trim() ||
+        !searchValue ||
         [job.title, job.company_name, job.location, job.description]
           .join(' ')
           .toLowerCase()
-          .includes(searchTerm.trim().toLowerCase());
+          .includes(searchValue);
 
       const matchesFilters = selectedFilters.every((filterId) => {
         const predicate = filterPredicates[filterId];
         return predicate ? predicate(job) : true;
       });
 
-      return matchesSearch && matchesFilters;
+      const matchesLocation =
+        (!locationFilter && !locationSearch) ||
+        (locationFilter && job.location_locality_id === locationFilter) ||
+        (locationSearch &&
+          (job.location?.toLowerCase().includes(locationSearch) ||
+            job.locality_label?.toLowerCase().includes(locationSearch)));
+
+      const matchesEmploymentType =
+        !employmentTypeFilter || job.employment_type === employmentTypeFilter;
+
+      const matchesHours = matchHoursFilter(job.weekly_hours ?? null, hoursFilter);
+
+      const normalizedEducation = job.education_level || 'unspecified';
+      const matchesEducation =
+        !educationFilter ||
+        normalizedEducation === educationFilter ||
+        (educationFilter === 'unspecified' && (!job.education_level || job.education_level === 'unspecified'));
+
+      const matchesJobType = !jobTypeFilter || job.job_type === jobTypeFilter;
+
+      return (
+        matchesSearch &&
+        matchesFilters &&
+        matchesLocation &&
+        matchesEmploymentType &&
+        matchesHours &&
+        matchesEducation &&
+        matchesJobType
+      );
     });
-  }, [normalizedJobs, searchTerm, selectedFilters]);
+  }, [
+    normalizedJobs,
+    searchTerm,
+    selectedFilters,
+    locationFilter,
+    locationFilterInput,
+    employmentTypeFilter,
+    hoursFilter,
+    educationFilter,
+    jobTypeFilter,
+  ]);
 
   const savedJobList = useMemo(
     () => normalizedJobs.filter((job) => savedJobs.includes(job.id)),
@@ -1057,11 +1377,53 @@ const SwissStartupConnect = () => {
     setPostJobError('');
 
     try {
+      const matchedLocality = jobForm.localityId ? localityMap[jobForm.localityId] : null;
+      if (!matchedLocality) {
+        setPostJobError('Select a locality from the Swiss list.');
+        setPostingJob(false);
+        return;
+      }
+
+      const parsedHours = Number(jobForm.weekly_hours);
+      if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
+        setPostJobError('Enter the weekly hours required for this role.');
+        setPostingJob(false);
+        return;
+      }
+
+      if (!jobForm.education_level) {
+        setPostJobError('Select the required level of studies.');
+        setPostingJob(false);
+        return;
+      }
+
+      if (!jobForm.job_type) {
+        setPostJobError('Select the focus for this role.');
+        setPostingJob(false);
+        return;
+      }
+
+      const trimmedAddress = jobForm.address.trim();
+      const locationString = buildLocationString(matchedLocality, trimmedAddress);
+      const focusTags = jobForm.tags
+        ? jobForm.tags
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [];
+      const metadataTags = [
+        `__ssc:hours=${parsedHours}`,
+        `__ssc:education=${jobForm.education_level}`,
+        `__ssc:jobType=${jobForm.job_type}`,
+        jobForm.localityId ? `__ssc:locality=${jobForm.localityId}` : null,
+        trimmedAddress ? `__ssc:address=${encodeURIComponent(trimmedAddress)}` : null,
+      ].filter(Boolean);
+
       const payload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
-        location: jobForm.location.trim(),
+        location: locationString,
         employment_type: jobForm.employment_type,
         salary: jobForm.salary.trim(),
         equity: jobForm.equity.trim(),
@@ -1072,9 +1434,7 @@ const SwissStartupConnect = () => {
         benefits: jobForm.benefits
           ? jobForm.benefits.split('\n').map((item) => item.trim()).filter(Boolean)
           : [],
-        tags: jobForm.tags
-          ? jobForm.tags.split(',').map((item) => item.trim()).filter(Boolean)
-          : [],
+        tags: [...focusTags, ...metadataTags],
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
       };
@@ -1089,10 +1449,15 @@ const SwissStartupConnect = () => {
       setPostJobModalOpen(false);
       setJobForm({
         title: '',
-        location: '',
+        localityLabel: '',
+        localityId: '',
+        address: '',
         employment_type: 'Full-time',
+        weekly_hours: '',
         salary: '',
         equity: '',
+        education_level: '',
+        job_type: '',
         description: '',
         requirements: '',
         benefits: '',
@@ -1292,6 +1657,7 @@ const SwissStartupConnect = () => {
         setApplicationError(error.message);
       } else {
         setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
+        setMyApplicationsVersion((prev) => prev + 1);
         setFeedback({ type: 'success', message: 'Application submitted! 🎉' });
         closeApplicationModal();
       }
@@ -1321,6 +1687,55 @@ const SwissStartupConnect = () => {
       setFeedback({ type: 'error', message: error.message });
     } finally {
       setApplicationStatusUpdating(null);
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (!jobId) return;
+    if (typeof window !== 'undefined') {
+      const confirmDelete = window.confirm('Remove this job offer? Applicants will no longer see it.');
+      if (!confirmDelete) return;
+    }
+
+    setJobDeleting(jobId);
+    try {
+      const { error } = await supabase.from('jobs').delete().eq('id', jobId);
+      if (error) {
+        throw error;
+      }
+
+      setFeedback({ type: 'success', message: 'Job offer removed.' });
+      setJobs((prev) => prev.filter((job) => job.id !== jobId));
+      setJobsVersion((prev) => prev + 1);
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message || 'Unable to delete job offer.' });
+    } finally {
+      setJobDeleting(null);
+    }
+  };
+
+  const withdrawApplication = async (applicationId, jobId) => {
+    if (!applicationId) return;
+    if (typeof window !== 'undefined') {
+      const confirmWithdraw = window.confirm('Withdraw this application? The startup will no longer see it.');
+      if (!confirmWithdraw) return;
+    }
+
+    setWithdrawingApplicationId(applicationId);
+    try {
+      const { error } = await supabase.from('job_applications').delete().eq('id', applicationId);
+      if (error) {
+        throw error;
+      }
+
+      setFeedback({ type: 'success', message: 'Application withdrawn.' });
+      setMyApplications((prev) => prev.filter((application) => application.id !== applicationId));
+      setAppliedJobs((prev) => prev.filter((id) => id !== jobId));
+      setMyApplicationsVersion((prev) => prev + 1);
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message || 'Could not withdraw application.' });
+    } finally {
+      setWithdrawingApplicationId(null);
     }
   };
 
@@ -1518,10 +1933,21 @@ const SwissStartupConnect = () => {
 
   const loadingSpinner = jobsLoading || companiesLoading || authLoading;
 
+  const hasAdvancedFilters = Boolean(
+    locationFilter ||
+      locationFilterInput.trim() ||
+      employmentTypeFilter ||
+      hoursFilter ||
+      educationFilter ||
+      jobTypeFilter
+  );
+
   const navTabs = useMemo(() => {
     const baseTabs = ['general', 'jobs', 'companies'];
     if (user?.type === 'startup') {
       baseTabs.push('my-jobs', 'applications');
+    } else if (user?.type === 'student') {
+      baseTabs.push('my-applications');
     }
     baseTabs.push('saved');
     return baseTabs;
@@ -1592,7 +2018,8 @@ const SwissStartupConnect = () => {
                 general: 'General',
                 jobs: 'Opportunities',
                 companies: 'Startups',
-                'my-jobs': 'My jobs',
+                'my-jobs': 'My job offers',
+                'my-applications': 'My job applications',
                 applications: 'Applicants',
                 saved: 'Saved',
               };
@@ -1676,7 +2103,7 @@ const SwissStartupConnect = () => {
                     {user.type === 'startup' && (
                       <>
                         <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>
-                          My jobs
+                          My job offers
                         </button>
                         <button type="button" onClick={() => { setStartupModalOpen(true); setShowUserMenu(false); }}>
                           Company profile
@@ -1781,11 +2208,74 @@ const SwissStartupConnect = () => {
                   <h2>Tailor your results</h2>
                   <p>Pick a combination of location, role type, and focus areas.</p>
                 </div>
-                {selectedFilters.length > 0 && (
+                {(selectedFilters.length > 0 || hasAdvancedFilters) && (
                   <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
                     Clear filters
                   </button>
                 )}
+              </div>
+              <div className="ssc__advanced-filters">
+                <label className="ssc__field">
+                  <span>Location</span>
+                  <input
+                    type="text"
+                    list="ssc-locality-options"
+                    value={locationFilterInput}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setLocationFilterInput(nextValue);
+                      const matched = localityOptions.find((option) => option.label === nextValue);
+                      setLocationFilter(matched ? matched.id : '');
+                    }}
+                    placeholder="Start typing a Swiss locality"
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Employment type</span>
+                  <select
+                    value={employmentTypeFilter}
+                    onChange={(event) => setEmploymentTypeFilter(event.target.value)}
+                  >
+                    <option value="">Any</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Internship">Internship</option>
+                  </select>
+                </label>
+                <label className="ssc__field">
+                  <span>Weekly hours</span>
+                  <select value={hoursFilter} onChange={(event) => setHoursFilter(event.target.value)}>
+                    <option value="">Any</option>
+                    {HOURS_FILTER_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="ssc__field">
+                  <span>Required studies</span>
+                  <select value={educationFilter} onChange={(event) => setEducationFilter(event.target.value)}>
+                    <option value="">Any</option>
+                    <option value="unspecified">Not specified</option>
+                    {EDUCATION_LEVEL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="ssc__field">
+                  <span>Role focus</span>
+                  <select value={jobTypeFilter} onChange={(event) => setJobTypeFilter(event.target.value)}>
+                    <option value="">Any</option>
+                    {JOB_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
               <div className="ssc__filters-grid">
                 {Object.entries(groupedFilters).map(([category, filters]) => (
@@ -1861,7 +2351,17 @@ const SwissStartupConnect = () => {
                           </span>
                           <span>
                             <Clock size={16} />
-                            {job.employment_type} • {job.posted}
+                            {job.employment_type}
+                            {job.weekly_hours ? ` • ${job.weekly_hours} h/week` : ' • Hours on request'}
+                            {job.posted ? ` • ${job.posted}` : ''}
+                          </span>
+                          <span>
+                            <GraduationCap size={16} />
+                            {EDUCATION_LABELS[job.education_level || 'unspecified']}
+                          </span>
+                          <span>
+                            <Layers size={16} />
+                            {JOB_TYPE_LABELS[job.job_type] || job.job_type || 'Focus TBD'}
                           </span>
                           <span>
                             <Users size={16} />
@@ -1875,6 +2375,11 @@ const SwissStartupConnect = () => {
                               {tag}
                             </span>
                           ))}
+                          {job.job_type && (
+                            <span className="ssc__tag ssc__tag--soft">
+                              {JOB_TYPE_LABELS[job.job_type] || job.job_type}
+                            </span>
+                          )}
                           <span className="ssc__tag ssc__tag--soft">{job.stage || 'Seed'}</span>
                           {job.motivational_letter_required && (
                             <span className="ssc__tag ssc__tag--required">Motivational letter</span>
@@ -2025,8 +2530,8 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__section-header">
                 <div>
-                  <h2>Your job posts</h2>
-                  <p>Track live opportunities, keep them up to date, and follow applicant interest at a glance.</p>
+                  <h2>My job offers</h2>
+                  <p>Track live opportunities, keep them up to date, and manage applicant interest at a glance.</p>
                 </div>
                 <div className="ssc__section-header-actions">
                   <span className="ssc__pill">
@@ -2076,6 +2581,11 @@ const SwissStartupConnect = () => {
                           <span>
                             <Clock size={16} />
                             {job.employment_type}
+                            {job.weekly_hours ? ` • ${job.weekly_hours} h/week` : ''}
+                          </span>
+                          <span>
+                            <GraduationCap size={16} />
+                            {EDUCATION_LABELS[job.education_level || 'unspecified']}
                           </span>
                           <span>
                             <Users size={16} />
@@ -2085,6 +2595,15 @@ const SwissStartupConnect = () => {
                         <div className="ssc__job-actions">
                           <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
                             View role
+                          </button>
+                          <button
+                            type="button"
+                            className="ssc__ghost-btn ssc__ghost-btn--danger"
+                            onClick={() => handleDeleteJob(job.id)}
+                            disabled={jobDeleting === job.id}
+                          >
+                            <Trash2 size={16} />
+                            {jobDeleting === job.id ? 'Removing…' : 'Delete'}
                           </button>
                           <button
                             type="button"
@@ -2101,7 +2620,7 @@ const SwissStartupConnect = () => {
               ) : (
                 <div className="ssc__empty-state">
                   <Briefcase size={40} />
-                  <h3>No job posts yet</h3>
+                  <h3>No job offers yet</h3>
                   <p>
                     {isStartupVerified
                       ? 'Share your first opportunity to start meeting candidates.'
@@ -2209,6 +2728,90 @@ const SwissStartupConnect = () => {
                   <Briefcase size={40} />
                   <h3>No applicants yet</h3>
                   <p>Share your job link or post a new role to start receiving applications.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'my-applications' && user?.type === 'student' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>My job applications</h2>
+                  <p>Review where you have applied and withdraw if your plans change.</p>
+                </div>
+                <span className="ssc__pill">{myApplications.length} submitted</span>
+              </div>
+
+              {myApplicationsLoading ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {[1, 2, 3, 4].map((index) => (
+                    <div key={index} className="ssc__job-skeleton" />
+                  ))}
+                </div>
+              ) : myApplications.length > 0 ? (
+                <div className="ssc__applications-grid">
+                  {myApplications.map((application) => {
+                    const job = application.jobs ? enrichJobRecord(application.jobs) : null;
+                    const jobId = job?.id || application.job_id;
+                    const jobTypeLabel = job ? JOB_TYPE_LABELS[job.job_type] || job.job_type : 'Opportunity';
+                    const statusLabel = (application.status || 'submitted').replace('_', ' ');
+                    const employmentLabel = job?.employment_type || 'Not listed';
+                    const hoursLabel = job?.weekly_hours ? ` · ${job.weekly_hours} h/week` : '';
+                    const locationLabel = job?.location || 'No longer listed';
+                    const educationLabel = EDUCATION_LABELS[job?.education_level || 'unspecified'];
+                    return (
+                      <article key={application.id} className="ssc__application-card">
+                        <header className="ssc__application-header">
+                          <div>
+                            <h3>{job?.title || 'Role unavailable'}</h3>
+                            <p>{job?.company_name || 'Removed startup'}</p>
+                          </div>
+                          <span className="ssc__pill ssc__pill--muted">{statusLabel}</span>
+                        </header>
+
+                        <div className="ssc__candidate ssc__candidate--job">
+                          <div>
+                            <ul>
+                              <li>
+                                <strong>Location:</strong> {locationLabel}
+                              </li>
+                              <li>
+                                <strong>Schedule:</strong> {employmentLabel}
+                                {hoursLabel}
+                              </li>
+                              <li>
+                                <strong>Required studies:</strong> {educationLabel}
+                              </li>
+                              <li>
+                                <strong>Focus:</strong> {jobTypeLabel}
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <footer className="ssc__application-footer">
+                          <span>Applied {new Date(application.created_at).toLocaleDateString()}</span>
+                          <button
+                            type="button"
+                            className="ssc__ghost-btn ssc__ghost-btn--danger"
+                            onClick={() => withdrawApplication(application.id, jobId)}
+                            disabled={withdrawingApplicationId === application.id}
+                          >
+                            {withdrawingApplicationId === application.id ? 'Withdrawing…' : 'Withdraw'}
+                          </button>
+                        </footer>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <BookmarkPlus size={40} />
+                  <h3>No applications yet</h3>
+                  <p>Apply to a role to track it here and stay in control of your search.</p>
                 </div>
               )}
             </div>
@@ -2435,6 +3038,12 @@ const SwissStartupConnect = () => {
         </div>
       </footer>
 
+      <datalist id="ssc-locality-options">
+        {localityOptions.map((option) => (
+          <option key={option.id} value={option.label} />
+        ))}
+      </datalist>
+
       {resourceModal === 'compensation' && (
         <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
           <div className="ssc__modal ssc__modal--wide">
@@ -2625,7 +3234,17 @@ const SwissStartupConnect = () => {
                 </span>
                 <span>
                   <Clock size={16} />
-                  {selectedJob.employment_type} • {selectedJob.posted}
+                  {selectedJob.employment_type}
+                  {selectedJob.weekly_hours ? ` • ${selectedJob.weekly_hours} h/week` : ' • Hours on request'}
+                  {selectedJob.posted ? ` • ${selectedJob.posted}` : ''}
+                </span>
+                <span>
+                  <GraduationCap size={16} />
+                  {EDUCATION_LABELS[selectedJob.education_level || 'unspecified']}
+                </span>
+                <span>
+                  <Layers size={16} />
+                  {JOB_TYPE_LABELS[selectedJob.job_type] || selectedJob.job_type || 'Not specified'}
                 </span>
                 <span>
                   <Users size={16} />
@@ -2635,6 +3254,21 @@ const SwissStartupConnect = () => {
             </header>
             <div className="ssc__modal-body">
               <p>{selectedJob.description}</p>
+
+              <div className="ssc__modal-meta-grid">
+                <div>
+                  <strong>Weekly hours</strong>
+                  <span>{selectedJob.weekly_hours ? `${selectedJob.weekly_hours} h/week` : 'Discuss with the startup'}</span>
+                </div>
+                <div>
+                  <strong>Required studies</strong>
+                  <span>{EDUCATION_LABELS[selectedJob.education_level || 'unspecified']}</span>
+                </div>
+                <div>
+                  <strong>Role focus</strong>
+                  <span>{JOB_TYPE_LABELS[selectedJob.job_type] || selectedJob.job_type || 'Not specified'}</span>
+                </div>
+              </div>
 
               <div className="ssc__modal-section">
                 <h3>Requirements</h3>
@@ -3029,13 +3663,31 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Location</span>
+                  <span>Locality</span>
                   <input
                     type="text"
-                    value={jobForm.location}
-                    onChange={(event) => setJobForm((prev) => ({ ...prev, location: event.target.value }))}
-                    placeholder="Zurich, Remote within Switzerland…"
+                    list="ssc-locality-options"
+                    value={jobForm.localityLabel}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      const matched = localityOptions.find((option) => option.label === nextValue);
+                      setJobForm((prev) => ({
+                        ...prev,
+                        localityLabel: nextValue,
+                        localityId: matched ? matched.id : '',
+                      }));
+                    }}
+                    placeholder="Start typing to choose a Swiss locality"
                     required
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>Exact address (optional)</span>
+                  <input
+                    type="text"
+                    value={jobForm.address}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, address: event.target.value }))}
+                    placeholder="Street and number, coworking space, etc."
                   />
                 </label>
                 <label className="ssc__field">
@@ -3047,8 +3699,19 @@ const SwissStartupConnect = () => {
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
                     <option value="Internship">Internship</option>
-                    <option value="Contract">Contract</option>
                   </select>
+                </label>
+                <label className="ssc__field">
+                  <span>Weekly hours</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="80"
+                    value={jobForm.weekly_hours}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, weekly_hours: event.target.value }))}
+                    placeholder="e.g. 40"
+                    required
+                  />
                 </label>
                 <label className="ssc__field">
                   <span>Salary range</span>
@@ -3067,6 +3730,36 @@ const SwissStartupConnect = () => {
                     onChange={(event) => setJobForm((prev) => ({ ...prev, equity: event.target.value }))}
                     placeholder="Optional"
                   />
+                </label>
+                <label className="ssc__field">
+                  <span>Required studies</span>
+                  <select
+                    value={jobForm.education_level}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, education_level: event.target.value }))}
+                    required
+                  >
+                    <option value="">Select one</option>
+                    {EDUCATION_LEVEL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="ssc__field">
+                  <span>Role focus</span>
+                  <select
+                    value={jobForm.job_type}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, job_type: event.target.value }))}
+                    required
+                  >
+                    <option value="">Select focus</option>
+                    {JOB_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 
@@ -3099,7 +3792,7 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Tags (comma separated)</span>
+                  <span>Focus tags (comma separated, add your own)</span>
                   <input
                     type="text"
                     value={jobForm.tags}
