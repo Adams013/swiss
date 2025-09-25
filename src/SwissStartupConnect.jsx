@@ -990,17 +990,14 @@ const SwissStartupConnect = () => {
   }, [user, startupProfile?.id, applicationsVersion]);
 
   const addFilter = (filterId) => {
-    setActiveTab('jobs');
     setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
   };
 
   const removeFilter = (filterId) => {
-    setActiveTab('jobs');
     setSelectedFilters((prev) => prev.filter((item) => item !== filterId));
   };
 
   const clearFilters = () => {
-    setActiveTab('jobs');
     setSelectedFilters([]);
     setSalaryRangeDirty(false);
     setSalaryRange((prev) => {
@@ -1014,7 +1011,6 @@ const SwissStartupConnect = () => {
 
   const updateSalaryRange = useCallback(
     (computeNext) => {
-      setActiveTab('jobs');
       setSalaryRangeDirty(true);
       setSalaryRange((prev) => {
         const [boundMin, boundMax] = salaryBounds;

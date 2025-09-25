@@ -637,7 +637,6 @@
   height: 100%;
   margin: 0;
   background: none;
-  pointer-events: none;
 }
 
 .ssc__salary-slider input[type='range']::-webkit-slider-runnable-track {
