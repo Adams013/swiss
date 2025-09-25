@@ -161,6 +161,12 @@ const mockCompanies = [
   },
 ];
 
+const mockReviewStats = {
+  'mock-company-1': { average: 4.7, count: 28 },
+  'mock-company-2': { average: 4.2, count: 16 },
+  'mock-company-3': { average: 4.9, count: 34 },
+};
+
 const JOB_METADATA_PREFIX = '__ssc:';
 
 const formatLocalityOption = (locality) => {
@@ -237,6 +243,91 @@ const localityMap = localityOptions.reduce((acc, locality) => {
   return acc;
 }, {});
 
+const normalizeForCompare = (value) =>
+  value
+    ? value
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+    : '';
+
+const sanitizeForId = (value) => normalizeForCompare(value).replace(/[^a-z0-9]+/g, '-');
+
+const extractNumericSalaryRange = (salaryText) => {
+  if (!salaryText) {
+    return { min: null, max: null };
+  }
+
+  const cleaned = salaryText
+    .replace(/CHF|EUR|USD|CHF\.|EUR\.|USD\./gi, '')
+    .replace(/\u202f/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  const regex = /(\d+(?:[.,]\d+)?)(\s*[kK])?/g;
+  const values = [];
+  let match;
+  while ((match = regex.exec(cleaned)) !== null) {
+    const numeric = parseFloat(match[1].replace(',', '.'));
+    if (Number.isNaN(numeric)) continue;
+    const hasK = Boolean(match[2]);
+    values.push(hasK ? numeric * 1000 : numeric);
+  }
+
+  if (values.length === 0) {
+    return { min: null, max: null };
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return { min, max };
+};
+
+const extractCityInfo = (job) => {
+  const localityId = job.location_locality_id;
+  if (localityId && localityMap[localityId]) {
+    const locality = localityMap[localityId];
+    const label = locality.name || locality.label || localityId;
+    const normalizedName = normalizeForCompare(label || localityId);
+    const filterSuffix = sanitizeForId(label || localityId || localityId);
+    return {
+      mapKey: `locality|${localityId}`,
+      filterId: `city-${filterSuffix || sanitizeForId(localityId)}`,
+      label,
+      displayLabel: locality.name || locality.label || label,
+      match: (candidate) => candidate.location_locality_id === localityId,
+      count: 0,
+      normalizedName,
+    };
+  }
+
+  const locationText = job.location || '';
+  if (!locationText) return null;
+
+  const segments = locationText.split(',');
+  const candidateSegment = segments.length > 1 ? segments[segments.length - 2] : segments[0];
+  const cleaned = candidateSegment.replace(/\(.*?\)/g, '').replace(/\d+/g, '').trim();
+  if (!cleaned) return null;
+
+  const normalizedName = normalizeForCompare(cleaned);
+  if (!normalizedName) return null;
+
+  return {
+    mapKey: `name|${normalizedName}`,
+    filterId: `city-${sanitizeForId(cleaned)}`,
+    label: cleaned,
+    displayLabel: cleaned,
+    match: (candidate) => {
+      const sources = [candidate.location, candidate.locality_label];
+      return sources
+        .map((value) => normalizeForCompare(value || ''))
+        .some((text) => text.includes(normalizedName));
+    },
+    count: 0,
+    normalizedName,
+  };
+};
+
 const EDUCATION_LEVEL_OPTIONS = [
   { value: 'none', label: 'No formal studies required' },
   { value: 'apprenticeship', label: 'Apprenticeship / Vocational training' },
@@ -307,6 +398,18 @@ const enrichJobRecord = (job) => {
   const address = job.location_address || metadata.address || '';
   const location = job.location?.trim() || buildLocationString(locality, address);
 
+  const parseSalaryValue = (value) => {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+
+  const explicitMin = parseSalaryValue(job.salary_min);
+  const explicitMax = parseSalaryValue(job.salary_max);
+  const numericRange = extractNumericSalaryRange(job.salary);
+  const salaryMinValue = explicitMin ?? numericRange.min ?? null;
+  const salaryMaxValue = explicitMax ?? numericRange.max ?? explicitMin ?? numericRange.min ?? null;
+
   return {
     ...job,
     tags: metadata.displayTags,
@@ -317,6 +420,8 @@ const enrichJobRecord = (job) => {
     location_address: address,
     locality_label: locality ? locality.label : '',
     location,
+    salary_min_value: salaryMinValue,
+    salary_max_value: salaryMaxValue,
   };
 };
 
@@ -459,28 +564,6 @@ const cvWritingTips = [
 ];
 
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
-
-const quickFilters = [
-  { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zürich') || job.location?.toLowerCase().includes('zurich') },
-  { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('genève') || job.location?.toLowerCase().includes('geneva') },
-  { id: 'loc-basel', label: 'Basel', category: 'Location', test: (job) => job.location?.toLowerCase().includes('basel') },
-  { id: 'loc-lausanne', label: 'Lausanne', category: 'Location', test: (job) => job.location?.toLowerCase().includes('lausanne') },
-  { id: 'loc-bern', label: 'Bern', category: 'Location', test: (job) => job.location?.toLowerCase().includes('bern') },
-  { id: 'loc-zug', label: 'Zug', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zug') },
-  { id: 'loc-remote', label: 'Remote friendly', category: 'Location', test: (job) => job.location?.toLowerCase().includes('remote') },
-  { id: 'type-full', label: 'Full-time', category: 'Role type', test: (job) => job.employment_type === 'Full-time' },
-  { id: 'type-part', label: 'Part-time', category: 'Role type', test: (job) => job.employment_type === 'Part-time' },
-  { id: 'type-intern', label: 'Internship', category: 'Role type', test: (job) => job.employment_type === 'Internship' },
-  { id: 'focus-engineering', label: 'Engineering', category: 'Focus', test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())) },
-  { id: 'focus-product', label: 'Product', category: 'Focus', test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())) },
-  { id: 'focus-growth', label: 'Growth', category: 'Focus', test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())) },
-  { id: 'focus-climate', label: 'Climate', category: 'Focus', test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')) },
-];
-
-const filterPredicates = quickFilters.reduce((acc, filter) => {
-  acc[filter.id] = filter.test;
-  return acc;
-}, {});
 
 const mapSupabaseUser = (supabaseUser) => {
   if (!supabaseUser) return null;
@@ -627,6 +710,8 @@ const SwissStartupConnect = () => {
   const [hoursFilter, setHoursFilter] = useState('');
   const [educationFilter, setEducationFilter] = useState('');
   const [jobTypeFilter, setJobTypeFilter] = useState('');
+  const [salaryMinFilter, setSalaryMinFilter] = useState('');
+  const [salaryMaxFilter, setSalaryMaxFilter] = useState('');
   const [jobDeleting, setJobDeleting] = useState(null);
   const [myApplications, setMyApplications] = useState([]);
   const [myApplicationsLoading, setMyApplicationsLoading] = useState(false);
@@ -1006,13 +1091,11 @@ const SwissStartupConnect = () => {
     setAppliedJobs(ids);
   }, [myApplications, user?.type, myApplicationsLoaded]);
 
-  const addFilter = (filterId) => {
+  const toggleFilter = (filterId) => {
     setActiveTab('jobs');
-    setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
-  };
-
-  const removeFilter = (filterId) => {
-    setSelectedFilters((prev) => prev.filter((item) => item !== filterId));
+    setSelectedFilters((prev) =>
+      prev.includes(filterId) ? prev.filter((item) => item !== filterId) : [...prev, filterId]
+    );
   };
 
   const clearFilters = () => {
@@ -1023,6 +1106,8 @@ const SwissStartupConnect = () => {
     setHoursFilter('');
     setEducationFilter('');
     setJobTypeFilter('');
+    setSalaryMinFilter('');
+    setSalaryMaxFilter('');
   };
 
   const toggleSavedJob = (jobId) => {
@@ -1071,6 +1156,163 @@ const SwissStartupConnect = () => {
     return map;
   }, [normalizedJobs]);
 
+  const jobCities = useMemo(() => {
+    const map = new Map();
+    normalizedJobs.forEach((job) => {
+      const info = extractCityInfo(job);
+      if (!info) return;
+      const existing = map.get(info.mapKey);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(info.mapKey, { ...info, count: 1 });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+    );
+  }, [normalizedJobs]);
+
+  const jobCitySummaries = useMemo(
+    () =>
+      jobCities.map((city) => ({
+        filterId: city.filterId,
+        label: city.displayLabel,
+        count: city.count,
+      })),
+    [jobCities]
+  );
+
+  const hasRemoteJobs = useMemo(
+    () => normalizedJobs.some((job) => normalizeForCompare(job.location || '').includes('remote')),
+    [normalizedJobs]
+  );
+
+  const availableEmploymentTypes = useMemo(() => {
+    const map = new Map();
+    normalizedJobs.forEach((job) => {
+      const type = job.employment_type?.trim();
+      if (!type) return;
+      const normalized = type.toLowerCase();
+      if (!map.has(normalized)) {
+        map.set(normalized, { value: type, label: type });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+    );
+  }, [normalizedJobs]);
+
+  const employmentTypeValueSet = useMemo(
+    () => new Set(availableEmploymentTypes.map((type) => type.value)),
+    [availableEmploymentTypes]
+  );
+
+  const jobTypeOptions = useMemo(() => {
+    const map = new Map();
+    normalizedJobs.forEach((job) => {
+      const rawValue = (job.job_type || '').trim();
+      if (!rawValue) return;
+      const normalized = rawValue.toLowerCase();
+      const label =
+        JOB_TYPE_LABELS[normalized] ||
+        rawValue.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+      if (!map.has(normalized)) {
+        map.set(normalized, { value: normalized, label, count: 0 });
+      }
+      const entry = map.get(normalized);
+      entry.count += 1;
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+    );
+  }, [normalizedJobs]);
+
+  const jobTypeValueSet = useMemo(
+    () => new Set(jobTypeOptions.map((option) => option.value)),
+    [jobTypeOptions]
+  );
+
+  useEffect(() => {
+    if (!employmentTypeFilter) return;
+    if (!employmentTypeValueSet.has(employmentTypeFilter)) {
+      setEmploymentTypeFilter('');
+    }
+  }, [employmentTypeFilter, employmentTypeValueSet]);
+
+  useEffect(() => {
+    if (!jobTypeFilter) return;
+    if (!jobTypeValueSet.has(jobTypeFilter)) {
+      setJobTypeFilter('');
+    }
+  }, [jobTypeFilter, jobTypeValueSet]);
+
+  const quickFilters = useMemo(() => {
+    const filters = [];
+
+    jobCities.forEach((city) => {
+      filters.push({
+        id: city.filterId,
+        label: city.displayLabel,
+        category: 'Location',
+        test: (job) => city.match(job),
+      });
+    });
+
+    if (hasRemoteJobs) {
+      filters.push({
+        id: 'location-remote',
+        label: 'Remote friendly',
+        category: 'Location',
+        test: (job) => normalizeForCompare(job.location || '').includes('remote'),
+      });
+    }
+
+    availableEmploymentTypes.forEach((type) => {
+      filters.push({
+        id: `role-${sanitizeForId(type.value)}`,
+        label: type.label,
+        category: 'Role type',
+        test: (job) => job.employment_type === type.value,
+      });
+    });
+
+    jobTypeOptions
+      .filter((option) => option.value !== 'unspecified')
+      .forEach((option) => {
+        filters.push({
+          id: `focus-${option.value}`,
+          label: option.label,
+          category: 'Focus',
+          test: (job) => job.job_type === option.value,
+        });
+      });
+
+    return filters;
+  }, [jobCities, hasRemoteJobs, availableEmploymentTypes, jobTypeOptions]);
+
+  const filterPredicates = useMemo(() => {
+    return quickFilters.reduce((acc, filter) => {
+      acc[filter.id] = filter.test;
+      return acc;
+    }, {});
+  }, [quickFilters]);
+
+  useEffect(() => {
+    if (quickFilters.length === 0) {
+      setSelectedFilters([]);
+      return;
+    }
+    const availableIds = new Set(quickFilters.map((filter) => filter.id));
+    setSelectedFilters((prev) => {
+      const filtered = prev.filter((id) => availableIds.has(id));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [quickFilters]);
+
   const isStartupVerified = startupProfile?.verification_status === 'verified';
   const startupId = startupProfile?.id ? String(startupProfile.id) : null;
 
@@ -1108,6 +1350,15 @@ const SwissStartupConnect = () => {
   const filteredJobs = useMemo(() => {
     const searchValue = searchTerm.trim().toLowerCase();
     const locationSearch = locationFilterInput.trim().toLowerCase();
+    const parseSalaryInput = (value) => {
+      if (value === null || value === undefined) return null;
+      const text = String(value).trim();
+      if (!text) return null;
+      const numeric = Number(text);
+      return Number.isFinite(numeric) ? numeric : null;
+    };
+    const minSalary = parseSalaryInput(salaryMinFilter);
+    const maxSalary = parseSalaryInput(salaryMaxFilter);
 
     return normalizedJobs.filter((job) => {
       const matchesSearch =
@@ -1142,6 +1393,28 @@ const SwissStartupConnect = () => {
 
       const matchesJobType = !jobTypeFilter || job.job_type === jobTypeFilter;
 
+      let matchesSalary = true;
+      if (minSalary !== null || maxSalary !== null) {
+        const jobMinValue = job.salary_min_value ?? job.salary_max_value ?? null;
+        const jobMaxValue = job.salary_max_value ?? job.salary_min_value ?? null;
+
+        if (jobMinValue === null && jobMaxValue === null) {
+          matchesSalary = false;
+        } else {
+          if (matchesSalary && minSalary !== null) {
+            if (jobMaxValue === null || jobMaxValue < minSalary) {
+              matchesSalary = false;
+            }
+          }
+
+          if (matchesSalary && maxSalary !== null) {
+            if (jobMinValue === null || jobMinValue > maxSalary) {
+              matchesSalary = false;
+            }
+          }
+        }
+      }
+
       return (
         matchesSearch &&
         matchesFilters &&
@@ -1149,7 +1422,8 @@ const SwissStartupConnect = () => {
         matchesEmploymentType &&
         matchesHours &&
         matchesEducation &&
-        matchesJobType
+        matchesJobType &&
+        matchesSalary
       );
     });
   }, [
@@ -1162,6 +1436,9 @@ const SwissStartupConnect = () => {
     hoursFilter,
     educationFilter,
     jobTypeFilter,
+    filterPredicates,
+    salaryMinFilter,
+    salaryMaxFilter,
   ]);
 
   const savedJobList = useMemo(
@@ -1926,7 +2203,7 @@ const SwissStartupConnect = () => {
       acc[filter.category].push(filter);
       return acc;
     }, {});
-  }, []);
+  }, [quickFilters]);
 
   const closeResourceModal = () => setResourceModal(null);
   const closeReviewsModal = () => setReviewsModal(null);
@@ -1939,7 +2216,9 @@ const SwissStartupConnect = () => {
       employmentTypeFilter ||
       hoursFilter ||
       educationFilter ||
-      jobTypeFilter
+      jobTypeFilter ||
+      salaryMinFilter ||
+      salaryMaxFilter
   );
 
   const navTabs = useMemo(() => {
@@ -1960,7 +2239,9 @@ const SwissStartupConnect = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
-  const [companySort, setCompanySort] = useState('recent');
+  const [companySort, setCompanySort] = useState('newest');
+  const [companyCityFilter, setCompanyCityFilter] = useState('');
+  const [reviewStats, setReviewStats] = useState(mockReviewStats);
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
     const stored = window.localStorage.getItem('ssc_followed_companies');
@@ -1972,34 +2253,124 @@ const SwissStartupConnect = () => {
     window.localStorage.setItem('ssc_followed_companies', JSON.stringify(followedCompanies));
   }, [followedCompanies]);
 
-  const sortedCompanies = useMemo(() => {
-    const enriched = companies.map((company) => {
+  useEffect(() => {
+    const fetchReviewStats = async () => {
+      try {
+        const { data, error } = await supabase.from('company_reviews').select('startup_id,rating');
+        if (error) {
+          console.info('Review stats fallback', error.message);
+          return;
+        }
+        if (!data || data.length === 0) {
+          setReviewStats({});
+          return;
+        }
+
+        const aggregates = data.reduce((acc, item) => {
+          const key = item.startup_id ? String(item.startup_id) : null;
+          if (!key) return acc;
+          if (!acc[key]) acc[key] = { total: 0, count: 0 };
+          acc[key].total += Number(item.rating) || 0;
+          acc[key].count += 1;
+          return acc;
+        }, {});
+
+        const stats = Object.entries(aggregates).reduce((acc, [key, value]) => {
+          acc[key] = {
+            average: value.count > 0 ? value.total / value.count : null,
+            count: value.count,
+          };
+          return acc;
+        }, {});
+
+        setReviewStats(stats);
+      } catch (error) {
+        console.error('Review stats load error', error);
+      }
+    };
+
+    fetchReviewStats();
+  }, []);
+
+  const companyCityOptions = useMemo(() => {
+    const set = new Set();
+    companies.forEach((company) => {
+      const city = company.location?.trim();
+      if (city) set.add(city);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [companies]);
+
+  useEffect(() => {
+    if (!companyCityFilter) return;
+    if (!companyCityOptions.includes(companyCityFilter)) {
+      setCompanyCityFilter('');
+    }
+  }, [companyCityFilter, companyCityOptions]);
+
+  const enrichedCompanies = useMemo(() => {
+    return companies.map((company) => {
       const idKey = company.id ? String(company.id) : null;
       const nameKey = company.name ? String(company.name) : null;
       const jobCount = (idKey && companyJobCounts[idKey]) || (nameKey && companyJobCounts[nameKey]) || 0;
+      const statsKey = idKey || nameKey || '';
+      const stats = statsKey ? reviewStats[statsKey] : undefined;
+      const reviewAverage = typeof stats?.average === 'number' ? stats.average : null;
+      const reviewCount = stats?.count ?? 0;
+      const createdAtTime = company.created_at ? new Date(company.created_at).getTime() : 0;
+
       return {
         ...company,
         jobCount,
         isFollowed: followedCompanies.includes(String(company.id || company.name)),
+        reviewAverage,
+        reviewCount,
+        createdAtTime,
       };
     });
+  }, [companies, companyJobCounts, followedCompanies, reviewStats]);
 
-    if (companySort === 'jobs_desc') {
-      return enriched.sort((a, b) => b.jobCount - a.jobCount);
+  const filteredCompanies = useMemo(() => {
+    if (!companyCityFilter) return enrichedCompanies;
+    const normalizedCity = normalizeForCompare(companyCityFilter);
+    return enrichedCompanies.filter(
+      (company) => normalizeForCompare(company.location || '') === normalizedCity
+    );
+  }, [enrichedCompanies, companyCityFilter]);
+
+  const sortedCompanies = useMemo(() => {
+    const list = [...filteredCompanies];
+
+    switch (companySort) {
+      case 'oldest':
+        return list.sort((a, b) => a.createdAtTime - b.createdAtTime);
+      case 'best_reviews':
+        return list.sort((a, b) => {
+          const aScore = typeof a.reviewAverage === 'number' ? a.reviewAverage : -Infinity;
+          const bScore = typeof b.reviewAverage === 'number' ? b.reviewAverage : -Infinity;
+          if (bScore === aScore) {
+            return (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
+          }
+          return bScore - aScore;
+        });
+      case 'worst_reviews':
+        return list.sort((a, b) => {
+          const aScore = typeof a.reviewAverage === 'number' ? a.reviewAverage : Infinity;
+          const bScore = typeof b.reviewAverage === 'number' ? b.reviewAverage : Infinity;
+          if (aScore === bScore) {
+            return (a.reviewCount ?? Infinity) - (b.reviewCount ?? Infinity);
+          }
+          return aScore - bScore;
+        });
+      case 'newest':
+      default:
+        return list.sort((a, b) => b.createdAtTime - a.createdAtTime);
     }
-
-    return enriched.sort((a, b) => {
-      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-      return bTime - aTime;
-    });
-  }, [companies, companyJobCounts, companySort, followedCompanies]);
+  }, [filteredCompanies, companySort]);
 
   const featuredCompanies = useMemo(() => {
-    return [...sortedCompanies]
-      .sort((a, b) => b.jobCount - a.jobCount)
-      .slice(0, 3);
-  }, [sortedCompanies]);
+    return [...filteredCompanies].sort((a, b) => b.jobCount - a.jobCount).slice(0, 3);
+  }, [filteredCompanies]);
 
   return (
     <div className="ssc">
@@ -2237,9 +2608,11 @@ const SwissStartupConnect = () => {
                     onChange={(event) => setEmploymentTypeFilter(event.target.value)}
                   >
                     <option value="">Any</option>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Internship">Internship</option>
+                    {availableEmploymentTypes.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="ssc__field">
@@ -2266,10 +2639,32 @@ const SwissStartupConnect = () => {
                   </select>
                 </label>
                 <label className="ssc__field">
+                  <span>Salary range (CHF)</span>
+                  <div className="ssc__field-range-inputs">
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="Min"
+                      value={salaryMinFilter}
+                      onChange={(event) => setSalaryMinFilter(event.target.value)}
+                    />
+                    <span className="ssc__field-range-separator">–</span>
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="Max"
+                      value={salaryMaxFilter}
+                      onChange={(event) => setSalaryMaxFilter(event.target.value)}
+                    />
+                  </div>
+                </label>
+                <label className="ssc__field">
                   <span>Role focus</span>
                   <select value={jobTypeFilter} onChange={(event) => setJobTypeFilter(event.target.value)}>
                     <option value="">Any</option>
-                    {JOB_TYPE_OPTIONS.map((option) => (
+                    {jobTypeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -2277,6 +2672,24 @@ const SwissStartupConnect = () => {
                   </select>
                 </label>
               </div>
+              {jobCitySummaries.length > 0 && (
+                <div className="ssc__city-summary">
+                  <span className="ssc__filter-label">Active cities</span>
+                  <div className="ssc__city-list">
+                    {jobCitySummaries.map((city) => (
+                      <button
+                        key={city.filterId}
+                        type="button"
+                        className={`ssc__city-pill ${selectedFilters.includes(city.filterId) ? 'is-active' : ''}`}
+                        onClick={() => toggleFilter(city.filterId)}
+                      >
+                        {city.label}
+                        <small>{city.count}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="ssc__filters-grid">
                 {Object.entries(groupedFilters).map(([category, filters]) => (
                   <div key={category} className="ssc__filter-group">
@@ -2287,7 +2700,7 @@ const SwissStartupConnect = () => {
                           key={filter.id}
                           type="button"
                           className={`ssc__chip ${selectedFilters.includes(filter.id) ? 'is-selected' : ''}`}
-                          onClick={() => addFilter(filter.id)}
+                          onClick={() => toggleFilter(filter.id)}
                         >
                           {filter.label}
                         </button>
@@ -2433,6 +2846,21 @@ const SwissStartupConnect = () => {
                   <p>Meet the founders building Switzerland’s next generation of companies.</p>
                 </div>
                 <div className="ssc__company-toolbar">
+                  <label htmlFor="ssc-company-city">
+                    <span>City</span>
+                    <select
+                      id="ssc-company-city"
+                      value={companyCityFilter}
+                      onChange={(event) => setCompanyCityFilter(event.target.value)}
+                    >
+                      <option value="">All</option>
+                      {companyCityOptions.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <label htmlFor="ssc-company-sort">
                     <span>Sort by</span>
                     <select
@@ -2440,8 +2868,10 @@ const SwissStartupConnect = () => {
                       value={companySort}
                       onChange={(event) => setCompanySort(event.target.value)}
                     >
-                      <option value="recent">Most recent</option>
-                      <option value="jobs_desc">Most roles</option>
+                      <option value="newest">Newest</option>
+                      <option value="oldest">Oldest</option>
+                      <option value="best_reviews">Best reviews</option>
+                      <option value="worst_reviews">Worst reviews</option>
                     </select>
                   </label>
                 </div>
@@ -2475,11 +2905,30 @@ const SwissStartupConnect = () => {
                           </div>
                           <p className="ssc__company-tagline">{company.tagline}</p>
                           <div className="ssc__company-meta">
-                            <span>{company.location}</span>
-                            <span>{company.industry}</span>
-                            <span>{company.team}</span>
+                            <span className="ssc__company-location">
+                              <MapPin size={14} />
+                              {company.location || 'Switzerland'}
+                            </span>
+                            {company.industry && <span>{company.industry}</span>}
+                            {company.team && <span>{company.team}</span>}
                           </div>
-                          <p className="ssc__company-stats">{company.culture}</p>
+                          {company.reviewAverage !== null ? (
+                            <div className="ssc__company-rating">
+                              <Star size={14} />
+                              <strong>{company.reviewAverage.toFixed(1)}</strong>
+                              <span>
+                                {company.reviewCount === 1
+                                  ? '1 review'
+                                  : `${company.reviewCount} reviews`}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="ssc__company-rating ssc__company-rating--muted">
+                              <Star size={14} />
+                              <span>No reviews yet</span>
+                            </div>
+                          )}
+                          {company.culture && <p className="ssc__company-stats">{company.culture}</p>}
                           <div className="ssc__company-foot">
                             <span className="ssc__company-jobs">{jobCountLabel}</span>
                             <div className="ssc__company-actions">
