@@ -2615,7 +2615,7 @@ const SwissStartupConnect = () => {
 
   return (
     <div className="ssc">
-      <header className="ssc__header">
+      <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__brand">
             <div className="ssc__brand-badge">⌁</div>
