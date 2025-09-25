@@ -262,22 +262,263 @@ const cvWritingTips = [
 
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
 
-const quickFilters = [
-  { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zurich') },
-  { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('geneva') },
-  { id: 'loc-remote', label: 'Remote friendly', category: 'Location', test: (job) => job.location?.toLowerCase().includes('remote') },
-  { id: 'type-full', label: 'Full-time', category: 'Role type', test: (job) => job.employment_type === 'Full-time' },
-  { id: 'type-intern', label: 'Internship', category: 'Role type', test: (job) => job.employment_type === 'Internship' },
-  { id: 'focus-engineering', label: 'Engineering', category: 'Focus', test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())) },
-  { id: 'focus-product', label: 'Product', category: 'Focus', test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())) },
-  { id: 'focus-growth', label: 'Growth', category: 'Focus', test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())) },
-  { id: 'focus-climate', label: 'Climate', category: 'Focus', test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')) },
+const activeCityFilters = [
+  { id: 'city-zurich', label: 'Zurich', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('zurich') },
+  { id: 'city-geneva', label: 'Geneva', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('geneva') },
+  { id: 'city-lausanne', label: 'Lausanne', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('lausanne') },
 ];
+
+const roleFocusFilters = [
+  {
+    id: 'focus-engineering',
+    label: 'Engineering',
+    category: 'Role focus',
+    test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())),
+  },
+  {
+    id: 'focus-product',
+    label: 'Product',
+    category: 'Role focus',
+    test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())),
+  },
+  {
+    id: 'focus-growth',
+    label: 'Growth',
+    category: 'Role focus',
+    test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())),
+  },
+  {
+    id: 'focus-climate',
+    label: 'Climate',
+    category: 'Role focus',
+    test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')),
+  },
+];
+
+const quickFilters = [...activeCityFilters, ...roleFocusFilters];
 
 const filterPredicates = quickFilters.reduce((acc, filter) => {
   acc[filter.id] = filter.test;
   return acc;
 }, {});
+
+const SALARY_MIN_FIELDS = [
+  'salary_min',
+  'salary_min_chf',
+  'salary_minimum',
+  'salary_range_min',
+  'salary_lower',
+  'salary_floor',
+  'salary_low',
+  'salary_from',
+  'compensation_min',
+  'pay_min',
+];
+
+const SALARY_MAX_FIELDS = [
+  'salary_max',
+  'salary_max_chf',
+  'salary_maximum',
+  'salary_range_max',
+  'salary_upper',
+  'salary_ceiling',
+  'salary_high',
+  'salary_to',
+  'compensation_max',
+  'pay_max',
+];
+
+const SALARY_PERIOD_FIELDS = [
+  'salary_period',
+  'salary_interval',
+  'salary_frequency',
+  'salary_unit',
+  'salary_timeframe',
+  'salary_basis',
+  'pay_period',
+];
+
+const SALARY_FALLBACK_RANGE = [2000, 12000];
+const SALARY_STEP = 1;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const formatSalaryValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+  return String(Math.round(value));
+};
+
+const parseNumericValue = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) {
+    return null;
+  }
+
+  const match = trimmed.match(/-?\d+(?:[.,]\d+)?/);
+  if (!match) {
+    return null;
+  }
+
+  let numeric = Number.parseFloat(match[0].replace(',', '.'));
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  if (trimmed.includes('m')) {
+    numeric *= 1_000_000;
+  } else if (trimmed.includes('k')) {
+    numeric *= 1_000;
+  }
+
+  return numeric;
+};
+
+const detectSalaryPeriod = (job, salaryText) => {
+  const baseText = [
+    salaryText ?? '',
+    ...SALARY_PERIOD_FIELDS.map((field) => job?.[field] ?? ''),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  if (baseText.includes('month')) return 'month';
+  if (baseText.includes('week')) return 'week';
+  if (baseText.includes('day')) return 'day';
+  if (baseText.includes('hour')) return 'hour';
+  if (baseText.includes('year') || baseText.includes('annual') || baseText.includes('annum')) return 'year';
+  return null;
+};
+
+const convertToMonthly = (value, period, salaryText) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  let resolvedPeriod = period;
+  if (!resolvedPeriod) {
+    const reference = salaryText?.toLowerCase() ?? '';
+    if (reference.includes('per month') || reference.includes('/ month')) {
+      resolvedPeriod = 'month';
+    } else if (reference.includes('per week') || reference.includes('/ week')) {
+      resolvedPeriod = 'week';
+    } else if (reference.includes('per day') || reference.includes('/ day')) {
+      resolvedPeriod = 'day';
+    } else if (reference.includes('per hour') || reference.includes('/ hour')) {
+      resolvedPeriod = 'hour';
+    } else if (value > 20000) {
+      resolvedPeriod = 'year';
+    } else {
+      resolvedPeriod = 'month';
+    }
+  }
+
+  switch (resolvedPeriod) {
+    case 'year':
+      return value / 12;
+    case 'week':
+      return value * 4.333;
+    case 'day':
+      return value * 21;
+    case 'hour':
+      return value * 160;
+    default:
+      return value;
+  }
+};
+
+const computeSalaryRange = (job) => {
+  const salaryText = job?.salary ?? '';
+  const period = detectSalaryPeriod(job, salaryText);
+
+  const minCandidate = SALARY_MIN_FIELDS.map((field) => parseNumericValue(job?.[field]))
+    .find((value) => value != null);
+  const maxCandidate = SALARY_MAX_FIELDS.map((field) => parseNumericValue(job?.[field]))
+    .find((value) => value != null);
+
+  const directValues = [minCandidate, maxCandidate]
+    .filter((value) => value != null)
+    .map((value) => convertToMonthly(value, period, salaryText))
+    .filter((value) => Number.isFinite(value));
+
+  const parsedFromString = Array.from(
+    String(salaryText)
+      .toLowerCase()
+      .matchAll(/(\d+(?:[.,]\d+)?)\s*(k|m)?/g)
+  )
+    .map((match) => {
+      let numeric = Number.parseFloat(match[1].replace(',', '.'));
+      if (!Number.isFinite(numeric)) {
+        return null;
+      }
+      if (match[2] === 'm') numeric *= 1_000_000;
+      if (match[2] === 'k') numeric *= 1_000;
+      return convertToMonthly(numeric, period, salaryText);
+    })
+    .filter((value) => Number.isFinite(value));
+
+  const values = [...directValues, ...parsedFromString].filter((value) => Number.isFinite(value) && value > 0);
+
+  if (values.length === 0) {
+    return [null, null];
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  return [Math.round(min), Math.round(max)];
+};
+
+const deriveSalaryBoundsFromJobs = (jobs) => {
+  let min = Infinity;
+  let max = 0;
+
+  jobs.forEach((job) => {
+    const baseMin = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
+    const baseMax = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
+    let jobMin = baseMin;
+    let jobMax = baseMax;
+
+    if (jobMin == null || jobMax == null) {
+      const [derivedMin, derivedMax] = computeSalaryRange(job);
+      if (jobMin == null) jobMin = derivedMin;
+      if (jobMax == null) jobMax = derivedMax;
+    }
+
+    if (Number.isFinite(jobMin)) {
+      min = Math.min(min, jobMin);
+    }
+    if (Number.isFinite(jobMax)) {
+      max = Math.max(max, jobMax);
+    }
+  });
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === Infinity || max === 0) {
+    return [...SALARY_FALLBACK_RANGE];
+  }
+
+  if (min === max) {
+    const buffer = Math.max(min * 0.2, 500);
+    return [Math.max(0, Math.floor(min - buffer)), Math.ceil(max + buffer)];
+  }
+
+  return [Math.floor(min), Math.ceil(max)];
+};
+
+const defaultSalaryBounds = deriveSalaryBoundsFromJobs(mockJobs);
 
 const mapSupabaseUser = (supabaseUser) => {
   if (!supabaseUser) return null;
@@ -298,6 +539,15 @@ const SwissStartupConnect = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const [salaryRange, setSalaryRange] = useState(defaultSalaryBounds);
+  const [salaryBounds, setSalaryBounds] = useState(defaultSalaryBounds);
+  const [salaryRangeDirty, setSalaryRangeDirty] = useState(false);
+  const [salaryInputValues, setSalaryInputValues] = useState(() => ({
+    min: formatSalaryValue(defaultSalaryBounds[0]),
+    max: formatSalaryValue(defaultSalaryBounds[1]),
+  }));
+
+  const [salaryMin, salaryMax] = salaryRange;
 
   const [jobs, setJobs] = useState(mockJobs);
   const [jobsLoading, setJobsLoading] = useState(false);
@@ -742,10 +992,91 @@ const SwissStartupConnect = () => {
   };
 
   const removeFilter = (filterId) => {
+    setActiveTab('jobs');
     setSelectedFilters((prev) => prev.filter((item) => item !== filterId));
   };
 
-  const clearFilters = () => setSelectedFilters([]);
+  const clearFilters = () => {
+    setActiveTab('jobs');
+    setSelectedFilters([]);
+    setSalaryRangeDirty(false);
+    setSalaryRange((prev) => {
+      const [boundMin, boundMax] = salaryBounds;
+      if (prev[0] === boundMin && prev[1] === boundMax) {
+        return prev;
+      }
+      return [boundMin, boundMax];
+    });
+  };
+
+  const handleSalarySliderChange = (bound) => (event) => {
+    const rawValue = Number(event.target.value);
+    if (!Number.isFinite(rawValue)) {
+      return;
+    }
+
+    const [boundMin, boundMax] = salaryBounds;
+    const limitedValue = clamp(Math.round(rawValue), boundMin, boundMax);
+
+    setActiveTab('jobs');
+    setSalaryRangeDirty(true);
+    setSalaryRange((prev) => {
+      if (bound === 'min') {
+        const nextMin = Math.min(limitedValue, prev[1]);
+        if (nextMin === prev[0]) {
+          return prev;
+        }
+        return [nextMin, prev[1]];
+      }
+
+      const nextMax = Math.max(limitedValue, prev[0]);
+      if (nextMax === prev[1]) {
+        return prev;
+      }
+      return [prev[0], nextMax];
+    });
+  };
+
+  const handleSalaryInputChange = (bound, value) => {
+    const sanitized = value.replace(/[^0-9]/g, '');
+
+    setSalaryInputValues((prev) => {
+      if (prev[bound] === sanitized) {
+        return prev;
+      }
+      return { ...prev, [bound]: sanitized };
+    });
+
+    if (sanitized === '') {
+      return;
+    }
+
+    const numeric = Number(sanitized);
+    if (!Number.isFinite(numeric)) {
+      return;
+    }
+
+    const [boundMin, boundMax] = salaryBounds;
+    const limitedValue = clamp(Math.round(numeric), boundMin, boundMax);
+
+    setActiveTab('jobs');
+    setSalaryRangeDirty(true);
+    setSalaryRange((prev) => {
+      if (bound === 'min') {
+        const nextMin = Math.min(limitedValue, prev[1]);
+        if (nextMin === prev[0]) {
+          return prev;
+        }
+        return [nextMin, prev[1]];
+      }
+
+      const nextMax = Math.max(limitedValue, prev[0]);
+      if (nextMax === prev[1]) {
+        return prev;
+      }
+      return [prev[0], nextMax];
+    });
+  };
 
   const toggleSavedJob = (jobId) => {
     setSavedJobs((prev) => {
@@ -774,12 +1105,68 @@ const SwissStartupConnect = () => {
       const idKey = job.startup_id ? String(job.startup_id) : null;
       const nameFromLookup = idKey ? companyNameLookup[idKey] : null;
       const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
+      const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
       return {
         ...job,
         company_name: ensuredName,
+        salary_min_value: Number.isFinite(job.salary_min_value) ? job.salary_min_value : salaryMinValue,
+        salary_max_value: Number.isFinite(job.salary_max_value) ? job.salary_max_value : salaryMaxValue,
       };
     });
   }, [jobs, companyNameLookup]);
+
+  useEffect(() => {
+    const nextBounds = deriveSalaryBoundsFromJobs(normalizedJobs);
+
+    setSalaryBounds((prev) => {
+      if (prev[0] === nextBounds[0] && prev[1] === nextBounds[1]) {
+        return prev;
+      }
+      return nextBounds;
+    });
+
+    setSalaryRange((prev) => {
+      const [boundMin, boundMax] = nextBounds;
+
+      if (!salaryRangeDirty) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      const clampedMin = clamp(prev[0], boundMin, boundMax);
+      const clampedMax = clamp(prev[1], boundMin, boundMax);
+
+      if (!Number.isFinite(clampedMin) || !Number.isFinite(clampedMax) || clampedMin > clampedMax) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      if (prev[0] === Math.round(clampedMin) && prev[1] === Math.round(clampedMax)) {
+        return prev;
+      }
+
+      return [Math.round(clampedMin), Math.round(clampedMax)];
+    });
+  }, [normalizedJobs, salaryRangeDirty]);
+
+  useEffect(() => {
+    setSalaryInputValues((prev) => {
+      const next = {
+        min: formatSalaryValue(salaryMin),
+        max: formatSalaryValue(salaryMax),
+      };
+
+      if (prev.min === next.min && prev.max === next.max) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, [salaryMin, salaryMax]);
 
   const companyJobCounts = useMemo(() => {
     const map = {};
@@ -840,9 +1227,31 @@ const SwissStartupConnect = () => {
         return predicate ? predicate(job) : true;
       });
 
-      return matchesSearch && matchesFilters;
+      const matchesSalary = (() => {
+        if (!Number.isFinite(salaryMin) || !Number.isFinite(salaryMax)) {
+          return true;
+        }
+
+        const jobMin = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
+        const jobMax = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
+
+        if (jobMin == null && jobMax == null) {
+          return true;
+        }
+
+        const effectiveMin = jobMin ?? jobMax;
+        const effectiveMax = jobMax ?? jobMin;
+
+        if (!Number.isFinite(effectiveMin) || !Number.isFinite(effectiveMax)) {
+          return true;
+        }
+
+        return effectiveMax >= salaryMin && effectiveMin <= salaryMax;
+      })();
+
+      return matchesSearch && matchesFilters && matchesSalary;
     });
-  }, [normalizedJobs, searchTerm, selectedFilters]);
+  }, [normalizedJobs, searchTerm, selectedFilters, salaryMin, salaryMax]);
 
   const savedJobList = useMemo(
     () => normalizedJobs.filter((job) => savedJobs.includes(job.id)),
@@ -1505,14 +1914,6 @@ const SwissStartupConnect = () => {
     });
   };
 
-  const groupedFilters = useMemo(() => {
-    return quickFilters.reduce((acc, filter) => {
-      if (!acc[filter.category]) acc[filter.category] = [];
-      acc[filter.category].push(filter);
-      return acc;
-    }, {});
-  }, []);
-
   const closeResourceModal = () => setResourceModal(null);
   const closeReviewsModal = () => setReviewsModal(null);
 
@@ -1574,6 +1975,35 @@ const SwissStartupConnect = () => {
       .sort((a, b) => b.jobCount - a.jobCount)
       .slice(0, 3);
   }, [sortedCompanies]);
+
+  const safeBoundMin = Number.isFinite(salaryBounds[0]) ? salaryBounds[0] : defaultSalaryBounds[0];
+  const safeBoundMax = Number.isFinite(salaryBounds[1]) ? salaryBounds[1] : defaultSalaryBounds[1];
+  const normalizedMinBound = Math.min(safeBoundMin, safeBoundMax);
+  const normalizedMaxBound = Math.max(safeBoundMin, safeBoundMax);
+  const sliderMinValue = clamp(
+    Number.isFinite(salaryMin) ? salaryMin : normalizedMinBound,
+    normalizedMinBound,
+    normalizedMaxBound
+  );
+  const sliderMaxValue = clamp(
+    Number.isFinite(salaryMax) ? salaryMax : normalizedMaxBound,
+    normalizedMinBound,
+    normalizedMaxBound
+  );
+  const sliderRangeSpan = Math.max(normalizedMaxBound - normalizedMinBound, 1);
+  const sliderStyle = {
+    '--range-min': `${Math.min(
+      Math.max(((sliderMinValue - normalizedMinBound) / sliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+    '--range-max': `${Math.min(
+      Math.max(((sliderMaxValue - normalizedMinBound) / sliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+  };
+  const salarySliderDisabled = normalizedMinBound === normalizedMaxBound;
+  const salaryRangeAtDefault = sliderMinValue === normalizedMinBound && sliderMaxValue === normalizedMaxBound;
+  const filtersActive = selectedFilters.length > 0 || !salaryRangeAtDefault;
 
   return (
     <div className="ssc">
@@ -1779,32 +2209,114 @@ const SwissStartupConnect = () => {
               <div className="ssc__filters-header">
                 <div>
                   <h2>Tailor your results</h2>
-                  <p>Pick a combination of location, role type, and focus areas.</p>
+                  <p>Pick the active cities, role focus, and salary targets that fit you best.</p>
                 </div>
-                {selectedFilters.length > 0 && (
+                {filtersActive && (
                   <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
                     Clear filters
                   </button>
                 )}
               </div>
               <div className="ssc__filters-grid">
-                {Object.entries(groupedFilters).map(([category, filters]) => (
-                  <div key={category} className="ssc__filter-group">
-                    <span className="ssc__filter-label">{category}</span>
-                    <div className="ssc__filter-chips">
-                      {filters.map((filter) => (
+                <div className="ssc__filter-group">
+                  <span className="ssc__filter-label">Active cities</span>
+                  <div className="ssc__filter-chips">
+                    {activeCityFilters.map((filter) => {
+                      const isSelected = selectedFilters.includes(filter.id);
+                      return (
                         <button
                           key={filter.id}
                           type="button"
-                          className={`ssc__chip ${selectedFilters.includes(filter.id) ? 'is-selected' : ''}`}
-                          onClick={() => addFilter(filter.id)}
+                          className={`ssc__chip ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => (isSelected ? removeFilter(filter.id) : addFilter(filter.id))}
                         >
                           {filter.label}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
+                <div className="ssc__filter-group">
+                  <div className="ssc__filter-label-row">
+                    <span className="ssc__filter-label">Role focus</span>
+                  </div>
+                  <div className="ssc__filter-chips">
+                    {roleFocusFilters.map((filter) => {
+                      const isSelected = selectedFilters.includes(filter.id);
+                      return (
+                        <button
+                          key={filter.id}
+                          type="button"
+                          className={`ssc__chip ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => (isSelected ? removeFilter(filter.id) : addFilter(filter.id))}
+                        >
+                          {filter.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="ssc__filter-group ssc__filter-group--salary">
+                  <div className="ssc__filter-label-row">
+                    <span className="ssc__filter-label">Salary range</span>
+                    <span className="ssc__filter-helper">CHF per month</span>
+                  </div>
+                  <div className="ssc__salary-slider" style={sliderStyle}>
+                    <input
+                      type="range"
+                      min={normalizedMinBound}
+                      max={normalizedMaxBound}
+                      step={SALARY_STEP}
+                      value={sliderMinValue}
+                      onChange={handleSalarySliderChange('min')}
+                      disabled={salarySliderDisabled}
+                      aria-label="Minimum salary"
+                    />
+                    <input
+                      type="range"
+                      min={normalizedMinBound}
+                      max={normalizedMaxBound}
+                      step={SALARY_STEP}
+                      value={sliderMaxValue}
+                      onChange={handleSalarySliderChange('max')}
+                      disabled={salarySliderDisabled}
+                      aria-label="Maximum salary"
+                    />
+                  </div>
+                  <div className="ssc__salary-inputs">
+                    <label className="ssc__salary-input">
+                      <span>Min</span>
+                      <div className="ssc__salary-input-wrapper">
+                        <span>CHF</span>
+                        <input
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={salaryInputValues.min}
+                          onChange={(event) => handleSalaryInputChange('min', event.target.value)}
+                          aria-label="Minimum salary in Swiss francs"
+                          disabled={salarySliderDisabled}
+                        />
+                      </div>
+                    </label>
+                    <div className="ssc__salary-divider" aria-hidden="true">
+                      –
+                    </div>
+                    <label className="ssc__salary-input">
+                      <span>Max</span>
+                      <div className="ssc__salary-input-wrapper">
+                        <span>CHF</span>
+                        <input
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={salaryInputValues.max}
+                          onChange={(event) => handleSalaryInputChange('max', event.target.value)}
+                          aria-label="Maximum salary in Swiss francs"
+                          disabled={salarySliderDisabled}
+                        />
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -1912,7 +2424,7 @@ const SwissStartupConnect = () => {
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
                   <h3>No matches yet</h3>
-                  <p>Try removing a filter or exploring another Swiss canton.</p>
+                  <p>Try removing a filter or widening your salary range.</p>
                 </div>
               )}
             </div>
