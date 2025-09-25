@@ -520,6 +520,48 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.ssc__city-summary {
+  margin-bottom: 1.75rem;
+}
+
+.ssc__city-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.ssc__city-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--ssc-muted);
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ssc__city-pill small {
+  font-size: 0.75rem;
+  color: var(--ssc-primary);
+}
+
+.ssc__city-pill:hover,
+.ssc__city-pill:focus-visible {
+  outline: none;
+  background: rgba(37, 99, 235, 0.2);
+  color: var(--ssc-primary);
+}
+
+.ssc__city-pill.is-active {
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--ssc-primary);
+}
+
 .ssc__filter-group {
   display: flex;
   flex-direction: column;
@@ -905,9 +947,34 @@
 }
 
 .ssc__company-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: rgba(15, 23, 42, 0.05);
   padding: 0.35rem 0.75rem;
   border-radius: 10px;
+}
+
+.ssc__company-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ssc-primary);
+}
+
+.ssc__company-rating svg {
+  color: var(--ssc-primary);
+}
+
+.ssc__company-rating--muted {
+  color: var(--ssc-muted);
+}
+
+.ssc__company-rating--muted svg {
+  color: var(--ssc-muted);
 }
 
 .ssc__company-stats {
@@ -943,6 +1010,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .ssc__company-toolbar label {
@@ -1907,6 +1975,21 @@
   background: #fff;
   color: var(--ssc-ink);
   font-size: 0.95rem;
+}
+
+.ssc__field-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ssc__field-range-inputs input {
+  flex: 1;
+}
+
+.ssc__field-range-separator {
+  font-weight: 600;
+  color: var(--ssc-muted);
 }
 
 .ssc__field input:focus,
