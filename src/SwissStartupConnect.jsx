@@ -412,6 +412,26 @@ const formatEquityValue = (value) => {
     .replace(/(\.\d+?)0+$/, '$1');
 };
 
+const sanitizeDecimalInput = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const cleaned = value.replace(/[^0-9.,]/g, '');
+  const separatorIndex = cleaned.search(/[.,]/);
+
+  if (separatorIndex === -1) {
+    return cleaned;
+  }
+
+  const before = cleaned.slice(0, separatorIndex + 1);
+  const after = cleaned
+    .slice(separatorIndex + 1)
+    .replace(/[.,]/g, '');
+
+  return `${before}${after}`;
+};
+
 const parseNumericValue = (value) => {
   if (value == null) {
     return null;
@@ -1030,9 +1050,7 @@ const SwissStartupConnect = () => {
     const fetchJobs = async () => {
       setJobsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('jobs')
-          .select('id,title,company_name,location,employment_type,salary,equity,description,requirements,benefits,posted,applicants,tags,stage,motivational_letter_required,created_at,startup_id');
+        const { data, error } = await supabase.from('jobs').select('*');
 
         if (error) {
           console.info('Falling back to mock jobs', error.message);
@@ -1342,32 +1360,76 @@ const SwissStartupConnect = () => {
   };
 
   const handleEquityInputChange = (bound, value) => {
-    const stripped = value.replace(/[^0-9.,]/g, '').replace(',', '.');
-    const [whole, decimal = ''] = stripped.split('.');
-    const normalized = decimal ? `${whole}.${decimal.replace(/\./g, '')}` : whole;
+    const sanitized = sanitizeDecimalInput(value);
 
     setEquityInputValues((prev) => {
-      if (prev[bound] === normalized) {
+      if (prev[bound] === sanitized) {
         return prev;
       }
-      return { ...prev, [bound]: normalized };
+      return { ...prev, [bound]: sanitized };
     });
 
-    if (normalized === '' || normalized === '.') {
+    if (!sanitized || sanitized === '.' || sanitized === ',' || /[.,]$/.test(sanitized)) {
       return;
     }
 
-    const numeric = Number.parseFloat(normalized);
+    const numeric = Number.parseFloat(sanitized.replace(',', '.'));
     if (!Number.isFinite(numeric)) {
       return;
     }
 
     updateEquityRange((prev) => {
       if (bound === 'min') {
-        return [Math.min(numeric, prev[1]), prev[1]];
+        const nextMin = Math.min(numeric, prev[1]);
+        return [nextMin, prev[1]];
       }
 
-      return [prev[0], Math.max(numeric, prev[0])];
+      const nextMax = Math.max(numeric, prev[0]);
+      return [prev[0], nextMax];
+    });
+  };
+
+  const handleEquityInputFocus = (bound) => () => {
+    equityInputFocusRef.current[bound] = true;
+  };
+
+  const handleEquityInputBlur = (bound) => () => {
+    equityInputFocusRef.current[bound] = false;
+
+    const raw = equityInputValues[bound] ?? '';
+    const sanitized = sanitizeDecimalInput(raw);
+    const trimmed = sanitized.replace(/[.,]$/, '');
+    const fallback = bound === 'min' ? formatEquityValue(equityMin) : formatEquityValue(equityMax);
+
+    if (!trimmed) {
+      setEquityInputValues((prev) => {
+        if (prev[bound] === fallback) {
+          return prev;
+        }
+        return { ...prev, [bound]: fallback };
+      });
+      return;
+    }
+
+    const numeric = Number.parseFloat(trimmed.replace(',', '.'));
+    if (!Number.isFinite(numeric)) {
+      setEquityInputValues((prev) => {
+        if (prev[bound] === fallback) {
+          return prev;
+        }
+        return { ...prev, [bound]: fallback };
+      });
+      return;
+    }
+
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        const nextMin = Math.min(numeric, prev[1]);
+        return [nextMin, prev[1]];
+      }
+
+      const nextMax = Math.max(numeric, prev[0]);
+      return [prev[0], nextMax];
     });
   };
 
@@ -1567,11 +1629,19 @@ const SwissStartupConnect = () => {
         max: formatEquityValue(equityMax),
       };
 
-      if (prev.min === next.min && prev.max === next.max) {
+      const minLocked = equityInputFocusRef.current.min;
+      const maxLocked = equityInputFocusRef.current.max;
+
+      const resolved = {
+        min: minLocked ? prev.min : next.min,
+        max: maxLocked ? prev.max : next.max,
+      };
+
+      if (prev.min === resolved.min && prev.max === resolved.max) {
         return prev;
       }
 
-      return next;
+      return resolved;
     });
   }, [equityMin, equityMax]);
 
@@ -2437,6 +2507,7 @@ const SwissStartupConnect = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
+  const equityInputFocusRef = useRef({ min: false, max: false });
   const [companySort, setCompanySort] = useState('recent');
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -2887,6 +2958,8 @@ const SwissStartupConnect = () => {
                           pattern="[0-9]*[.,]?[0-9]*"
                           value={equityInputValues.min}
                           onChange={(event) => handleEquityInputChange('min', event.target.value)}
+                          onFocus={handleEquityInputFocus('min')}
+                          onBlur={handleEquityInputBlur('min')}
                           aria-label="Minimum equity percentage"
                           disabled={equitySliderDisabled}
                         />
@@ -2904,6 +2977,8 @@ const SwissStartupConnect = () => {
                           pattern="[0-9]*[.,]?[0-9]*"
                           value={equityInputValues.max}
                           onChange={(event) => handleEquityInputChange('max', event.target.value)}
+                          onFocus={handleEquityInputFocus('max')}
+                          onBlur={handleEquityInputBlur('max')}
                           aria-label="Maximum equity percentage"
                           disabled={equitySliderDisabled}
                         />
