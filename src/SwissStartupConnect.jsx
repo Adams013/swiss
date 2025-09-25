@@ -759,8 +759,75 @@ const SwissStartupConnect = () => {
     });
   };
 
+  const companyNameLookup = useMemo(() => {
+    const map = {};
+    companies.forEach((company) => {
+      if (company.id) {
+        map[String(company.id)] = company.name;
+      }
+    });
+    return map;
+  }, [companies]);
+
+  const normalizedJobs = useMemo(() => {
+    return jobs.map((job) => {
+      const idKey = job.startup_id ? String(job.startup_id) : null;
+      const nameFromLookup = idKey ? companyNameLookup[idKey] : null;
+      const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
+      return {
+        ...job,
+        company_name: ensuredName,
+      };
+    });
+  }, [jobs, companyNameLookup]);
+
+  const companyJobCounts = useMemo(() => {
+    const map = {};
+    normalizedJobs.forEach((job) => {
+      const key = String(job.startup_id || job.company_name || '');
+      if (!key) return;
+      if (!map[key]) map[key] = 0;
+      map[key] += 1;
+    });
+    return map;
+  }, [normalizedJobs]);
+
+  const isStartupVerified = startupProfile?.verification_status === 'verified';
+  const startupId = startupProfile?.id ? String(startupProfile.id) : null;
+
+  const startupJobs = useMemo(() => {
+    if (!startupId) return [];
+    return normalizedJobs
+      .filter((job) => String(job.startup_id || '') === startupId)
+      .sort((a, b) => {
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [normalizedJobs, startupId]);
+
+  const openPostJobFlow = useCallback(() => {
+    if (!startupId) {
+      setFeedback({ type: 'info', message: 'Complete your startup profile before posting a job.' });
+      setStartupModalOpen(true);
+      return;
+    }
+
+    if (!isStartupVerified) {
+      setFeedback({
+        type: 'info',
+        message: 'Verification is required before publishing job offers. Submit your documents to get verified.',
+      });
+      setStartupModalOpen(true);
+      return;
+    }
+
+    setPostJobError('');
+    setPostJobModalOpen(true);
+  }, [isStartupVerified, startupId]);
+
   const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
+    return normalizedJobs.filter((job) => {
       const matchesSearch =
         !searchTerm.trim() ||
         [job.title, job.company_name, job.location, job.description]
@@ -775,9 +842,12 @@ const SwissStartupConnect = () => {
 
       return matchesSearch && matchesFilters;
     });
-  }, [jobs, searchTerm, selectedFilters]);
+  }, [normalizedJobs, searchTerm, selectedFilters]);
 
-  const savedJobList = useMemo(() => jobs.filter((job) => savedJobs.includes(job.id)), [jobs, savedJobs]);
+  const savedJobList = useMemo(
+    () => normalizedJobs.filter((job) => savedJobs.includes(job.id)),
+    [normalizedJobs, savedJobs]
+  );
 
   const openApplyModal = (job) => {
     if (!user) {
@@ -978,6 +1048,11 @@ const SwissStartupConnect = () => {
       return;
     }
 
+    if (!isStartupVerified) {
+      setPostJobError('Only verified startups can publish job opportunities.');
+      return;
+    }
+
     setPostingJob(true);
     setPostJobError('');
 
@@ -985,7 +1060,7 @@ const SwissStartupConnect = () => {
       const payload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
-        company_name: startupForm.name || startupProfile.name,
+        company_name: startupProfile.name || startupForm.name,
         location: jobForm.location.trim(),
         employment_type: jobForm.employment_type,
         salary: jobForm.salary.trim(),
@@ -1024,6 +1099,7 @@ const SwissStartupConnect = () => {
         tags: '',
         motivational_letter_required: false,
       });
+      setActiveTab('my-jobs');
       setJobsVersion((prev) => prev + 1);
     } catch (error) {
       setPostJobError(error.message);
@@ -1445,7 +1521,7 @@ const SwissStartupConnect = () => {
   const navTabs = useMemo(() => {
     const baseTabs = ['general', 'jobs', 'companies'];
     if (user?.type === 'startup') {
-      baseTabs.push('applications');
+      baseTabs.push('my-jobs', 'applications');
     }
     baseTabs.push('saved');
     return baseTabs;
@@ -1469,17 +1545,6 @@ const SwissStartupConnect = () => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('ssc_followed_companies', JSON.stringify(followedCompanies));
   }, [followedCompanies]);
-
-  const companyJobCounts = useMemo(() => {
-    const map = {};
-    jobs.forEach((job) => {
-      const key = String(job.startup_id || job.company_name || '');
-      if (!key) return;
-      if (!map[key]) map[key] = 0;
-      map[key] += 1;
-    });
-    return map;
-  }, [jobs]);
 
   const sortedCompanies = useMemo(() => {
     const enriched = companies.map((company) => {
@@ -1527,6 +1592,7 @@ const SwissStartupConnect = () => {
                 general: 'General',
                 jobs: 'Opportunities',
                 companies: 'Startups',
+                'my-jobs': 'My jobs',
                 applications: 'Applicants',
                 saved: 'Saved',
               };
@@ -1609,10 +1675,19 @@ const SwissStartupConnect = () => {
                     </button>
                     {user.type === 'startup' && (
                       <>
+                        <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>
+                          My jobs
+                        </button>
                         <button type="button" onClick={() => { setStartupModalOpen(true); setShowUserMenu(false); }}>
                           Company profile
                         </button>
-                        <button type="button" onClick={() => { setPostJobModalOpen(true); setShowUserMenu(false); }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            openPostJobFlow();
+                          }}
+                        >
                           Post vacancy
                         </button>
                         <button type="button" onClick={() => { setActiveTab('applications'); setShowUserMenu(false); }}>
@@ -1939,6 +2014,104 @@ const SwissStartupConnect = () => {
                   <Building2 size={40} />
                   <h3>No startups listed yet</h3>
                   <p>Check back soon or invite your favourite Swiss startup to join.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'my-jobs' && user?.type === 'startup' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>Your job posts</h2>
+                  <p>Track live opportunities, keep them up to date, and follow applicant interest at a glance.</p>
+                </div>
+                <div className="ssc__section-header-actions">
+                  <span className="ssc__pill">
+                    {startupJobs.length} {startupJobs.length === 1 ? 'active posting' : 'active postings'}
+                  </span>
+                  {isStartupVerified ? (
+                    <button type="button" className="ssc__primary-btn" onClick={openPostJobFlow}>
+                      Post vacancy
+                    </button>
+                  ) : (
+                    <span className="ssc__pill ssc__pill--muted">Verification required</span>
+                  )}
+                </div>
+              </div>
+
+              {!isStartupVerified && (
+                <div className="ssc__notice">
+                  <span>Verify your startup to unlock job postings. Add your commercial register details and logo.</span>
+                  <button type="button" onClick={() => setStartupModalOpen(true)}>
+                    Complete verification
+                  </button>
+                </div>
+              )}
+
+              {startupJobs.length > 0 ? (
+                <div className="ssc__grid">
+                  {startupJobs.map((job) => {
+                    const postedAt = job.created_at ? new Date(job.created_at) : null;
+                    const postedLabel = postedAt
+                      ? postedAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                      : job.posted || 'Recently posted';
+                    return (
+                      <article key={job.id} className="ssc__job-card">
+                        <div className="ssc__job-header">
+                          <div>
+                            <h3>{job.title}</h3>
+                            <p>{job.company_name}</p>
+                          </div>
+                          <span className="ssc__pill ssc__pill--muted">{postedLabel}</span>
+                        </div>
+                        <p className="ssc__job-summary">{job.description}</p>
+                        <div className="ssc__job-meta">
+                          <span>
+                            <MapPin size={16} />
+                            {job.location}
+                          </span>
+                          <span>
+                            <Clock size={16} />
+                            {job.employment_type}
+                          </span>
+                          <span>
+                            <Users size={16} />
+                            {job.applicants} applicants
+                          </span>
+                        </div>
+                        <div className="ssc__job-actions">
+                          <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
+                            View role
+                          </button>
+                          <button
+                            type="button"
+                            className="ssc__primary-btn"
+                            onClick={() => setActiveTab('applications')}
+                          >
+                            View applicants
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Briefcase size={40} />
+                  <h3>No job posts yet</h3>
+                  <p>
+                    {isStartupVerified
+                      ? 'Share your first opportunity to start meeting candidates.'
+                      : 'Get verified to unlock job posting and start attracting talent.'}
+                  </p>
+                  {isStartupVerified && (
+                    <button type="button" className="ssc__primary-btn" onClick={openPostJobFlow}>
+                      Post your first role
+                    </button>
+                  )}
                 </div>
               )}
             </div>
