@@ -8,6 +8,7 @@ import {
   Clock,
   GraduationCap,
   Heart,
+  Lightbulb,
   Layers,
   MapPin,
   Rocket,
@@ -205,6 +206,24 @@ const resourceLinks = [
   },
 ];
 
+const careerTips = [
+  {
+    id: 'equity',
+    title: 'Equity Matters',
+    description: 'Ask about equity packages—they can be worth more than salary!',
+  },
+  {
+    id: 'growth',
+    title: 'Growth Opportunity',
+    description: 'Startups offer rapid career advancement and diverse experience.',
+  },
+  {
+    id: 'learn',
+    title: 'Learn Fast',
+    description: 'Direct exposure to all aspects of business operations.',
+  },
+];
+
 const cantonInternshipSalaries = [
   { canton: 'Zürich (ZH)', median: 'CHF 2,450', note: 'Finance, pharma, and big-tech hubs offer the highest stipends.' },
   { canton: 'Bern (BE)', median: 'CHF 2,150', note: 'Federal agencies and med-tech firms provide steady pay.' },
@@ -328,6 +347,9 @@ const SALARY_MAX_FIELDS = [
   'pay_max',
 ];
 
+const EQUITY_MIN_FIELDS = ['equity_min', 'equity_min_percentage', 'equity_floor', 'equity_low'];
+const EQUITY_MAX_FIELDS = ['equity_max', 'equity_max_percentage', 'equity_ceiling', 'equity_high'];
+
 const SALARY_PERIOD_FIELDS = [
   'salary_period',
   'salary_interval',
@@ -340,14 +362,32 @@ const SALARY_PERIOD_FIELDS = [
 
 const SALARY_FALLBACK_RANGE = [2000, 12000];
 const SALARY_STEP = 1;
+const EQUITY_FALLBACK_RANGE = [0, 5];
+const EQUITY_STEP = 0.1;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const roundToStep = (value, step) => {
+  if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) {
+    return value;
+  }
+  return Math.round(value / step) * step;
+};
 
 const formatSalaryValue = (value) => {
   if (!Number.isFinite(value)) {
     return '';
   }
   return String(Math.round(value));
+};
+
+const formatEquityValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  const rounded = Math.round((value + Number.EPSILON) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 };
 
 const parseNumericValue = (value) => {
@@ -385,6 +425,28 @@ const parseNumericValue = (value) => {
   }
 
   return numeric;
+};
+
+const parsePercentageValue = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const match = value.match(/-?\d+(?:[.,]\d+)?/);
+  if (!match) {
+    return null;
+  }
+
+  const numeric = Number.parseFloat(match[0].replace(',', '.'));
+  return Number.isFinite(numeric) ? numeric : null;
 };
 
 const detectSalaryPeriod = (job, salaryText) => {
@@ -518,7 +580,69 @@ const deriveSalaryBoundsFromJobs = (jobs) => {
   return [Math.floor(min), Math.ceil(max)];
 };
 
+const computeEquityRange = (job) => {
+  const equityText = job?.equity ?? '';
+
+  const minCandidate = EQUITY_MIN_FIELDS.map((field) => parsePercentageValue(job?.[field]))
+    .find((value) => value != null);
+  const maxCandidate = EQUITY_MAX_FIELDS.map((field) => parsePercentageValue(job?.[field]))
+    .find((value) => value != null);
+
+  const parsedFromString = Array.from(String(equityText).toLowerCase().matchAll(/(\d+(?:[.,]\d+)?)\s*%?/g))
+    .map((match) => Number.parseFloat(match[1].replace(',', '.')))
+    .filter((value) => Number.isFinite(value));
+
+  const values = [minCandidate, maxCandidate, ...parsedFromString]
+    .filter((value) => Number.isFinite(value) && value >= 0);
+
+  if (values.length === 0) {
+    return [null, null];
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  return [Math.round(min * 10) / 10, Math.round(max * 10) / 10];
+};
+
+const deriveEquityBoundsFromJobs = (jobs) => {
+  let min = Infinity;
+  let max = 0;
+
+  jobs.forEach((job) => {
+    const baseMin = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
+    const baseMax = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
+    let jobMin = baseMin;
+    let jobMax = baseMax;
+
+    if (jobMin == null || jobMax == null) {
+      const [derivedMin, derivedMax] = computeEquityRange(job);
+      if (jobMin == null) jobMin = derivedMin;
+      if (jobMax == null) jobMax = derivedMax;
+    }
+
+    if (Number.isFinite(jobMin)) {
+      min = Math.min(min, jobMin);
+    }
+    if (Number.isFinite(jobMax)) {
+      max = Math.max(max, jobMax);
+    }
+  });
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === Infinity) {
+    return [...EQUITY_FALLBACK_RANGE];
+  }
+
+  if (min === max) {
+    const buffer = Math.max(min * 0.4, 0.2);
+    return [Math.max(0, Math.floor((min - buffer) * 10) / 10), Math.ceil((max + buffer) * 10) / 10];
+  }
+
+  return [Math.floor(min * 10) / 10, Math.ceil(max * 10) / 10];
+};
+
 const defaultSalaryBounds = deriveSalaryBoundsFromJobs(mockJobs);
+const defaultEquityBounds = deriveEquityBoundsFromJobs(mockJobs);
 
 const mapSupabaseUser = (supabaseUser) => {
   if (!supabaseUser) return null;
@@ -549,13 +673,25 @@ const SwissStartupConnect = () => {
   const salarySliderRef = useRef(null);
   const salarySliderDragState = useRef(null);
   const [isSalarySliderDragging, setIsSalarySliderDragging] = useState(false);
+  const [equityRange, setEquityRange] = useState(defaultEquityBounds);
+  const [equityBounds, setEquityBounds] = useState(defaultEquityBounds);
+  const [equityRangeDirty, setEquityRangeDirty] = useState(false);
+  const [equityInputValues, setEquityInputValues] = useState(() => ({
+    min: formatEquityValue(defaultEquityBounds[0]),
+    max: formatEquityValue(defaultEquityBounds[1]),
+  }));
+  const equitySliderRef = useRef(null);
+  const equitySliderDragState = useRef(null);
+  const [isEquitySliderDragging, setIsEquitySliderDragging] = useState(false);
 
   const [salaryMin, salaryMax] = salaryRange;
+  const [equityMin, equityMax] = equityRange;
 
   const [jobs, setJobs] = useState(mockJobs);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [jobSort, setJobSort] = useState('recent');
 
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -1000,8 +1136,16 @@ const SwissStartupConnect = () => {
   const clearFilters = () => {
     setSelectedFilters([]);
     setSalaryRangeDirty(false);
+    setEquityRangeDirty(false);
     setSalaryRange((prev) => {
       const [boundMin, boundMax] = salaryBounds;
+      if (prev[0] === boundMin && prev[1] === boundMax) {
+        return prev;
+      }
+      return [boundMin, boundMax];
+    });
+    setEquityRange((prev) => {
+      const [boundMin, boundMax] = equityBounds;
       if (prev[0] === boundMin && prev[1] === boundMax) {
         return prev;
       }
@@ -1012,6 +1156,7 @@ const SwissStartupConnect = () => {
   const updateSalaryRange = useCallback(
     (computeNext) => {
       setSalaryRangeDirty(true);
+      let resolvedValues = null;
       setSalaryRange((prev) => {
         const [boundMin, boundMax] = salaryBounds;
         const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
@@ -1026,8 +1171,8 @@ const SwissStartupConnect = () => {
           return prev;
         }
 
-        nextMin = clamp(Math.round(nextMin), boundMin, boundMax);
-        nextMax = clamp(Math.round(nextMax), boundMin, boundMax);
+        nextMin = clamp(roundToStep(nextMin, SALARY_STEP), boundMin, boundMax);
+        nextMax = clamp(roundToStep(nextMax, SALARY_STEP), boundMin, boundMax);
 
         if (nextMin > nextMax) {
           [nextMin, nextMax] = [nextMax, nextMin];
@@ -1037,10 +1182,78 @@ const SwissStartupConnect = () => {
           return prev;
         }
 
+        resolvedValues = [nextMin, nextMax];
         return [nextMin, nextMax];
       });
+      if (resolvedValues) {
+        const [nextMin, nextMax] = resolvedValues;
+        setSalaryInputValues((prev) => {
+          const next = {
+            min: formatSalaryValue(nextMin),
+            max: formatSalaryValue(nextMax),
+          };
+
+          if (prev.min === next.min && prev.max === next.max) {
+            return prev;
+          }
+
+          return next;
+        });
+      }
     },
     [salaryBounds]
+  );
+
+  const updateEquityRange = useCallback(
+    (computeNext) => {
+      setEquityRangeDirty(true);
+      let resolvedValues = null;
+      setEquityRange((prev) => {
+        const [boundMin, boundMax] = equityBounds;
+        const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
+
+        if (!next || !Array.isArray(next) || next.length < 2) {
+          return prev;
+        }
+
+        let [nextMin, nextMax] = next;
+
+        if (!Number.isFinite(nextMin) || !Number.isFinite(nextMax)) {
+          return prev;
+        }
+
+        nextMin = clamp(roundToStep(nextMin, EQUITY_STEP), boundMin, boundMax);
+        nextMax = clamp(roundToStep(nextMax, EQUITY_STEP), boundMin, boundMax);
+
+        if (nextMin > nextMax) {
+          [nextMin, nextMax] = [nextMax, nextMin];
+        }
+
+        if (nextMin === prev[0] && nextMax === prev[1]) {
+          return prev;
+        }
+
+        resolvedValues = [nextMin, nextMax];
+        return [nextMin, nextMax];
+      });
+
+      if (resolvedValues) {
+        const [nextMin, nextMax] = resolvedValues;
+        setEquityInputValues((prev) => {
+          const next = {
+            min: formatEquityValue(nextMin),
+            max: formatEquityValue(nextMax),
+          };
+
+          if (prev.min === next.min && prev.max === next.max) {
+            return prev;
+          }
+
+          return next;
+        });
+      }
+    },
+    [equityBounds]
   );
 
   const handleSalarySliderChange = (bound) => (event) => {
@@ -1086,6 +1299,51 @@ const SwissStartupConnect = () => {
     });
   };
 
+  const handleEquitySliderChange = (bound) => (event) => {
+    const rawValue = Number(event.target.value);
+    if (!Number.isFinite(rawValue)) {
+      return;
+    }
+
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        return [Math.min(rawValue, prev[1]), prev[1]];
+      }
+
+      return [prev[0], Math.max(rawValue, prev[0])];
+    });
+  };
+
+  const handleEquityInputChange = (bound, value) => {
+    const stripped = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+    const [whole, decimal = ''] = stripped.split('.');
+    const normalized = decimal ? `${whole}.${decimal.replace(/\./g, '')}` : whole;
+
+    setEquityInputValues((prev) => {
+      if (prev[bound] === normalized) {
+        return prev;
+      }
+      return { ...prev, [bound]: normalized };
+    });
+
+    if (normalized === '' || normalized === '.') {
+      return;
+    }
+
+    const numeric = Number.parseFloat(normalized);
+    if (!Number.isFinite(numeric)) {
+      return;
+    }
+
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        return [Math.min(numeric, prev[1]), prev[1]];
+      }
+
+      return [prev[0], Math.max(numeric, prev[0])];
+    });
+  };
+
 
   const toggleSavedJob = (jobId) => {
     setSavedJobs((prev) => {
@@ -1115,11 +1373,14 @@ const SwissStartupConnect = () => {
       const nameFromLookup = idKey ? companyNameLookup[idKey] : null;
       const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
       const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
+      const [equityMinValue, equityMaxValue] = computeEquityRange(job);
       return {
         ...job,
         company_name: ensuredName,
         salary_min_value: Number.isFinite(job.salary_min_value) ? job.salary_min_value : salaryMinValue,
         salary_max_value: Number.isFinite(job.salary_max_value) ? job.salary_max_value : salaryMaxValue,
+        equity_min_value: Number.isFinite(job.equity_min_value) ? job.equity_min_value : equityMinValue,
+        equity_max_value: Number.isFinite(job.equity_max_value) ? job.equity_max_value : equityMaxValue,
       };
     });
   }, [jobs, companyNameLookup]);
@@ -1163,6 +1424,47 @@ const SwissStartupConnect = () => {
   }, [normalizedJobs, salaryRangeDirty]);
 
   useEffect(() => {
+    const nextBounds = deriveEquityBoundsFromJobs(normalizedJobs);
+
+    setEquityBounds((prev) => {
+      if (prev[0] === nextBounds[0] && prev[1] === nextBounds[1]) {
+        return prev;
+      }
+      return nextBounds;
+    });
+
+    setEquityRange((prev) => {
+      const [boundMin, boundMax] = nextBounds;
+
+      if (!equityRangeDirty) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      const clampedMin = clamp(prev[0], boundMin, boundMax);
+      const clampedMax = clamp(prev[1], boundMin, boundMax);
+
+      if (!Number.isFinite(clampedMin) || !Number.isFinite(clampedMax) || clampedMin > clampedMax) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      if (
+        prev[0] === Math.round(clampedMin * 10) / 10 &&
+        prev[1] === Math.round(clampedMax * 10) / 10
+      ) {
+        return prev;
+      }
+
+      return [Math.round(clampedMin * 10) / 10, Math.round(clampedMax * 10) / 10];
+    });
+  }, [normalizedJobs, equityRangeDirty]);
+
+  useEffect(() => {
     setSalaryInputValues((prev) => {
       const next = {
         min: formatSalaryValue(salaryMin),
@@ -1176,6 +1478,21 @@ const SwissStartupConnect = () => {
       return next;
     });
   }, [salaryMin, salaryMax]);
+
+  useEffect(() => {
+    setEquityInputValues((prev) => {
+      const next = {
+        min: formatEquityValue(equityMin),
+        max: formatEquityValue(equityMax),
+      };
+
+      if (prev.min === next.min && prev.max === next.max) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, [equityMin, equityMax]);
 
   const companyJobCounts = useMemo(() => {
     const map = {};
@@ -1258,9 +1575,104 @@ const SwissStartupConnect = () => {
         return effectiveMax >= salaryMin && effectiveMin <= salaryMax;
       })();
 
-      return matchesSearch && matchesFilters && matchesSalary;
+      const matchesEquity = (() => {
+        if (!Number.isFinite(equityMin) || !Number.isFinite(equityMax)) {
+          return true;
+        }
+
+        const jobMin = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
+        const jobMax = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
+
+        if (jobMin == null && jobMax == null) {
+          return equityMin <= 0;
+        }
+
+        const effectiveMin = jobMin ?? jobMax;
+        const effectiveMax = jobMax ?? jobMin;
+
+        if (!Number.isFinite(effectiveMin) || !Number.isFinite(effectiveMax)) {
+          return equityMin <= 0;
+        }
+
+        return effectiveMax >= equityMin && effectiveMin <= equityMax;
+      })();
+
+      return matchesSearch && matchesFilters && matchesSalary && matchesEquity;
     });
-  }, [normalizedJobs, searchTerm, selectedFilters, salaryMin, salaryMax]);
+  }, [normalizedJobs, searchTerm, selectedFilters, salaryMin, salaryMax, equityMin, equityMax]);
+
+  const sortedFilteredJobs = useMemo(() => {
+    const now = Date.now();
+    const entries = filteredJobs.map((job, index) => ({ job, index }));
+
+    const getSalaryScore = (job) => {
+      const max = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
+      const min = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
+
+      if (max == null && min == null) {
+        return -Infinity;
+      }
+
+      return Math.max(max ?? min ?? 0, min ?? max ?? 0);
+    };
+
+    const getEquityScore = (job) => {
+      const max = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
+      const min = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
+
+      if (max == null && min == null) {
+        return -Infinity;
+      }
+
+      return Math.max(max ?? min ?? 0, min ?? max ?? 0);
+    };
+
+    const getRecencyScore = (job, index) => {
+      if (job.created_at) {
+        const timestamp = new Date(job.created_at).getTime();
+        if (Number.isFinite(timestamp)) {
+          return timestamp;
+        }
+      }
+
+      const posted = typeof job.posted === 'string' ? job.posted.toLowerCase() : '';
+      const relativeMatch = posted.match(/(\d+)\s+(hour|day|week|month)/);
+      if (relativeMatch) {
+        const amount = Number.parseInt(relativeMatch[1], 10);
+        const unit = relativeMatch[2];
+        const unitMs = {
+          hour: 60 * 60 * 1000,
+          day: 24 * 60 * 60 * 1000,
+          week: 7 * 24 * 60 * 60 * 1000,
+          month: 30 * 24 * 60 * 60 * 1000,
+        }[unit];
+
+        if (Number.isFinite(amount) && unitMs) {
+          return now - amount * unitMs;
+        }
+      }
+
+      if (posted.includes('today')) {
+        return now;
+      }
+
+      return Number.MAX_SAFE_INTEGER - index;
+    };
+
+    const sorted = entries.sort((a, b) => {
+      if (jobSort === 'salary_desc') {
+        return getSalaryScore(b.job) - getSalaryScore(a.job);
+      }
+
+      if (jobSort === 'equity_desc') {
+        return getEquityScore(b.job) - getEquityScore(a.job);
+      }
+
+      return getRecencyScore(b.job, b.index) - getRecencyScore(a.job, a.index);
+    });
+
+    return sorted.map((entry) => entry.job);
+  }, [filteredJobs, jobSort]);
 
   const savedJobList = useMemo(
     () => normalizedJobs.filter((job) => savedJobs.includes(job.id)),
@@ -1985,36 +2397,67 @@ const SwissStartupConnect = () => {
       .slice(0, 3);
   }, [sortedCompanies]);
 
-  const safeBoundMin = Number.isFinite(salaryBounds[0]) ? salaryBounds[0] : defaultSalaryBounds[0];
-  const safeBoundMax = Number.isFinite(salaryBounds[1]) ? salaryBounds[1] : defaultSalaryBounds[1];
-  const normalizedMinBound = Math.min(safeBoundMin, safeBoundMax);
-  const normalizedMaxBound = Math.max(safeBoundMin, safeBoundMax);
-  const sliderMinValue = clamp(
-    Number.isFinite(salaryMin) ? salaryMin : normalizedMinBound,
-    normalizedMinBound,
-    normalizedMaxBound
+  const safeSalaryBoundMin = Number.isFinite(salaryBounds[0]) ? salaryBounds[0] : defaultSalaryBounds[0];
+  const safeSalaryBoundMax = Number.isFinite(salaryBounds[1]) ? salaryBounds[1] : defaultSalaryBounds[1];
+  const normalizedSalaryMinBound = Math.min(safeSalaryBoundMin, safeSalaryBoundMax);
+  const normalizedSalaryMaxBound = Math.max(safeSalaryBoundMin, safeSalaryBoundMax);
+  const salarySliderMinValue = clamp(
+    Number.isFinite(salaryMin) ? salaryMin : normalizedSalaryMinBound,
+    normalizedSalaryMinBound,
+    normalizedSalaryMaxBound
   );
-  const sliderMaxValue = clamp(
-    Number.isFinite(salaryMax) ? salaryMax : normalizedMaxBound,
-    normalizedMinBound,
-    normalizedMaxBound
+  const salarySliderMaxValue = clamp(
+    Number.isFinite(salaryMax) ? salaryMax : normalizedSalaryMaxBound,
+    normalizedSalaryMinBound,
+    normalizedSalaryMaxBound
   );
-  const sliderRangeSpan = Math.max(normalizedMaxBound - normalizedMinBound, 1);
-  const sliderStyle = {
+  const salarySliderRangeSpan = Math.max(normalizedSalaryMaxBound - normalizedSalaryMinBound, SALARY_STEP);
+  const salarySliderStyle = {
     '--range-min': `${Math.min(
-      Math.max(((sliderMinValue - normalizedMinBound) / sliderRangeSpan) * 100, 0),
+      Math.max(((salarySliderMinValue - normalizedSalaryMinBound) / salarySliderRangeSpan) * 100, 0),
       100
     )}%`,
     '--range-max': `${Math.min(
-      Math.max(((sliderMaxValue - normalizedMinBound) / sliderRangeSpan) * 100, 0),
+      Math.max(((salarySliderMaxValue - normalizedSalaryMinBound) / salarySliderRangeSpan) * 100, 0),
       100
     )}%`,
   };
-  const salarySliderDisabled = normalizedMinBound === normalizedMaxBound;
-  const salaryRangeAtDefault = sliderMinValue === normalizedMinBound && sliderMaxValue === normalizedMaxBound;
-  const filtersActive = selectedFilters.length > 0 || !salaryRangeAtDefault;
+  const salarySliderDisabled = normalizedSalaryMinBound === normalizedSalaryMaxBound;
+  const salaryRangeAtDefault =
+    salarySliderMinValue === normalizedSalaryMinBound && salarySliderMaxValue === normalizedSalaryMaxBound;
 
-  const handleSliderPointerMove = useCallback(
+  const safeEquityBoundMin = Number.isFinite(equityBounds[0]) ? equityBounds[0] : defaultEquityBounds[0];
+  const safeEquityBoundMax = Number.isFinite(equityBounds[1]) ? equityBounds[1] : defaultEquityBounds[1];
+  const normalizedEquityMinBound = Math.min(safeEquityBoundMin, safeEquityBoundMax);
+  const normalizedEquityMaxBound = Math.max(safeEquityBoundMin, safeEquityBoundMax);
+  const equitySliderMinValue = clamp(
+    Number.isFinite(equityMin) ? equityMin : normalizedEquityMinBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
+  const equitySliderMaxValue = clamp(
+    Number.isFinite(equityMax) ? equityMax : normalizedEquityMaxBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
+  const equitySliderRangeSpan = Math.max(normalizedEquityMaxBound - normalizedEquityMinBound, EQUITY_STEP);
+  const equitySliderStyle = {
+    '--range-min': `${Math.min(
+      Math.max(((equitySliderMinValue - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+    '--range-max': `${Math.min(
+      Math.max(((equitySliderMaxValue - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+  };
+  const equitySliderDisabled = normalizedEquityMinBound === normalizedEquityMaxBound;
+  const equityRangeAtDefault =
+    equitySliderMinValue === normalizedEquityMinBound && equitySliderMaxValue === normalizedEquityMaxBound;
+  const filtersActive =
+    selectedFilters.length > 0 || !salaryRangeAtDefault || !equityRangeAtDefault;
+
+  const handleSalarySliderPointerMove = useCallback(
     (event) => {
       const dragState = salarySliderDragState.current;
       if (!dragState || !salarySliderRef.current) {
@@ -2029,20 +2472,20 @@ const SwissStartupConnect = () => {
       event.preventDefault();
 
       const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-      const value = normalizedMinBound + ratio * sliderRangeSpan;
+      const value = normalizedSalaryMinBound + ratio * salarySliderRangeSpan;
 
       if (dragState.type === 'range') {
         const width = dragState.rangeWidth;
         let nextMin = value - dragState.startOffset;
         let nextMax = nextMin + width;
 
-        if (nextMin < normalizedMinBound) {
-          nextMin = normalizedMinBound;
+        if (nextMin < normalizedSalaryMinBound) {
+          nextMin = normalizedSalaryMinBound;
           nextMax = nextMin + width;
         }
 
-        if (nextMax > normalizedMaxBound) {
-          nextMax = normalizedMaxBound;
+        if (nextMax > normalizedSalaryMaxBound) {
+          nextMax = normalizedSalaryMaxBound;
           nextMin = nextMax - width;
         }
 
@@ -2057,15 +2500,15 @@ const SwissStartupConnect = () => {
 
       updateSalaryRange((prev) => [prev[0], Math.max(value, prev[0])]);
     },
-    [normalizedMinBound, normalizedMaxBound, sliderRangeSpan, updateSalaryRange]
+    [normalizedSalaryMinBound, normalizedSalaryMaxBound, salarySliderRangeSpan, updateSalaryRange]
   );
 
-  const handleSliderPointerUp = useCallback(() => {
+  const handleSalarySliderPointerUp = useCallback(() => {
     salarySliderDragState.current = null;
     setIsSalarySliderDragging(false);
-    window.removeEventListener('pointermove', handleSliderPointerMove);
-    window.removeEventListener('pointerup', handleSliderPointerUp);
-  }, [handleSliderPointerMove]);
+    window.removeEventListener('pointermove', handleSalarySliderPointerMove);
+    window.removeEventListener('pointerup', handleSalarySliderPointerUp);
+  }, [handleSalarySliderPointerMove]);
 
   const handleSalarySliderPointerDown = useCallback(
     (event) => {
@@ -2091,50 +2534,180 @@ const SwissStartupConnect = () => {
       }
 
       const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-      const value = normalizedMinBound + ratio * sliderRangeSpan;
-      const rangeWidth = sliderMaxValue - sliderMinValue;
+      const value = normalizedSalaryMinBound + ratio * salarySliderRangeSpan;
+      const rangeWidth = salarySliderMaxValue - salarySliderMinValue;
       const minRatio =
-        sliderRangeSpan === 0 ? 0 : (sliderMinValue - normalizedMinBound) / sliderRangeSpan;
+        salarySliderRangeSpan === 0
+          ? 0
+          : (salarySliderMinValue - normalizedSalaryMinBound) / salarySliderRangeSpan;
       const maxRatio =
-        sliderRangeSpan === 0 ? 0 : (sliderMaxValue - normalizedMinBound) / sliderRangeSpan;
+        salarySliderRangeSpan === 0
+          ? 0
+          : (salarySliderMaxValue - normalizedSalaryMinBound) / salarySliderRangeSpan;
       const withinRange = rangeWidth > 0 && ratio >= minRatio && ratio <= maxRatio;
 
       if (withinRange) {
         salarySliderDragState.current = {
           type: 'range',
-          startOffset: value - sliderMinValue,
+          startOffset: value - salarySliderMinValue,
           rangeWidth,
         };
       } else {
-        const distanceToMin = Math.abs(value - sliderMinValue);
-        const distanceToMax = Math.abs(value - sliderMaxValue);
+        const distanceToMin = Math.abs(value - salarySliderMinValue);
+        const distanceToMax = Math.abs(value - salarySliderMaxValue);
         const target = distanceToMin <= distanceToMax ? 'min' : 'max';
         salarySliderDragState.current = { type: target };
-        handleSliderPointerMove(event);
+        handleSalarySliderPointerMove(event);
       }
 
       setIsSalarySliderDragging(true);
-      window.addEventListener('pointermove', handleSliderPointerMove);
-      window.addEventListener('pointerup', handleSliderPointerUp);
+      window.addEventListener('pointermove', handleSalarySliderPointerMove);
+      window.addEventListener('pointerup', handleSalarySliderPointerUp);
       event.preventDefault();
     },
     [
-      handleSliderPointerMove,
-      handleSliderPointerUp,
-      normalizedMinBound,
+      handleSalarySliderPointerMove,
+      handleSalarySliderPointerUp,
+      normalizedSalaryMinBound,
       salarySliderDisabled,
-      sliderMaxValue,
-      sliderMinValue,
-      sliderRangeSpan,
+      salarySliderMaxValue,
+      salarySliderMinValue,
+      salarySliderRangeSpan,
     ]
   );
 
   useEffect(() => {
     return () => {
-      window.removeEventListener('pointermove', handleSliderPointerMove);
-      window.removeEventListener('pointerup', handleSliderPointerUp);
+      window.removeEventListener('pointermove', handleSalarySliderPointerMove);
+      window.removeEventListener('pointerup', handleSalarySliderPointerUp);
     };
-  }, [handleSliderPointerMove, handleSliderPointerUp]);
+  }, [handleSalarySliderPointerMove, handleSalarySliderPointerUp]);
+
+  const handleEquitySliderPointerMove = useCallback(
+    (event) => {
+      const dragState = equitySliderDragState.current;
+      if (!dragState || !equitySliderRef.current) {
+        return;
+      }
+
+      const rect = equitySliderRef.current.getBoundingClientRect();
+      if (rect.width === 0) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+      const value = normalizedEquityMinBound + ratio * equitySliderRangeSpan;
+
+      if (dragState.type === 'range') {
+        const width = dragState.rangeWidth;
+        let nextMin = value - dragState.startOffset;
+        let nextMax = nextMin + width;
+
+        if (nextMin < normalizedEquityMinBound) {
+          nextMin = normalizedEquityMinBound;
+          nextMax = nextMin + width;
+        }
+
+        if (nextMax > normalizedEquityMaxBound) {
+          nextMax = normalizedEquityMaxBound;
+          nextMin = nextMax - width;
+        }
+
+        updateEquityRange(() => [nextMin, nextMax]);
+        return;
+      }
+
+      if (dragState.type === 'min') {
+        updateEquityRange((prev) => [Math.min(value, prev[1]), prev[1]]);
+        return;
+      }
+
+      updateEquityRange((prev) => [prev[0], Math.max(value, prev[0])]);
+    },
+    [normalizedEquityMinBound, normalizedEquityMaxBound, equitySliderRangeSpan, updateEquityRange]
+  );
+
+  const handleEquitySliderPointerUp = useCallback(() => {
+    equitySliderDragState.current = null;
+    setIsEquitySliderDragging(false);
+    window.removeEventListener('pointermove', handleEquitySliderPointerMove);
+    window.removeEventListener('pointerup', handleEquitySliderPointerUp);
+  }, [handleEquitySliderPointerMove]);
+
+  const handleEquitySliderPointerDown = useCallback(
+    (event) => {
+      if (equitySliderDisabled || equitySliderDragState.current) {
+        return;
+      }
+
+      if (typeof event.button === 'number' && event.button !== 0) {
+        return;
+      }
+
+      if (typeof HTMLInputElement !== 'undefined' && event.target instanceof HTMLInputElement) {
+        return;
+      }
+
+      if (!equitySliderRef.current) {
+        return;
+      }
+
+      const rect = equitySliderRef.current.getBoundingClientRect();
+      if (rect.width === 0) {
+        return;
+      }
+
+      const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+      const value = normalizedEquityMinBound + ratio * equitySliderRangeSpan;
+      const rangeWidth = equitySliderMaxValue - equitySliderMinValue;
+      const minRatio =
+        equitySliderRangeSpan === 0
+          ? 0
+          : (equitySliderMinValue - normalizedEquityMinBound) / equitySliderRangeSpan;
+      const maxRatio =
+        equitySliderRangeSpan === 0
+          ? 0
+          : (equitySliderMaxValue - normalizedEquityMinBound) / equitySliderRangeSpan;
+      const withinRange = rangeWidth > 0 && ratio >= minRatio && ratio <= maxRatio;
+
+      if (withinRange) {
+        equitySliderDragState.current = {
+          type: 'range',
+          startOffset: value - equitySliderMinValue,
+          rangeWidth,
+        };
+      } else {
+        const distanceToMin = Math.abs(value - equitySliderMinValue);
+        const distanceToMax = Math.abs(value - equitySliderMaxValue);
+        const target = distanceToMin <= distanceToMax ? 'min' : 'max';
+        equitySliderDragState.current = { type: target };
+        handleEquitySliderPointerMove(event);
+      }
+
+      setIsEquitySliderDragging(true);
+      window.addEventListener('pointermove', handleEquitySliderPointerMove);
+      window.addEventListener('pointerup', handleEquitySliderPointerUp);
+      event.preventDefault();
+    },
+    [
+      equitySliderDisabled,
+      equitySliderMaxValue,
+      equitySliderMinValue,
+      equitySliderRangeSpan,
+      handleEquitySliderPointerMove,
+      handleEquitySliderPointerUp,
+      normalizedEquityMinBound,
+    ]
+  );
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('pointermove', handleEquitySliderPointerMove);
+      window.removeEventListener('pointerup', handleEquitySliderPointerUp);
+    };
+  }, [handleEquitySliderPointerMove, handleEquitySliderPointerUp]);
 
   return (
     <div className="ssc">
@@ -2340,7 +2913,7 @@ const SwissStartupConnect = () => {
               <div className="ssc__filters-header">
                 <div>
                   <h2>Tailor your results</h2>
-                  <p>Pick the active cities, role focus, and salary targets that fit you best.</p>
+                  <p>Pick the active cities, role focus, and the compensation mix that fits you best.</p>
                 </div>
                 {filtersActive && (
                   <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
@@ -2394,27 +2967,27 @@ const SwissStartupConnect = () => {
                   </div>
                   <div
                     className="ssc__salary-slider"
-                    style={sliderStyle}
+                    style={salarySliderStyle}
                     ref={salarySliderRef}
                     onPointerDown={handleSalarySliderPointerDown}
                     data-dragging={isSalarySliderDragging ? 'true' : undefined}
                   >
                     <input
                       type="range"
-                      min={normalizedMinBound}
-                      max={normalizedMaxBound}
+                      min={normalizedSalaryMinBound}
+                      max={normalizedSalaryMaxBound}
                       step={SALARY_STEP}
-                      value={sliderMinValue}
+                      value={salarySliderMinValue}
                       onChange={handleSalarySliderChange('min')}
                       disabled={salarySliderDisabled}
                       aria-label="Minimum salary"
                     />
                     <input
                       type="range"
-                      min={normalizedMinBound}
-                      max={normalizedMaxBound}
+                      min={normalizedSalaryMinBound}
+                      max={normalizedSalaryMaxBound}
                       step={SALARY_STEP}
-                      value={sliderMaxValue}
+                      value={salarySliderMaxValue}
                       onChange={handleSalarySliderChange('max')}
                       disabled={salarySliderDisabled}
                       aria-label="Maximum salary"
@@ -2454,6 +3027,73 @@ const SwissStartupConnect = () => {
                     </label>
                   </div>
                 </div>
+                <div className="ssc__filter-group ssc__filter-group--equity">
+                  <div className="ssc__filter-label-row">
+                    <span className="ssc__filter-label">Equity range</span>
+                    <span className="ssc__filter-helper">Percent ownership</span>
+                  </div>
+                  <div
+                    className="ssc__equity-slider"
+                    style={equitySliderStyle}
+                    ref={equitySliderRef}
+                    onPointerDown={handleEquitySliderPointerDown}
+                    data-dragging={isEquitySliderDragging ? 'true' : undefined}
+                  >
+                    <input
+                      type="range"
+                      min={normalizedEquityMinBound}
+                      max={normalizedEquityMaxBound}
+                      step={EQUITY_STEP}
+                      value={equitySliderMinValue}
+                      onChange={handleEquitySliderChange('min')}
+                      disabled={equitySliderDisabled}
+                      aria-label="Minimum equity"
+                    />
+                    <input
+                      type="range"
+                      min={normalizedEquityMinBound}
+                      max={normalizedEquityMaxBound}
+                      step={EQUITY_STEP}
+                      value={equitySliderMaxValue}
+                      onChange={handleEquitySliderChange('max')}
+                      disabled={equitySliderDisabled}
+                      aria-label="Maximum equity"
+                    />
+                  </div>
+                  <div className="ssc__equity-inputs">
+                    <label className="ssc__equity-input">
+                      <span>Min</span>
+                      <div className="ssc__filter-input-wrapper">
+                        <input
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          value={equityInputValues.min}
+                          onChange={(event) => handleEquityInputChange('min', event.target.value)}
+                          aria-label="Minimum equity percentage"
+                          disabled={equitySliderDisabled}
+                        />
+                        <span>%</span>
+                      </div>
+                    </label>
+                    <div className="ssc__filter-divider" aria-hidden="true">
+                      –
+                    </div>
+                    <label className="ssc__equity-input">
+                      <span>Max</span>
+                      <div className="ssc__filter-input-wrapper">
+                        <input
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          value={equityInputValues.max}
+                          onChange={(event) => handleEquityInputChange('max', event.target.value)}
+                          aria-label="Maximum equity percentage"
+                          disabled={equitySliderDisabled}
+                        />
+                        <span>%</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -2470,7 +3110,21 @@ const SwissStartupConnect = () => {
                     professionals.
                   </p>
                 </div>
-                <span className="ssc__pill">{filteredJobs.length} roles</span>
+                <div className="ssc__job-toolbar">
+                  <span className="ssc__pill">{filteredJobs.length} roles</span>
+                  <label htmlFor="ssc-job-sort">
+                    <span>Sort by</span>
+                    <select
+                      id="ssc-job-sort"
+                      value={jobSort}
+                      onChange={(event) => setJobSort(event.target.value)}
+                    >
+                      <option value="recent">Most recent</option>
+                      <option value="salary_desc">Highest salary</option>
+                      <option value="equity_desc">Highest equity</option>
+                    </select>
+                  </label>
+                </div>
               </div>
 
               {jobsLoading ? (
@@ -2481,7 +3135,7 @@ const SwissStartupConnect = () => {
                 </div>
               ) : filteredJobs.length > 0 ? (
                 <div className="ssc__grid">
-                  {filteredJobs.map((job) => {
+                  {sortedFilteredJobs.map((job) => {
                     const isSaved = savedJobs.includes(job.id);
                     const hasApplied = appliedJobs.includes(job.id);
                     return (
@@ -2533,7 +3187,9 @@ const SwissStartupConnect = () => {
                         <div className="ssc__job-footer">
                           <div className="ssc__salary">
                             <span>{job.salary}</span>
-                            <small>+ {job.equity} equity</small>
+                            {job.equity && job.equity.toLowerCase() !== 'n/a' ? (
+                              <small>+ {job.equity} equity</small>
+                            ) : null}
                           </div>
                           <div className="ssc__job-actions">
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
@@ -2997,6 +3653,33 @@ const SwissStartupConnect = () => {
                       </blockquote>
                     ))}
                   </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="ssc__section ssc__career-tips">
+              <div className="ssc__max">
+                <div className="ssc__section-header">
+                  <div>
+                    <h2 className="ssc__career-tips-title">
+                      <Lightbulb size={20} />
+                      <span>Startup Career Tips</span>
+                    </h2>
+                    <p>Level up your startup search with quick advice founders share most often.</p>
+                  </div>
+                </div>
+                <div className="ssc__tips-grid">
+                  {careerTips.map((tip) => (
+                    <article key={tip.id} className="ssc__tip-card">
+                      <div className="ssc__tip-icon">
+                        <Sparkles size={18} />
+                      </div>
+                      <div>
+                        <h3>{tip.title}</h3>
+                        <p>{tip.description}</p>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
             </section>

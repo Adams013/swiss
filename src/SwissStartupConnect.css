@@ -581,7 +581,8 @@
   }
 }
 
-.ssc__salary-slider {
+.ssc__salary-slider,
+.ssc__equity-slider {
   position: relative;
   height: 56px;
   margin-top: 0.25rem;
@@ -589,7 +590,8 @@
   cursor: pointer;
 }
 
-.ssc__salary-slider::before {
+.ssc__salary-slider::before,
+.ssc__equity-slider::before {
   content: '';
   position: absolute;
   left: 0;
@@ -610,11 +612,13 @@
   background-blend-mode: screen;
 }
 
-.ssc__salary-slider[data-dragging='true'] {
+.ssc__salary-slider[data-dragging='true'],
+.ssc__equity-slider[data-dragging='true'] {
   cursor: grabbing;
 }
 
-.ssc__salary-slider::after {
+.ssc__salary-slider::after,
+.ssc__equity-slider::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -627,7 +631,8 @@
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
 }
 
-.ssc__salary-slider input[type='range'] {
+.ssc__salary-slider input[type='range'],
+.ssc__equity-slider input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   position: absolute;
@@ -639,15 +644,18 @@
   background: none;
 }
 
-.ssc__salary-slider input[type='range']::-webkit-slider-runnable-track {
+.ssc__salary-slider input[type='range']::-webkit-slider-runnable-track,
+.ssc__equity-slider input[type='range']::-webkit-slider-runnable-track {
   background: transparent;
 }
 
-.ssc__salary-slider input[type='range']::-moz-range-track {
+.ssc__salary-slider input[type='range']::-moz-range-track,
+.ssc__equity-slider input[type='range']::-moz-range-track {
   background: transparent;
 }
 
-.ssc__salary-slider input[type='range']::-webkit-slider-thumb {
+.ssc__salary-slider input[type='range']::-webkit-slider-thumb,
+.ssc__equity-slider input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   pointer-events: auto;
@@ -661,7 +669,8 @@
   cursor: grab;
 }
 
-.ssc__salary-slider input[type='range']::-moz-range-thumb {
+.ssc__salary-slider input[type='range']::-moz-range-thumb,
+.ssc__equity-slider input[type='range']::-moz-range-thumb {
   pointer-events: auto;
   height: 26px;
   width: 26px;
@@ -674,29 +683,37 @@
 }
 
 .ssc__salary-slider input[type='range']:focus-visible::-webkit-slider-thumb,
-.ssc__salary-slider input[type='range']:focus-visible::-moz-range-thumb {
+.ssc__salary-slider input[type='range']:focus-visible::-moz-range-thumb,
+.ssc__equity-slider input[type='range']:focus-visible::-webkit-slider-thumb,
+.ssc__equity-slider input[type='range']:focus-visible::-moz-range-thumb {
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
 }
 
 .ssc__salary-slider input[type='range']::-webkit-slider-thumb:active,
-.ssc__salary-slider input[type='range']::-moz-range-thumb:active {
+.ssc__salary-slider input[type='range']::-moz-range-thumb:active,
+.ssc__equity-slider input[type='range']::-webkit-slider-thumb:active,
+.ssc__equity-slider input[type='range']::-moz-range-thumb:active {
   transform: scale(1.05);
   cursor: grabbing;
 }
 
 .ssc__salary-slider input[type='range']:disabled::-webkit-slider-thumb,
-.ssc__salary-slider input[type='range']:disabled::-moz-range-thumb {
+.ssc__salary-slider input[type='range']:disabled::-moz-range-thumb,
+.ssc__equity-slider input[type='range']:disabled::-webkit-slider-thumb,
+.ssc__equity-slider input[type='range']:disabled::-moz-range-thumb {
   border-color: rgba(15, 23, 42, 0.24);
   box-shadow: none;
 }
 
-.ssc__salary-inputs {
+.ssc__salary-inputs,
+.ssc__equity-inputs {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
 }
 
-.ssc__salary-input {
+.ssc__salary-input,
+.ssc__equity-input {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -708,7 +725,8 @@
   color: var(--ssc-muted);
 }
 
-.ssc__salary-input-wrapper {
+.ssc__salary-input-wrapper,
+.ssc__filter-input-wrapper {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -719,18 +737,22 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.ssc__salary-input-wrapper:focus-within {
-  border-color: var(--ssc-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+.ssc__salary-input-wrapper:focus-within,
+.ssc__filter-input-wrapper:focus-within {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
 }
 
-.ssc__salary-input-wrapper span {
+.ssc__salary-input-wrapper span,
+.ssc__filter-input-wrapper span {
+  font-size: 0.85rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--ssc-muted);
-  font-size: 0.95rem;
 }
 
-.ssc__salary-input-wrapper input {
+.ssc__salary-input-wrapper input,
+.ssc__filter-input-wrapper input {
   border: none;
   background: transparent;
   font-size: 1.05rem;
@@ -741,7 +763,8 @@
   outline: none;
 }
 
-.ssc__salary-divider {
+.ssc__salary-divider,
+.ssc__filter-divider {
   font-weight: 700;
   color: var(--ssc-muted);
   margin-bottom: 0.65rem;
@@ -752,16 +775,19 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 
-  .ssc__filter-group--salary {
+  .ssc__filter-group--salary,
+  .ssc__filter-group--equity {
     grid-column: span 1;
   }
 
-  .ssc__salary-inputs {
+  .ssc__salary-inputs,
+  .ssc__equity-inputs {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .ssc__salary-divider {
+  .ssc__salary-divider,
+  .ssc__filter-divider {
     display: none;
   }
 }
@@ -802,6 +828,61 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.ssc__career-tips {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(37, 99, 235, 0));
+}
+
+.ssc__career-tips-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.35rem;
+}
+
+.ssc__career-tips-title svg {
+  color: var(--ssc-primary);
+}
+
+.ssc__tips-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.ssc__tip-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem 1.35rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.ssc__tip-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(37, 99, 235, 0.14);
+  color: var(--ssc-primary);
+}
+
+.ssc__tip-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ssc-ink);
+}
+
+.ssc__tip-card p {
+  margin: 0.35rem 0 0;
+  color: var(--ssc-muted);
+  line-height: 1.5;
 }
 
 .ssc__section-header h2 {
@@ -1151,13 +1232,15 @@
   color: var(--ssc-primary);
 }
 
-.ssc__company-toolbar {
+.ssc__company-toolbar,
+.ssc__job-toolbar {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.ssc__company-toolbar label {
+.ssc__company-toolbar label,
+.ssc__job-toolbar label {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -1165,7 +1248,8 @@
   color: var(--ssc-muted);
 }
 
-.ssc__company-toolbar select {
+.ssc__company-toolbar select,
+.ssc__job-toolbar select {
   border: 1px solid var(--ssc-border);
   border-radius: 10px;
   padding: 0.45rem 0.85rem;
