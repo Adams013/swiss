@@ -28,6 +28,7 @@ const mockJobs = [
     id: 'mock-1',
     title: 'Frontend Engineer',
     company_name: 'TechFlow AG',
+    startup_id: 'mock-company-1',
     location: 'Zurich, Switzerland',
     employment_type: 'Full-time',
     salary: '80k – 110k CHF',
@@ -46,6 +47,7 @@ const mockJobs = [
     id: 'mock-2',
     title: 'Product Manager',
     company_name: 'Alpine Health',
+    startup_id: 'mock-company-2',
     location: 'Geneva, Switzerland',
     employment_type: 'Full-time',
     salary: '95k – 125k CHF',
@@ -64,6 +66,7 @@ const mockJobs = [
     id: 'mock-3',
     title: 'Machine Learning Intern',
     company_name: 'Cognivia Labs',
+    startup_id: 'mock-company-3',
     location: 'Lausanne, Switzerland (Hybrid)',
     employment_type: 'Internship',
     salary: '3.5k CHF / month',
@@ -91,6 +94,7 @@ const mockCompanies = [
     culture: 'Product-driven, hybrid-first, carbon neutral operations.',
     website: 'https://techflow.example',
     verification_status: 'verified',
+    created_at: '2024-01-12T10:00:00Z',
   },
   {
     id: 'mock-company-2',
@@ -102,6 +106,7 @@ const mockCompanies = [
     culture: 'Human-centred, clinically informed, data trusted.',
     website: 'https://alpinehealth.example',
     verification_status: 'pending',
+    created_at: '2024-01-08T09:30:00Z',
   },
   {
     id: 'mock-company-3',
@@ -113,6 +118,7 @@ const mockCompanies = [
     culture: 'Research-rooted, humble experts, fast experimentation.',
     website: 'https://cognivia.example',
     verification_status: 'verified',
+    created_at: '2024-01-18T14:45:00Z',
   },
 ];
 
@@ -310,7 +316,6 @@ const SwissStartupConnect = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
   const [user, setUser] = useState(null);
-  const [userType, setUserType] = useState('student');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
@@ -424,7 +429,6 @@ const SwissStartupConnect = () => {
       } = await supabase.auth.getSession();
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
-      setUserType(mapped?.type ?? 'student');
       setEmailVerified(!!session?.user?.email_confirmed_at);
       setAuthLoading(false);
     };
@@ -436,7 +440,6 @@ const SwissStartupConnect = () => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
-      setUserType(mapped?.type ?? 'student');
       setEmailVerified(!!session?.user?.email_confirmed_at);
       if (event === 'PASSWORD_RECOVERY') {
         setResetPasswordModalOpen(true);
@@ -622,7 +625,7 @@ const SwissStartupConnect = () => {
       try {
         const { data, error } = await supabase
           .from('jobs')
-          .select('id,title,company_name,location,employment_type,salary,equity,description,requirements,benefits,posted,applicants,tags,stage,motivational_letter_required,created_at');
+          .select('id,title,company_name,location,employment_type,salary,equity,description,requirements,benefits,posted,applicants,tags,stage,motivational_letter_required,created_at,startup_id');
 
         if (error) {
           console.info('Falling back to mock jobs', error.message);
@@ -658,7 +661,7 @@ const SwissStartupConnect = () => {
       try {
         const { data, error } = await supabase
           .from('startups')
-          .select('id,name,tagline,location,industry,team,culture,website,verification_status');
+          .select('id,name,tagline,location,industry,team,culture,website,verification_status,created_at');
 
         if (error) {
           console.info('Falling back to mock companies', error.message);
@@ -675,6 +678,7 @@ const SwissStartupConnect = () => {
               culture: company.culture,
               website: company.website,
               verification_status: company.verification_status || 'unverified',
+              created_at: company.created_at,
             }))
           );
         } else {
@@ -1102,7 +1106,6 @@ const SwissStartupConnect = () => {
       if (data.user) {
         const mapped = mapSupabaseUser(data.user);
         setUser(mapped);
-        setUserType(mapped.type);
         setEmailVerified(!!data.user.email_confirmed_at);
         if (!data.user.email_confirmed_at) {
           setFeedback({
@@ -1155,7 +1158,6 @@ const SwissStartupConnect = () => {
       if (data.user) {
         const mapped = mapSupabaseUser(data.user);
         setUser(mapped);
-        setUserType(mapped.type);
         setEmailVerified(!!data.user.email_confirmed_at);
         setFeedback({ type: 'success', message: 'Profile created. Let’s find your first match.' });
         setShowLoginModal(false);
@@ -1173,7 +1175,6 @@ const SwissStartupConnect = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setUserType('student');
     setFeedback({ type: 'info', message: 'Signed out. Your saved roles stay here for you.' });
   };
 
@@ -1418,6 +1419,16 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const toggleFollowCompany = (companyId) => {
+    const key = String(companyId);
+    setFollowedCompanies((prev) => {
+      if (prev.includes(key)) {
+        return prev.filter((id) => id !== key);
+      }
+      return [...prev, key];
+    });
+  };
+
   const groupedFilters = useMemo(() => {
     return quickFilters.reduce((acc, filter) => {
       if (!acc[filter.category]) acc[filter.category] = [];
@@ -1440,10 +1451,64 @@ const SwissStartupConnect = () => {
     return baseTabs;
   }, [user?.type]);
 
-  const isStudent = userType === 'student';
+  const isStudent = user?.type === 'student';
+  const isLoggedIn = Boolean(user);
+  const canApply = isLoggedIn && isStudent;
+  const applyRestrictionMessage = isLoggedIn ? 'Student applicants only' : 'Sign in as a student to apply';
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
+  const [companySort, setCompanySort] = useState('recent');
+  const [followedCompanies, setFollowedCompanies] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = window.localStorage.getItem('ssc_followed_companies');
+    return stored ? JSON.parse(stored).map(String) : [];
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('ssc_followed_companies', JSON.stringify(followedCompanies));
+  }, [followedCompanies]);
+
+  const companyJobCounts = useMemo(() => {
+    const map = {};
+    jobs.forEach((job) => {
+      const key = String(job.startup_id || job.company_name || '');
+      if (!key) return;
+      if (!map[key]) map[key] = 0;
+      map[key] += 1;
+    });
+    return map;
+  }, [jobs]);
+
+  const sortedCompanies = useMemo(() => {
+    const enriched = companies.map((company) => {
+      const idKey = company.id ? String(company.id) : null;
+      const nameKey = company.name ? String(company.name) : null;
+      const jobCount = (idKey && companyJobCounts[idKey]) || (nameKey && companyJobCounts[nameKey]) || 0;
+      return {
+        ...company,
+        jobCount,
+        isFollowed: followedCompanies.includes(String(company.id || company.name)),
+      };
+    });
+
+    if (companySort === 'jobs_desc') {
+      return enriched.sort((a, b) => b.jobCount - a.jobCount);
+    }
+
+    return enriched.sort((a, b) => {
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [companies, companyJobCounts, companySort, followedCompanies]);
+
+  const featuredCompanies = useMemo(() => {
+    return [...sortedCompanies]
+      .sort((a, b) => b.jobCount - a.jobCount)
+      .slice(0, 3);
+  }, [sortedCompanies]);
 
   return (
     <div className="ssc">
@@ -1453,7 +1518,6 @@ const SwissStartupConnect = () => {
             <div className="ssc__brand-badge">⌁</div>
             <div className="ssc__brand-text">
               <span className="ssc__brand-name">SwissStartup Connect</span>
-              <span className="ssc__brand-sub">Where Swiss founders meet ambitious students</span>
             </div>
           </div>
 
@@ -1592,23 +1656,6 @@ const SwissStartupConnect = () => {
                 Discover paid internships, part-time roles, and graduate opportunities with
                 founders who want you in the room from day one.
               </p>
-
-              <div className="ssc__audience">
-                <button
-                  type="button"
-                  className={userType === 'student' ? 'is-active' : ''}
-                  onClick={() => setUserType('student')}
-                >
-                  I’m a student
-                </button>
-                <button
-                  type="button"
-                  className={userType === 'startup' ? 'is-active' : ''}
-                  onClick={() => setUserType('startup')}
-                >
-                  I’m a startup
-                </button>
-              </div>
 
               {feedback && (
                 <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
@@ -1768,7 +1815,7 @@ const SwissStartupConnect = () => {
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
                               View role
                             </button>
-                            {isStudent ? (
+                            {canApply ? (
                               <button
                                 type="button"
                                 className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
@@ -1778,7 +1825,7 @@ const SwissStartupConnect = () => {
                                 {hasApplied ? 'Applied' : 'Apply now'}
                               </button>
                             ) : (
-                              <span className="ssc__job-note">Student applicants only</span>
+                              <span className="ssc__job-note">{applyRestrictionMessage}</span>
                             )}
                           </div>
                         </div>
@@ -1805,6 +1852,19 @@ const SwissStartupConnect = () => {
                   <h2>Featured startups</h2>
                   <p>Meet the founders building Switzerland’s next generation of companies.</p>
                 </div>
+                <div className="ssc__company-toolbar">
+                  <label htmlFor="ssc-company-sort">
+                    <span>Sort by</span>
+                    <select
+                      id="ssc-company-sort"
+                      value={companySort}
+                      onChange={(event) => setCompanySort(event.target.value)}
+                    >
+                      <option value="recent">Most recent</option>
+                      <option value="jobs_desc">Most roles</option>
+                    </select>
+                  </label>
+                </div>
               </div>
 
               {companiesLoading ? (
@@ -1813,44 +1873,72 @@ const SwissStartupConnect = () => {
                     <div key={index} className="ssc__job-skeleton" />
                   ))}
                 </div>
-              ) : (
+              ) : sortedCompanies.length > 0 ? (
                 <div className="ssc__company-grid">
-                  {companies.map((company) => (
-                    <article key={company.id} className="ssc__company-card">
-                      <div className="ssc__company-logo">
-                        <Building2 size={20} />
-                      </div>
-                      <div className="ssc__company-content">
-                        <div className="ssc__company-header">
-                          <h3 className="ssc__company-name">{company.name}</h3>
-                          {company.verification_status === 'verified' && (
-                            <span className="ssc__badge">
-                              <CheckCircle2 size={14} /> Verified
-                            </span>
-                          )}
+                  {sortedCompanies.map((company) => {
+                    const followKey = String(company.id || company.name);
+                    const jobCountLabel =
+                      company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`;
+                    return (
+                      <article key={followKey} className="ssc__company-card">
+                        <div className="ssc__company-logo">
+                          <Building2 size={20} />
                         </div>
-                        <p className="ssc__company-tagline">{company.tagline}</p>
-                        <div className="ssc__company-meta">
-                          <span>{company.location}</span>
-                          <span>{company.industry}</span>
-                          <span>{company.team}</span>
+                        <div className="ssc__company-content">
+                          <div className="ssc__company-header">
+                            <h3 className="ssc__company-name">{company.name}</h3>
+                            {company.verification_status === 'verified' && (
+                              <span className="ssc__badge">
+                                <CheckCircle2 size={14} /> Verified
+                              </span>
+                            )}
+                          </div>
+                          <p className="ssc__company-tagline">{company.tagline}</p>
+                          <div className="ssc__company-meta">
+                            <span>{company.location}</span>
+                            <span>{company.industry}</span>
+                            <span>{company.team}</span>
+                          </div>
+                          <p className="ssc__company-stats">{company.culture}</p>
+                          <div className="ssc__company-foot">
+                            <span className="ssc__company-jobs">{jobCountLabel}</span>
+                            <div className="ssc__company-actions">
+                              {company.website && (
+                                <a
+                                  className="ssc__outline-btn"
+                                  href={company.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Visit website
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                className={`ssc__follow-btn ${company.isFollowed ? 'is-active' : ''}`}
+                                onClick={() => toggleFollowCompany(followKey)}
+                              >
+                                {company.isFollowed ? 'Following' : 'Follow'}
+                              </button>
+                              <button
+                                type="button"
+                                className="ssc__ghost-btn"
+                                onClick={() => openReviewsModal(company)}
+                              >
+                                Reviews
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <p className="ssc__company-stats">{company.culture}</p>
-                        <div className="ssc__company-actions">
-                          <a className="ssc__outline-btn" href={company.website} target="_blank" rel="noreferrer">
-                            Visit website
-                          </a>
-                          <button
-                            type="button"
-                            className="ssc__ghost-btn"
-                            onClick={() => openReviewsModal(company)}
-                          >
-                            Reviews
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Building2 size={40} />
+                  <h3>No startups listed yet</h3>
+                  <p>Check back soon or invite your favourite Swiss startup to join.</p>
                 </div>
               )}
             </div>
@@ -1992,7 +2080,7 @@ const SwissStartupConnect = () => {
                         <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
                           View role
                         </button>
-                        {isStudent ? (
+                        {canApply ? (
                           <button
                             type="button"
                             className="ssc__primary-btn"
@@ -2001,7 +2089,7 @@ const SwissStartupConnect = () => {
                             Apply now
                           </button>
                         ) : (
-                          <span className="ssc__job-note">Student applicants only</span>
+                          <span className="ssc__job-note">{applyRestrictionMessage}</span>
                         )}
                       </div>
                     </div>
@@ -2041,6 +2129,40 @@ const SwissStartupConnect = () => {
                   </div>
                 </div>
                 <div className="ssc__testimonials">
+                  <aside className="ssc__featured-corner">
+                    <div className="ssc__featured-header">
+                      <h3>Featured companies</h3>
+                      <button type="button" className="ssc__link-button" onClick={() => setActiveTab('companies')}>
+                        View all
+                      </button>
+                    </div>
+                    <ul className="ssc__featured-list">
+                      {featuredCompanies.length > 0 ? (
+                        featuredCompanies.map((company) => {
+                          const followKey = String(company.id || company.name);
+                          const jobCountLabel =
+                            company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`;
+                          return (
+                            <li key={followKey} className="ssc__featured-item">
+                              <div>
+                                <span className="ssc__featured-name">{company.name}</span>
+                                <span className="ssc__featured-meta">{jobCountLabel}</span>
+                              </div>
+                              <button
+                                type="button"
+                                className={`ssc__follow-chip ${company.isFollowed ? 'is-active' : ''}`}
+                                onClick={() => toggleFollowCompany(followKey)}
+                              >
+                                {company.isFollowed ? 'Following' : 'Follow'}
+                              </button>
+                            </li>
+                          );
+                        })
+                      ) : (
+                        <li className="ssc__featured-empty">New startups are being curated—check back soon.</li>
+                      )}
+                    </ul>
+                  </aside>
                   <h2>Stories from our community</h2>
                   <div className="ssc__testimonial-grid">
                     {testimonials.map((testimonial) => (
@@ -2363,9 +2485,13 @@ const SwissStartupConnect = () => {
               <button type="button" className="ssc__ghost-btn" onClick={() => toggleSavedJob(selectedJob.id)}>
                 {savedJobs.includes(selectedJob.id) ? 'Saved' : 'Save for later'}
               </button>
-              <button type="button" className="ssc__primary-btn" onClick={() => openApplyModal(selectedJob)}>
-                Apply now
-              </button>
+              {canApply ? (
+                <button type="button" className="ssc__primary-btn" onClick={() => openApplyModal(selectedJob)}>
+                  Apply now
+                </button>
+              ) : (
+                <span className="ssc__job-note">{applyRestrictionMessage}</span>
+              )}
             </div>
           </div>
         </div>
