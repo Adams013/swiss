@@ -8,6 +8,7 @@ import {
   Clock,
   GraduationCap,
   Heart,
+  Lightbulb,
   Layers,
   MapPin,
   Rocket,
@@ -91,6 +92,7 @@ const mockCompanies = [
     location: 'Zurich',
     industry: 'Fintech',
     team: '65 people',
+    fundraising: 'CHF 28M raised',
     culture: 'Product-driven, hybrid-first, carbon neutral operations.',
     website: 'https://techflow.example',
     verification_status: 'verified',
@@ -103,6 +105,7 @@ const mockCompanies = [
     location: 'Geneva',
     industry: 'Healthtech',
     team: '32 people',
+    fundraising: 'CHF 12M raised',
     culture: 'Human-centred, clinically informed, data trusted.',
     website: 'https://alpinehealth.example',
     verification_status: 'pending',
@@ -115,6 +118,7 @@ const mockCompanies = [
     location: 'Lausanne',
     industry: 'Deep Tech',
     team: '48 people',
+    fundraising: 'CHF 35M raised',
     culture: 'Research-rooted, humble experts, fast experimentation.',
     website: 'https://cognivia.example',
     verification_status: 'verified',
@@ -205,6 +209,24 @@ const resourceLinks = [
   },
 ];
 
+const careerTips = [
+  {
+    id: 'equity',
+    title: 'Equity Matters',
+    description: 'Ask about equity packages—they can be worth more than salary!',
+  },
+  {
+    id: 'growth',
+    title: 'Growth Opportunity',
+    description: 'Startups offer rapid career advancement and diverse experience.',
+  },
+  {
+    id: 'learn',
+    title: 'Learn Fast',
+    description: 'Direct exposure to all aspects of business operations.',
+  },
+];
+
 const cantonInternshipSalaries = [
   { canton: 'Zürich (ZH)', median: 'CHF 2,450', note: 'Finance, pharma, and big-tech hubs offer the highest stipends.' },
   { canton: 'Bern (BE)', median: 'CHF 2,150', note: 'Federal agencies and med-tech firms provide steady pay.' },
@@ -262,22 +284,412 @@ const cvWritingTips = [
 
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
 
-const quickFilters = [
-  { id: 'loc-zurich', label: 'Zurich', category: 'Location', test: (job) => job.location?.toLowerCase().includes('zurich') },
-  { id: 'loc-geneva', label: 'Geneva', category: 'Location', test: (job) => job.location?.toLowerCase().includes('geneva') },
-  { id: 'loc-remote', label: 'Remote friendly', category: 'Location', test: (job) => job.location?.toLowerCase().includes('remote') },
-  { id: 'type-full', label: 'Full-time', category: 'Role type', test: (job) => job.employment_type === 'Full-time' },
-  { id: 'type-intern', label: 'Internship', category: 'Role type', test: (job) => job.employment_type === 'Internship' },
-  { id: 'focus-engineering', label: 'Engineering', category: 'Focus', test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())) },
-  { id: 'focus-product', label: 'Product', category: 'Focus', test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())) },
-  { id: 'focus-growth', label: 'Growth', category: 'Focus', test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())) },
-  { id: 'focus-climate', label: 'Climate', category: 'Focus', test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')) },
+const activeCityFilters = [
+  { id: 'city-zurich', label: 'Zurich', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('zurich') },
+  { id: 'city-geneva', label: 'Geneva', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('geneva') },
+  { id: 'city-lausanne', label: 'Lausanne', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('lausanne') },
 ];
+
+const roleFocusFilters = [
+  {
+    id: 'focus-engineering',
+    label: 'Engineering',
+    category: 'Role focus',
+    test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())),
+  },
+  {
+    id: 'focus-product',
+    label: 'Product',
+    category: 'Role focus',
+    test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())),
+  },
+  {
+    id: 'focus-growth',
+    label: 'Growth',
+    category: 'Role focus',
+    test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())),
+  },
+  {
+    id: 'focus-climate',
+    label: 'Climate',
+    category: 'Role focus',
+    test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')),
+  },
+];
+
+const quickFilters = [...activeCityFilters, ...roleFocusFilters];
 
 const filterPredicates = quickFilters.reduce((acc, filter) => {
   acc[filter.id] = filter.test;
   return acc;
 }, {});
+
+const SALARY_MIN_FIELDS = [
+  'salary_min',
+  'salary_min_chf',
+  'salary_minimum',
+  'salary_range_min',
+  'salary_lower',
+  'salary_floor',
+  'salary_low',
+  'salary_from',
+  'compensation_min',
+  'pay_min',
+];
+
+const SALARY_MAX_FIELDS = [
+  'salary_max',
+  'salary_max_chf',
+  'salary_maximum',
+  'salary_range_max',
+  'salary_upper',
+  'salary_ceiling',
+  'salary_high',
+  'salary_to',
+  'compensation_max',
+  'pay_max',
+];
+
+const EQUITY_MIN_FIELDS = ['equity_min', 'equity_min_percentage', 'equity_floor', 'equity_low'];
+const EQUITY_MAX_FIELDS = ['equity_max', 'equity_max_percentage', 'equity_ceiling', 'equity_high'];
+
+const SALARY_PERIOD_FIELDS = [
+  'salary_period',
+  'salary_interval',
+  'salary_frequency',
+  'salary_unit',
+  'salary_timeframe',
+  'salary_basis',
+  'pay_period',
+];
+
+const SALARY_FALLBACK_RANGE = [2000, 12000];
+const SALARY_STEP = 1;
+const EQUITY_FALLBACK_RANGE = [0, 5];
+const EQUITY_STEP = 0.01;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getStepFactor = (step) => {
+  if (!Number.isFinite(step) || step <= 0) {
+    return 1;
+  }
+  return Math.pow(10, Math.max(0, Math.ceil(-Math.log10(step))));
+};
+
+const alignToStep = (value, step, strategy) => {
+  if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) {
+    return value;
+  }
+  const factor = getStepFactor(step);
+  const scaled = strategy(value / step);
+  const rounded = Math.round(scaled * step * factor) / factor;
+  return Object.is(rounded, -0) ? 0 : rounded;
+};
+
+const roundToStep = (value, step) => alignToStep(value, step, Math.round);
+
+const roundDownToStep = (value, step) => alignToStep(value, step, Math.floor);
+
+const roundUpToStep = (value, step) => alignToStep(value, step, Math.ceil);
+
+const formatSalaryValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+  return String(Math.round(value));
+};
+
+const formatEquityValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+  return rounded
+    .toFixed(2)
+    .replace(/\.00$/, '')
+    .replace(/(\.\d+?)0+$/, '$1');
+};
+
+const sanitizeDecimalInput = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const cleaned = value.replace(/[^0-9.,]/g, '');
+  const separatorIndex = cleaned.search(/[.,]/);
+
+  if (separatorIndex === -1) {
+    return cleaned;
+  }
+
+  const before = cleaned.slice(0, separatorIndex + 1);
+  const after = cleaned
+    .slice(separatorIndex + 1)
+    .replace(/[.,]/g, '');
+
+  return `${before}${after}`;
+};
+
+const parseNumericValue = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) {
+    return null;
+  }
+
+  const match = trimmed.match(/-?\d+(?:[.,]\d+)?/);
+  if (!match) {
+    return null;
+  }
+
+  let numeric = Number.parseFloat(match[0].replace(',', '.'));
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  if (trimmed.includes('m')) {
+    numeric *= 1_000_000;
+  } else if (trimmed.includes('k')) {
+    numeric *= 1_000;
+  }
+
+  return numeric;
+};
+
+const parsePercentageValue = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const match = value.match(/-?\d+(?:[.,]\d+)?/);
+  if (!match) {
+    return null;
+  }
+
+  const numeric = Number.parseFloat(match[0].replace(',', '.'));
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const detectSalaryPeriod = (job, salaryText) => {
+  const baseText = [
+    salaryText ?? '',
+    ...SALARY_PERIOD_FIELDS.map((field) => job?.[field] ?? ''),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  if (baseText.includes('month')) return 'month';
+  if (baseText.includes('week')) return 'week';
+  if (baseText.includes('day')) return 'day';
+  if (baseText.includes('hour')) return 'hour';
+  if (baseText.includes('year') || baseText.includes('annual') || baseText.includes('annum')) return 'year';
+  return null;
+};
+
+const convertToMonthly = (value, period, salaryText) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  let resolvedPeriod = period;
+  if (!resolvedPeriod) {
+    const reference = salaryText?.toLowerCase() ?? '';
+    if (reference.includes('per month') || reference.includes('/ month')) {
+      resolvedPeriod = 'month';
+    } else if (reference.includes('per week') || reference.includes('/ week')) {
+      resolvedPeriod = 'week';
+    } else if (reference.includes('per day') || reference.includes('/ day')) {
+      resolvedPeriod = 'day';
+    } else if (reference.includes('per hour') || reference.includes('/ hour')) {
+      resolvedPeriod = 'hour';
+    } else if (value > 20000) {
+      resolvedPeriod = 'year';
+    } else {
+      resolvedPeriod = 'month';
+    }
+  }
+
+  switch (resolvedPeriod) {
+    case 'year':
+      return value / 12;
+    case 'week':
+      return value * 4.333;
+    case 'day':
+      return value * 21;
+    case 'hour':
+      return value * 160;
+    default:
+      return value;
+  }
+};
+
+const computeSalaryRange = (job) => {
+  const salaryText = job?.salary ?? '';
+  const period = detectSalaryPeriod(job, salaryText);
+
+  const minCandidate = SALARY_MIN_FIELDS.map((field) => parseNumericValue(job?.[field]))
+    .find((value) => value != null);
+  const maxCandidate = SALARY_MAX_FIELDS.map((field) => parseNumericValue(job?.[field]))
+    .find((value) => value != null);
+
+  const directValues = [minCandidate, maxCandidate]
+    .filter((value) => value != null)
+    .map((value) => convertToMonthly(value, period, salaryText))
+    .filter((value) => Number.isFinite(value));
+
+  const parsedFromString = Array.from(
+    String(salaryText)
+      .toLowerCase()
+      .matchAll(/(\d+(?:[.,]\d+)?)\s*(k|m)?/g)
+  )
+    .map((match) => {
+      let numeric = Number.parseFloat(match[1].replace(',', '.'));
+      if (!Number.isFinite(numeric)) {
+        return null;
+      }
+      if (match[2] === 'm') numeric *= 1_000_000;
+      if (match[2] === 'k') numeric *= 1_000;
+      return convertToMonthly(numeric, period, salaryText);
+    })
+    .filter((value) => Number.isFinite(value));
+
+  const values = [...directValues, ...parsedFromString].filter((value) => Number.isFinite(value) && value > 0);
+
+  if (values.length === 0) {
+    return [null, null];
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  return [Math.round(min), Math.round(max)];
+};
+
+const deriveSalaryBoundsFromJobs = (jobs) => {
+  let min = Infinity;
+  let max = 0;
+
+  jobs.forEach((job) => {
+    const baseMin = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
+    const baseMax = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
+    let jobMin = baseMin;
+    let jobMax = baseMax;
+
+    if (jobMin == null || jobMax == null) {
+      const [derivedMin, derivedMax] = computeSalaryRange(job);
+      if (jobMin == null) jobMin = derivedMin;
+      if (jobMax == null) jobMax = derivedMax;
+    }
+
+    if (Number.isFinite(jobMin)) {
+      min = Math.min(min, jobMin);
+    }
+    if (Number.isFinite(jobMax)) {
+      max = Math.max(max, jobMax);
+    }
+  });
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === Infinity || max === 0) {
+    return [...SALARY_FALLBACK_RANGE];
+  }
+
+  if (min === max) {
+    const buffer = Math.max(min * 0.2, 500);
+    return [Math.max(0, Math.floor(min - buffer)), Math.ceil(max + buffer)];
+  }
+
+  return [Math.floor(min), Math.ceil(max)];
+};
+
+const computeEquityRange = (job) => {
+  const equityText = job?.equity ?? '';
+
+  const minCandidate = EQUITY_MIN_FIELDS.map((field) => parsePercentageValue(job?.[field]))
+    .find((value) => value != null);
+  const maxCandidate = EQUITY_MAX_FIELDS.map((field) => parsePercentageValue(job?.[field]))
+    .find((value) => value != null);
+
+  const parsedFromString = Array.from(String(equityText).toLowerCase().matchAll(/(\d+(?:[.,]\d+)?)\s*%?/g))
+    .map((match) => Number.parseFloat(match[1].replace(',', '.')))
+    .filter((value) => Number.isFinite(value));
+
+  const values = [minCandidate, maxCandidate, ...parsedFromString]
+    .filter((value) => Number.isFinite(value) && value >= 0);
+
+  if (values.length === 0) {
+    return [null, null];
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  return [roundToStep(min, EQUITY_STEP), roundToStep(max, EQUITY_STEP)];
+};
+
+const deriveEquityBoundsFromJobs = (jobs) => {
+  let min = Infinity;
+  let max = 0;
+
+  jobs.forEach((job) => {
+    const baseMin = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
+    const baseMax = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
+    let jobMin = baseMin;
+    let jobMax = baseMax;
+
+    if (jobMin == null || jobMax == null) {
+      const [derivedMin, derivedMax] = computeEquityRange(job);
+      if (jobMin == null) jobMin = derivedMin;
+      if (jobMax == null) jobMax = derivedMax;
+    }
+
+    if (Number.isFinite(jobMin)) {
+      min = Math.min(min, jobMin);
+    }
+    if (Number.isFinite(jobMax)) {
+      max = Math.max(max, jobMax);
+    }
+  });
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === Infinity) {
+    return [...EQUITY_FALLBACK_RANGE];
+  }
+
+  const lowerBound = Math.max(0, Math.min(min, 0));
+  const upperBound = Math.max(max, lowerBound);
+
+  if (lowerBound === upperBound) {
+    const buffer = Math.max(upperBound * 0.4, 0.2);
+    const lower = Math.max(0, upperBound - buffer);
+    const upper = upperBound + buffer;
+    return [roundDownToStep(lower, EQUITY_STEP), roundUpToStep(upper, EQUITY_STEP)];
+  }
+
+  return [roundDownToStep(lowerBound, EQUITY_STEP), roundUpToStep(upperBound, EQUITY_STEP)];
+};
+
+const defaultSalaryBounds = deriveSalaryBoundsFromJobs(mockJobs);
+const defaultEquityBounds = deriveEquityBoundsFromJobs(mockJobs);
 
 const mapSupabaseUser = (supabaseUser) => {
   if (!supabaseUser) return null;
@@ -298,11 +710,29 @@ const SwissStartupConnect = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const [salaryRange, setSalaryRange] = useState(defaultSalaryBounds);
+  const [salaryBounds, setSalaryBounds] = useState(defaultSalaryBounds);
+  const [salaryRangeDirty, setSalaryRangeDirty] = useState(false);
+  const [salaryInputValues, setSalaryInputValues] = useState(() => ({
+    min: formatSalaryValue(defaultSalaryBounds[0]),
+    max: formatSalaryValue(defaultSalaryBounds[1]),
+  }));
+  const [equityRange, setEquityRange] = useState(defaultEquityBounds);
+  const [equityBounds, setEquityBounds] = useState(defaultEquityBounds);
+  const [equityRangeDirty, setEquityRangeDirty] = useState(false);
+  const [equityInputValues, setEquityInputValues] = useState(() => ({
+    min: formatEquityValue(defaultEquityBounds[0]),
+    max: formatEquityValue(defaultEquityBounds[1]),
+  }));
+
+  const [salaryMin, salaryMax] = salaryRange;
+  const [equityMin, equityMax] = equityRange;
 
   const [jobs, setJobs] = useState(mockJobs);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [jobSort, setJobSort] = useState('recent');
 
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -623,9 +1053,7 @@ const SwissStartupConnect = () => {
     const fetchJobs = async () => {
       setJobsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('jobs')
-          .select('id,title,company_name,location,employment_type,salary,equity,description,requirements,benefits,posted,applicants,tags,stage,motivational_letter_required,created_at,startup_id');
+        const { data, error } = await supabase.from('jobs').select('*');
 
         if (error) {
           console.info('Falling back to mock jobs', error.message);
@@ -659,9 +1087,7 @@ const SwissStartupConnect = () => {
     const fetchCompanies = async () => {
       setCompaniesLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('startups')
-          .select('id,name,tagline,location,industry,team,culture,website,verification_status,created_at');
+        const { data, error } = await supabase.from('startups').select('*');
 
         if (error) {
           console.info('Falling back to mock companies', error.message);
@@ -674,7 +1100,18 @@ const SwissStartupConnect = () => {
               tagline: company.tagline,
               location: company.location,
               industry: company.industry,
-              team: company.team,
+              team:
+                company.team ||
+                company.team_size ||
+                company.employees ||
+                company.headcount ||
+                '',
+              fundraising:
+                company.fundraising ||
+                company.total_funding ||
+                company.total_raised ||
+                company.funding ||
+                '',
               culture: company.culture,
               website: company.website,
               verification_status: company.verification_status || 'unverified',
@@ -737,7 +1174,6 @@ const SwissStartupConnect = () => {
   }, [user, startupProfile?.id, applicationsVersion]);
 
   const addFilter = (filterId) => {
-    setActiveTab('jobs');
     setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
   };
 
@@ -745,7 +1181,261 @@ const SwissStartupConnect = () => {
     setSelectedFilters((prev) => prev.filter((item) => item !== filterId));
   };
 
-  const clearFilters = () => setSelectedFilters([]);
+  const clearFilters = () => {
+    setSelectedFilters([]);
+    setSalaryRangeDirty(false);
+    setEquityRangeDirty(false);
+    setSalaryRange((prev) => {
+      const [boundMin, boundMax] = salaryBounds;
+      if (prev[0] === boundMin && prev[1] === boundMax) {
+        return prev;
+      }
+      return [boundMin, boundMax];
+    });
+    setEquityRange((prev) => {
+      const [boundMin, boundMax] = equityBounds;
+      if (prev[0] === boundMin && prev[1] === boundMax) {
+        return prev;
+      }
+      return [boundMin, boundMax];
+    });
+  };
+
+  const updateSalaryRange = useCallback(
+    (computeNext) => {
+      setSalaryRangeDirty(true);
+      let resolvedValues = null;
+      setSalaryRange((prev) => {
+        const [boundMin, boundMax] = salaryBounds;
+        const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
+
+        if (!next || !Array.isArray(next) || next.length < 2) {
+          return prev;
+        }
+
+        let [nextMin, nextMax] = next;
+
+        if (!Number.isFinite(nextMin) || !Number.isFinite(nextMax)) {
+          return prev;
+        }
+
+        nextMin = clamp(roundToStep(nextMin, SALARY_STEP), boundMin, boundMax);
+        nextMax = clamp(roundToStep(nextMax, SALARY_STEP), boundMin, boundMax);
+
+        if (nextMin > nextMax) {
+          [nextMin, nextMax] = [nextMax, nextMin];
+        }
+
+        if (nextMin === prev[0] && nextMax === prev[1]) {
+          return prev;
+        }
+
+        resolvedValues = [nextMin, nextMax];
+        return [nextMin, nextMax];
+      });
+      if (resolvedValues) {
+        const [nextMin, nextMax] = resolvedValues;
+        setSalaryInputValues((prev) => {
+          const next = {
+            min: formatSalaryValue(nextMin),
+            max: formatSalaryValue(nextMax),
+          };
+
+          if (prev.min === next.min && prev.max === next.max) {
+            return prev;
+          }
+
+          return next;
+        });
+      }
+    },
+    [salaryBounds]
+  );
+
+  const updateEquityRange = useCallback(
+    (computeNext) => {
+      setEquityRangeDirty(true);
+      let resolvedValues = null;
+      setEquityRange((prev) => {
+        const [boundMin, boundMax] = equityBounds;
+        const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
+
+        if (!next || !Array.isArray(next) || next.length < 2) {
+          return prev;
+        }
+
+        let [nextMin, nextMax] = next;
+
+        if (!Number.isFinite(nextMin) || !Number.isFinite(nextMax)) {
+          return prev;
+        }
+
+        nextMin = clamp(roundToStep(nextMin, EQUITY_STEP), boundMin, boundMax);
+        nextMax = clamp(roundToStep(nextMax, EQUITY_STEP), boundMin, boundMax);
+
+        if (nextMin > nextMax) {
+          [nextMin, nextMax] = [nextMax, nextMin];
+        }
+
+        if (nextMin === prev[0] && nextMax === prev[1]) {
+          return prev;
+        }
+
+        resolvedValues = [nextMin, nextMax];
+        return [nextMin, nextMax];
+      });
+
+      if (resolvedValues) {
+        const [nextMin, nextMax] = resolvedValues;
+        setEquityInputValues((prev) => {
+          const next = {
+            min: formatEquityValue(nextMin),
+            max: formatEquityValue(nextMax),
+          };
+
+          if (prev.min === next.min && prev.max === next.max) {
+            return prev;
+          }
+
+          return next;
+        });
+      }
+    },
+    [equityBounds]
+  );
+
+  const handleSalarySliderChange = (bound) => (event) => {
+    const rawValue = Number(event.target.value);
+    if (!Number.isFinite(rawValue)) {
+      return;
+    }
+
+    updateSalaryRange((prev) => {
+      if (bound === 'min') {
+        return [Math.min(rawValue, prev[1]), prev[1]];
+      }
+
+      return [prev[0], Math.max(rawValue, prev[0])];
+    });
+  };
+
+  const handleSalaryInputChange = (bound, value) => {
+    const sanitized = value.replace(/[^0-9]/g, '');
+
+    setSalaryInputValues((prev) => {
+      if (prev[bound] === sanitized) {
+        return prev;
+      }
+      return { ...prev, [bound]: sanitized };
+    });
+
+    if (sanitized === '') {
+      return;
+    }
+
+    const numeric = Number(sanitized);
+    if (!Number.isFinite(numeric)) {
+      return;
+    }
+
+    updateSalaryRange((prev) => {
+      if (bound === 'min') {
+        return [Math.min(numeric, prev[1]), prev[1]];
+      }
+
+      return [prev[0], Math.max(numeric, prev[0])];
+    });
+  };
+
+  const handleEquitySliderChange = (bound) => (event) => {
+    const rawValue = Number(event.target.value);
+    if (!Number.isFinite(rawValue)) {
+      return;
+    }
+
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        return [Math.min(rawValue, prev[1]), prev[1]];
+      }
+
+      return [prev[0], Math.max(rawValue, prev[0])];
+    });
+  };
+
+  const handleEquityInputChange = (bound, value) => {
+    const sanitized = sanitizeDecimalInput(value);
+
+    setEquityInputValues((prev) => {
+      if (prev[bound] === sanitized) {
+        return prev;
+      }
+      return { ...prev, [bound]: sanitized };
+    });
+
+    if (!sanitized || sanitized === '.' || sanitized === ',' || /[.,]$/.test(sanitized)) {
+      return;
+    }
+
+    const numeric = Number.parseFloat(sanitized.replace(',', '.'));
+    if (!Number.isFinite(numeric)) {
+      return;
+    }
+
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        const nextMin = Math.min(numeric, prev[1]);
+        return [nextMin, prev[1]];
+      }
+
+      const nextMax = Math.max(numeric, prev[0]);
+      return [prev[0], nextMax];
+    });
+  };
+
+  const handleEquityInputFocus = (bound) => () => {
+    equityInputFocusRef.current[bound] = true;
+  };
+
+  const handleEquityInputBlur = (bound) => () => {
+    equityInputFocusRef.current[bound] = false;
+
+    const raw = equityInputValues[bound] ?? '';
+    const sanitized = sanitizeDecimalInput(raw);
+    const trimmed = sanitized.replace(/[.,]$/, '');
+    const fallback = bound === 'min' ? formatEquityValue(equityMin) : formatEquityValue(equityMax);
+
+    if (!trimmed) {
+      setEquityInputValues((prev) => {
+        if (prev[bound] === fallback) {
+          return prev;
+        }
+        return { ...prev, [bound]: fallback };
+      });
+      return;
+    }
+
+    const numeric = Number.parseFloat(trimmed.replace(',', '.'));
+    if (!Number.isFinite(numeric)) {
+      setEquityInputValues((prev) => {
+        if (prev[bound] === fallback) {
+          return prev;
+        }
+        return { ...prev, [bound]: fallback };
+      });
+      return;
+    }
+
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        const nextMin = Math.min(numeric, prev[1]);
+        return [nextMin, prev[1]];
+      }
+
+      const nextMax = Math.max(numeric, prev[0]);
+      return [prev[0], nextMax];
+    });
+  };
+
 
   const toggleSavedJob = (jobId) => {
     setSavedJobs((prev) => {
@@ -769,17 +1459,194 @@ const SwissStartupConnect = () => {
     return map;
   }, [companies]);
 
+  const companyMetaLookup = useMemo(() => {
+    const map = {};
+    companies.forEach((company) => {
+      const teamLabel =
+        company.team ||
+        company.team_size ||
+        company.employees ||
+        company.headcount ||
+        '';
+      const fundraisingLabel =
+        company.fundraising ||
+        company.total_funding ||
+        company.total_raised ||
+        company.funding ||
+        '';
+      const meta = {
+        team: teamLabel ? String(teamLabel) : '',
+        fundraising: fundraisingLabel ? String(fundraisingLabel) : '',
+      };
+
+      if (company.id != null) {
+        map[`id:${company.id}`] = meta;
+      }
+
+      if (company.name) {
+        const nameKey = company.name.trim().toLowerCase();
+        if (nameKey) {
+          map[`name:${nameKey}`] = meta;
+        }
+      }
+    });
+    return map;
+  }, [companies]);
+
   const normalizedJobs = useMemo(() => {
     return jobs.map((job) => {
       const idKey = job.startup_id ? String(job.startup_id) : null;
       const nameFromLookup = idKey ? companyNameLookup[idKey] : null;
       const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
+      const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
+      const [equityMinValue, equityMaxValue] = computeEquityRange(job);
+      const metaFromId = idKey ? companyMetaLookup[`id:${idKey}`] : null;
+      const metaFromName = ensuredName
+        ? companyMetaLookup[`name:${ensuredName.trim().toLowerCase()}`]
+        : null;
+      const companyMeta = metaFromId || metaFromName || {};
       return {
         ...job,
         company_name: ensuredName,
+        salary_min_value: Number.isFinite(job.salary_min_value) ? job.salary_min_value : salaryMinValue,
+        salary_max_value: Number.isFinite(job.salary_max_value) ? job.salary_max_value : salaryMaxValue,
+        equity_min_value: Number.isFinite(job.equity_min_value) ? job.equity_min_value : equityMinValue,
+        equity_max_value: Number.isFinite(job.equity_max_value) ? job.equity_max_value : equityMaxValue,
+        company_team:
+          job.company_team ||
+          job.team ||
+          job.team_size ||
+          job.employees ||
+          companyMeta.team ||
+          '',
+        company_fundraising:
+          job.company_fundraising ||
+          job.fundraising ||
+          job.total_funding ||
+          job.total_raised ||
+          job.funding ||
+          companyMeta.fundraising ||
+          '',
       };
     });
-  }, [jobs, companyNameLookup]);
+  }, [jobs, companyMetaLookup, companyNameLookup]);
+
+  useEffect(() => {
+    const nextBounds = deriveSalaryBoundsFromJobs(normalizedJobs);
+
+    setSalaryBounds((prev) => {
+      if (prev[0] === nextBounds[0] && prev[1] === nextBounds[1]) {
+        return prev;
+      }
+      return nextBounds;
+    });
+
+    setSalaryRange((prev) => {
+      const [boundMin, boundMax] = nextBounds;
+
+      if (!salaryRangeDirty) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      const clampedMin = clamp(prev[0], boundMin, boundMax);
+      const clampedMax = clamp(prev[1], boundMin, boundMax);
+
+      if (!Number.isFinite(clampedMin) || !Number.isFinite(clampedMax) || clampedMin > clampedMax) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      if (prev[0] === Math.round(clampedMin) && prev[1] === Math.round(clampedMax)) {
+        return prev;
+      }
+
+      return [Math.round(clampedMin), Math.round(clampedMax)];
+    });
+  }, [normalizedJobs, salaryRangeDirty]);
+
+  useEffect(() => {
+    const nextBounds = deriveEquityBoundsFromJobs(normalizedJobs);
+
+    setEquityBounds((prev) => {
+      if (prev[0] === nextBounds[0] && prev[1] === nextBounds[1]) {
+        return prev;
+      }
+      return nextBounds;
+    });
+
+    setEquityRange((prev) => {
+      const [boundMin, boundMax] = nextBounds;
+
+      if (!equityRangeDirty) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      const clampedMin = clamp(prev[0], boundMin, boundMax);
+      const clampedMax = clamp(prev[1], boundMin, boundMax);
+
+      if (!Number.isFinite(clampedMin) || !Number.isFinite(clampedMax) || clampedMin > clampedMax) {
+        if (prev[0] === boundMin && prev[1] === boundMax) {
+          return prev;
+        }
+        return [boundMin, boundMax];
+      }
+
+      const roundedMin = roundToStep(clampedMin, EQUITY_STEP);
+      const roundedMax = roundToStep(clampedMax, EQUITY_STEP);
+
+      if (prev[0] === roundedMin && prev[1] === roundedMax) {
+        return prev;
+      }
+
+      return [roundedMin, roundedMax];
+    });
+  }, [normalizedJobs, equityRangeDirty]);
+
+  useEffect(() => {
+    setSalaryInputValues((prev) => {
+      const next = {
+        min: formatSalaryValue(salaryMin),
+        max: formatSalaryValue(salaryMax),
+      };
+
+      if (prev.min === next.min && prev.max === next.max) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, [salaryMin, salaryMax]);
+
+  useEffect(() => {
+    setEquityInputValues((prev) => {
+      const next = {
+        min: formatEquityValue(equityMin),
+        max: formatEquityValue(equityMax),
+      };
+
+      const minLocked = equityInputFocusRef.current.min;
+      const maxLocked = equityInputFocusRef.current.max;
+
+      const resolved = {
+        min: minLocked ? prev.min : next.min,
+        max: maxLocked ? prev.max : next.max,
+      };
+
+      if (prev.min === resolved.min && prev.max === resolved.max) {
+        return prev;
+      }
+
+      return resolved;
+    });
+  }, [equityMin, equityMax]);
 
   const companyJobCounts = useMemo(() => {
     const map = {};
@@ -840,9 +1707,126 @@ const SwissStartupConnect = () => {
         return predicate ? predicate(job) : true;
       });
 
-      return matchesSearch && matchesFilters;
+      const matchesSalary = (() => {
+        if (!Number.isFinite(salaryMin) || !Number.isFinite(salaryMax)) {
+          return true;
+        }
+
+        const jobMin = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
+        const jobMax = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
+
+        if (jobMin == null && jobMax == null) {
+          return true;
+        }
+
+        const effectiveMin = jobMin ?? jobMax;
+        const effectiveMax = jobMax ?? jobMin;
+
+        if (!Number.isFinite(effectiveMin) || !Number.isFinite(effectiveMax)) {
+          return true;
+        }
+
+        return effectiveMax >= salaryMin && effectiveMin <= salaryMax;
+      })();
+
+      const matchesEquity = (() => {
+        if (!Number.isFinite(equityMin) || !Number.isFinite(equityMax)) {
+          return true;
+        }
+
+        const jobMin = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
+        const jobMax = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
+
+        if (jobMin == null && jobMax == null) {
+          return equityMin <= 0;
+        }
+
+        const effectiveMin = jobMin ?? jobMax;
+        const effectiveMax = jobMax ?? jobMin;
+
+        if (!Number.isFinite(effectiveMin) || !Number.isFinite(effectiveMax)) {
+          return equityMin <= 0;
+        }
+
+        return effectiveMax >= equityMin && effectiveMin <= equityMax;
+      })();
+
+      return matchesSearch && matchesFilters && matchesSalary && matchesEquity;
     });
-  }, [normalizedJobs, searchTerm, selectedFilters]);
+  }, [normalizedJobs, searchTerm, selectedFilters, salaryMin, salaryMax, equityMin, equityMax]);
+
+  const sortedFilteredJobs = useMemo(() => {
+    const now = Date.now();
+    const entries = filteredJobs.map((job, index) => ({ job, index }));
+
+    const getSalaryScore = (job) => {
+      const max = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
+      const min = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
+
+      if (max == null && min == null) {
+        return -Infinity;
+      }
+
+      return Math.max(max ?? min ?? 0, min ?? max ?? 0);
+    };
+
+    const getEquityScore = (job) => {
+      const max = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
+      const min = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
+
+      if (max == null && min == null) {
+        return -Infinity;
+      }
+
+      return Math.max(max ?? min ?? 0, min ?? max ?? 0);
+    };
+
+    const getRecencyScore = (job, index) => {
+      if (job.created_at) {
+        const timestamp = new Date(job.created_at).getTime();
+        if (Number.isFinite(timestamp)) {
+          return timestamp;
+        }
+      }
+
+      const posted = typeof job.posted === 'string' ? job.posted.toLowerCase() : '';
+      const relativeMatch = posted.match(/(\d+)\s+(hour|day|week|month)/);
+      if (relativeMatch) {
+        const amount = Number.parseInt(relativeMatch[1], 10);
+        const unit = relativeMatch[2];
+        const unitMs = {
+          hour: 60 * 60 * 1000,
+          day: 24 * 60 * 60 * 1000,
+          week: 7 * 24 * 60 * 60 * 1000,
+          month: 30 * 24 * 60 * 60 * 1000,
+        }[unit];
+
+        if (Number.isFinite(amount) && unitMs) {
+          return now - amount * unitMs;
+        }
+      }
+
+      if (posted.includes('today')) {
+        return now;
+      }
+
+      return Number.MAX_SAFE_INTEGER - index;
+    };
+
+    const sorted = entries.sort((a, b) => {
+      if (jobSort === 'salary_desc') {
+        return getSalaryScore(b.job) - getSalaryScore(a.job);
+      }
+
+      if (jobSort === 'equity_desc') {
+        return getEquityScore(b.job) - getEquityScore(a.job);
+      }
+
+      return getRecencyScore(b.job, b.index) - getRecencyScore(a.job, a.index);
+    });
+
+    return sorted.map((entry) => entry.job);
+  }, [filteredJobs, jobSort]);
 
   const savedJobList = useMemo(
     () => normalizedJobs.filter((job) => savedJobs.includes(job.id)),
@@ -1496,6 +2480,13 @@ const SwissStartupConnect = () => {
   };
 
   const toggleFollowCompany = (companyId) => {
+    if (!user) {
+      setIsRegistering(false);
+      setShowLoginModal(true);
+      setFeedback({ type: 'info', message: 'Sign in to follow startups.' });
+      return;
+    }
+
     const key = String(companyId);
     setFollowedCompanies((prev) => {
       if (prev.includes(key)) {
@@ -1504,14 +2495,6 @@ const SwissStartupConnect = () => {
       return [...prev, key];
     });
   };
-
-  const groupedFilters = useMemo(() => {
-    return quickFilters.reduce((acc, filter) => {
-      if (!acc[filter.category]) acc[filter.category] = [];
-      acc[filter.category].push(filter);
-      return acc;
-    }, {});
-  }, []);
 
   const closeResourceModal = () => setResourceModal(null);
   const closeReviewsModal = () => setReviewsModal(null);
@@ -1534,6 +2517,7 @@ const SwissStartupConnect = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
+  const equityInputFocusRef = useRef({ min: false, max: false });
   const [companySort, setCompanySort] = useState('recent');
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -1575,9 +2559,70 @@ const SwissStartupConnect = () => {
       .slice(0, 3);
   }, [sortedCompanies]);
 
+  const safeSalaryBoundMin = Number.isFinite(salaryBounds[0]) ? salaryBounds[0] : defaultSalaryBounds[0];
+  const safeSalaryBoundMax = Number.isFinite(salaryBounds[1]) ? salaryBounds[1] : defaultSalaryBounds[1];
+  const normalizedSalaryMinBound = Math.min(safeSalaryBoundMin, safeSalaryBoundMax);
+  const normalizedSalaryMaxBound = Math.max(safeSalaryBoundMin, safeSalaryBoundMax);
+  const salarySliderMinValue = clamp(
+    Number.isFinite(salaryMin) ? salaryMin : normalizedSalaryMinBound,
+    normalizedSalaryMinBound,
+    normalizedSalaryMaxBound
+  );
+  const salarySliderMaxValue = clamp(
+    Number.isFinite(salaryMax) ? salaryMax : normalizedSalaryMaxBound,
+    normalizedSalaryMinBound,
+    normalizedSalaryMaxBound
+  );
+  const salarySliderRangeSpan = Math.max(normalizedSalaryMaxBound - normalizedSalaryMinBound, SALARY_STEP);
+  const salarySliderStyle = {
+    '--range-min': `${Math.min(
+      Math.max(((salarySliderMinValue - normalizedSalaryMinBound) / salarySliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+    '--range-max': `${Math.min(
+      Math.max(((salarySliderMaxValue - normalizedSalaryMinBound) / salarySliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+  };
+  const salarySliderDisabled = normalizedSalaryMinBound === normalizedSalaryMaxBound;
+  const salaryRangeAtDefault =
+    salarySliderMinValue === normalizedSalaryMinBound && salarySliderMaxValue === normalizedSalaryMaxBound;
+
+  const safeEquityBoundMin = Number.isFinite(equityBounds[0]) ? equityBounds[0] : defaultEquityBounds[0];
+  const safeEquityBoundMax = Number.isFinite(equityBounds[1]) ? equityBounds[1] : defaultEquityBounds[1];
+  const normalizedEquityMinBound = Math.min(safeEquityBoundMin, safeEquityBoundMax);
+  const normalizedEquityMaxBound = Math.max(safeEquityBoundMin, safeEquityBoundMax);
+  const equitySliderMinValue = clamp(
+    Number.isFinite(equityMin) ? equityMin : normalizedEquityMinBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
+  const equitySliderMaxValue = clamp(
+    Number.isFinite(equityMax) ? equityMax : normalizedEquityMaxBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
+  const equitySliderRangeSpan = Math.max(normalizedEquityMaxBound - normalizedEquityMinBound, EQUITY_STEP);
+  const equitySliderStyle = {
+    '--range-min': `${Math.min(
+      Math.max(((equitySliderMinValue - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+    '--range-max': `${Math.min(
+      Math.max(((equitySliderMaxValue - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
+      100
+    )}%`,
+  };
+  const equitySliderDisabled = normalizedEquityMinBound === normalizedEquityMaxBound;
+  const equityRangeAtDefault =
+    equitySliderMinValue === normalizedEquityMinBound && equitySliderMaxValue === normalizedEquityMaxBound;
+  const filtersActive =
+    selectedFilters.length > 0 || !salaryRangeAtDefault || !equityRangeAtDefault;
+
+
   return (
     <div className="ssc">
-      <header className="ssc__header">
+      <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__brand">
             <div className="ssc__brand-badge">⌁</div>
@@ -1779,32 +2824,179 @@ const SwissStartupConnect = () => {
               <div className="ssc__filters-header">
                 <div>
                   <h2>Tailor your results</h2>
-                  <p>Pick a combination of location, role type, and focus areas.</p>
+                  <p>Pick the active cities, role focus, and the compensation mix that fits you best.</p>
                 </div>
-                {selectedFilters.length > 0 && (
+                {filtersActive && (
                   <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
                     Clear filters
                   </button>
                 )}
               </div>
               <div className="ssc__filters-grid">
-                {Object.entries(groupedFilters).map(([category, filters]) => (
-                  <div key={category} className="ssc__filter-group">
-                    <span className="ssc__filter-label">{category}</span>
-                    <div className="ssc__filter-chips">
-                      {filters.map((filter) => (
+                <div className="ssc__filter-group">
+                  <span className="ssc__filter-label">Active cities</span>
+                  <div className="ssc__filter-chips">
+                    {activeCityFilters.map((filter) => {
+                      const isSelected = selectedFilters.includes(filter.id);
+                      return (
                         <button
                           key={filter.id}
                           type="button"
-                          className={`ssc__chip ${selectedFilters.includes(filter.id) ? 'is-selected' : ''}`}
-                          onClick={() => addFilter(filter.id)}
+                          className={`ssc__chip ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => (isSelected ? removeFilter(filter.id) : addFilter(filter.id))}
                         >
                           {filter.label}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
+                <div className="ssc__filter-group">
+                  <div className="ssc__filter-label-row">
+                    <span className="ssc__filter-label">Role focus</span>
+                  </div>
+                  <div className="ssc__filter-chips">
+                    {roleFocusFilters.map((filter) => {
+                      const isSelected = selectedFilters.includes(filter.id);
+                      return (
+                        <button
+                          key={filter.id}
+                          type="button"
+                          className={`ssc__chip ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => (isSelected ? removeFilter(filter.id) : addFilter(filter.id))}
+                        >
+                          {filter.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="ssc__filter-group ssc__filter-group--salary">
+                  <div className="ssc__filter-label-row">
+                    <span className="ssc__filter-label">Salary range</span>
+                    <span className="ssc__filter-helper">CHF per month</span>
+                  </div>
+                  <div className="ssc__salary-slider" style={salarySliderStyle}>
+                    <input
+                      type="range"
+                      min={normalizedSalaryMinBound}
+                      max={normalizedSalaryMaxBound}
+                      step={SALARY_STEP}
+                      value={salarySliderMinValue}
+                      onChange={handleSalarySliderChange('min')}
+                      disabled={salarySliderDisabled}
+                      aria-label="Minimum salary"
+                    />
+                    <input
+                      type="range"
+                      min={normalizedSalaryMinBound}
+                      max={normalizedSalaryMaxBound}
+                      step={SALARY_STEP}
+                      value={salarySliderMaxValue}
+                      onChange={handleSalarySliderChange('max')}
+                      disabled={salarySliderDisabled}
+                      aria-label="Maximum salary"
+                    />
+                  </div>
+                  <div className="ssc__salary-inputs">
+                    <label className="ssc__salary-input">
+                      <span>Min</span>
+                      <div className="ssc__salary-input-wrapper">
+                        <span>CHF</span>
+                        <input
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={salaryInputValues.min}
+                          onChange={(event) => handleSalaryInputChange('min', event.target.value)}
+                          aria-label="Minimum salary in Swiss francs"
+                          disabled={salarySliderDisabled}
+                        />
+                      </div>
+                    </label>
+                    <div className="ssc__salary-divider" aria-hidden="true">
+                      –
+                    </div>
+                    <label className="ssc__salary-input">
+                      <span>Max</span>
+                      <div className="ssc__salary-input-wrapper">
+                        <span>CHF</span>
+                        <input
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={salaryInputValues.max}
+                          onChange={(event) => handleSalaryInputChange('max', event.target.value)}
+                          aria-label="Maximum salary in Swiss francs"
+                          disabled={salarySliderDisabled}
+                        />
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div className="ssc__filter-group ssc__filter-group--equity">
+                  <div className="ssc__filter-label-row">
+                    <span className="ssc__filter-label">Equity range</span>
+                    <span className="ssc__filter-helper">Percent ownership</span>
+                  </div>
+                  <div className="ssc__equity-slider" style={equitySliderStyle}>
+                    <input
+                      type="range"
+                      min={normalizedEquityMinBound}
+                      max={normalizedEquityMaxBound}
+                      step={EQUITY_STEP}
+                      value={equitySliderMinValue}
+                      onChange={handleEquitySliderChange('min')}
+                      disabled={equitySliderDisabled}
+                      aria-label="Minimum equity"
+                    />
+                    <input
+                      type="range"
+                      min={normalizedEquityMinBound}
+                      max={normalizedEquityMaxBound}
+                      step={EQUITY_STEP}
+                      value={equitySliderMaxValue}
+                      onChange={handleEquitySliderChange('max')}
+                      disabled={equitySliderDisabled}
+                      aria-label="Maximum equity"
+                    />
+                  </div>
+                  <div className="ssc__equity-inputs">
+                    <label className="ssc__equity-input">
+                      <span>Min</span>
+                      <div className="ssc__filter-input-wrapper">
+                        <input
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          value={equityInputValues.min}
+                          onChange={(event) => handleEquityInputChange('min', event.target.value)}
+                          onFocus={handleEquityInputFocus('min')}
+                          onBlur={handleEquityInputBlur('min')}
+                          aria-label="Minimum equity percentage"
+                          disabled={equitySliderDisabled}
+                        />
+                        <span>%</span>
+                      </div>
+                    </label>
+                    <div className="ssc__filter-divider" aria-hidden="true">
+                      –
+                    </div>
+                    <label className="ssc__equity-input">
+                      <span>Max</span>
+                      <div className="ssc__filter-input-wrapper">
+                        <input
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          value={equityInputValues.max}
+                          onChange={(event) => handleEquityInputChange('max', event.target.value)}
+                          onFocus={handleEquityInputFocus('max')}
+                          onBlur={handleEquityInputBlur('max')}
+                          aria-label="Maximum equity percentage"
+                          disabled={equitySliderDisabled}
+                        />
+                        <span>%</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -1821,7 +3013,21 @@ const SwissStartupConnect = () => {
                     professionals.
                   </p>
                 </div>
-                <span className="ssc__pill">{filteredJobs.length} roles</span>
+                <div className="ssc__job-toolbar">
+                  <span className="ssc__pill">{filteredJobs.length} roles</span>
+                  <label htmlFor="ssc-job-sort">
+                    <span>Sort by</span>
+                    <select
+                      id="ssc-job-sort"
+                      value={jobSort}
+                      onChange={(event) => setJobSort(event.target.value)}
+                    >
+                      <option value="recent">Most recent</option>
+                      <option value="salary_desc">Highest salary</option>
+                      <option value="equity_desc">Highest equity</option>
+                    </select>
+                  </label>
+                </div>
               </div>
 
               {jobsLoading ? (
@@ -1832,7 +3038,7 @@ const SwissStartupConnect = () => {
                 </div>
               ) : filteredJobs.length > 0 ? (
                 <div className="ssc__grid">
-                  {filteredJobs.map((job) => {
+                  {sortedFilteredJobs.map((job) => {
                     const isSaved = savedJobs.includes(job.id);
                     const hasApplied = appliedJobs.includes(job.id);
                     return (
@@ -1869,6 +3075,23 @@ const SwissStartupConnect = () => {
                           </span>
                         </div>
 
+                        {(job.company_team || job.company_fundraising) && (
+                          <div className="ssc__job-company-insights">
+                            {job.company_team && (
+                              <span className="ssc__company-pill ssc__company-pill--team">
+                                <Users size={14} />
+                                {job.company_team}
+                              </span>
+                            )}
+                            {job.company_fundraising && (
+                              <span className="ssc__company-pill ssc__company-pill--funding">
+                                <Sparkles size={14} />
+                                {job.company_fundraising}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="ssc__job-tags">
                           {job.tags?.map((tag) => (
                             <span key={tag} className="ssc__tag">
@@ -1884,7 +3107,9 @@ const SwissStartupConnect = () => {
                         <div className="ssc__job-footer">
                           <div className="ssc__salary">
                             <span>{job.salary}</span>
-                            <small>+ {job.equity} equity</small>
+                            {job.equity && job.equity.toLowerCase() !== 'n/a' ? (
+                              <small>+ {job.equity} equity</small>
+                            ) : null}
                           </div>
                           <div className="ssc__job-actions">
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
@@ -1912,7 +3137,7 @@ const SwissStartupConnect = () => {
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
                   <h3>No matches yet</h3>
-                  <p>Try removing a filter or exploring another Swiss canton.</p>
+                  <p>Try removing a filter or widening your salary range.</p>
                 </div>
               )}
             </div>
@@ -1970,10 +3195,25 @@ const SwissStartupConnect = () => {
                           </div>
                           <p className="ssc__company-tagline">{company.tagline}</p>
                           <div className="ssc__company-meta">
-                            <span>{company.location}</span>
-                            <span>{company.industry}</span>
-                            <span>{company.team}</span>
+                            {company.location && <span>{company.location}</span>}
+                            {company.industry && <span>{company.industry}</span>}
                           </div>
+                          {(company.team || company.fundraising) && (
+                            <div className="ssc__company-insights">
+                              {company.team && (
+                                <span className="ssc__company-pill ssc__company-pill--team">
+                                  <Users size={14} />
+                                  {company.team}
+                                </span>
+                              )}
+                              {company.fundraising && (
+                                <span className="ssc__company-pill ssc__company-pill--funding">
+                                  <Sparkles size={14} />
+                                  {company.fundraising}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           <p className="ssc__company-stats">{company.culture}</p>
                           <div className="ssc__company-foot">
                             <span className="ssc__company-jobs">{jobCountLabel}</span>
@@ -2352,6 +3592,33 @@ const SwissStartupConnect = () => {
               </div>
             </section>
 
+            <section className="ssc__section ssc__career-tips">
+              <div className="ssc__max">
+                <div className="ssc__section-header">
+                  <div>
+                    <h2 className="ssc__career-tips-title">
+                      <Lightbulb size={20} />
+                      <span>Startup Career Tips</span>
+                    </h2>
+                    <p>Level up your startup search with quick advice founders share most often.</p>
+                  </div>
+                </div>
+                <div className="ssc__tips-grid">
+                  {careerTips.map((tip) => (
+                    <article key={tip.id} className="ssc__tip-card">
+                      <div className="ssc__tip-icon">
+                        <Sparkles size={18} />
+                      </div>
+                      <div>
+                        <h3>{tip.title}</h3>
+                        <p>{tip.description}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+
             <section className="ssc__section">
               <div className="ssc__max">
                 <div className="ssc__section-header">
@@ -2632,6 +3899,22 @@ const SwissStartupConnect = () => {
                   {selectedJob.applicants} applicants
                 </span>
               </div>
+              {(selectedJob.company_team || selectedJob.company_fundraising) && (
+                <div className="ssc__modal-company-insights">
+                  {selectedJob.company_team && (
+                    <span className="ssc__company-pill ssc__company-pill--team">
+                      <Users size={14} />
+                      {selectedJob.company_team}
+                    </span>
+                  )}
+                  {selectedJob.company_fundraising && (
+                    <span className="ssc__company-pill ssc__company-pill--funding">
+                      <Sparkles size={14} />
+                      {selectedJob.company_fundraising}
+                    </span>
+                  )}
+                </div>
+              )}
             </header>
             <div className="ssc__modal-body">
               <p>{selectedJob.description}</p>
