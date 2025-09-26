@@ -2480,6 +2480,13 @@ const SwissStartupConnect = () => {
   };
 
   const toggleFollowCompany = (companyId) => {
+    if (!user) {
+      setIsRegistering(false);
+      setShowLoginModal(true);
+      setFeedback({ type: 'info', message: 'Sign in to follow startups.' });
+      return;
+    }
+
     const key = String(companyId);
     setFollowedCompanies((prev) => {
       if (prev.includes(key)) {
