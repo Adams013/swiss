@@ -1438,6 +1438,18 @@ const SwissStartupConnect = () => {
 
 
   const toggleSavedJob = (jobId) => {
+    if (!user) {
+      setIsRegistering(false);
+      setShowLoginModal(true);
+      setFeedback({ type: 'info', message: 'Sign in as a student to save roles.' });
+      return;
+    }
+
+    if (user.type !== 'student') {
+      setFeedback({ type: 'info', message: 'Switch to a student account to save roles.' });
+      return;
+    }
+
     setSavedJobs((prev) => {
       const exists = prev.includes(jobId);
       if (exists) {
@@ -1828,10 +1840,12 @@ const SwissStartupConnect = () => {
     return sorted.map((entry) => entry.job);
   }, [filteredJobs, jobSort]);
 
-  const savedJobList = useMemo(
-    () => normalizedJobs.filter((job) => savedJobs.includes(job.id)),
-    [normalizedJobs, savedJobs]
-  );
+  const savedJobList = useMemo(() => {
+    if (!user || user.type !== 'student') {
+      return [];
+    }
+    return normalizedJobs.filter((job) => savedJobs.includes(job.id));
+  }, [normalizedJobs, savedJobs, user]);
 
   const openApplyModal = (job) => {
     if (!user) {
@@ -2513,6 +2527,7 @@ const SwissStartupConnect = () => {
   const isStudent = user?.type === 'student';
   const isLoggedIn = Boolean(user);
   const canApply = isLoggedIn && isStudent;
+  const canSaveJobs = isLoggedIn && isStudent;
   const applyRestrictionMessage = isLoggedIn ? 'Student applicants only' : 'Sign in as a student to apply';
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
@@ -3053,6 +3068,8 @@ const SwissStartupConnect = () => {
                             className={`ssc__save-btn ${isSaved ? 'is-active' : ''}`}
                             onClick={() => toggleSavedJob(job.id)}
                             aria-label={isSaved ? 'Remove from saved jobs' : 'Save job'}
+                            aria-disabled={!canSaveJobs}
+                            title={!canSaveJobs ? 'Sign in as a student to save roles' : undefined}
                           >
                             <Heart size={18} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? 'currentColor' : 'none'} />
                           </button>
@@ -3466,7 +3483,29 @@ const SwissStartupConnect = () => {
                 <span className="ssc__pill">{savedJobList.length} saved</span>
               </div>
 
-              {savedJobList.length > 0 ? (
+              {!canSaveJobs ? (
+                <div className="ssc__empty-state">
+                  <BookmarkPlus size={40} />
+                  <h3>Student accounts only</h3>
+                  <p>
+                    {isLoggedIn
+                      ? 'Switch to a student account to save and track roles.'
+                      : 'Sign in with your student account to save opportunities for later.'}
+                  </p>
+                  {!isLoggedIn && (
+                    <button
+                      type="button"
+                      className="ssc__primary-btn"
+                      onClick={() => {
+                        setIsRegistering(false);
+                        setShowLoginModal(true);
+                      }}
+                    >
+                      Sign in
+                    </button>
+                  )}
+                </div>
+              ) : savedJobList.length > 0 ? (
                 <div className="ssc__grid">
                   {savedJobList.map((job) => (
                     <article key={job.id} className="ssc__job-card">
