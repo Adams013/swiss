@@ -2089,24 +2089,50 @@ const SwissStartupConnect = () => {
         .toLowerCase()
         .replace(/[^a-z0-9_.-]+/g, '-')
         .replace(/^-+|-+$/g, '');
-      const prefix = options.prefix ? `${options.prefix.replace(/\/+$/, '')}/` : '';
+      const sanitizedPrefix = options.prefix
+        ? options.prefix
+            .split('/')
+            .map((segment) =>
+              segment
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9_.-]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+            )
+            .filter(Boolean)
+            .join('/')
+        : '';
       const baseName = nameWithoutExtension || 'document';
-      const filePath = `${user.id}/${prefix}${Date.now()}-${baseName}.${extension}`;
 
-      const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
+      const attemptUpload = async (prefix) => {
+        const normalizedPrefix = prefix ? `${prefix.replace(/\/+$/, '')}/` : '';
+        const filePath = `${user.id}/${normalizedPrefix}${Date.now()}-${baseName}.${extension}`;
+        const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || undefined,
+        });
 
-      if (error) {
+        if (error) {
+          throw error;
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+        return publicUrl;
+      };
+
+      try {
+        return await attemptUpload(sanitizedPrefix);
+      } catch (error) {
+        const message = error?.message?.toLowerCase?.() ?? '';
+        if (message.includes('row-level security') && sanitizedPrefix && !sanitizedPrefix.startsWith('profiles')) {
+          return await attemptUpload(`profiles/${sanitizedPrefix}`);
+        }
         throw error;
       }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-      return publicUrl;
     },
     [user?.id]
   );
@@ -2215,7 +2241,10 @@ const SwissStartupConnect = () => {
       const publicUrl = await uploadFile('cvs', file, { prefix: 'profiles' });
       setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
     } catch (error) {
-      setFeedback({ type: 'error', message: `CV upload failed: ${error.message}` });
+      const message = error?.message?.toLowerCase?.().includes('row-level security')
+        ? 'CV upload failed: your account is not allowed to store documents in that folder. Please try again or update your profile CV instead.'
+        : `CV upload failed: ${error.message}`;
+      setFeedback({ type: 'error', message });
     }
   };
 
@@ -2328,7 +2357,10 @@ const SwissStartupConnect = () => {
       setUseExistingCv(false);
       setApplicationError('');
     } catch (error) {
-      setApplicationError(`CV upload failed: ${error.message}`);
+      const message = error?.message?.toLowerCase?.().includes('row-level security')
+        ? 'CV upload failed: please upload the document to your profile first or try again in a moment.'
+        : `CV upload failed: ${error.message}`;
+      setApplicationError(message);
     }
   };
 
@@ -2347,7 +2379,10 @@ const SwissStartupConnect = () => {
       setMotivationalLetterName(file.name);
       setApplicationError('');
     } catch (error) {
-      setApplicationError(`Motivational letter upload failed: ${error.message}`);
+      const message = error?.message?.toLowerCase?.().includes('row-level security')
+        ? 'Motivational letter upload failed: please try again later or contact support if the issue persists.'
+        : `Motivational letter upload failed: ${error.message}`;
+      setApplicationError(message);
     }
   };
 
@@ -2499,6 +2534,12 @@ const SwissStartupConnect = () => {
     setApplicationError('');
 
     try {
+      if (!profile?.id) {
+        setApplicationError('Complete your student profile before applying.');
+        setApplicationSaving(false);
+        return;
+      }
+
       const selectedCvUrl = useExistingCv ? profileForm.cv_url : applicationCvUrl;
 
       if (!selectedCvUrl) {
@@ -2507,14 +2548,14 @@ const SwissStartupConnect = () => {
         return;
       }
 
-        const payload = {
-          job_id: applicationModal.id,
-          profile_id: profile?.id,
-          motivational_letter: motivationalLetterUrl || null,
-          status: 'submitted',
-          acknowledged: true,
-          cv_override_url: useExistingCv ? null : selectedCvUrl,
-        };
+      const payload = {
+        job_id: applicationModal.id,
+        profile_id: profile.id,
+        motivational_letter: motivationalLetterUrl || null,
+        status: 'submitted',
+        acknowledged: true,
+        cv_override_url: useExistingCv ? null : selectedCvUrl,
+      };
 
       const { error } = await supabase.from('job_applications').insert(payload);
 
