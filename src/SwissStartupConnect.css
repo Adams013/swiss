@@ -319,8 +319,18 @@
 }
 
 .ssc__hero {
+  position: relative;
   padding: 4.5rem 0 3.5rem;
   text-align: center;
+  min-height: calc(100vh - 5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.ssc__hero > .ssc__max {
+  width: 100%;
 }
 
 .ssc__hero-badge {
@@ -346,6 +356,52 @@
   max-width: 44rem;
   color: var(--ssc-muted);
   font-size: 1.05rem;
+}
+
+.ssc__hero-scroll-indicator {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ssc-ink);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.ssc__hero-scroll-indicator:hover,
+.ssc__hero-scroll-indicator:focus-visible {
+  transform: translateX(-50%) translateY(2px) scale(1.03);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22);
+}
+
+.ssc__hero-scroll-indicator:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.6);
+  outline-offset: 4px;
+}
+
+.ssc__hero-scroll-indicator svg {
+  animation: ssc-scroll-bounce 2.4s ease-in-out infinite;
+}
+
+@keyframes ssc-scroll-bounce {
+  0%,
+  20%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
 }
 
 .ssc__audience {

@@ -2764,7 +2764,13 @@ const SwissStartupConnect = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
+  const filtersSectionRef = useRef(null);
   const equityInputFocusRef = useRef({ min: false, max: false });
+  const scrollToFilters = useCallback(() => {
+    if (filtersSectionRef.current) {
+      filtersSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
   const [companySort, setCompanySort] = useState('recent');
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -3061,12 +3067,21 @@ const SwissStartupConnect = () => {
                   </article>
                 ))}
               </div>
+
+              <button
+                type="button"
+                className="ssc__hero-scroll-indicator"
+                onClick={scrollToFilters}
+                aria-label="Scroll to filters"
+              >
+                <ChevronDown size={22} />
+              </button>
             </div>
           </section>
         )}
 
         {(activeTab === 'general' || activeTab === 'jobs') && (
-          <section className="ssc__filters">
+          <section className="ssc__filters" ref={filtersSectionRef}>
             <div className="ssc__max">
               <div className="ssc__filters-header">
                 <div>
