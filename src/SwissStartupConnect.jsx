@@ -361,12 +361,39 @@ const SALARY_PERIOD_FIELDS = [
   'salary_timeframe',
   'salary_basis',
   'pay_period',
+  'salary_cadence',
 ];
 
 const SALARY_FALLBACK_RANGE = [2000, 12000];
 const SALARY_STEP = 1;
 const EQUITY_FALLBACK_RANGE = [0, 5];
 const EQUITY_STEP = 0.01;
+
+const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
+
+const getFileExtension = (fileName) => {
+  if (!fileName) return '';
+  const parts = fileName.split('.');
+  if (parts.length < 2) return '';
+  return parts.pop().toLowerCase();
+};
+
+const isAllowedDocumentFile = (file) => {
+  if (!file) return false;
+  const extension = getFileExtension(file.name);
+  return DOCUMENT_EXTENSIONS.includes(extension);
+};
+
+const SALARY_CADENCE_LABELS = {
+  hour: 'hourly',
+  hourly: 'hourly',
+  week: 'weekly',
+  weekly: 'weekly',
+  month: 'monthly',
+  monthly: 'monthly',
+  year: 'yearly',
+  yearly: 'yearly',
+};
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -400,6 +427,21 @@ const formatSalaryValue = (value) => {
   return String(Math.round(value));
 };
 
+const formatSalaryDisplayValue = (value) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  if (value >= 1000) {
+    const shortened = value / 1000;
+    const precision = shortened >= 10 ? 0 : shortened >= 1 ? 1 : 2;
+    const formatted = shortened.toFixed(precision).replace(/\.0+$/, '');
+    return `${formatted}k`;
+  }
+
+  return String(Math.round(value));
+};
+
 const formatEquityValue = (value) => {
   if (!Number.isFinite(value)) {
     return '';
@@ -410,6 +452,65 @@ const formatEquityValue = (value) => {
     .toFixed(2)
     .replace(/\.00$/, '')
     .replace(/(\.\d+?)0+$/, '$1');
+};
+
+const formatEquityDisplay = (min, max) => {
+  const hasMin = Number.isFinite(min) && min > 0;
+  const hasMax = Number.isFinite(max) && max > 0;
+
+  if (!hasMin && !hasMax) {
+    if (Number.isFinite(min) || Number.isFinite(max)) {
+      const value = formatEquityValue(min ?? max ?? 0);
+      return value ? `${value}% equity` : 'Equity available';
+    }
+    return 'No equity disclosed';
+  }
+
+  const formattedMin = hasMin ? formatEquityValue(min) : null;
+  const formattedMax = hasMax ? formatEquityValue(max) : null;
+
+  if (formattedMin && formattedMax) {
+    if (formattedMin === formattedMax) {
+      return `${formattedMin}% equity`;
+    }
+    return `${formattedMin}% – ${formattedMax}% equity`;
+  }
+
+  const single = formattedMin || formattedMax;
+  return single ? `${single}% equity` : 'Equity available';
+};
+
+const normalizeEquityInput = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const matches = value.match(/\d+(?:[.,]\d+)?/g);
+  if (!matches) {
+    return '';
+  }
+
+  const numbers = matches
+    .map((match) => Number.parseFloat(match.replace(',', '.')))
+    .filter((num) => Number.isFinite(num))
+    .map((num) => clamp(num, 0, 100));
+
+  if (numbers.length === 0) {
+    return '';
+  }
+
+  const [first, second] = numbers;
+  const formattedFirst = formatEquityValue(first);
+
+  if (second != null && second !== first) {
+    const formattedSecond = formatEquityValue(second);
+    if (formattedFirst === formattedSecond) {
+      return `${formattedFirst}%`;
+    }
+    return `${formattedFirst}% – ${formattedSecond}%`;
+  }
+
+  return `${formattedFirst}%`;
 };
 
 const sanitizeDecimalInput = (value) => {
@@ -499,12 +600,51 @@ const detectSalaryPeriod = (job, salaryText) => {
     .join(' ')
     .toLowerCase();
 
+  if (baseText.includes('monthly')) return 'month';
+  if (baseText.includes('weekly')) return 'week';
+  if (baseText.includes('yearly')) return 'year';
+  if (baseText.includes('hourly')) return 'hour';
   if (baseText.includes('month')) return 'month';
   if (baseText.includes('week')) return 'week';
   if (baseText.includes('day')) return 'day';
   if (baseText.includes('hour')) return 'hour';
   if (baseText.includes('year') || baseText.includes('annual') || baseText.includes('annum')) return 'year';
   return null;
+};
+
+const normalizeSalaryCadence = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const lowered = String(value).toLowerCase();
+
+  if (lowered.includes('hour')) return 'hour';
+  if (lowered.includes('week')) return 'week';
+  if (lowered.includes('month')) return 'month';
+  if (lowered.includes('year') || lowered.includes('annual')) return 'year';
+  return null;
+};
+
+const formatSalaryDisplay = (min, max, cadence, fallbackText = '') => {
+  const formattedMin = formatSalaryDisplayValue(min);
+  const formattedMax = formatSalaryDisplayValue(max);
+  const cadenceKey = normalizeSalaryCadence(cadence);
+  const cadenceLabel = cadenceKey ? SALARY_CADENCE_LABELS[cadenceKey] : null;
+
+  if (!formattedMin && !formattedMax) {
+    const fallback = fallbackText.trim();
+    return fallback || 'Compensation undisclosed';
+  }
+
+  let range = formattedMin || formattedMax || '';
+
+  if (formattedMin && formattedMax) {
+    range = formattedMin === formattedMax ? formattedMin : `${formattedMin} – ${formattedMax}`;
+  }
+
+  const cadenceSuffix = cadenceLabel ? ` · ${cadenceLabel}` : '';
+  return `${range} CHF${cadenceSuffix}`.trim();
 };
 
 const convertToMonthly = (value, period, salaryText) => {
@@ -704,7 +844,8 @@ const mapSupabaseUser = (supabaseUser) => {
   };
 };
 
-const acknowledgeMessage = 'By applying you agree that the startup will see your profile information, uploaded CV, and profile photo.';
+const acknowledgeMessage =
+  'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.';
 
 const SwissStartupConnect = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -767,6 +908,7 @@ const SwissStartupConnect = () => {
     portfolio_url: '',
     cv_url: '',
     avatar_url: '',
+    cv_public: false,
   });
   const [profileSaving, setProfileSaving] = useState(false);
 
@@ -792,7 +934,8 @@ const SwissStartupConnect = () => {
 
   const [applicationModal, setApplicationModal] = useState(null);
   const [acknowledgeShare, setAcknowledgeShare] = useState(false);
-  const [motivationalLetter, setMotivationalLetter] = useState('');
+  const [motivationalLetterUrl, setMotivationalLetterUrl] = useState('');
+  const [motivationalLetterName, setMotivationalLetterName] = useState('');
   const [applicationSaving, setApplicationSaving] = useState(false);
   const [applicationError, setApplicationError] = useState('');
   const [useExistingCv, setUseExistingCv] = useState(true);
@@ -836,6 +979,7 @@ const SwissStartupConnect = () => {
     location: '',
     employment_type: 'Full-time',
     salary: '',
+    salary_cadence: '',
     equity: '',
     description: '',
     requirements: '',
@@ -948,6 +1092,7 @@ const SwissStartupConnect = () => {
             portfolio_url: '',
             cv_url: '',
             avatar_url: '',
+            cv_public: false,
           };
 
           const { data: inserted, error: insertError } = await supabase
@@ -974,6 +1119,7 @@ const SwissStartupConnect = () => {
           portfolio_url: profileRecord.portfolio_url || '',
           cv_url: profileRecord.cv_url || '',
           avatar_url: profileRecord.avatar_url || '',
+          cv_public: !!profileRecord.cv_public,
         });
       } catch (error) {
         console.error('Profile load error', error);
@@ -1512,6 +1658,26 @@ const SwissStartupConnect = () => {
       const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
       const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
       const [equityMinValue, equityMaxValue] = computeEquityRange(job);
+      const normalizedSalaryMin = Number.isFinite(job.salary_min_value)
+        ? job.salary_min_value
+        : salaryMinValue;
+      const normalizedSalaryMax = Number.isFinite(job.salary_max_value)
+        ? job.salary_max_value
+        : salaryMaxValue;
+      const normalizedEquityMin = Number.isFinite(job.equity_min_value)
+        ? job.equity_min_value
+        : equityMinValue;
+      const normalizedEquityMax = Number.isFinite(job.equity_max_value)
+        ? job.equity_max_value
+        : equityMaxValue;
+      const salaryCadence = normalizeSalaryCadence(job.salary_cadence || detectSalaryPeriod(job, job.salary));
+      const salaryDisplay = formatSalaryDisplay(
+        normalizedSalaryMin,
+        normalizedSalaryMax,
+        salaryCadence,
+        job.salary
+      );
+      const equityDisplay = formatEquityDisplay(normalizedEquityMin, normalizedEquityMax);
       const metaFromId = idKey ? companyMetaLookup[`id:${idKey}`] : null;
       const metaFromName = ensuredName
         ? companyMetaLookup[`name:${ensuredName.trim().toLowerCase()}`]
@@ -1520,10 +1686,15 @@ const SwissStartupConnect = () => {
       return {
         ...job,
         company_name: ensuredName,
-        salary_min_value: Number.isFinite(job.salary_min_value) ? job.salary_min_value : salaryMinValue,
-        salary_max_value: Number.isFinite(job.salary_max_value) ? job.salary_max_value : salaryMaxValue,
-        equity_min_value: Number.isFinite(job.equity_min_value) ? job.equity_min_value : equityMinValue,
-        equity_max_value: Number.isFinite(job.equity_max_value) ? job.equity_max_value : equityMaxValue,
+        salary_min_value: normalizedSalaryMin,
+        salary_max_value: normalizedSalaryMax,
+        salary_cadence: salaryCadence,
+        salary_original: job.salary,
+        salary: salaryDisplay,
+        equity_min_value: normalizedEquityMin,
+        equity_max_value: normalizedEquityMax,
+        equity_original: job.equity,
+        equity: equityDisplay,
         company_team:
           job.company_team ||
           job.team ||
@@ -1867,7 +2038,8 @@ const SwissStartupConnect = () => {
 
     setApplicationModal(job);
     setAcknowledgeShare(false);
-    setMotivationalLetter('');
+    setMotivationalLetterUrl('');
+    setMotivationalLetterName('');
     setApplicationError('');
     const hasProfileCv = !!profileForm.cv_url;
     setUseExistingCv(hasProfileCv);
@@ -1877,7 +2049,8 @@ const SwissStartupConnect = () => {
 
   const closeApplicationModal = () => {
     setApplicationModal(null);
-    setMotivationalLetter('');
+    setMotivationalLetterUrl('');
+    setMotivationalLetterName('');
     setApplicationError('');
     setUseExistingCv(!!profileForm.cv_url);
     setApplicationCvUrl('');
@@ -1906,10 +2079,19 @@ const SwissStartupConnect = () => {
   };
 
   const uploadFile = useCallback(
-    async (bucket, file) => {
-      if (!file) return null;
-      const extension = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${extension}`;
+    async (bucket, file, options = {}) => {
+      if (!file || !user?.id) return null;
+
+      const extension = getFileExtension(file.name) || 'file';
+      const nameWithoutExtension = file.name
+        .replace(/\.[^/.]+$/, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_.-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const prefix = options.prefix ? `${options.prefix.replace(/\/+$/, '')}/` : '';
+      const baseName = nameWithoutExtension || 'document';
+      const filePath = `${user.id}/${prefix}${Date.now()}-${baseName}.${extension}`;
 
       const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
         cacheControl: '3600',
@@ -1946,6 +2128,7 @@ const SwissStartupConnect = () => {
         cv_url: profileForm.cv_url,
         avatar_url: profileForm.avatar_url,
         type: user.type,
+        cv_public: profileForm.cv_public,
       };
 
       const { data, error } = await supabase
@@ -2020,8 +2203,16 @@ const SwissStartupConnect = () => {
   const handleCvUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!isAllowedDocumentFile(file)) {
+      setFeedback({
+        type: 'error',
+        message: 'Upload CV as .pdf, .doc, .docx, or .tex only.',
+      });
+      return;
+    }
     try {
-      const publicUrl = await uploadFile('cvs', file);
+      const publicUrl = await uploadFile('cvs', file, { prefix: 'profiles' });
       setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
     } catch (error) {
       setFeedback({ type: 'error', message: `CV upload failed: ${error.message}` });
@@ -2055,14 +2246,29 @@ const SwissStartupConnect = () => {
     setPostJobError('');
 
     try {
+      const cadenceSelection = normalizeSalaryCadence(jobForm.salary_cadence) || null;
+      if (!cadenceSelection) {
+        setPostJobError('Select whether the salary is hourly, weekly, monthly, or yearly.');
+        setPostingJob(false);
+        return;
+      }
+
+      const rawSalaryInput = jobForm.salary.trim();
+      const [derivedSalaryMin, derivedSalaryMax] = computeSalaryRange({
+        salary: rawSalaryInput,
+        salary_cadence: cadenceSelection,
+      });
+      const salaryDisplay = formatSalaryDisplay(derivedSalaryMin, derivedSalaryMax, cadenceSelection, rawSalaryInput);
+      const sanitizedEquity = jobForm.equity ? normalizeEquityInput(jobForm.equity) : '';
+
       const payload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
         location: jobForm.location.trim(),
         employment_type: jobForm.employment_type,
-        salary: jobForm.salary.trim(),
-        equity: jobForm.equity.trim(),
+        salary: salaryDisplay,
+        equity: sanitizedEquity,
         description: jobForm.description.trim(),
         requirements: jobForm.requirements
           ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
@@ -2090,6 +2296,7 @@ const SwissStartupConnect = () => {
         location: '',
         employment_type: 'Full-time',
         salary: '',
+        salary_cadence: '',
         equity: '',
         description: '',
         requirements: '',
@@ -2109,13 +2316,38 @@ const SwissStartupConnect = () => {
   const handleApplicationCvUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!isAllowedDocumentFile(file)) {
+      setApplicationError('CV must be a .pdf, .doc, .docx, or .tex file.');
+      return;
+    }
     try {
-      const publicUrl = await uploadFile('cvs', file);
+      const publicUrl = await uploadFile('cvs', file, { prefix: 'applications' });
       setApplicationCvUrl(publicUrl);
       setApplicationCvName(file.name);
       setUseExistingCv(false);
+      setApplicationError('');
     } catch (error) {
       setApplicationError(`CV upload failed: ${error.message}`);
+    }
+  };
+
+  const handleMotivationalLetterUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!isAllowedDocumentFile(file)) {
+      setApplicationError('Motivational letter must be a .pdf, .doc, .docx, or .tex file.');
+      return;
+    }
+
+    try {
+      const publicUrl = await uploadFile('cvs', file, { prefix: 'letters' });
+      setMotivationalLetterUrl(publicUrl);
+      setMotivationalLetterName(file.name);
+      setApplicationError('');
+    } catch (error) {
+      setApplicationError(`Motivational letter upload failed: ${error.message}`);
     }
   };
 
@@ -2258,8 +2490,8 @@ const SwissStartupConnect = () => {
       setApplicationError('Please acknowledge that your profile will be shared.');
       return;
     }
-    if (applicationModal.motivational_letter_required && !motivationalLetter.trim()) {
-      setApplicationError('A motivational letter is required for this role.');
+    if (applicationModal.motivational_letter_required && !motivationalLetterUrl) {
+      setApplicationError('A motivational letter file is required for this role.');
       return;
     }
 
@@ -2275,14 +2507,14 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const payload = {
-        job_id: applicationModal.id,
-        profile_id: profile?.id,
-        motivational_letter: motivationalLetter.trim(),
-        status: 'submitted',
-        acknowledged: true,
-        cv_override_url: useExistingCv ? null : selectedCvUrl,
-      };
+        const payload = {
+          job_id: applicationModal.id,
+          profile_id: profile?.id,
+          motivational_letter: motivationalLetterUrl || null,
+          status: 'submitted',
+          acknowledged: true,
+          cv_override_url: useExistingCv ? null : selectedCvUrl,
+        };
 
       const { error } = await supabase.from('job_applications').insert(payload);
 
@@ -3124,8 +3356,8 @@ const SwissStartupConnect = () => {
                         <div className="ssc__job-footer">
                           <div className="ssc__salary">
                             <span>{job.salary}</span>
-                            {job.equity && job.equity.toLowerCase() !== 'n/a' ? (
-                              <small>+ {job.equity} equity</small>
+                            {job.equity && job.equity !== 'No equity disclosed' ? (
+                              <small>+ {job.equity}</small>
                             ) : null}
                           </div>
                           <div className="ssc__job-actions">
@@ -3450,7 +3682,13 @@ const SwissStartupConnect = () => {
                         {application.motivational_letter && (
                           <details className="ssc__letter">
                             <summary>Motivational letter</summary>
-                            <p>{application.motivational_letter}</p>
+                            {application.motivational_letter.startsWith('http') ? (
+                              <a href={application.motivational_letter} target="_blank" rel="noreferrer">
+                                Download motivational letter
+                              </a>
+                            ) : (
+                              <p>{application.motivational_letter}</p>
+                            )}
                           </details>
                         )}
 
@@ -3526,7 +3764,9 @@ const SwissStartupConnect = () => {
                       <div className="ssc__job-footer">
                         <div className="ssc__salary">
                           <span>{job.salary}</span>
-                          <small>+ {job.equity} equity</small>
+                          {job.equity && job.equity !== 'No equity disclosed' ? (
+                            <small>+ {job.equity}</small>
+                          ) : null}
                         </div>
                       <div className="ssc__job-actions">
                         <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
@@ -4026,9 +4266,18 @@ const SwissStartupConnect = () => {
                     <li>
                       <strong>CV:</strong>{' '}
                       {profileForm.cv_url ? (
-                        <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
-                          View profile CV
-                        </a>
+                        <span className="ssc__cv-meta">
+                          <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
+                            View profile CV
+                          </a>
+                          <span
+                            className={`ssc__cv-privacy ${profileForm.cv_public ? 'is-public' : 'is-private'}`}
+                          >
+                            {profileForm.cv_public
+                              ? 'Public on your profile.'
+                              : 'Private until you apply.'}
+                          </span>
+                        </span>
                       ) : (
                         'No CV stored in profile yet'
                       )}
@@ -4061,10 +4310,15 @@ const SwissStartupConnect = () => {
                     </label>
                     {!useExistingCv || !profileForm.cv_url ? (
                       <div className="ssc__upload-inline">
-                        <input type="file" accept="application/pdf" onChange={handleApplicationCvUpload} />
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.tex"
+                          onChange={handleApplicationCvUpload}
+                        />
                         {applicationCvName && <small>{applicationCvName}</small>}
                       </div>
                     ) : null}
+                    <small className="ssc__field-note">Accepted formats: PDF, Word (.doc/.docx), TeX.</small>
                   </div>
                 </div>
               </div>
@@ -4073,16 +4327,15 @@ const SwissStartupConnect = () => {
                 <span>
                   Motivational letter {applicationModal.motivational_letter_required ? '(required)' : '(optional)'}
                 </span>
-                <textarea
-                  rows={5}
-                  value={motivationalLetter}
-                  onChange={(event) => setMotivationalLetter(event.target.value)}
-                  placeholder={
-                    applicationModal.motivational_letter_required
-                      ? 'Explain why you are excited about this startup and role...'
-                      : 'Add extra context (optional) if you want to stand out...'
-                  }
-                />
+                <div className="ssc__upload-inline">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.tex"
+                    onChange={handleMotivationalLetterUpload}
+                  />
+                  {motivationalLetterName && <small>{motivationalLetterName}</small>}
+                </div>
+                <small className="ssc__field-note">Upload your letter as PDF, Word, or TeX.</small>
               </label>
 
               <label className="ssc__checkbox">
@@ -4225,12 +4478,29 @@ const SwissStartupConnect = () => {
 
                 {isStudent && (
                   <label className="ssc__field">
-                    <span>Upload CV (PDF)</span>
-                    <input type="file" accept="application/pdf" onChange={handleCvUpload} />
+                    <span>Upload CV</span>
+                    <input type="file" accept=".pdf,.doc,.docx,.tex" onChange={handleCvUpload} />
+                    <small className="ssc__field-note">Accepted: PDF, Word (.doc/.docx), TeX.</small>
                     {profileForm.cv_url && (
-                      <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
-                        View current CV
-                      </a>
+                      <div className="ssc__cv-visibility">
+                        <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
+                          View current CV
+                        </a>
+                        <label className="ssc__switch">
+                          <input
+                            type="checkbox"
+                            checked={profileForm.cv_public}
+                            onChange={(event) =>
+                              setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
+                            }
+                          />
+                          <span>
+                            {profileForm.cv_public
+                              ? 'CV visible to startups'
+                              : 'Keep CV private until you apply'}
+                          </span>
+                        </label>
+                      </div>
                     )}
                   </label>
                 )}
@@ -4382,12 +4652,28 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
+                  <span>Salary cadence</span>
+                  <select
+                    value={jobForm.salary_cadence}
+                    onChange={(event) => setJobForm((prev) => ({ ...prev, salary_cadence: event.target.value }))}
+                    required
+                  >
+                    <option value="">Select cadence</option>
+                    <option value="hour">Hourly</option>
+                    <option value="week">Weekly</option>
+                    <option value="month">Monthly</option>
+                    <option value="year">Yearly</option>
+                  </select>
+                </label>
+                <label className="ssc__field">
                   <span>Equity</span>
                   <input
                     type="text"
                     value={jobForm.equity}
-                    onChange={(event) => setJobForm((prev) => ({ ...prev, equity: event.target.value }))}
-                    placeholder="Optional"
+                    onChange={(event) =>
+                      setJobForm((prev) => ({ ...prev, equity: normalizeEquityInput(event.target.value) }))
+                    }
+                    placeholder="Optional (e.g. 0.5% – 1%)"
                   />
                 </label>
               </div>

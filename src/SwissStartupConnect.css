@@ -13,6 +13,12 @@
   background: linear-gradient(180deg, #f5f7ff 0%, #ffffff 56%, #eef3ff 100%);
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--ssc-ink);
+  display: flex;
+  flex-direction: column;
+}
+
+.ssc > main {
+  flex: 1 0 auto;
 }
 
 .ssc * {
@@ -1800,6 +1806,45 @@
   background: rgba(15, 23, 42, 0.02);
 }
 
+.ssc__cv-meta {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+
+.ssc__cv-privacy {
+  font-size: 0.8rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__cv-privacy.is-public {
+  color: #15803d;
+}
+
+.ssc__cv-privacy.is-private {
+  color: #b91c1c;
+}
+
+.ssc__cv-visibility {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ssc__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__switch input {
+  accent-color: var(--ssc-primary);
+}
+
 .ssc__password-input {
   display: flex;
   align-items: center;
@@ -2200,6 +2245,11 @@
   color: var(--ssc-muted);
 }
 
+.ssc__field-note {
+  font-size: 0.8rem;
+  color: var(--ssc-muted);
+}
+
 .ssc__field input,
 .ssc__field select {
   border-radius: 12px;
@@ -2272,6 +2322,19 @@
 @media (max-width: 1024px) {
   .ssc__nav-button {
     padding: 0.55rem 1rem;
+  }
+
+  .ssc__hero {
+    padding: 3.5rem 0 3rem;
+    min-height: calc(100vh - 5rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .ssc__hero > .ssc__max {
+    width: 100%;
   }
 }
 
