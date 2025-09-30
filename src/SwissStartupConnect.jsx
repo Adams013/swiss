@@ -368,6 +368,34 @@ const SALARY_FALLBACK_RANGE = [2000, 12000];
 const SALARY_STEP = 1;
 const EQUITY_FALLBACK_RANGE = [0, 5];
 const EQUITY_STEP = 0.01;
+const FULL_TIME_WEEKLY_HOURS = 42;
+const FULL_TIME_WORKING_DAYS = 5;
+const WEEKS_PER_MONTH = 4.345;
+const THIRTEENTH_MONTHS_PER_YEAR = 13;
+const SALARY_MINIMUMS_BY_CADENCE = {
+  hour: 10,
+  week: 100,
+  month: 1000,
+  year: 10000,
+};
+const SALARY_PLACEHOLDER_BY_CADENCE = {
+  hour: '10',
+  week: '100',
+  month: '1000',
+  year: '10000',
+};
+const SALARY_FILTER_HELPERS = {
+  hour: 'CHF hourly',
+  week: 'CHF weekly',
+  month: 'CHF monthly (default)',
+  year: 'CHF yearly · 13th salary',
+};
+const SALARY_FILTER_CADENCE_OPTIONS = [
+  { value: 'month', label: 'Monthly' },
+  { value: 'year', label: 'Yearly' },
+  { value: 'week', label: 'Weekly' },
+  { value: 'hour', label: 'Hourly' },
+];
 
 const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
 
@@ -420,13 +448,6 @@ const roundDownToStep = (value, step) => alignToStep(value, step, Math.floor);
 
 const roundUpToStep = (value, step) => alignToStep(value, step, Math.ceil);
 
-const formatSalaryValue = (value) => {
-  if (!Number.isFinite(value)) {
-    return '';
-  }
-  return String(Math.round(value));
-};
-
 const formatSalaryDisplayValue = (value) => {
   if (!Number.isFinite(value) || value <= 0) {
     return null;
@@ -478,39 +499,6 @@ const formatEquityDisplay = (min, max) => {
 
   const single = formattedMin || formattedMax;
   return single ? `${single}% equity` : 'Equity available';
-};
-
-const normalizeEquityInput = (value) => {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  const matches = value.match(/\d+(?:[.,]\d+)?/g);
-  if (!matches) {
-    return '';
-  }
-
-  const numbers = matches
-    .map((match) => Number.parseFloat(match.replace(',', '.')))
-    .filter((num) => Number.isFinite(num))
-    .map((num) => clamp(num, 0, 100));
-
-  if (numbers.length === 0) {
-    return '';
-  }
-
-  const [first, second] = numbers;
-  const formattedFirst = formatEquityValue(first);
-
-  if (second != null && second !== first) {
-    const formattedSecond = formatEquityValue(second);
-    if (formattedFirst === formattedSecond) {
-      return `${formattedFirst}%`;
-    }
-    return `${formattedFirst}% – ${formattedSecond}%`;
-  }
-
-  return `${formattedFirst}%`;
 };
 
 const sanitizeDecimalInput = (value) => {
@@ -626,6 +614,72 @@ const normalizeSalaryCadence = (value) => {
   return null;
 };
 
+const convertCadenceValueToMonthly = (value, cadence) => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const normalized = normalizeSalaryCadence(cadence);
+  const lowered = cadence ? String(cadence).toLowerCase() : '';
+
+  if (!normalized && lowered.includes('day')) {
+    return value * FULL_TIME_WORKING_DAYS * WEEKS_PER_MONTH;
+  }
+
+  switch (normalized) {
+    case 'hour':
+      return value * FULL_TIME_WEEKLY_HOURS * WEEKS_PER_MONTH;
+    case 'week':
+      return value * WEEKS_PER_MONTH;
+    case 'year':
+      return value / THIRTEENTH_MONTHS_PER_YEAR;
+    case 'month':
+    default:
+      return value;
+  }
+};
+
+const convertMonthlyValueToCadence = (value, cadence) => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const normalized = normalizeSalaryCadence(cadence);
+  const lowered = cadence ? String(cadence).toLowerCase() : '';
+
+  if (!normalized && lowered.includes('day')) {
+    return value / (FULL_TIME_WORKING_DAYS * WEEKS_PER_MONTH);
+  }
+
+  switch (normalized) {
+    case 'hour':
+      return value / (FULL_TIME_WEEKLY_HOURS * WEEKS_PER_MONTH);
+    case 'week':
+      return value / WEEKS_PER_MONTH;
+    case 'year':
+      return value * THIRTEENTH_MONTHS_PER_YEAR;
+    case 'month':
+    default:
+      return value;
+  }
+};
+
+const formatSalaryValue = (value, cadence = 'month') => {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  const converted = convertMonthlyValueToCadence(value, cadence);
+
+  if (!Number.isFinite(converted)) {
+    return '';
+  }
+
+  const decimals = normalizeSalaryCadence(cadence) === 'hour' ? 2 : 0;
+  const formatted = converted.toFixed(decimals);
+  return formatted.replace(/\.00$/, '').replace(/(\.\d*?)0+$/, '$1');
+};
+
 const formatSalaryDisplay = (min, max, cadence, fallbackText = '') => {
   const formattedMin = formatSalaryDisplayValue(min);
   const formattedMax = formatSalaryDisplayValue(max);
@@ -645,6 +699,65 @@ const formatSalaryDisplay = (min, max, cadence, fallbackText = '') => {
 
   const cadenceSuffix = cadenceLabel ? ` · ${cadenceLabel}` : '';
   return `${range} CHF${cadenceSuffix}`.trim();
+};
+
+const formatRangeLabel = (min, max, suffix) => {
+  const hasMin = Number.isFinite(min);
+  const hasMax = Number.isFinite(max);
+
+  if (!hasMin && !hasMax) {
+    return '';
+  }
+
+  const formattedMin = hasMin ? formatSalaryDisplayValue(min) : null;
+  const formattedMax = hasMax ? formatSalaryDisplayValue(max) : null;
+
+  if (formattedMin && formattedMax) {
+    const range = formattedMin === formattedMax ? formattedMin : `${formattedMin} – ${formattedMax}`;
+    return `${range} ${suffix}`;
+  }
+
+  const single = formattedMin || formattedMax;
+  return single ? `${single} ${suffix}` : '';
+};
+
+const composeSalaryDisplay = ({
+  baseMin,
+  baseMax,
+  cadence,
+  fallbackText = '',
+  monthlyMin,
+  monthlyMax,
+  employmentType,
+}) => {
+  const cadenceKey = normalizeSalaryCadence(cadence);
+  const hasBase = Number.isFinite(baseMin) || Number.isFinite(baseMax);
+  const baseLabel = hasBase
+    ? formatSalaryDisplay(baseMin, baseMax, cadenceKey, fallbackText)
+    : fallbackText?.trim() || 'Compensation undisclosed';
+
+  const monthlyLabel = formatRangeLabel(monthlyMin, monthlyMax, 'CHF / month');
+  const yearlyLabel = formatRangeLabel(
+    Number.isFinite(monthlyMin) ? monthlyMin * THIRTEENTH_MONTHS_PER_YEAR : null,
+    Number.isFinite(monthlyMax) ? monthlyMax * THIRTEENTH_MONTHS_PER_YEAR : null,
+    'CHF / year (13th salary)'
+  );
+
+  const extras = [];
+
+  if (cadenceKey && cadenceKey !== 'month' && monthlyLabel) {
+    extras.push(monthlyLabel);
+  }
+
+  if (employmentType === 'Full-time' && yearlyLabel) {
+    extras.push(yearlyLabel);
+  }
+
+  if (extras.length === 0) {
+    return baseLabel;
+  }
+
+  return `${baseLabel} (≈ ${extras.join(' · ')})`;
 };
 
 const convertToMonthly = (value, period, salaryText) => {
@@ -670,18 +783,8 @@ const convertToMonthly = (value, period, salaryText) => {
     }
   }
 
-  switch (resolvedPeriod) {
-    case 'year':
-      return value / 12;
-    case 'week':
-      return value * 4.333;
-    case 'day':
-      return value * 21;
-    case 'hour':
-      return value * 160;
-    default:
-      return value;
-  }
+  const converted = convertCadenceValueToMonthly(value, resolvedPeriod);
+  return Number.isFinite(converted) ? converted : value;
 };
 
 const computeSalaryRange = (job) => {
@@ -854,9 +957,10 @@ const SwissStartupConnect = () => {
   const [salaryRange, setSalaryRange] = useState(defaultSalaryBounds);
   const [salaryBounds, setSalaryBounds] = useState(defaultSalaryBounds);
   const [salaryRangeDirty, setSalaryRangeDirty] = useState(false);
+  const [salaryFilterCadence, setSalaryFilterCadence] = useState('month');
   const [salaryInputValues, setSalaryInputValues] = useState(() => ({
-    min: formatSalaryValue(defaultSalaryBounds[0]),
-    max: formatSalaryValue(defaultSalaryBounds[1]),
+    min: formatSalaryValue(defaultSalaryBounds[0], 'month'),
+    max: formatSalaryValue(defaultSalaryBounds[1], 'month'),
   }));
   const [equityRange, setEquityRange] = useState(defaultEquityBounds);
   const [equityBounds, setEquityBounds] = useState(defaultEquityBounds);
@@ -978,7 +1082,8 @@ const SwissStartupConnect = () => {
     title: '',
     location: '',
     employment_type: 'Full-time',
-    salary: '',
+    salary_min: '',
+    salary_max: '',
     salary_cadence: '',
     equity: '',
     description: '',
@@ -1331,6 +1436,7 @@ const SwissStartupConnect = () => {
     setSelectedFilters([]);
     setSalaryRangeDirty(false);
     setEquityRangeDirty(false);
+    setSalaryFilterCadence('month');
     setSalaryRange((prev) => {
       const [boundMin, boundMax] = salaryBounds;
       if (prev[0] === boundMin && prev[1] === boundMax) {
@@ -1383,8 +1489,8 @@ const SwissStartupConnect = () => {
         const [nextMin, nextMax] = resolvedValues;
         setSalaryInputValues((prev) => {
           const next = {
-            min: formatSalaryValue(nextMin),
-            max: formatSalaryValue(nextMax),
+            min: formatSalaryValue(nextMin, salaryFilterCadence),
+            max: formatSalaryValue(nextMax, salaryFilterCadence),
           };
 
           if (prev.min === next.min && prev.max === next.max) {
@@ -1395,7 +1501,7 @@ const SwissStartupConnect = () => {
         });
       }
     },
-    [salaryBounds]
+    [salaryBounds, salaryFilterCadence]
   );
 
   const updateEquityRange = useCallback(
@@ -1456,17 +1562,22 @@ const SwissStartupConnect = () => {
       return;
     }
 
+    const monthlyValue = convertCadenceValueToMonthly(rawValue, salaryFilterCadence);
+    if (!Number.isFinite(monthlyValue)) {
+      return;
+    }
+
     updateSalaryRange((prev) => {
       if (bound === 'min') {
-        return [Math.min(rawValue, prev[1]), prev[1]];
+        return [Math.min(monthlyValue, prev[1]), prev[1]];
       }
 
-      return [prev[0], Math.max(rawValue, prev[0])];
+      return [prev[0], Math.max(monthlyValue, prev[0])];
     });
   };
 
   const handleSalaryInputChange = (bound, value) => {
-    const sanitized = value.replace(/[^0-9]/g, '');
+    const sanitized = sanitizeDecimalInput(value);
 
     setSalaryInputValues((prev) => {
       if (prev[bound] === sanitized) {
@@ -1479,17 +1590,22 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    const numeric = Number(sanitized);
+    const numeric = Number.parseFloat(sanitized.replace(',', '.'));
     if (!Number.isFinite(numeric)) {
+      return;
+    }
+
+    const monthlyValue = convertCadenceValueToMonthly(numeric, salaryFilterCadence);
+    if (!Number.isFinite(monthlyValue)) {
       return;
     }
 
     updateSalaryRange((prev) => {
       if (bound === 'min') {
-        return [Math.min(numeric, prev[1]), prev[1]];
+        return [Math.min(monthlyValue, prev[1]), prev[1]];
       }
 
-      return [prev[0], Math.max(numeric, prev[0])];
+      return [prev[0], Math.max(monthlyValue, prev[0])];
     });
   };
 
@@ -1671,12 +1787,23 @@ const SwissStartupConnect = () => {
         ? job.equity_max_value
         : equityMaxValue;
       const salaryCadence = normalizeSalaryCadence(job.salary_cadence || detectSalaryPeriod(job, job.salary));
-      const salaryDisplay = formatSalaryDisplay(
-        normalizedSalaryMin,
-        normalizedSalaryMax,
-        salaryCadence,
-        job.salary
-      );
+      const monthlyMin = Number.isFinite(normalizedSalaryMin) ? normalizedSalaryMin : null;
+      const monthlyMax = Number.isFinite(normalizedSalaryMax) ? normalizedSalaryMax : null;
+      const baseMin = Number.isFinite(monthlyMin)
+        ? convertMonthlyValueToCadence(monthlyMin, salaryCadence || 'month')
+        : null;
+      const baseMax = Number.isFinite(monthlyMax)
+        ? convertMonthlyValueToCadence(monthlyMax, salaryCadence || 'month')
+        : null;
+      const salaryDisplay = composeSalaryDisplay({
+        baseMin,
+        baseMax,
+        cadence: salaryCadence,
+        fallbackText: job.salary,
+        monthlyMin,
+        monthlyMax,
+        employmentType: job.employment_type,
+      });
       const equityDisplay = formatEquityDisplay(normalizedEquityMin, normalizedEquityMax);
       const metaFromId = idKey ? companyMetaLookup[`id:${idKey}`] : null;
       const metaFromName = ensuredName
@@ -1796,8 +1923,8 @@ const SwissStartupConnect = () => {
   useEffect(() => {
     setSalaryInputValues((prev) => {
       const next = {
-        min: formatSalaryValue(salaryMin),
-        max: formatSalaryValue(salaryMax),
+        min: formatSalaryValue(salaryMin, salaryFilterCadence),
+        max: formatSalaryValue(salaryMax, salaryFilterCadence),
       };
 
       if (prev.min === next.min && prev.max === next.max) {
@@ -1806,7 +1933,7 @@ const SwissStartupConnect = () => {
 
       return next;
     });
-  }, [salaryMin, salaryMax]);
+  }, [salaryMin, salaryMax, salaryFilterCadence]);
 
   useEffect(() => {
     setEquityInputValues((prev) => {
@@ -2080,7 +2207,13 @@ const SwissStartupConnect = () => {
 
   const uploadFile = useCallback(
     async (bucket, file, options = {}) => {
-      if (!file || !user?.id) return null;
+      if (!file) {
+        return null;
+      }
+
+      if (!user?.id) {
+        throw new Error('Sign in to upload files before trying again.');
+      }
 
       const extension = getFileExtension(file.name) || 'file';
       const nameWithoutExtension = file.name
@@ -2125,11 +2258,19 @@ const SwissStartupConnect = () => {
       };
 
       try {
-        return await attemptUpload(sanitizedPrefix);
+        const uploadedUrl = await attemptUpload(sanitizedPrefix);
+        if (!uploadedUrl) {
+          throw new Error('Upload did not return a public URL.');
+        }
+        return uploadedUrl;
       } catch (error) {
         const message = error?.message?.toLowerCase?.() ?? '';
         if (message.includes('row-level security') && sanitizedPrefix && !sanitizedPrefix.startsWith('profiles')) {
-          return await attemptUpload(`profiles/${sanitizedPrefix}`);
+          const fallbackUrl = await attemptUpload(`profiles/${sanitizedPrefix}`);
+          if (!fallbackUrl) {
+            throw new Error('Upload did not return a public URL.');
+          }
+          return fallbackUrl;
         }
         throw error;
       }
@@ -2166,7 +2307,27 @@ const SwissStartupConnect = () => {
       if (error) {
         setFeedback({ type: 'error', message: error.message });
       } else {
-        setProfile(data);
+        const mergedProfile = data
+          ? { ...(profile ?? {}), ...data }
+          : { ...(profile ?? {}), ...updates };
+
+        setProfile(mergedProfile);
+        setProfileForm({
+          full_name: mergedProfile.full_name || '',
+          university: mergedProfile.university || '',
+          program: mergedProfile.program || '',
+          experience: mergedProfile.experience || '',
+          bio: mergedProfile.bio || '',
+          portfolio_url: mergedProfile.portfolio_url || '',
+          cv_url: mergedProfile.cv_url || '',
+          avatar_url: mergedProfile.avatar_url || '',
+          cv_public: !!mergedProfile.cv_public,
+        });
+        await loadProfile({
+          id: user.id,
+          name: user.name,
+          type: user.type,
+        });
         setFeedback({ type: 'success', message: 'Profile updated.' });
         setProfileModalOpen(false);
       }
@@ -2220,9 +2381,18 @@ const SwissStartupConnect = () => {
     if (!file) return;
     try {
       const publicUrl = await uploadFile('avatars', file);
+      if (!publicUrl) {
+        throw new Error('Profile photo upload did not return a URL.');
+      }
       setProfileForm((prev) => ({ ...prev, avatar_url: publicUrl }));
+      setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+      setFeedback({ type: 'success', message: 'Profile photo uploaded. Save your profile to keep it.' });
     } catch (error) {
       setFeedback({ type: 'error', message: `Avatar upload failed: ${error.message}` });
+    } finally {
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -2239,12 +2409,21 @@ const SwissStartupConnect = () => {
     }
     try {
       const publicUrl = await uploadFile('cvs', file, { prefix: 'profiles' });
+      if (!publicUrl) {
+        throw new Error('CV upload did not return a URL.');
+      }
       setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
+      setProfile((prev) => (prev ? { ...prev, cv_url: publicUrl } : prev));
+      setFeedback({ type: 'success', message: 'CV uploaded. Save your profile to keep it updated.' });
     } catch (error) {
       const message = error?.message?.toLowerCase?.().includes('row-level security')
         ? 'CV upload failed: your account is not allowed to store documents in that folder. Please try again or update your profile CV instead.'
         : `CV upload failed: ${error.message}`;
       setFeedback({ type: 'error', message });
+    } finally {
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -2253,10 +2432,84 @@ const SwissStartupConnect = () => {
     if (!file) return;
     try {
       const publicUrl = await uploadFile('logos', file);
+      if (!publicUrl) {
+        throw new Error('Logo upload did not return a URL.');
+      }
       setStartupForm((prev) => ({ ...prev, logo_url: publicUrl }));
     } catch (error) {
       setFeedback({ type: 'error', message: `Logo upload failed: ${error.message}` });
     }
+  };
+
+  const jobSalaryCadence = normalizeSalaryCadence(jobForm.salary_cadence);
+  const jobSalaryMinimum = jobSalaryCadence ? SALARY_MINIMUMS_BY_CADENCE[jobSalaryCadence] : null;
+  const jobSalaryHelperText = jobSalaryCadence
+    ? `Enter CHF ${SALARY_CADENCE_LABELS[jobSalaryCadence]} amounts (minimum CHF ${jobSalaryMinimum}).`
+    : 'Choose the salary cadence before entering amounts.';
+  const jobSalaryPlaceholder = jobSalaryCadence ? SALARY_PLACEHOLDER_BY_CADENCE[jobSalaryCadence] : '';
+  const jobSalaryPreview = useMemo(() => {
+    const cadence = normalizeSalaryCadence(jobForm.salary_cadence);
+    if (!cadence) {
+      return '';
+    }
+
+    const min = Number.parseFloat((jobForm.salary_min || '').replace(',', '.'));
+    if (!Number.isFinite(min)) {
+      return '';
+    }
+
+    const maxCandidate = Number.parseFloat((jobForm.salary_max || '').replace(',', '.'));
+    const max = Number.isFinite(maxCandidate) ? maxCandidate : min;
+
+    const monthlyMin = convertCadenceValueToMonthly(min, cadence);
+    const monthlyMax = convertCadenceValueToMonthly(max, cadence);
+
+    if (!Number.isFinite(monthlyMin) || !Number.isFinite(monthlyMax)) {
+      return '';
+    }
+
+    const monthlyLabel = formatRangeLabel(monthlyMin, monthlyMax, 'CHF / month');
+    const yearlyLabel = formatRangeLabel(
+      monthlyMin * THIRTEENTH_MONTHS_PER_YEAR,
+      monthlyMax * THIRTEENTH_MONTHS_PER_YEAR,
+      'CHF / year (13th salary)'
+    );
+
+    const previews = [];
+
+    if (monthlyLabel) {
+      previews.push(monthlyLabel);
+    }
+
+    if (jobForm.employment_type === 'Full-time' && yearlyLabel) {
+      previews.push(yearlyLabel);
+    }
+
+    return previews.join(' · ');
+  }, [jobForm.salary_cadence, jobForm.salary_min, jobForm.salary_max, jobForm.employment_type]);
+
+  const handleJobEquityBlur = () => {
+    setJobForm((prev) => {
+      const currentValue = prev.equity ?? '';
+      const sanitized = sanitizeDecimalInput(currentValue);
+      if (!sanitized) {
+        return { ...prev, equity: '' };
+      }
+
+      const numeric = Number.parseFloat(sanitized.replace(',', '.'));
+      if (!Number.isFinite(numeric)) {
+        return { ...prev, equity: '' };
+      }
+
+      const clampedValue = clamp(numeric, 0.1, 100);
+      const formatted = formatEquityValue(clampedValue);
+      const usesComma = currentValue.includes(',');
+
+      return {
+        ...prev,
+        equity: usesComma ? formatted.replace('.', ',') : formatted,
+      };
+    });
   };
 
   const handlePostJobSubmit = async (event) => {
@@ -2282,13 +2535,75 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const rawSalaryInput = jobForm.salary.trim();
-      const [derivedSalaryMin, derivedSalaryMax] = computeSalaryRange({
-        salary: rawSalaryInput,
-        salary_cadence: cadenceSelection,
+      const salaryMinRaw = jobForm.salary_min?.trim() ?? '';
+      const salaryMaxRaw = jobForm.salary_max?.trim() ?? '';
+
+      const salaryMinValue = Number.parseFloat(salaryMinRaw.replace(',', '.'));
+      const salaryMaxValueInput = Number.parseFloat(salaryMaxRaw.replace(',', '.'));
+
+      if (!Number.isFinite(salaryMinValue)) {
+        setPostJobError('Enter the minimum salary before posting the role.');
+        setPostingJob(false);
+        return;
+      }
+
+      const cadenceMinimum = SALARY_MINIMUMS_BY_CADENCE[cadenceSelection] ?? 0;
+      const cadenceLabel = SALARY_CADENCE_LABELS[cadenceSelection] || cadenceSelection;
+
+      if (salaryMinValue < cadenceMinimum) {
+        setPostJobError(`Minimum ${cadenceLabel} salary must be at least CHF ${cadenceMinimum}.`);
+        setPostingJob(false);
+        return;
+      }
+
+      const salaryMaxValue = Number.isFinite(salaryMaxValueInput) ? salaryMaxValueInput : salaryMinValue;
+
+      if (salaryMaxValue < salaryMinValue) {
+        setPostJobError('Maximum salary cannot be lower than the minimum salary.');
+        setPostingJob(false);
+        return;
+      }
+
+      if (salaryMaxValue < cadenceMinimum) {
+        setPostJobError(`Maximum ${cadenceLabel} salary must be at least CHF ${cadenceMinimum}.`);
+        setPostingJob(false);
+        return;
+      }
+
+      const monthlyMin = convertCadenceValueToMonthly(salaryMinValue, cadenceSelection);
+      const monthlyMax = convertCadenceValueToMonthly(salaryMaxValue, cadenceSelection);
+
+      if (!Number.isFinite(monthlyMin) || !Number.isFinite(monthlyMax)) {
+        setPostJobError('Could not derive CHF salary values from the provided cadence.');
+        setPostingJob(false);
+        return;
+      }
+
+      const salaryDisplay = composeSalaryDisplay({
+        baseMin: salaryMinValue,
+        baseMax: salaryMaxValue,
+        cadence: cadenceSelection,
+        monthlyMin,
+        monthlyMax,
+        employmentType: jobForm.employment_type,
       });
-      const salaryDisplay = formatSalaryDisplay(derivedSalaryMin, derivedSalaryMax, cadenceSelection, rawSalaryInput);
-      const sanitizedEquity = jobForm.equity ? normalizeEquityInput(jobForm.equity) : '';
+
+      const equityRaw = sanitizeDecimalInput(jobForm.equity?.trim() ?? '');
+      let equityDisplay = '';
+      let equityNumericValue = null;
+
+      if (equityRaw) {
+        const parsedEquity = Number.parseFloat(equityRaw.replace(',', '.'));
+
+        if (!Number.isFinite(parsedEquity) || parsedEquity < 0.1 || parsedEquity > 100) {
+          setPostJobError('Equity must be a number between 0.1 and 100.');
+          setPostingJob(false);
+          return;
+        }
+
+        equityNumericValue = parsedEquity;
+        equityDisplay = `${formatEquityValue(parsedEquity)}%`;
+      }
 
       const payload = {
         startup_id: startupProfile.id,
@@ -2297,7 +2612,12 @@ const SwissStartupConnect = () => {
         location: jobForm.location.trim(),
         employment_type: jobForm.employment_type,
         salary: salaryDisplay,
-        equity: sanitizedEquity,
+        salary_cadence: cadenceSelection,
+        salary_min_value: Math.round(monthlyMin),
+        salary_max_value: Math.round(monthlyMax),
+        equity: equityNumericValue != null ? equityDisplay : null,
+        equity_min_value: equityNumericValue != null ? equityNumericValue : null,
+        equity_max_value: equityNumericValue != null ? equityNumericValue : null,
         description: jobForm.description.trim(),
         requirements: jobForm.requirements
           ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
@@ -2324,7 +2644,8 @@ const SwissStartupConnect = () => {
         title: '',
         location: '',
         employment_type: 'Full-time',
-        salary: '',
+        salary_min: '',
+        salary_max: '',
         salary_cadence: '',
         equity: '',
         description: '',
@@ -2352,6 +2673,9 @@ const SwissStartupConnect = () => {
     }
     try {
       const publicUrl = await uploadFile('cvs', file, { prefix: 'applications' });
+      if (!publicUrl) {
+        throw new Error('CV upload did not return a URL.');
+      }
       setApplicationCvUrl(publicUrl);
       setApplicationCvName(file.name);
       setUseExistingCv(false);
@@ -2375,6 +2699,9 @@ const SwissStartupConnect = () => {
 
     try {
       const publicUrl = await uploadFile('cvs', file, { prefix: 'letters' });
+      if (!publicUrl) {
+        throw new Error('Motivational letter upload did not return a URL.');
+      }
       setMotivationalLetterUrl(publicUrl);
       setMotivationalLetterName(file.name);
       setApplicationError('');
@@ -2867,20 +3194,59 @@ const SwissStartupConnect = () => {
     normalizedSalaryMinBound,
     normalizedSalaryMaxBound
   );
-  const salarySliderRangeSpan = Math.max(normalizedSalaryMaxBound - normalizedSalaryMinBound, SALARY_STEP);
+  const salaryDisplayMinBound = convertMonthlyValueToCadence(normalizedSalaryMinBound, salaryFilterCadence);
+  const salaryDisplayMaxBound = convertMonthlyValueToCadence(normalizedSalaryMaxBound, salaryFilterCadence);
+  const salaryDisplayMinValue = convertMonthlyValueToCadence(salarySliderMinValue, salaryFilterCadence);
+  const salaryDisplayMaxValue = convertMonthlyValueToCadence(salarySliderMaxValue, salaryFilterCadence);
+
+  const sliderBaseMin = Number.isFinite(salaryDisplayMinBound) ? salaryDisplayMinBound : 0;
+  const sliderBaseMax = Number.isFinite(salaryDisplayMaxBound) ? salaryDisplayMaxBound : sliderBaseMin;
+  const sliderRangeSpanDisplay = sliderBaseMax - sliderBaseMin;
+  const sliderRangeDenominator = Math.max(sliderRangeSpanDisplay, SALARY_STEP);
+
+  const calculateSliderPercent = (value) => {
+    if (!Number.isFinite(value) || sliderRangeDenominator <= 0) {
+      return 0;
+    }
+    return Math.min(Math.max(((value - sliderBaseMin) / sliderRangeDenominator) * 100, 0), 100);
+  };
+
   const salarySliderStyle = {
-    '--range-min': `${Math.min(
-      Math.max(((salarySliderMinValue - normalizedSalaryMinBound) / salarySliderRangeSpan) * 100, 0),
-      100
+    '--range-min': `${calculateSliderPercent(
+      Number.isFinite(salaryDisplayMinValue) ? salaryDisplayMinValue : salaryDisplayMinBound
     )}%`,
-    '--range-max': `${Math.min(
-      Math.max(((salarySliderMaxValue - normalizedSalaryMinBound) / salarySliderRangeSpan) * 100, 0),
-      100
+    '--range-max': `${calculateSliderPercent(
+      Number.isFinite(salaryDisplayMaxValue) ? salaryDisplayMaxValue : salaryDisplayMaxBound
     )}%`,
   };
-  const salarySliderDisabled = normalizedSalaryMinBound === normalizedSalaryMaxBound;
+  const salarySliderDisabled =
+    !Number.isFinite(salaryDisplayMinBound) ||
+    !Number.isFinite(salaryDisplayMaxBound) ||
+    sliderRangeSpanDisplay <= 0;
+  const salarySliderDecimals = salaryFilterCadence === 'hour' ? 2 : 0;
+  const toSliderDisplay = (value, fallback) => {
+    const resolved = Number.isFinite(value) ? value : fallback;
+    if (!Number.isFinite(resolved)) {
+      return 0;
+    }
+    return Number.parseFloat(resolved.toFixed(salarySliderDecimals));
+  };
+  const salarySliderMinBoundDisplay = toSliderDisplay(salaryDisplayMinBound, sliderBaseMin);
+  const salarySliderMaxBoundDisplay = toSliderDisplay(salaryDisplayMaxBound, sliderBaseMax);
+  const salarySliderMinDisplay = toSliderDisplay(salaryDisplayMinValue, sliderBaseMin);
+  const salarySliderMaxDisplay = toSliderDisplay(salaryDisplayMaxValue, sliderBaseMax);
+  const salarySliderStep =
+    salaryFilterCadence === 'hour'
+      ? 0.5
+      : salaryFilterCadence === 'week'
+      ? 10
+      : salaryFilterCadence === 'year'
+      ? 100
+      : SALARY_STEP;
   const salaryRangeAtDefault =
     salarySliderMinValue === normalizedSalaryMinBound && salarySliderMaxValue === normalizedSalaryMaxBound;
+  const salaryFilterHelperText = SALARY_FILTER_HELPERS[salaryFilterCadence] || 'CHF monthly';
+  const salaryFilterCadenceLabel = SALARY_CADENCE_LABELS[salaryFilterCadence] || 'monthly';
 
   const safeEquityBoundMin = Number.isFinite(equityBounds[0]) ? equityBounds[0] : defaultEquityBounds[0];
   const safeEquityBoundMax = Number.isFinite(equityBounds[1]) ? equityBounds[1] : defaultEquityBounds[1];
@@ -3176,29 +3542,44 @@ const SwissStartupConnect = () => {
                 </div>
                 <div className="ssc__filter-group ssc__filter-group--salary">
                   <div className="ssc__filter-label-row">
-                    <span className="ssc__filter-label">Salary range</span>
-                    <span className="ssc__filter-helper">CHF per month</span>
+                    <div className="ssc__filter-label-group">
+                      <span className="ssc__filter-label">Salary range</span>
+                      <span className="ssc__filter-helper">{salaryFilterHelperText}</span>
+                    </div>
+                    <div className="ssc__cadence-toggle" role="group" aria-label="Salary cadence">
+                      {SALARY_FILTER_CADENCE_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`ssc__cadence-btn ${salaryFilterCadence === option.value ? 'is-active' : ''}`}
+                          onClick={() => setSalaryFilterCadence(option.value)}
+                          aria-pressed={salaryFilterCadence === option.value}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="ssc__salary-slider" style={salarySliderStyle}>
                     <input
                       type="range"
-                      min={normalizedSalaryMinBound}
-                      max={normalizedSalaryMaxBound}
-                      step={SALARY_STEP}
-                      value={salarySliderMinValue}
+                      min={salarySliderMinBoundDisplay}
+                      max={salarySliderMaxBoundDisplay}
+                      step={salarySliderStep}
+                      value={salarySliderMinDisplay}
                       onChange={handleSalarySliderChange('min')}
                       disabled={salarySliderDisabled}
-                      aria-label="Minimum salary"
+                      aria-label={`Minimum ${salaryFilterCadenceLabel} salary`}
                     />
                     <input
                       type="range"
-                      min={normalizedSalaryMinBound}
-                      max={normalizedSalaryMaxBound}
-                      step={SALARY_STEP}
-                      value={salarySliderMaxValue}
+                      min={salarySliderMinBoundDisplay}
+                      max={salarySliderMaxBoundDisplay}
+                      step={salarySliderStep}
+                      value={salarySliderMaxDisplay}
                       onChange={handleSalarySliderChange('max')}
                       disabled={salarySliderDisabled}
-                      aria-label="Maximum salary"
+                      aria-label={`Maximum ${salaryFilterCadenceLabel} salary`}
                     />
                   </div>
                   <div className="ssc__salary-inputs">
@@ -3207,11 +3588,11 @@ const SwissStartupConnect = () => {
                       <div className="ssc__salary-input-wrapper">
                         <span>CHF</span>
                         <input
-                          inputMode="numeric"
-                          pattern="[0-9]*"
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
                           value={salaryInputValues.min}
                           onChange={(event) => handleSalaryInputChange('min', event.target.value)}
-                          aria-label="Minimum salary in Swiss francs"
+                          aria-label={`Minimum ${salaryFilterCadenceLabel} salary in Swiss francs`}
                           disabled={salarySliderDisabled}
                         />
                       </div>
@@ -3224,11 +3605,11 @@ const SwissStartupConnect = () => {
                       <div className="ssc__salary-input-wrapper">
                         <span>CHF</span>
                         <input
-                          inputMode="numeric"
-                          pattern="[0-9]*"
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
                           value={salaryInputValues.max}
                           onChange={(event) => handleSalaryInputChange('max', event.target.value)}
-                          aria-label="Maximum salary in Swiss francs"
+                          aria-label={`Maximum ${salaryFilterCadenceLabel} salary in Swiss francs`}
                           disabled={salarySliderDisabled}
                         />
                       </div>
@@ -4699,19 +5080,17 @@ const SwissStartupConnect = () => {
                   </select>
                 </label>
                 <label className="ssc__field">
-                  <span>Salary range</span>
-                  <input
-                    type="text"
-                    value={jobForm.salary}
-                    onChange={(event) => setJobForm((prev) => ({ ...prev, salary: event.target.value }))}
-                    placeholder="e.g. CHF 80k – 110k"
-                  />
-                </label>
-                <label className="ssc__field">
                   <span>Salary cadence</span>
                   <select
                     value={jobForm.salary_cadence}
-                    onChange={(event) => setJobForm((prev) => ({ ...prev, salary_cadence: event.target.value }))}
+                    onChange={(event) =>
+                      setJobForm((prev) => ({
+                        ...prev,
+                        salary_cadence: event.target.value,
+                        salary_min: '',
+                        salary_max: '',
+                      }))
+                    }
                     required
                   >
                     <option value="">Select cadence</option>
@@ -4721,16 +5100,61 @@ const SwissStartupConnect = () => {
                     <option value="year">Yearly</option>
                   </select>
                 </label>
+                <div className="ssc__field ssc__field--range">
+                  <span className="ssc__field-label">Salary range</span>
+                  <div className="ssc__field-range-row">
+                    <label className="ssc__field-range-input">
+                      <span>Min</span>
+                      <input
+                        inputMode="decimal"
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        value={jobForm.salary_min}
+                        onChange={(event) =>
+                          setJobForm((prev) => ({ ...prev, salary_min: sanitizeDecimalInput(event.target.value) }))
+                        }
+                        placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                        disabled={!jobSalaryCadence}
+                      />
+                    </label>
+                    <div className="ssc__field-range-divider" aria-hidden="true">
+                      –
+                    </div>
+                    <label className="ssc__field-range-input">
+                      <span>Max</span>
+                      <input
+                        inputMode="decimal"
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        value={jobForm.salary_max}
+                        onChange={(event) =>
+                          setJobForm((prev) => ({ ...prev, salary_max: sanitizeDecimalInput(event.target.value) }))
+                        }
+                        placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                        disabled={!jobSalaryCadence}
+                      />
+                    </label>
+                  </div>
+                  <small className="ssc__field-note">{jobSalaryHelperText}</small>
+                  {jobSalaryPreview && (
+                    <small className="ssc__field-note ssc__field-note--muted">
+                      {jobForm.employment_type === 'Full-time'
+                        ? `Full-time equivalent: ${jobSalaryPreview}`
+                        : `Approximate: ${jobSalaryPreview}`}
+                    </small>
+                  )}
+                </div>
                 <label className="ssc__field">
-                  <span>Equity</span>
+                  <span>Equity (%)</span>
                   <input
-                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
                     value={jobForm.equity}
                     onChange={(event) =>
-                      setJobForm((prev) => ({ ...prev, equity: normalizeEquityInput(event.target.value) }))
+                      setJobForm((prev) => ({ ...prev, equity: sanitizeDecimalInput(event.target.value) }))
                     }
-                    placeholder="Optional (e.g. 0.5% – 1%)"
+                    onBlur={handleJobEquityBlur}
+                    placeholder="Optional (e.g. 0.5)"
                   />
+                  <small className="ssc__field-note">Allowed range: 0.1 – 100. Leave blank if none.</small>
                 </label>
               </div>
 
