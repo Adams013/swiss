@@ -567,7 +567,42 @@ const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
 
 const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
 
-const THIRTEENTH_SALARY_PATTERN = /\b(?:13th|thirteenth)\b/i;
+const THIRTEENTH_SALARY_PATTERN = /\b(?:13(?:th)?|thirteenth)\b/i;
+
+const parseExplicitBoolean = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    if (Number.isNaN(value)) {
+      return null;
+    }
+    if (value > 0) {
+      return true;
+    }
+    if (value === 0) {
+      return false;
+    }
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) {
+      return true;
+    }
+
+    if (['false', '0', 'no', 'n', 'off'].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return null;
+};
 
 const textMentionsThirteenthSalary = (value) =>
   typeof value === 'string' && THIRTEENTH_SALARY_PATTERN.test(value);
@@ -580,12 +615,14 @@ const inferThirteenthSalary = (job) => {
     return false;
   }
 
-  if (job.has_thirteenth_salary != null) {
-    return Boolean(job.has_thirteenth_salary);
+  const explicitHasThirteenth = parseExplicitBoolean(job.has_thirteenth_salary);
+  if (explicitHasThirteenth != null) {
+    return explicitHasThirteenth;
   }
 
-  if (job.includes_thirteenth_salary != null) {
-    return Boolean(job.includes_thirteenth_salary);
+  const explicitIncludesThirteenth = parseExplicitBoolean(job.includes_thirteenth_salary);
+  if (explicitIncludesThirteenth != null) {
+    return explicitIncludesThirteenth;
   }
 
   const textSources = [
