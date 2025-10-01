@@ -1351,25 +1351,29 @@ const SwissStartupConnect = () => {
   }, []);
 
   useEffect(() => {
-    if (salaryCalculatorRevealed || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
       return undefined;
     }
 
     const handleReveal = () => {
       const target = filtersSectionRef.current;
-      if (!target) return;
-      const { top } = target.getBoundingClientRect();
       const scrollY = window.scrollY || window.pageYOffset || 0;
       const revealThreshold = window.innerHeight * 0.6;
-      if (scrollY > window.innerHeight * 0.1 || top <= revealThreshold) {
-        setSalaryCalculatorRevealed(true);
-      }
+      const top = target ? target.getBoundingClientRect().top : Number.POSITIVE_INFINITY;
+      const shouldReveal = scrollY > window.innerHeight * 0.1 || top <= revealThreshold;
+
+      setSalaryCalculatorRevealed((prev) => {
+        if (prev !== shouldReveal && !shouldReveal) {
+          setSalaryCalculatorOpen(false);
+        }
+        return shouldReveal;
+      });
     };
 
     window.addEventListener('scroll', handleReveal, { passive: true });
     handleReveal();
     return () => window.removeEventListener('scroll', handleReveal);
-  }, [salaryCalculatorRevealed]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -4201,9 +4205,11 @@ const SwissStartupConnect = () => {
                 </div>
               </div>
 
-              {normalizedJobs.length > 0 && salaryCalculatorRevealed && (
+              {normalizedJobs.length > 0 && (
                 <div
-                  className={`ssc__calculator-anchor is-revealed ${salaryCalculatorOpen ? 'is-open' : ''}`}
+                  className={`ssc__calculator-anchor ${
+                    salaryCalculatorRevealed ? 'is-revealed' : ''
+                  } ${salaryCalculatorOpen ? 'is-open' : ''}`}
                 >
                   <button
                     type="button"
@@ -4212,6 +4218,7 @@ const SwissStartupConnect = () => {
                     aria-expanded={salaryCalculatorOpen}
                     aria-controls={SALARY_CALCULATOR_PANEL_ID}
                     aria-label="Toggle salary calculator"
+                    disabled={!salaryCalculatorRevealed}
                   >
                     <Calculator size={22} />
                   </button>
@@ -4239,38 +4246,48 @@ const SwissStartupConnect = () => {
                     ) : (
                       <>
                         <div className="ssc__calculator-fields">
-                          <label>
+                          <label htmlFor="calculator-company">
                             <span>Company</span>
-                            <select
-                              value={salaryCalculatorCompany}
-                              onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
-                            >
-                              {calculatorCompanies.map((company) => (
-                                <option key={company.key} value={company.key}>
-                                  {company.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label>
-                            <span>Role</span>
-                            <select
-                              value={salaryCalculatorJobId}
-                              onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
-                              disabled={calculatorJobs.length === 0}
-                            >
-                              {calculatorJobs.length === 0 ? (
-                                <option value="" disabled>
-                                  No roles available
-                                </option>
-                              ) : (
-                                calculatorJobs.map((job) => (
-                                  <option key={job.id} value={job.id}>
-                                    {job.title}
+                            <div className="ssc__select-wrapper">
+                              <select
+                                id="calculator-company"
+                                className="ssc__select"
+                                value={salaryCalculatorCompany}
+                                onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
+                              >
+                                {calculatorCompanies.map((company) => (
+                                  <option key={company.key} value={company.key}>
+                                    {company.label}
                                   </option>
-                                ))
-                              )}
-                            </select>
+                                ))}
+                              </select>
+                              <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
+                            </div>
+                          </label>
+                          <label htmlFor="calculator-role">
+                            <span>Role</span>
+                            <div className="ssc__select-wrapper">
+                              <select
+                                id="calculator-role"
+                                className="ssc__select"
+                                value={salaryCalculatorJobId}
+                                onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
+                                disabled={calculatorJobs.length === 0}
+                              >
+                                {calculatorJobs.length === 0 ? (
+                                  <option value="" disabled>
+                                    No roles available
+                                  </option>
+                                ) : (
+                                  calculatorJobs.map((job) => (
+                                    <option key={job.id} value={job.id}>
+                                      {job.title}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                              <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
+                            </div>
                           </label>
                         </div>
                         <div className="ssc__calculator-results">
