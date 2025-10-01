@@ -78,6 +78,11 @@ const JOB_LANGUAGE_ALIASES = {
 
 const TRANSLATIONS = {
   fr: {
+    common: {
+      errors: {
+        unknown: 'Erreur inconnue',
+      },
+    },
     nav: {
       general: 'Général',
       jobs: 'Opportunités',
@@ -147,6 +152,73 @@ const TRANSLATIONS = {
         month: 'mensuel',
         year: 'annuel',
       },
+      activeCityOptions: {
+        zurich: 'Zurich',
+        geneva: 'Genève',
+        lausanne: 'Lausanne',
+      },
+      roleFocusOptions: {
+        engineering: 'Ingénierie',
+        product: 'Produit',
+        growth: 'Croissance',
+        climate: 'Climat',
+      },
+      locations: {
+        zurich: 'Zurich',
+        geneva: 'Genève',
+        basel: 'Bâle',
+        bern: 'Berne',
+        lausanne: 'Lausanne',
+        lugano: 'Lugano',
+        lucerne: 'Lucerne',
+        stgallen: 'Saint-Gall',
+        fribourg: 'Fribourg',
+        neuchatel: 'Neuchâtel',
+        winterthur: 'Winterthour',
+        zug: 'Zoug',
+        sion: 'Sion',
+        chur: 'Coire',
+        biel: 'Bienne',
+        schaffhausen: 'Schaffhouse',
+        thun: 'Thoune',
+        laChauxDeFonds: 'La Chaux-de-Fonds',
+        locarno: 'Locarno',
+        bellinzona: 'Bellinzone',
+        aarau: 'Aarau',
+        stMoritz: 'Saint-Moritz',
+        cantonZurich: 'Canton de Zurich',
+        cantonBern: 'Canton de Berne',
+        cantonLucerne: 'Canton de Lucerne',
+        cantonUri: "Canton d’Uri",
+        cantonSchwyz: 'Canton de Schwytz',
+        cantonObwalden: 'Canton d’Obwald',
+        cantonNidwalden: 'Canton de Nidwald',
+        cantonGlarus: 'Canton de Glaris',
+        cantonVaud: 'Canton de Vaud',
+        cantonValais: 'Canton du Valais',
+        cantonNeuchatel: 'Canton de Neuchâtel',
+        cantonGeneva: 'Canton de Genève',
+        cantonJura: 'Canton du Jura',
+        cantonZug: 'Canton de Zoug',
+        cantonFribourg: 'Canton de Fribourg',
+        cantonSolothurn: 'Canton de Soleure',
+        cantonBaselStadt: 'Canton de Bâle-Ville',
+        cantonBaselLandschaft: 'Canton de Bâle-Campagne',
+        cantonSchaffhausen: 'Canton de Schaffhouse',
+        cantonAppenzellAusserrhoden: 'Canton d’Appenzell Rhodes-Extérieures',
+        cantonAppenzellInnerrhoden: 'Canton d’Appenzell Rhodes-Intérieures',
+        cantonStGallen: 'Canton de Saint-Gall',
+        cantonGraubunden: 'Canton des Grisons',
+        cantonAargau: 'Canton d’Argovie',
+        cantonThurgau: 'Canton de Thurgovie',
+        cantonTicino: 'Canton du Tessin',
+        remoteSwitzerland: 'Télétravail en Suisse',
+        hybridZurich: 'Hybride – Zurich',
+        hybridGeneva: 'Hybride – Genève',
+        hybridLausanne: 'Hybride – Lausanne',
+        hybridBasel: 'Hybride – Bâle',
+        acrossSwitzerland: 'Partout en Suisse',
+      },
       min: 'Min',
       max: 'Max',
       salaryAriaGroup: 'Rythme salarial',
@@ -203,6 +275,9 @@ const TRANSLATIONS = {
       viewApplicants: 'Voir les candidats',
       applyRestrictionStudent: 'Réservé aux candidatures étudiantes.',
       applyRestrictionSignIn: 'Connectez-vous avec un compte étudiant pour postuler.',
+      applyPromptLogin: 'Créez un profil pour postuler.',
+      applyPromptStudent: 'Passez sur un compte étudiant pour postuler.',
+      applyPromptVerify: 'Veuillez vérifier votre adresse e-mail avant de postuler.',
       feedbackRemoved: 'Retiré de vos favoris.',
       feedbackAdded: 'Ajouté à vos favoris.',
       seeMoreHeading: 'Voir plus d’opportunités',
@@ -210,6 +285,117 @@ const TRANSLATIONS = {
       seeMoreButton: 'Explorer les rôles',
       noMatchesTitle: 'Aucun résultat',
       noMatchesBody: 'Retirez un filtre ou élargissez votre fourchette salariale.',
+    },
+    jobForm: {
+      labels: {
+        title: 'Intitulé du poste',
+        location: 'Ville ou canton',
+        employmentType: 'Type de contrat',
+        weeklyHours: 'Heures hebdomadaires',
+        internshipLength: 'Durée du stage (mois)',
+        salaryCadence: 'Rythme salarial',
+        equity: 'Équité (%)',
+        salaryRange: 'Fourchette salariale',
+        salary: 'Salaire',
+        salaryAmount: 'Montant',
+        salaryMin: 'Min',
+        salaryMax: 'Max',
+        description: 'Description du poste',
+        requirements: 'Exigences (une par ligne)',
+        benefits: 'Avantages (un par ligne)',
+        tags: 'Étiquettes (séparées par des virgules)',
+        motivationalLetter: 'Lettre de motivation requise pour ce poste',
+      },
+      options: {
+        employmentType: {
+          fullTime: 'Temps plein',
+          partTime: 'Temps partiel',
+          internship: 'Stage',
+          contract: 'Contrat',
+        },
+        salaryCadence: {
+          select: 'Sélectionner un rythme',
+          hour: 'Horaire',
+          week: 'Hebdomadaire',
+          month: 'Mensuel',
+          year: 'Annuel / total',
+        },
+      },
+      placeholders: {
+        location: 'Sélectionnez une localisation en Suisse',
+        weeklyHours: 'ex. 24',
+        internshipMonths: 'ex. 6',
+        equity: 'Optionnel (ex. 0,5)',
+        salaryExample: 'ex. {{example}}',
+        salarySelect: 'Sélectionnez d’abord un rythme',
+        description: 'Sur quoi travaillera la personne ?',
+        tags: 'React, Growth, Fintech',
+      },
+      notes: {
+        weeklyHours: 'Utilisé pour convertir les salaires mensuels et annuels. Maximum 40 h/semaine.',
+        internshipLength: 'Les stages doivent durer entre 1 et 12 mois.',
+        equityRange: 'Plage autorisée : 0,1 – 100. Laissez vide si aucun.',
+      },
+      salary: {
+        toggle: 'Afficher une fourchette salariale',
+        helper: {
+          single: 'Saisissez un montant {{cadence}} en CHF (minimum {{minimum}} CHF).{{extra}}',
+          bracket: 'Saisissez des montants {{cadence}} en CHF pour votre fourchette (minimum {{minimum}} CHF).{{extra}}',
+          partTimeHours: 'Les calculs utiliseront {{hours}}.',
+          partTimeMissing: 'Ajoutez des heures hebdomadaires pour convertir le temps partiel.',
+          chooseCadence: 'Choisissez d’abord un rythme salarial avant de saisir les montants.',
+        },
+        preview: {
+          fullTime: 'Équivalent temps plein : {{value}}',
+          partTime: 'Approximation : {{value}}',
+        },
+        cadence: {
+          hour: 'horaire',
+          week: 'hebdomadaire',
+          month: 'mensuel',
+          year: 'annuel',
+        },
+        types: {
+          single: 'montant',
+          bracket: 'montants pour votre fourchette',
+        },
+        placeholder: {
+          example: 'ex. {{example}}',
+          fallback: 'Sélectionnez d’abord un rythme',
+        },
+      },
+      errors: {
+        startupProfileIncomplete: 'Complétez votre profil startup avant de publier une offre.',
+        verificationRequired: 'Seules les startups vérifiées peuvent publier des offres.',
+        locationInvalid: 'Choisissez une ville, un canton ou une option télétravail en Suisse dans la liste.',
+        salaryCadenceMissing: 'Sélectionnez si le salaire est horaire, hebdomadaire, mensuel ou annuel.',
+        salaryMinMissing: 'Indiquez le salaire minimum avant de publier l’offre.',
+        salaryMinBelowMinimum: 'Le salaire {{cadence}} doit être au minimum de {{minimum}} CHF.',
+        salaryMaxMissing: 'Indiquez le salaire maximum de la fourchette.',
+        salaryMaxLessThanMin: 'Le salaire maximum ne peut pas être inférieur au salaire minimum.',
+        salaryMaxBelowMinimum: 'Le salaire {{cadence}} doit être au minimum de {{minimum}} CHF.',
+        weeklyHoursMissing: 'Indiquez le nombre d’heures hebdomadaires pour les postes à temps partiel.',
+        internshipDurationMissing: 'Précisez la durée du stage en mois.',
+        internshipDurationTooLong: 'Les stages peuvent durer au maximum 12 mois.',
+        salaryConversionFailed: 'Impossible de convertir le salaire en CHF avec ce rythme.',
+        equityRange: 'L’équité doit être un nombre entre 0,1 et 100.',
+      },
+      info: {
+        partTimeAutoFullTime: 'Les postes à temps partiel dépassant 40 h/semaine passent automatiquement à temps plein.',
+        postedAsFullTime: 'Offre publiée en temps plein car elle dépasse 40 heures par semaine.',
+      },
+      actions: {
+        cancel: 'Annuler',
+        submit: 'Publier l’offre',
+        posting: 'Publication…',
+      },
+      toast: {
+        published: 'Offre publiée avec succès !',
+      },
+      modal: {
+        title: 'Publier une nouvelle offre',
+        subtitle: 'Partagez les informations clés pour que les étudiant·e·s comprennent l’opportunité.',
+      },
     },
     calculator: {
       toggleLabel: 'Afficher/masquer le calculateur de salaire',
@@ -254,6 +440,7 @@ const TRANSLATIONS = {
       companyProfile: 'Profil startup',
       postVacancy: 'Publier une offre',
       viewApplicants: 'Voir les candidats',
+      memberFallback: 'Membre',
     },
     profileModal: {
       title: 'Mettez à jour votre profil',
@@ -286,10 +473,73 @@ const TRANSLATIONS = {
       viewCurrentCv: 'Voir le CV actuel',
       cvVisibilityOn: 'CV visible par les startups',
       cvVisibilityOff: 'Garder le CV privé jusqu’à la candidature',
+      feedback: {
+        avatarSuccess: 'Photo de profil téléversée. Enregistrez votre profil pour la conserver.',
+        cvSuccess: 'CV téléversé. Enregistrez votre profil pour le garder à jour.',
+      },
+      errors: {
+        save: 'Impossible d’enregistrer le profil : {{message}}',
+        photoNoUrl: 'Le téléversement de la photo de profil n’a renvoyé aucune URL.',
+        photoUpload: 'Échec du téléversement de l’avatar : {{message}}',
+        cvInvalidType: 'Téléversez le CV en .pdf, .doc, .docx ou .tex uniquement.',
+        cvNoUrl: 'Le téléversement du CV n’a renvoyé aucune URL.',
+        cvRowLevelSecurity:
+          'Échec du téléversement du CV : votre compte n’est pas autorisé à stocker des documents dans ce dossier. Réessayez ou mettez à jour le CV de votre profil.',
+        cvUpload: 'Échec du téléversement du CV : {{message}}',
+        logoNoUrl: 'Le téléversement du logo n’a renvoyé aucune URL.',
+        logoUpload: 'Échec du téléversement du logo : {{message}}',
+      },
       buttons: {
         cancel: 'Annuler',
         save: 'Enregistrer le profil',
         saving: 'Enregistrement…',
+      },
+    },
+    startupModal: {
+      title: 'Profil de votre startup',
+      subtitle: 'Partagez des informations officielles pour rassurer les étudiants sur votre équipe.',
+      fields: {
+        companyName: "Nom de l’entreprise",
+        registryId: 'Identifiant au registre du commerce',
+        website: 'Site web',
+        description: 'Description',
+        logo: 'Télécharger le logo',
+      },
+      placeholders: {
+        registryId: 'CHE-123.456.789',
+        website: 'https://',
+        description:
+          'Expliquez votre produit, votre traction, vos priorités de recrutement et ce que les talents apprendront.',
+      },
+      verification: {
+        label: 'Statut de vérification :',
+        note: 'Indiquez un identifiant officiel et un lien vers un document. Notre équipe vérifie les demandes chaque semaine.',
+        statuses: {
+          verified: 'Vérifiée',
+          pending: 'En cours de vérification',
+          unverified: 'Non vérifiée',
+        },
+      },
+      buttons: {
+        cancel: 'Annuler',
+        save: 'Enregistrer le profil startup',
+        submitting: 'Envoi…',
+      },
+      feedback: {
+        submitted: 'Profil startup envoyé. Les mises à jour de vérification apparaîtront ici.',
+      },
+      errors: {
+        save: 'Impossible d’enregistrer le profil startup : {{message}}',
+      },
+      logoAlt: 'Logo de la startup',
+    },
+    toasts: {
+      saved: 'Enregistré avec succès !',
+    },
+    uploads: {
+      errors: {
+        authRequired: 'Connectez-vous pour téléverser des fichiers avant de réessayer.',
+        noPublicUrl: 'Le téléversement n’a renvoyé aucune URL publique.',
       },
     },
     authModal: {
@@ -571,6 +821,11 @@ const TRANSLATIONS = {
     },
   },
   de: {
+    common: {
+      errors: {
+        unknown: 'Unbekannter Fehler',
+      },
+    },
     nav: {
       general: 'Überblick',
       jobs: 'Stellen',
@@ -640,6 +895,73 @@ const TRANSLATIONS = {
         month: 'monatlich',
         year: 'jährlich',
       },
+      activeCityOptions: {
+        zurich: 'Zürich',
+        geneva: 'Genf',
+        lausanne: 'Lausanne',
+      },
+      roleFocusOptions: {
+        engineering: 'Engineering',
+        product: 'Product',
+        growth: 'Growth',
+        climate: 'Klima',
+      },
+      locations: {
+        zurich: 'Zürich',
+        geneva: 'Genf',
+        basel: 'Basel',
+        bern: 'Bern',
+        lausanne: 'Lausanne',
+        lugano: 'Lugano',
+        lucerne: 'Luzern',
+        stgallen: 'St. Gallen',
+        fribourg: 'Freiburg',
+        neuchatel: 'Neuenburg',
+        winterthur: 'Winterthur',
+        zug: 'Zug',
+        sion: 'Sitten',
+        chur: 'Chur',
+        biel: 'Biel/Bienne',
+        schaffhausen: 'Schaffhausen',
+        thun: 'Thun',
+        laChauxDeFonds: 'La Chaux-de-Fonds',
+        locarno: 'Locarno',
+        bellinzona: 'Bellinzona',
+        aarau: 'Aarau',
+        stMoritz: 'St. Moritz',
+        cantonZurich: 'Kanton Zürich',
+        cantonBern: 'Kanton Bern',
+        cantonLucerne: 'Kanton Luzern',
+        cantonUri: 'Kanton Uri',
+        cantonSchwyz: 'Kanton Schwyz',
+        cantonObwalden: 'Kanton Obwalden',
+        cantonNidwalden: 'Kanton Nidwalden',
+        cantonGlarus: 'Kanton Glarus',
+        cantonVaud: 'Kanton Waadt',
+        cantonValais: 'Kanton Wallis',
+        cantonNeuchatel: 'Kanton Neuenburg',
+        cantonGeneva: 'Kanton Genf',
+        cantonJura: 'Kanton Jura',
+        cantonZug: 'Kanton Zug',
+        cantonFribourg: 'Kanton Freiburg',
+        cantonSolothurn: 'Kanton Solothurn',
+        cantonBaselStadt: 'Kanton Basel-Stadt',
+        cantonBaselLandschaft: 'Kanton Basel-Landschaft',
+        cantonSchaffhausen: 'Kanton Schaffhausen',
+        cantonAppenzellAusserrhoden: 'Kanton Appenzell Ausserrhoden',
+        cantonAppenzellInnerrhoden: 'Kanton Appenzell Innerrhoden',
+        cantonStGallen: 'Kanton St. Gallen',
+        cantonGraubunden: 'Kanton Graubünden',
+        cantonAargau: 'Kanton Aargau',
+        cantonThurgau: 'Kanton Thurgau',
+        cantonTicino: 'Kanton Tessin',
+        remoteSwitzerland: 'Remote innerhalb der Schweiz',
+        hybridZurich: 'Hybrid – Zürich',
+        hybridGeneva: 'Hybrid – Genf',
+        hybridLausanne: 'Hybrid – Lausanne',
+        hybridBasel: 'Hybrid – Basel',
+        acrossSwitzerland: 'In der ganzen Schweiz',
+      },
       min: 'Min',
       max: 'Max',
       salaryAriaGroup: 'Gehaltsrhythmus',
@@ -696,6 +1018,9 @@ const TRANSLATIONS = {
       viewApplicants: 'Bewerber:innen ansehen',
       applyRestrictionStudent: 'Nur für Bewerbungen von Studierenden.',
       applyRestrictionSignIn: 'Melden Sie sich mit einem Studierendenkonto an, um sich zu bewerben.',
+      applyPromptLogin: 'Erstellen Sie ein Profil, um sich zu bewerben.',
+      applyPromptStudent: 'Wechseln Sie zu einem Studierendenkonto, um sich zu bewerben.',
+      applyPromptVerify: 'Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich bewerben.',
       feedbackRemoved: 'Aus den Merklisten entfernt.',
       feedbackAdded: 'Zu Ihren Merklisten hinzugefügt.',
       seeMoreHeading: 'Weitere Stellen entdecken',
@@ -703,6 +1028,117 @@ const TRANSLATIONS = {
       seeMoreButton: 'Rollen ansehen',
       noMatchesTitle: 'Keine Treffer',
       noMatchesBody: 'Entfernen Sie einen Filter oder erweitern Sie Ihre Gehaltsspanne.',
+    },
+    jobForm: {
+      labels: {
+        title: 'Stellentitel',
+        location: 'Ort oder Kanton',
+        employmentType: 'Anstellungsart',
+        weeklyHours: 'Wochenstunden',
+        internshipLength: 'Praktikumsdauer (Monate)',
+        salaryCadence: 'Gehaltsrhythmus',
+        equity: 'Beteiligung (%)',
+        salaryRange: 'Gehaltsband',
+        salary: 'Gehalt',
+        salaryAmount: 'Betrag',
+        salaryMin: 'Min',
+        salaryMax: 'Max',
+        description: 'Rollenbeschreibung',
+        requirements: 'Anforderungen (eine pro Zeile)',
+        benefits: 'Leistungen (eine pro Zeile)',
+        tags: 'Tags (durch Komma getrennt)',
+        motivationalLetter: 'Motivationsschreiben für diese Rolle erforderlich',
+      },
+      options: {
+        employmentType: {
+          fullTime: 'Vollzeit',
+          partTime: 'Teilzeit',
+          internship: 'Praktikum',
+          contract: 'Vertrag',
+        },
+        salaryCadence: {
+          select: 'Rhythmus wählen',
+          hour: 'Stündlich',
+          week: 'Wöchentlich',
+          month: 'Monatlich',
+          year: 'Jährlich / total',
+        },
+      },
+      placeholders: {
+        location: 'Wählen Sie einen Standort in der Schweiz',
+        weeklyHours: 'z. B. 24',
+        internshipMonths: 'z. B. 6',
+        equity: 'Optional (z. B. 0.5)',
+        salaryExample: 'z. B. {{example}}',
+        salarySelect: 'Wählen Sie zuerst einen Rhythmus',
+        description: 'Woran wird die Person arbeiten?',
+        tags: 'React, Growth, Fintech',
+      },
+      notes: {
+        weeklyHours: 'Wird genutzt, um Monats- und Jahresgehälter zu berechnen. Maximal 40 Std./Woche.',
+        internshipLength: 'Praktika müssen zwischen 1 und 12 Monaten dauern.',
+        equityRange: 'Erlaubter Bereich: 0.1 – 100. Leer lassen, falls nicht vorhanden.',
+      },
+      salary: {
+        toggle: 'Gehaltsband anzeigen',
+        helper: {
+          single: 'Geben Sie ein {{cadence}}es Gehalt in CHF an (mindestens {{minimum}} CHF).{{extra}}',
+          bracket: 'Geben Sie {{cadence}}e Beträge in CHF für Ihr Gehaltsband an (mindestens {{minimum}} CHF).{{extra}}',
+          partTimeHours: 'Die Berechnung verwendet {{hours}}.',
+          partTimeMissing: 'Fügen Sie Wochenstunden hinzu, um Teilzeitlöhne umzurechnen.',
+          chooseCadence: 'Wählen Sie einen Gehaltsrhythmus, bevor Sie Beträge eingeben.',
+        },
+        preview: {
+          fullTime: 'Vollzeitäquivalent: {{value}}',
+          partTime: 'Annäherung: {{value}}',
+        },
+        cadence: {
+          hour: 'stündlich',
+          week: 'wöchentlich',
+          month: 'monatlich',
+          year: 'jährlich',
+        },
+        types: {
+          single: 'Betrag',
+          bracket: 'Beträge für Ihr Gehaltsband',
+        },
+        placeholder: {
+          example: 'z. B. {{example}}',
+          fallback: 'Wählen Sie zuerst einen Rhythmus',
+        },
+      },
+      errors: {
+        startupProfileIncomplete: 'Vervollständigen Sie Ihr Start-up-Profil, bevor Sie eine Stelle veröffentlichen.',
+        verificationRequired: 'Nur verifizierte Start-ups können Stellen veröffentlichen.',
+        locationInvalid: 'Wählen Sie eine Schweizer Stadt, einen Kanton oder eine Remote-Option aus der Liste.',
+        salaryCadenceMissing: 'Wählen Sie, ob das Gehalt stündlich, wöchentlich, monatlich oder jährlich ist.',
+        salaryMinMissing: 'Geben Sie das Mindestgehalt an, bevor Sie veröffentlichen.',
+        salaryMinBelowMinimum: 'Das {{cadence}}e Gehalt muss mindestens {{minimum}} CHF betragen.',
+        salaryMaxMissing: 'Geben Sie das maximale Gehalt für das Band an.',
+        salaryMaxLessThanMin: 'Das Maximalgehalt darf nicht unter dem Mindestgehalt liegen.',
+        salaryMaxBelowMinimum: 'Das {{cadence}}e Gehalt muss mindestens {{minimum}} CHF betragen.',
+        weeklyHoursMissing: 'Geben Sie die Wochenstunden für Teilzeitrollen an.',
+        internshipDurationMissing: 'Geben Sie an, wie viele Monate das Praktikum dauert.',
+        internshipDurationTooLong: 'Praktika dürfen höchstens 12 Monate dauern.',
+        salaryConversionFailed: 'Das Gehalt konnte mit diesem Rhythmus nicht in CHF umgerechnet werden.',
+        equityRange: 'Der Beteiligungsanteil muss eine Zahl zwischen 0.1 und 100 sein.',
+      },
+      info: {
+        partTimeAutoFullTime: 'Teilzeitstellen über 40 Std./Woche werden automatisch auf Vollzeit gesetzt.',
+        postedAsFullTime: 'Stelle als Vollzeit veröffentlicht, da sie mehr als 40 Stunden pro Woche umfasst.',
+      },
+      actions: {
+        cancel: 'Abbrechen',
+        submit: 'Stelle veröffentlichen',
+        posting: 'Veröffentlichen…',
+      },
+      toast: {
+        published: 'Stelle erfolgreich veröffentlicht!',
+      },
+      modal: {
+        title: 'Neue Stelle veröffentlichen',
+        subtitle: 'Teilen Sie die wichtigsten Fakten, damit Studierende die Chance verstehen.',
+      },
     },
     calculator: {
       toggleLabel: 'Gehaltsrechner ein-/ausblenden',
@@ -747,6 +1183,7 @@ const TRANSLATIONS = {
       companyProfile: 'Unternehmensprofil',
       postVacancy: 'Stelle veröffentlichen',
       viewApplicants: 'Bewerber ansehen',
+      memberFallback: 'Mitglied',
     },
     profileModal: {
       title: 'Aktualisieren Sie Ihr Profil',
@@ -780,10 +1217,73 @@ const TRANSLATIONS = {
       viewCurrentCv: 'Aktuellen CV ansehen',
       cvVisibilityOn: 'CV für Startups sichtbar',
       cvVisibilityOff: 'CV privat halten bis zur Bewerbung',
+      feedback: {
+        avatarSuccess: 'Profilfoto hochgeladen. Speichern Sie Ihr Profil, um es zu behalten.',
+        cvSuccess: 'CV hochgeladen. Speichern Sie Ihr Profil, um es aktuell zu halten.',
+      },
+      errors: {
+        save: 'Profil konnte nicht gespeichert werden: {{message}}',
+        photoNoUrl: 'Der Profilfoto-Upload hat keine URL zurückgegeben.',
+        photoUpload: 'Avatar-Upload fehlgeschlagen: {{message}}',
+        cvInvalidType: 'CV nur als .pdf, .doc, .docx oder .tex hochladen.',
+        cvNoUrl: 'Der CV-Upload hat keine URL zurückgegeben.',
+        cvRowLevelSecurity:
+          'CV-Upload fehlgeschlagen: Ihr Konto darf in diesem Ordner keine Dokumente speichern. Bitte erneut versuchen oder den Profil-CV aktualisieren.',
+        cvUpload: 'CV-Upload fehlgeschlagen: {{message}}',
+        logoNoUrl: 'Der Logo-Upload hat keine URL zurückgegeben.',
+        logoUpload: 'Logo-Upload fehlgeschlagen: {{message}}',
+      },
       buttons: {
         cancel: 'Abbrechen',
         save: 'Profil speichern',
         saving: 'Speichern…',
+      },
+    },
+    startupModal: {
+      title: 'Ihr Startup-Profil',
+      subtitle: 'Teilen Sie offizielle Angaben, damit Studierende wissen, dass sie mit einem verifizierten Team sprechen.',
+      fields: {
+        companyName: 'Unternehmensname',
+        registryId: 'Handelsregister-ID',
+        website: 'Website',
+        description: 'Beschreibung',
+        logo: 'Logo hochladen',
+      },
+      placeholders: {
+        registryId: 'CHE-123.456.789',
+        website: 'https://',
+        description:
+          'Beschreiben Sie Produkt, Traction, Hiring-Fokus und was Praktikant:innen lernen werden.',
+      },
+      verification: {
+        label: 'Verifizierungsstatus:',
+        note: 'Geben Sie eine Handelsregisternummer und einen offiziellen Nachweis an. Wir prüfen Einreichungen wöchentlich.',
+        statuses: {
+          verified: 'Verifiziert',
+          pending: 'In Prüfung',
+          unverified: 'Nicht verifiziert',
+        },
+      },
+      buttons: {
+        cancel: 'Abbrechen',
+        save: 'Startup-Profil speichern',
+        submitting: 'Wird gesendet…',
+      },
+      feedback: {
+        submitted: 'Startup-Profil übermittelt. Updates zur Verifizierung erscheinen hier.',
+      },
+      errors: {
+        save: 'Startup-Profil konnte nicht gespeichert werden: {{message}}',
+      },
+      logoAlt: 'Startup-Logo',
+    },
+    toasts: {
+      saved: 'Erfolgreich gespeichert!',
+    },
+    uploads: {
+      errors: {
+        authRequired: 'Melden Sie sich an, um Dateien hochzuladen, und versuchen Sie es erneut.',
+        noPublicUrl: 'Der Upload hat keine öffentliche URL zurückgegeben.',
       },
     },
     authModal: {
@@ -1434,61 +1934,61 @@ const resolveJobLanguageLabels = (job) => {
 };
 
 const SWISS_LOCATION_OPTIONS = [
-  { value: 'Zurich, Switzerland', label: 'Zurich' },
-  { value: 'Geneva, Switzerland', label: 'Geneva' },
-  { value: 'Basel, Switzerland', label: 'Basel' },
-  { value: 'Bern, Switzerland', label: 'Bern' },
-  { value: 'Lausanne, Switzerland', label: 'Lausanne' },
-  { value: 'Lugano, Switzerland', label: 'Lugano' },
-  { value: 'Lucerne, Switzerland', label: 'Lucerne' },
-  { value: 'St. Gallen, Switzerland', label: 'St. Gallen' },
-  { value: 'Fribourg, Switzerland', label: 'Fribourg' },
-  { value: 'Neuchâtel, Switzerland', label: 'Neuchâtel' },
-  { value: 'Winterthur, Switzerland', label: 'Winterthur' },
-  { value: 'Zug, Switzerland', label: 'Zug' },
-  { value: 'Sion, Switzerland', label: 'Sion' },
-  { value: 'Chur, Switzerland', label: 'Chur' },
-  { value: 'Biel/Bienne, Switzerland', label: 'Biel/Bienne' },
-  { value: 'Schaffhausen, Switzerland', label: 'Schaffhausen' },
-  { value: 'Thun, Switzerland', label: 'Thun' },
-  { value: 'La Chaux-de-Fonds, Switzerland', label: 'La Chaux-de-Fonds' },
-  { value: 'Locarno, Switzerland', label: 'Locarno' },
-  { value: 'Bellinzona, Switzerland', label: 'Bellinzona' },
-  { value: 'Aarau, Switzerland', label: 'Aarau' },
-  { value: 'St. Moritz, Switzerland', label: 'St. Moritz' },
-  { value: 'Canton of Zurich', label: 'Canton of Zurich' },
-  { value: 'Canton of Bern', label: 'Canton of Bern' },
-  { value: 'Canton of Lucerne', label: 'Canton of Lucerne' },
-  { value: 'Canton of Uri', label: 'Canton of Uri' },
-  { value: 'Canton of Schwyz', label: 'Canton of Schwyz' },
-  { value: 'Canton of Obwalden', label: 'Canton of Obwalden' },
-  { value: 'Canton of Nidwalden', label: 'Canton of Nidwalden' },
-  { value: 'Canton of Glarus', label: 'Canton of Glarus' },
-  { value: 'Canton of Zug', label: 'Canton of Zug' },
-  { value: 'Canton of Fribourg', label: 'Canton of Fribourg' },
-  { value: 'Canton of Solothurn', label: 'Canton of Solothurn' },
-  { value: 'Canton of Basel-Stadt', label: 'Canton of Basel-Stadt' },
-  { value: 'Canton of Basel-Landschaft', label: 'Canton of Basel-Landschaft' },
-  { value: 'Canton of Schaffhausen', label: 'Canton of Schaffhausen' },
-  { value: 'Canton of Appenzell Ausserrhoden', label: 'Canton of Appenzell Ausserrhoden' },
-  { value: 'Canton of Appenzell Innerrhoden', label: 'Canton of Appenzell Innerrhoden' },
-  { value: 'Canton of St. Gallen', label: 'Canton of St. Gallen' },
-  { value: 'Canton of Graubünden', label: 'Canton of Graubünden' },
-  { value: 'Canton of Aargau', label: 'Canton of Aargau' },
-  { value: 'Canton of Thurgau', label: 'Canton of Thurgau' },
-  { value: 'Canton of Ticino', label: 'Canton of Ticino' },
-  { value: 'Canton of Vaud', label: 'Canton of Vaud' },
-  { value: 'Canton of Valais', label: 'Canton of Valais' },
-  { value: 'Canton of Neuchâtel', label: 'Canton of Neuchâtel' },
-  { value: 'Canton of Geneva', label: 'Canton of Geneva' },
-  { value: 'Canton of Jura', label: 'Canton of Jura' },
-  { value: 'Remote within Switzerland', label: 'Remote within Switzerland' },
-  { value: 'Hybrid (Zurich)', label: 'Hybrid – Zurich' },
-  { value: 'Hybrid (Geneva)', label: 'Hybrid – Geneva' },
-  { value: 'Hybrid (Lausanne)', label: 'Hybrid – Lausanne' },
-  { value: 'Hybrid (Basel)', label: 'Hybrid – Basel' },
-  { value: 'Across Switzerland', label: 'Across Switzerland' },
-];
+  ['Zurich, Switzerland', 'Zurich', 'filters.locations.zurich'],
+  ['Geneva, Switzerland', 'Geneva', 'filters.locations.geneva'],
+  ['Basel, Switzerland', 'Basel', 'filters.locations.basel'],
+  ['Bern, Switzerland', 'Bern', 'filters.locations.bern'],
+  ['Lausanne, Switzerland', 'Lausanne', 'filters.locations.lausanne'],
+  ['Lugano, Switzerland', 'Lugano', 'filters.locations.lugano'],
+  ['Lucerne, Switzerland', 'Lucerne', 'filters.locations.lucerne'],
+  ['St. Gallen, Switzerland', 'St. Gallen', 'filters.locations.stgallen'],
+  ['Fribourg, Switzerland', 'Fribourg', 'filters.locations.fribourg'],
+  ['Neuchâtel, Switzerland', 'Neuchâtel', 'filters.locations.neuchatel'],
+  ['Winterthur, Switzerland', 'Winterthur', 'filters.locations.winterthur'],
+  ['Zug, Switzerland', 'Zug', 'filters.locations.zug'],
+  ['Sion, Switzerland', 'Sion', 'filters.locations.sion'],
+  ['Chur, Switzerland', 'Chur', 'filters.locations.chur'],
+  ['Biel/Bienne, Switzerland', 'Biel/Bienne', 'filters.locations.biel'],
+  ['Schaffhausen, Switzerland', 'Schaffhausen', 'filters.locations.schaffhausen'],
+  ['Thun, Switzerland', 'Thun', 'filters.locations.thun'],
+  ['La Chaux-de-Fonds, Switzerland', 'La Chaux-de-Fonds', 'filters.locations.laChauxDeFonds'],
+  ['Locarno, Switzerland', 'Locarno', 'filters.locations.locarno'],
+  ['Bellinzona, Switzerland', 'Bellinzona', 'filters.locations.bellinzona'],
+  ['Aarau, Switzerland', 'Aarau', 'filters.locations.aarau'],
+  ['St. Moritz, Switzerland', 'St. Moritz', 'filters.locations.stMoritz'],
+  ['Canton of Zurich', 'Canton of Zurich', 'filters.locations.cantonZurich'],
+  ['Canton of Bern', 'Canton of Bern', 'filters.locations.cantonBern'],
+  ['Canton of Lucerne', 'Canton of Lucerne', 'filters.locations.cantonLucerne'],
+  ['Canton of Uri', 'Canton of Uri', 'filters.locations.cantonUri'],
+  ['Canton of Schwyz', 'Canton of Schwyz', 'filters.locations.cantonSchwyz'],
+  ['Canton of Obwalden', 'Canton of Obwalden', 'filters.locations.cantonObwalden'],
+  ['Canton of Nidwalden', 'Canton of Nidwalden', 'filters.locations.cantonNidwalden'],
+  ['Canton of Glarus', 'Canton of Glarus', 'filters.locations.cantonGlarus'],
+  ['Canton of Zug', 'Canton of Zug', 'filters.locations.cantonZug'],
+  ['Canton of Fribourg', 'Canton of Fribourg', 'filters.locations.cantonFribourg'],
+  ['Canton of Solothurn', 'Canton of Solothurn', 'filters.locations.cantonSolothurn'],
+  ['Canton of Basel-Stadt', 'Canton of Basel-Stadt', 'filters.locations.cantonBaselStadt'],
+  ['Canton of Basel-Landschaft', 'Canton of Basel-Landschaft', 'filters.locations.cantonBaselLandschaft'],
+  ['Canton of Schaffhausen', 'Canton of Schaffhausen', 'filters.locations.cantonSchaffhausen'],
+  ['Canton of Appenzell Ausserrhoden', 'Canton of Appenzell Ausserrhoden', 'filters.locations.cantonAppenzellAusserrhoden'],
+  ['Canton of Appenzell Innerrhoden', 'Canton of Appenzell Innerrhoden', 'filters.locations.cantonAppenzellInnerrhoden'],
+  ['Canton of St. Gallen', 'Canton of St. Gallen', 'filters.locations.cantonStGallen'],
+  ['Canton of Graubünden', 'Canton of Graubünden', 'filters.locations.cantonGraubunden'],
+  ['Canton of Aargau', 'Canton of Aargau', 'filters.locations.cantonAargau'],
+  ['Canton of Thurgau', 'Canton of Thurgau', 'filters.locations.cantonThurgau'],
+  ['Canton of Ticino', 'Canton of Ticino', 'filters.locations.cantonTicino'],
+  ['Canton of Vaud', 'Canton of Vaud', 'filters.locations.cantonVaud'],
+  ['Canton of Valais', 'Canton of Valais', 'filters.locations.cantonValais'],
+  ['Canton of Neuchâtel', 'Canton of Neuchâtel', 'filters.locations.cantonNeuchatel'],
+  ['Canton of Geneva', 'Canton of Geneva', 'filters.locations.cantonGeneva'],
+  ['Canton of Jura', 'Canton of Jura', 'filters.locations.cantonJura'],
+  ['Remote within Switzerland', 'Remote within Switzerland', 'filters.locations.remoteSwitzerland'],
+  ['Hybrid (Zurich)', 'Hybrid – Zurich', 'filters.locations.hybridZurich'],
+  ['Hybrid (Geneva)', 'Hybrid – Geneva', 'filters.locations.hybridGeneva'],
+  ['Hybrid (Lausanne)', 'Hybrid – Lausanne', 'filters.locations.hybridLausanne'],
+  ['Hybrid (Basel)', 'Hybrid – Basel', 'filters.locations.hybridBasel'],
+  ['Across Switzerland', 'Across Switzerland', 'filters.locations.acrossSwitzerland'],
+].map(([value, label, translationKey]) => ({ value, label, translationKey }));
 
 const ALLOWED_SWISS_LOCATIONS = new Set(
   SWISS_LOCATION_OPTIONS.map((option) =>
@@ -1681,33 +2181,55 @@ const cvWritingTips = [
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
 
 const activeCityFilters = [
-  { id: 'city-zurich', label: 'Zurich', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('zurich') },
-  { id: 'city-geneva', label: 'Geneva', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('geneva') },
-  { id: 'city-lausanne', label: 'Lausanne', category: 'Active cities', test: (job) => job.location?.toLowerCase().includes('lausanne') },
+  {
+    id: 'city-zurich',
+    label: 'Zurich',
+    labelKey: 'filters.activeCityOptions.zurich',
+    category: 'Active cities',
+    test: (job) => job.location?.toLowerCase().includes('zurich'),
+  },
+  {
+    id: 'city-geneva',
+    label: 'Geneva',
+    labelKey: 'filters.activeCityOptions.geneva',
+    category: 'Active cities',
+    test: (job) => job.location?.toLowerCase().includes('geneva'),
+  },
+  {
+    id: 'city-lausanne',
+    label: 'Lausanne',
+    labelKey: 'filters.activeCityOptions.lausanne',
+    category: 'Active cities',
+    test: (job) => job.location?.toLowerCase().includes('lausanne'),
+  },
 ];
 
 const roleFocusFilters = [
   {
     id: 'focus-engineering',
     label: 'Engineering',
+    labelKey: 'filters.roleFocusOptions.engineering',
     category: 'Role focus',
     test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())),
   },
   {
     id: 'focus-product',
     label: 'Product',
+    labelKey: 'filters.roleFocusOptions.product',
     category: 'Role focus',
     test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())),
   },
   {
     id: 'focus-growth',
     label: 'Growth',
+    labelKey: 'filters.roleFocusOptions.growth',
     category: 'Role focus',
     test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())),
   },
   {
     id: 'focus-climate',
     label: 'Climate',
+    labelKey: 'filters.roleFocusOptions.climate',
     category: 'Role focus',
     test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')),
   },
@@ -2777,6 +3299,13 @@ const SwissStartupConnect = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
   const [user, setUser] = useState(null);
+  const userDisplayName = useMemo(() => {
+    if (!user) {
+      return '';
+    }
+    return user.name?.trim() || translate('accountMenu.memberFallback', 'Member');
+  }, [user, translate]);
+  const userInitial = useMemo(() => (userDisplayName ? userDisplayName.charAt(0).toUpperCase() : ''), [userDisplayName]);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
@@ -4124,7 +4653,10 @@ const SwissStartupConnect = () => {
 
   const openPostJobFlow = useCallback(() => {
     if (!startupId) {
-      setFeedback({ type: 'info', message: 'Complete your startup profile before posting a job.' });
+      setFeedback({
+        type: 'info',
+        message: translate('jobForm.errors.startupProfileIncomplete', 'Complete your startup profile before posting a job.'),
+      });
       setStartupModalOpen(true);
       return;
     }
@@ -4132,7 +4664,10 @@ const SwissStartupConnect = () => {
     if (!isStartupVerified) {
       setFeedback({
         type: 'info',
-        message: 'Verification is required before publishing job offers. Submit your documents to get verified.',
+        message: translate(
+          'jobForm.errors.verificationRequired',
+          'Verification is required before publishing job offers. Submit your documents to get verified.',
+        ),
       });
       setStartupModalOpen(true);
       return;
@@ -4298,17 +4833,26 @@ const SwissStartupConnect = () => {
     if (!user) {
       setIsRegistering(false);
       setShowLoginModal(true);
-      setFeedback({ type: 'info', message: 'Create a profile to apply to roles.' });
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.applyPromptLogin', 'Create a profile to apply to roles.'),
+      });
       return;
     }
 
     if (user.type !== 'student') {
-      setFeedback({ type: 'info', message: 'Switch to a student account to apply.' });
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.applyPromptStudent', 'Switch to a student account to apply.'),
+      });
       return;
     }
 
     if (!emailVerified) {
-      setFeedback({ type: 'info', message: 'Please verify your email address before applying.' });
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.applyPromptVerify', 'Please verify your email address before applying.'),
+      });
       return;
     }
 
@@ -4361,7 +4905,9 @@ const SwissStartupConnect = () => {
       }
 
       if (!user?.id) {
-        throw new Error('Sign in to upload files before trying again.');
+        throw new Error(
+          translate('uploads.errors.authRequired', 'Sign in to upload files before trying again.')
+        );
       }
 
       const extension = getFileExtension(file.name) || 'file';
@@ -4409,7 +4955,9 @@ const SwissStartupConnect = () => {
       try {
         const uploadedUrl = await attemptUpload(sanitizedPrefix);
         if (!uploadedUrl) {
-          throw new Error('Upload did not return a public URL.');
+          throw new Error(
+            translate('uploads.errors.noPublicUrl', 'Upload did not return a public URL.')
+          );
         }
         return uploadedUrl;
       } catch (error) {
@@ -4417,7 +4965,9 @@ const SwissStartupConnect = () => {
         if (message.includes('row-level security') && sanitizedPrefix && !sanitizedPrefix.startsWith('profiles')) {
           const fallbackUrl = await attemptUpload(`profiles/${sanitizedPrefix}`);
           if (!fallbackUrl) {
-            throw new Error('Upload did not return a public URL.');
+            throw new Error(
+              translate('uploads.errors.noPublicUrl', 'Upload did not return a public URL.')
+            );
           }
           return fallbackUrl;
         }
@@ -4454,7 +5004,14 @@ const SwissStartupConnect = () => {
         .single();
 
       if (error) {
-        setFeedback({ type: 'error', message: error.message });
+        const rawMessage = error?.message?.trim?.();
+        const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
+        setFeedback({
+          type: 'error',
+          message: translate('profileModal.errors.save', 'Could not save profile: {{message}}', {
+            message,
+          }),
+        });
       } else {
         const mergedProfile = data
           ? { ...(profile ?? {}), ...data }
@@ -4477,12 +5034,19 @@ const SwissStartupConnect = () => {
           name: user.name,
           type: user.type,
         });
-        showToast('Saved successfully!');
+        showToast(translate('toasts.saved', 'Saved successfully!'));
         clearFeedback();
         setProfileModalOpen(false);
       }
     } catch (error) {
-      setFeedback({ type: 'error', message: error.message });
+      const rawMessage = error?.message?.trim?.();
+      const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
+      setFeedback({
+        type: 'error',
+        message: translate('profileModal.errors.save', 'Could not save profile: {{message}}', {
+          message,
+        }),
+      });
     } finally {
       setProfileSaving(false);
     }
@@ -4510,18 +5074,35 @@ const SwissStartupConnect = () => {
         .single();
 
       if (error) {
-        setFeedback({ type: 'error', message: error.message });
+        const rawMessage = error?.message?.trim?.();
+        const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
+        setFeedback({
+          type: 'error',
+          message: translate('startupModal.errors.save', 'Could not save startup profile: {{message}}', {
+            message,
+          }),
+        });
       } else {
         setStartupProfile(data);
-        showToast('Saved successfully!');
+        showToast(translate('toasts.saved', 'Saved successfully!'));
         setFeedback({
           type: 'info',
-          message: 'Startup profile submitted. Verification updates will appear here.',
+          message: translate(
+            'startupModal.feedback.submitted',
+            'Startup profile submitted. Verification updates will appear here.'
+          ),
         });
         setStartupModalOpen(false);
       }
     } catch (error) {
-      setFeedback({ type: 'error', message: error.message });
+      const rawMessage = error?.message?.trim?.();
+      const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
+      setFeedback({
+        type: 'error',
+        message: translate('startupModal.errors.save', 'Could not save startup profile: {{message}}', {
+          message,
+        }),
+      });
     } finally {
       setStartupSaving(false);
     }
@@ -4533,13 +5114,28 @@ const SwissStartupConnect = () => {
     try {
       const publicUrl = await uploadFile('avatars', file);
       if (!publicUrl) {
-        throw new Error('Profile photo upload did not return a URL.');
+        throw new Error(
+          translate('profileModal.errors.photoNoUrl', 'Profile photo upload did not return a URL.')
+        );
       }
       setProfileForm((prev) => ({ ...prev, avatar_url: publicUrl }));
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
-      setFeedback({ type: 'success', message: 'Profile photo uploaded. Save your profile to keep it.' });
+      setFeedback({
+        type: 'success',
+        message: translate(
+          'profileModal.feedback.avatarSuccess',
+          'Profile photo uploaded. Save your profile to keep it.'
+        ),
+      });
     } catch (error) {
-      setFeedback({ type: 'error', message: `Avatar upload failed: ${error.message}` });
+      const rawMessage = error?.message?.trim?.();
+      const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
+      setFeedback({
+        type: 'error',
+        message: translate('profileModal.errors.photoUpload', 'Avatar upload failed: {{message}}', {
+          message,
+        }),
+      });
     } finally {
       if (event.target) {
         event.target.value = '';
@@ -4554,22 +5150,36 @@ const SwissStartupConnect = () => {
     if (!isAllowedDocumentFile(file)) {
       setFeedback({
         type: 'error',
-        message: 'Upload CV as .pdf, .doc, .docx, or .tex only.',
+        message: translate(
+          'profileModal.errors.cvInvalidType',
+          'Upload CV as .pdf, .doc, .docx, or .tex only.'
+        ),
       });
       return;
     }
     try {
       const publicUrl = await uploadFile('cvs', file, { prefix: 'profiles' });
       if (!publicUrl) {
-        throw new Error('CV upload did not return a URL.');
+        throw new Error(translate('profileModal.errors.cvNoUrl', 'CV upload did not return a URL.'));
       }
       setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
       setProfile((prev) => (prev ? { ...prev, cv_url: publicUrl } : prev));
-      setFeedback({ type: 'success', message: 'CV uploaded. Save your profile to keep it updated.' });
+      setFeedback({
+        type: 'success',
+        message: translate(
+          'profileModal.feedback.cvSuccess',
+          'CV uploaded. Save your profile to keep it updated.'
+        ),
+      });
     } catch (error) {
       const message = error?.message?.toLowerCase?.().includes('row-level security')
-        ? 'CV upload failed: your account is not allowed to store documents in that folder. Please try again or update your profile CV instead.'
-        : `CV upload failed: ${error.message}`;
+        ? translate(
+            'profileModal.errors.cvRowLevelSecurity',
+            'CV upload failed: your account is not allowed to store documents in that folder. Please try again or update your profile CV instead.'
+          )
+        : translate('profileModal.errors.cvUpload', 'CV upload failed: {{message}}', {
+            message: error?.message?.trim?.() || translate('common.errors.unknown', 'Unknown error'),
+          });
       setFeedback({ type: 'error', message });
     } finally {
       if (event.target) {
@@ -4584,19 +5194,49 @@ const SwissStartupConnect = () => {
     try {
       const publicUrl = await uploadFile('logos', file);
       if (!publicUrl) {
-        throw new Error('Logo upload did not return a URL.');
+        throw new Error(translate('profileModal.errors.logoNoUrl', 'Logo upload did not return a URL.'));
       }
       setStartupForm((prev) => ({ ...prev, logo_url: publicUrl }));
     } catch (error) {
-      setFeedback({ type: 'error', message: `Logo upload failed: ${error.message}` });
+      const rawMessage = error?.message?.trim?.();
+      const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
+      setFeedback({
+        type: 'error',
+        message: translate('profileModal.errors.logoUpload', 'Logo upload failed: {{message}}', {
+          message,
+        }),
+      });
     }
   };
 
+  const startupVerificationStatusKey = startupForm.verification_status || 'unverified';
+  const startupVerificationStatusFallback =
+    startupVerificationStatusKey === 'verified'
+      ? 'Verified'
+      : startupVerificationStatusKey === 'pending'
+        ? 'Pending'
+        : 'Unverified';
+  const startupVerificationStatusLabel = translate(
+    `startupModal.verification.statuses.${startupVerificationStatusKey}`,
+    startupVerificationStatusFallback
+  );
+
   const jobSalaryCadence = normalizeSalaryCadence(jobForm.salary_cadence);
   const jobSalaryIsBracket = Boolean(jobForm.salary_is_bracket);
-  const jobSalaryLabel = jobSalaryIsBracket ? 'Salary range' : 'Salary';
-  const jobSalaryMinLabel = jobSalaryIsBracket ? 'Min' : 'Amount';
+  const jobSalaryLabel = jobSalaryIsBracket
+    ? translate('jobForm.labels.salaryRange', 'Salary range')
+    : translate('jobForm.labels.salary', 'Salary');
+  const jobSalaryMinLabel = jobSalaryIsBracket
+    ? translate('jobForm.labels.salaryMin', 'Min')
+    : translate('jobForm.labels.salaryAmount', 'Amount');
+  const jobSalaryMaxLabel = translate('jobForm.labels.salaryMax', 'Max');
   const jobSalaryMinimum = jobSalaryCadence ? SALARY_MINIMUMS_BY_CADENCE[jobSalaryCadence] : null;
+  const jobSalaryCadenceLabel = jobSalaryCadence
+    ? translate(
+        `jobForm.salary.cadence.${jobSalaryCadence}`,
+        SALARY_CADENCE_LABELS[jobSalaryCadence] || jobSalaryCadence,
+      )
+    : '';
   const jobIsPartTime = jobForm.employment_type === 'Part-time';
   const jobWeeklyHoursInput = jobIsPartTime ? parseWeeklyHoursValue(jobForm.weekly_hours) : null;
   const jobWeeklyHoursLabel = jobIsPartTime && Number.isFinite(jobWeeklyHoursInput)
@@ -4604,15 +5244,31 @@ const SwissStartupConnect = () => {
     : '';
   const jobSalaryHelperExtra = jobIsPartTime
     ? Number.isFinite(jobWeeklyHoursInput)
-      ? ` Calculations will use ${jobWeeklyHoursLabel}.`
-      : ' Add weekly hours so we can convert part-time pay.'
+      ? translate('jobForm.salary.helper.partTimeHours', 'Calculations will use {{hours}}.', {
+          hours: jobWeeklyHoursLabel,
+        })
+      : translate('jobForm.salary.helper.partTimeMissing', 'Add weekly hours so we can convert part-time pay.')
     : '';
+  const jobSalaryTypeLabel = translate(
+    jobSalaryIsBracket ? 'jobForm.salary.types.bracket' : 'jobForm.salary.types.single',
+    jobSalaryIsBracket ? 'amounts for your bracket' : 'amount',
+  );
   const jobSalaryHelperText = jobSalaryCadence
-    ? `Enter CHF ${SALARY_CADENCE_LABELS[jobSalaryCadence]} ${
-        jobSalaryIsBracket ? 'amounts for your bracket' : 'amount'
-      } (minimum CHF ${jobSalaryMinimum}).${jobSalaryHelperExtra}`
-    : 'Choose the salary cadence before entering amounts.';
+    ? translate(
+        jobSalaryIsBracket ? 'jobForm.salary.helper.bracket' : 'jobForm.salary.helper.single',
+        'Enter CHF {{cadence}} {{type}} (minimum CHF {{minimum}}).{{extra}}',
+        {
+          cadence: jobSalaryCadenceLabel,
+          type: jobSalaryTypeLabel,
+          minimum: jobSalaryMinimum,
+          extra: jobSalaryHelperExtra ? ` ${jobSalaryHelperExtra}` : '',
+        },
+      )
+    : translate('jobForm.salary.helper.chooseCadence', 'Choose the salary cadence before entering amounts.');
   const jobSalaryPlaceholder = jobSalaryCadence ? SALARY_PLACEHOLDER_BY_CADENCE[jobSalaryCadence] : '';
+  const jobSalaryPlaceholderText = jobSalaryCadence
+    ? translate('jobForm.salary.placeholder.example', 'e.g. {{example}}', { example: jobSalaryPlaceholder })
+    : translate('jobForm.salary.placeholder.fallback', 'Select cadence first');
   const jobSalaryPreview = useMemo(() => {
     const cadence = normalizeSalaryCadence(jobForm.salary_cadence);
     if (!cadence) {
@@ -4747,7 +5403,13 @@ const SwissStartupConnect = () => {
     });
 
     if (convertedToFullTime) {
-      setFeedback({ type: 'info', message: 'Part-time roles over 40h/week switch to full-time automatically.' });
+      setFeedback({
+        type: 'info',
+        message: translate(
+          'jobForm.info.partTimeAutoFullTime',
+          'Part-time roles over 40h/week switch to full-time automatically.',
+        ),
+      });
     }
   };
 
@@ -4775,19 +5437,29 @@ const SwissStartupConnect = () => {
     });
 
     if (clamped) {
-      setFeedback({ type: 'info', message: 'Internships can run for a maximum of 12 months.' });
+      setFeedback({
+        type: 'info',
+        message: translate(
+          'jobForm.errors.internshipDurationTooLong',
+          'Internships can run for a maximum of 12 months.',
+        ),
+      });
     }
   };
 
   const handlePostJobSubmit = async (event) => {
     event.preventDefault();
     if (!startupProfile?.id || !user) {
-      setPostJobError('Complete your startup profile before posting a job.');
+      setPostJobError(
+        translate('jobForm.errors.startupProfileIncomplete', 'Complete your startup profile before posting a job.'),
+      );
       return;
     }
 
     if (!isStartupVerified) {
-      setPostJobError('Only verified startups can publish job opportunities.');
+      setPostJobError(
+        translate('jobForm.errors.verificationRequired', 'Only verified startups can publish job opportunities.'),
+      );
       return;
     }
 
@@ -4797,7 +5469,12 @@ const SwissStartupConnect = () => {
     try {
       const locationSelection = jobForm.location?.trim() ?? '';
       if (!isAllowedSwissLocation(locationSelection)) {
-        setPostJobError('Choose a Swiss city, canton, or remote option from the list.');
+        setPostJobError(
+          translate(
+            'jobForm.errors.locationInvalid',
+            'Choose a Swiss city, canton, or remote option from the list.',
+          ),
+        );
         setPostingJob(false);
         return;
       }
@@ -4809,7 +5486,12 @@ const SwissStartupConnect = () => {
 
       const cadenceSelection = normalizeSalaryCadence(jobForm.salary_cadence) || null;
       if (!cadenceSelection) {
-        setPostJobError('Select whether the salary is hourly, weekly, monthly, or yearly.');
+        setPostJobError(
+          translate(
+            'jobForm.errors.salaryCadenceMissing',
+            'Select whether the salary is hourly, weekly, monthly, or yearly.',
+          ),
+        );
         setPostingJob(false);
         return;
       }
@@ -4822,7 +5504,9 @@ const SwissStartupConnect = () => {
       const salaryMaxValueInput = Number.parseFloat(salaryMaxRaw.replace(',', '.'));
 
       if (!Number.isFinite(salaryMinValue)) {
-        setPostJobError('Enter the minimum salary before posting the role.');
+        setPostJobError(
+          translate('jobForm.errors.salaryMinMissing', 'Enter the minimum salary before posting the role.'),
+        );
         setPostingJob(false);
         return;
       }
@@ -4831,7 +5515,12 @@ const SwissStartupConnect = () => {
       const cadenceLabel = SALARY_CADENCE_LABELS[cadenceSelection] || cadenceSelection;
 
       if (salaryMinValue < cadenceMinimum) {
-        setPostJobError(`Minimum ${cadenceLabel} salary must be at least CHF ${cadenceMinimum}.`);
+        setPostJobError(
+          translate('jobForm.errors.salaryMinBelowMinimum', 'Minimum {{cadence}} salary must be at least CHF {{minimum}}.', {
+            cadence: cadenceLabel,
+            minimum: cadenceMinimum,
+          }),
+        );
         setPostingJob(false);
         return;
       }
@@ -4840,7 +5529,9 @@ const SwissStartupConnect = () => {
 
       if (salaryIsBracket) {
         if (!Number.isFinite(salaryMaxValueInput)) {
-          setPostJobError('Enter the maximum salary for the bracket.');
+          setPostJobError(
+            translate('jobForm.errors.salaryMaxMissing', 'Enter the maximum salary for the bracket.'),
+          );
           setPostingJob(false);
           return;
         }
@@ -4848,13 +5539,20 @@ const SwissStartupConnect = () => {
         salaryMaxValue = salaryMaxValueInput;
 
         if (salaryMaxValue < salaryMinValue) {
-          setPostJobError('Maximum salary cannot be lower than the minimum salary.');
+          setPostJobError(
+            translate('jobForm.errors.salaryMaxLessThanMin', 'Maximum salary cannot be lower than the minimum salary.'),
+          );
           setPostingJob(false);
           return;
         }
 
         if (salaryMaxValue < cadenceMinimum) {
-          setPostJobError(`Maximum ${cadenceLabel} salary must be at least CHF ${cadenceMinimum}.`);
+          setPostJobError(
+            translate('jobForm.errors.salaryMaxBelowMinimum', 'Maximum {{cadence}} salary must be at least CHF {{minimum}}.', {
+              cadence: cadenceLabel,
+              minimum: cadenceMinimum,
+            }),
+          );
           setPostingJob(false);
           return;
         }
@@ -4866,7 +5564,9 @@ const SwissStartupConnect = () => {
         const weeklyHoursRaw = jobForm.weekly_hours?.trim() ?? '';
         const parsedWeeklyHours = parseWeeklyHoursValue(weeklyHoursRaw);
         if (!Number.isFinite(parsedWeeklyHours)) {
-          setPostJobError('Enter the weekly working hours for part-time roles.');
+          setPostJobError(
+            translate('jobForm.errors.weeklyHoursMissing', 'Enter the weekly working hours for part-time roles.'),
+          );
           setPostingJob(false);
           return;
         }
@@ -4886,13 +5586,17 @@ const SwissStartupConnect = () => {
         const parsedDuration = Number.parseInt(durationRaw, 10);
 
         if (!Number.isFinite(parsedDuration) || parsedDuration <= 0) {
-          setPostJobError('Share how many months the internship will last.');
+          setPostJobError(
+            translate('jobForm.errors.internshipDurationMissing', 'Share how many months the internship will last.'),
+          );
           setPostingJob(false);
           return;
         }
 
         if (parsedDuration > 12) {
-          setPostJobError('Internships can run for a maximum of 12 months.');
+          setPostJobError(
+            translate('jobForm.errors.internshipDurationTooLong', 'Internships can run for a maximum of 12 months.'),
+          );
           setPostingJob(false);
           return;
         }
@@ -4908,7 +5612,12 @@ const SwissStartupConnect = () => {
       const monthlyMax = convertCadenceValueToMonthly(salaryMaxValue, cadenceSelection, hoursForConversion);
 
       if (!Number.isFinite(monthlyMin) || !Number.isFinite(monthlyMax)) {
-        setPostJobError('Could not derive CHF salary values from the provided cadence.');
+        setPostJobError(
+          translate(
+            'jobForm.errors.salaryConversionFailed',
+            'Could not derive CHF salary values from the provided cadence.',
+          ),
+        );
         setPostingJob(false);
         return;
       }
@@ -4927,7 +5636,9 @@ const SwissStartupConnect = () => {
         const parsedEquity = Number.parseFloat(equityRaw.replace(',', '.'));
 
         if (!Number.isFinite(parsedEquity) || parsedEquity < 0.1 || parsedEquity > 100) {
-          setPostJobError('Equity must be a number between 0.1 and 100.');
+          setPostJobError(
+            translate('jobForm.errors.equityRange', 'Equity must be a number between 0.1 and 100.'),
+          );
           setPostingJob(false);
           return;
         }
@@ -4975,11 +5686,14 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      showToast('Job published successfully!');
+      showToast(translate('jobForm.toast.published', 'Job published successfully!'));
       if (convertedToFullTime) {
         setFeedback({
           type: 'info',
-          message: 'Job posted as a full-time role because it exceeds 40 hours per week.',
+          message: translate(
+            'jobForm.info.postedAsFullTime',
+            'Job posted as a full-time role because it exceeds 40 hours per week.',
+          ),
         });
       } else {
         clearFeedback();
@@ -5774,9 +6488,9 @@ const SwissStartupConnect = () => {
                   className="ssc__user-menu-toggle"
                   onClick={() => setShowUserMenu((prev) => !prev)}
                 >
-                  <div className="ssc__avatar-small">{user.name.charAt(0)}</div>
+                  <div className="ssc__avatar-small">{userInitial}</div>
                   <div className="ssc__user-meta">
-                    <span className="ssc__user-name">{user.name}</span>
+                    <span className="ssc__user-name">{userDisplayName}</span>
                     <span className="ssc__user-role">{user.type}</span>
                   </div>
                   <ChevronDown className={`ssc__caret ${showUserMenu ? 'is-open' : ''}`} size={16} />
@@ -5784,9 +6498,9 @@ const SwissStartupConnect = () => {
                 {showUserMenu && (
                   <div className="ssc__user-menu">
                     <header className="ssc__user-menu-header">
-                      <div className="ssc__avatar-medium">{user.name.charAt(0)}</div>
+                      <div className="ssc__avatar-medium">{userInitial}</div>
                       <div>
-                        <strong>{user.name}</strong>
+                        <strong>{userDisplayName}</strong>
                         <span className="ssc__user-menu-role">{user.type}</span>
                       </div>
                     </header>
@@ -5952,7 +6666,7 @@ const SwissStartupConnect = () => {
                           className={`ssc__chip ${isSelected ? 'is-selected' : ''}`}
                           onClick={() => (isSelected ? removeFilter(filter.id) : addFilter(filter.id))}
                         >
-                          {filter.label}
+                          {translate(filter.labelKey, filter.label)}
                         </button>
                       );
                     })}
@@ -5972,7 +6686,7 @@ const SwissStartupConnect = () => {
                           className={`ssc__chip ${isSelected ? 'is-selected' : ''}`}
                           onClick={() => (isSelected ? removeFilter(filter.id) : addFilter(filter.id))}
                         >
-                          {filter.label}
+                          {translate(filter.labelKey, filter.label)}
                         </button>
                       );
                     })}
@@ -7356,31 +8070,36 @@ const SwissStartupConnect = () => {
                 <p>Loading reviews…</p>
               ) : reviews.length > 0 ? (
                 <div className="ssc__reviews">
-                  {reviews.map((review) => (
-                    <article key={review.id} className="ssc__review-card">
-                      <div className="ssc__review-heading">
-                        <div className="ssc__review-avatar">
-                          {review.profiles?.avatar_url ? (
-                            <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
-                          ) : (
-                            <span>{review.profiles?.full_name?.charAt(0) || 'M'}</span>
-                          )}
-                        </div>
-                        <div>
-                          <strong>{review.title}</strong>
-                          <div className="ssc__review-meta">
-                            <span>{review.profiles?.full_name || 'Member'}</span>
-                            <span>
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
-                              ))}
-                            </span>
+                  {reviews.map((review) => {
+                    const reviewerName = review.profiles?.full_name?.trim() ||
+                      translate('accountMenu.memberFallback', 'Member');
+                    const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+                    return (
+                      <article key={review.id} className="ssc__review-card">
+                        <div className="ssc__review-heading">
+                          <div className="ssc__review-avatar">
+                            {review.profiles?.avatar_url ? (
+                              <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
+                            ) : (
+                              <span>{reviewerInitial}</span>
+                            )}
+                          </div>
+                          <div>
+                            <strong>{review.title}</strong>
+                            <div className="ssc__review-meta">
+                              <span>{reviewerName}</span>
+                              <span>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
+                                ))}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <p>{review.body}</p>
-                    </article>
-                  ))}
+                        <p>{review.body}</p>
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <p>No reviews yet. Be the first to share your experience.</p>
@@ -7870,13 +8589,18 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Your startup profile</h2>
-              <p>Share official details so students know they’re speaking with a verified team.</p>
+              <h2>{translate('startupModal.title', 'Your startup profile')}</h2>
+              <p>
+                {translate(
+                  'startupModal.subtitle',
+                  'Share official details so students know they’re speaking with a verified team.'
+                )}
+              </p>
             </header>
             <form className="ssc__modal-body" onSubmit={handleStartupSubmit}>
               <div className="ssc__profile-grid">
                 <label className="ssc__field">
-                  <span>Company name</span>
+                  <span>{translate('startupModal.fields.companyName', 'Company name')}</span>
                   <input
                     type="text"
                     value={startupForm.name}
@@ -7885,57 +8609,69 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Commercial register ID</span>
+                  <span>{translate('startupModal.fields.registryId', 'Commercial register ID')}</span>
                   <input
                     type="text"
                     value={startupForm.registry_number}
                     onChange={(event) => setStartupForm((prev) => ({ ...prev, registry_number: event.target.value }))}
-                    placeholder="CHE-123.456.789"
+                    placeholder={translate('startupModal.placeholders.registryId', 'CHE-123.456.789')}
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Website</span>
+                  <span>{translate('startupModal.fields.website', 'Website')}</span>
                   <input
                     type="url"
                     value={startupForm.website}
                     onChange={(event) => setStartupForm((prev) => ({ ...prev, website: event.target.value }))}
-                    placeholder="https://"
+                    placeholder={translate('startupModal.placeholders.website', 'https://')}
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Description</span>
+                  <span>{translate('startupModal.fields.description', 'Description')}</span>
                   <textarea
                     rows={4}
                     value={startupForm.description}
                     onChange={(event) => setStartupForm((prev) => ({ ...prev, description: event.target.value }))}
-                    placeholder="Explain your product, traction, hiring focus, and what interns will learn."
+                    placeholder={translate(
+                      'startupModal.placeholders.description',
+                      'Explain your product, traction, hiring focus, and what interns will learn.'
+                    )}
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Upload logo</span>
+                  <span>{translate('startupModal.fields.logo', 'Upload logo')}</span>
                   <input type="file" accept="image/*" onChange={handleLogoUpload} />
                   {startupForm.logo_url && (
-                    <img className="ssc__avatar-preview" src={startupForm.logo_url} alt="Startup logo" />
+                    <img
+                      className="ssc__avatar-preview"
+                      src={startupForm.logo_url}
+                      alt={translate('startupModal.logoAlt', 'Startup logo')}
+                    />
                   )}
                 </label>
                 <div className="ssc__status-card">
-                  <strong>Verification status:</strong>{' '}
+                  <strong>{translate('startupModal.verification.label', 'Verification status:')}</strong>{' '}
                   <span className={`ssc__badge ${startupForm.verification_status}`}>
-                    {startupForm.verification_status}
+                    {startupVerificationStatusLabel}
                   </span>
                   {startupForm.verification_note && <p>{startupForm.verification_note}</p>}
                   <p className="ssc__modal-footnote">
-                    Provide a registry ID and link to official documentation. Our team will review submissions weekly.
+                    {translate(
+                      'startupModal.verification.note',
+                      'Provide a registry ID and link to official documentation. Our team will review submissions weekly.'
+                    )}
                   </p>
                 </div>
               </div>
 
               <div className="ssc__modal-actions">
                 <button type="button" className="ssc__ghost-btn" onClick={() => setStartupModalOpen(false)}>
-                  Cancel
+                  {translate('startupModal.buttons.cancel', 'Cancel')}
                 </button>
                 <button type="submit" className="ssc__primary-btn" disabled={startupSaving}>
-                  {startupSaving ? 'Submitting…' : 'Save startup profile'}
+                  {startupSaving
+                    ? translate('startupModal.buttons.submitting', 'Submitting…')
+                    : translate('startupModal.buttons.save', 'Save startup profile')}
                 </button>
               </div>
             </form>
@@ -7950,13 +8686,13 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Post a new vacancy</h2>
-              <p>Share the essentials so students and graduates understand the opportunity.</p>
+              <h2>{translate('jobForm.modal.title', 'Post a new vacancy')}</h2>
+              <p>{translate('jobForm.modal.subtitle', 'Share the essentials so students and graduates understand the opportunity.')}</p>
             </header>
             <form className="ssc__modal-body" onSubmit={handlePostJobSubmit}>
               <div className="ssc__profile-grid">
                 <label className="ssc__field">
-                  <span>Role title</span>
+                  <span>{translate('jobForm.labels.title', 'Role title')}</span>
                   <input
                     type="text"
                     value={jobForm.title}
@@ -7965,7 +8701,7 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Location</span>
+                  <span>{translate('jobForm.labels.location', 'Location')}</span>
                   <div className="ssc__select-wrapper">
                     <select
                       className="ssc__select"
@@ -7974,11 +8710,11 @@ const SwissStartupConnect = () => {
                       required
                     >
                       <option value="" disabled>
-                        Select a Swiss location
+                        {translate('jobForm.placeholders.location', 'Select a Swiss location')}
                       </option>
                       {SWISS_LOCATION_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
-                          {option.label}
+                          {translate(option.translationKey, option.label)}
                         </option>
                       ))}
                     </select>
@@ -7986,7 +8722,7 @@ const SwissStartupConnect = () => {
                   </div>
                 </label>
                 <label className="ssc__field">
-                  <span>Employment type</span>
+                  <span>{translate('jobForm.labels.employmentType', 'Employment type')}</span>
                   <div className="ssc__select-wrapper">
                     <select
                       className="ssc__select"
@@ -8001,17 +8737,25 @@ const SwissStartupConnect = () => {
                         }))
                       }
                     >
-                      <option value="Full-time">Full-time</option>
-                      <option value="Part-time">Part-time</option>
-                      <option value="Internship">Internship</option>
-                      <option value="Contract">Contract</option>
+                      <option value="Full-time">
+                        {translate('jobForm.options.employmentType.fullTime', 'Full-time')}
+                      </option>
+                      <option value="Part-time">
+                        {translate('jobForm.options.employmentType.partTime', 'Part-time')}
+                      </option>
+                      <option value="Internship">
+                        {translate('jobForm.options.employmentType.internship', 'Internship')}
+                      </option>
+                      <option value="Contract">
+                        {translate('jobForm.options.employmentType.contract', 'Contract')}
+                      </option>
                     </select>
                     <ChevronDown className="ssc__select-caret" size={16} />
                   </div>
                 </label>
                 {jobForm.employment_type === 'Part-time' && (
                   <label className="ssc__field">
-                    <span>Weekly hours</span>
+                    <span>{translate('jobForm.labels.weeklyHours', 'Weekly hours')}</span>
                     <input
                       inputMode="decimal"
                       pattern="[0-9]*[.,]?[0-9]*"
@@ -8022,16 +8766,18 @@ const SwissStartupConnect = () => {
                           weekly_hours: sanitizeDecimalInput(event.target.value),
                         }))
                       }
-                      placeholder="e.g. 24"
+                      placeholder={translate('jobForm.placeholders.weeklyHours', 'e.g. 24')}
                       onBlur={handleJobWeeklyHoursBlur}
                       required
                     />
-                    <small className="ssc__field-note">Used to scale monthly and yearly salary. Max 40h/week.</small>
+                    <small className="ssc__field-note">
+                      {translate('jobForm.notes.weeklyHours', 'Used to scale monthly and yearly salary. Max 40h/week.')}
+                    </small>
                   </label>
                 )}
                 {jobForm.employment_type === 'Internship' && (
                   <label className="ssc__field">
-                    <span>Internship length (months)</span>
+                    <span>{translate('jobForm.labels.internshipLength', 'Internship length (months)')}</span>
                     <input
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -8042,15 +8788,17 @@ const SwissStartupConnect = () => {
                           internship_duration_months: event.target.value.replace(/[^0-9]/g, ''),
                         }))
                       }
-                      placeholder="e.g. 6"
+                      placeholder={translate('jobForm.placeholders.internshipMonths', 'e.g. 6')}
                       onBlur={handleInternshipDurationBlur}
                       required
                     />
-                    <small className="ssc__field-note">Internships must last between 1 and 12 months.</small>
+                    <small className="ssc__field-note">
+                      {translate('jobForm.notes.internshipLength', 'Internships must last between 1 and 12 months.')}
+                    </small>
                   </label>
                 )}
                 <label className="ssc__field">
-                  <span>Salary cadence</span>
+                  <span>{translate('jobForm.labels.salaryCadence', 'Salary cadence')}</span>
                   <div className="ssc__select-wrapper">
                     <select
                       className="ssc__select"
@@ -8065,17 +8813,27 @@ const SwissStartupConnect = () => {
                       }
                       required
                     >
-                      <option value="">Select cadence</option>
-                      <option value="hour">Hourly</option>
-                      <option value="week">Weekly</option>
-                      <option value="month">Monthly</option>
-                      <option value="year">Yearly / total</option>
+                      <option value="">
+                        {translate('jobForm.options.salaryCadence.select', 'Select cadence')}
+                      </option>
+                      <option value="hour">
+                        {translate('jobForm.options.salaryCadence.hour', 'Hourly')}
+                      </option>
+                      <option value="week">
+                        {translate('jobForm.options.salaryCadence.week', 'Weekly')}
+                      </option>
+                      <option value="month">
+                        {translate('jobForm.options.salaryCadence.month', 'Monthly')}
+                      </option>
+                      <option value="year">
+                        {translate('jobForm.options.salaryCadence.year', 'Yearly / total')}
+                      </option>
                     </select>
                     <ChevronDown className="ssc__select-caret" size={16} />
                   </div>
                 </label>
                 <label className="ssc__field ssc__field-equity ssc__field-equity--stacked">
-                  <span>Equity (%)</span>
+                  <span>{translate('jobForm.labels.equity', 'Equity (%)')}</span>
                   <input
                     inputMode="decimal"
                     pattern="[0-9]*[.,]?[0-9]*"
@@ -8084,9 +8842,11 @@ const SwissStartupConnect = () => {
                       setJobForm((prev) => ({ ...prev, equity: sanitizeDecimalInput(event.target.value) }))
                     }
                     onBlur={handleJobEquityBlur}
-                    placeholder="Optional (e.g. 0.5)"
+                    placeholder={translate('jobForm.placeholders.equity', 'Optional (e.g. 0.5)')}
                   />
-                  <small className="ssc__field-note">Allowed range: 0.1 – 100. Leave blank if none.</small>
+                  <small className="ssc__field-note">
+                    {translate('jobForm.notes.equityRange', 'Allowed range: 0.1 – 100. Leave blank if none.')}
+                  </small>
                 </label>
                 <div className="ssc__field ssc__field--comp">
                   <div className="ssc__field-range">
@@ -8112,7 +8872,7 @@ const SwissStartupConnect = () => {
                           checked={jobSalaryIsBracket}
                           onChange={(event) => handleJobSalaryBracketChange(event.target.checked)}
                         />
-                        <span>Show salary bracket</span>
+                        <span>{translate('jobForm.salary.toggle', 'Show salary bracket')}</span>
                       </label>
                     </div>
                     <div className={`ssc__field-range-row ${jobSalaryIsBracket ? '' : 'ssc__field-range-row--single'}`}>
@@ -8126,7 +8886,7 @@ const SwissStartupConnect = () => {
                             setJobForm((prev) => ({ ...prev, salary_min: sanitizeDecimalInput(event.target.value) }))
                           }
                           onBlur={() => handleJobSalaryBlur('salary_min')}
-                          placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                          placeholder={jobSalaryPlaceholderText}
                           disabled={!jobSalaryCadence}
                         />
                       </label>
@@ -8136,7 +8896,7 @@ const SwissStartupConnect = () => {
                             –
                           </div>
                           <label className="ssc__field-range-input">
-                            <span>Max</span>
+                            <span>{jobSalaryMaxLabel}</span>
                             <input
                               inputMode="decimal"
                               pattern="[0-9]*[.,]?[0-9]*"
@@ -8148,7 +8908,7 @@ const SwissStartupConnect = () => {
                                 }))
                               }
                               onBlur={() => handleJobSalaryBlur('salary_max')}
-                              placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                              placeholder={jobSalaryPlaceholderText}
                               disabled={!jobSalaryCadence}
                             />
                           </label>
@@ -8159,8 +8919,12 @@ const SwissStartupConnect = () => {
                     {jobSalaryPreview && (
                       <small className="ssc__field-note ssc__field-note--muted">
                         {jobForm.employment_type === 'Full-time'
-                          ? `Full-time equivalent: ${jobSalaryPreview}`
-                          : `Approximate: ${jobSalaryPreview}`}
+                          ? translate('jobForm.salary.preview.fullTime', 'Full-time equivalent: {{value}}', {
+                              value: jobSalaryPreview,
+                            })
+                          : translate('jobForm.salary.preview.partTime', 'Approximate: {{value}}', {
+                              value: jobSalaryPreview,
+                            })}
                       </small>
                     )}
                   </div>
@@ -8168,19 +8932,19 @@ const SwissStartupConnect = () => {
               </div>
 
               <label className="ssc__field">
-                <span>Role description</span>
+                <span>{translate('jobForm.labels.description', 'Role description')}</span>
                 <textarea
                   rows={4}
                   value={jobForm.description}
                   onChange={(event) => setJobForm((prev) => ({ ...prev, description: event.target.value }))}
-                  placeholder="What will the candidate work on?"
+                  placeholder={translate('jobForm.placeholders.description', 'What will the candidate work on?')}
                   required
                 />
               </label>
 
               <div className="ssc__profile-grid">
                 <label className="ssc__field">
-                  <span>Requirements (one per line)</span>
+                  <span>{translate('jobForm.labels.requirements', 'Requirements (one per line)')}</span>
                   <textarea
                     rows={3}
                     value={jobForm.requirements}
@@ -8188,7 +8952,7 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Benefits (one per line)</span>
+                  <span>{translate('jobForm.labels.benefits', 'Benefits (one per line)')}</span>
                   <textarea
                     rows={3}
                     value={jobForm.benefits}
@@ -8196,12 +8960,12 @@ const SwissStartupConnect = () => {
                   />
                 </label>
                 <label className="ssc__field">
-                  <span>Tags (comma separated)</span>
+                  <span>{translate('jobForm.labels.tags', 'Tags (comma separated)')}</span>
                   <input
                     type="text"
                     value={jobForm.tags}
                     onChange={(event) => setJobForm((prev) => ({ ...prev, tags: event.target.value }))}
-                    placeholder="React, Growth, Fintech"
+                    placeholder={translate('jobForm.placeholders.tags', 'React, Growth, Fintech')}
                   />
                 </label>
                 <label className="ssc__checkbox">
@@ -8212,7 +8976,7 @@ const SwissStartupConnect = () => {
                       setJobForm((prev) => ({ ...prev, motivational_letter_required: event.target.checked }))
                     }
                   />
-                  <span>Require motivational letter for this role</span>
+                  <span>{translate('jobForm.labels.motivationalLetter', 'Require motivational letter for this role')}</span>
                 </label>
               </div>
 
@@ -8220,10 +8984,12 @@ const SwissStartupConnect = () => {
 
               <div className="ssc__modal-actions">
                 <button type="button" className="ssc__ghost-btn" onClick={() => setPostJobModalOpen(false)}>
-                  Cancel
+                  {translate('jobForm.actions.cancel', 'Cancel')}
                 </button>
                 <button type="submit" className="ssc__primary-btn" disabled={postingJob}>
-                  {postingJob ? 'Posting…' : 'Publish job'}
+                  {postingJob
+                    ? translate('jobForm.actions.posting', 'Posting…')
+                    : translate('jobForm.actions.submit', 'Publish job')}
                 </button>
               </div>
             </form>
