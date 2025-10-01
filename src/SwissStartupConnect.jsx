@@ -567,6 +567,43 @@ const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
 
 const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
 
+const THIRTEENTH_SALARY_PATTERN = /\b(?:13th|thirteenth)\b/i;
+
+const textMentionsThirteenthSalary = (value) =>
+  typeof value === 'string' && THIRTEENTH_SALARY_PATTERN.test(value);
+
+const listMentionsThirteenthSalary = (list) =>
+  Array.isArray(list) && list.some((item) => textMentionsThirteenthSalary(item));
+
+const inferThirteenthSalary = (job) => {
+  if (!job) {
+    return false;
+  }
+
+  if (job.has_thirteenth_salary != null) {
+    return Boolean(job.has_thirteenth_salary);
+  }
+
+  if (job.includes_thirteenth_salary != null) {
+    return Boolean(job.includes_thirteenth_salary);
+  }
+
+  const textSources = [
+    job.salary,
+    job.salary_note,
+    job.compensation_note,
+    job.compensation_details,
+    job.description,
+  ];
+
+  if (textSources.some((value) => textMentionsThirteenthSalary(value))) {
+    return true;
+  }
+
+  const listSources = [job.benefits, job.perks, job.compensation_breakdown];
+  return listSources.some((value) => listMentionsThirteenthSalary(value));
+};
+
 const getFileExtension = (fileName) => {
   if (!fileName) return '';
   const parts = fileName.split('.');
@@ -2157,11 +2194,7 @@ const SwissStartupConnect = () => {
       const baseMax = Number.isFinite(monthlyMax)
         ? convertMonthlyValueToCadence(monthlyMax, salaryCadence || 'month', hoursForConversion)
         : null;
-      const includesThirteenthSalary = Boolean(
-        job.has_thirteenth_salary ??
-          job.includes_thirteenth_salary ??
-          (salaryCadence === 'month' || salaryCadence === 'year')
-      );
+      const includesThirteenthSalary = inferThirteenthSalary(job);
       const salaryDisplay = composeSalaryDisplay({
         baseMin,
         baseMax,
