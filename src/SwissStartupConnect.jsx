@@ -4,9 +4,12 @@ import {
   BookmarkPlus,
   Briefcase,
   Building2,
+  Calculator,
   ChevronDown,
   Clock,
+  ClipboardList,
   GraduationCap,
+  Handshake,
   Heart,
   Lightbulb,
   Layers,
@@ -14,6 +17,7 @@ import {
   Rocket,
   Search,
   Sparkles,
+  Trophy,
   Users,
   X,
   Upload,
@@ -90,6 +94,7 @@ const mockJobs = [
     startup_id: 'mock-company-3',
     location: 'Lausanne, Switzerland (Hybrid)',
     employment_type: 'Internship',
+    internship_duration_months: 6,
     salary: '3.5k CHF / month',
     equity: 'N/A',
     description:
@@ -161,9 +166,27 @@ const steps = [
   },
   {
     id: 3,
+    title: 'Connect with founders',
+    description: 'Join tailored intros and learn what success looks like in the first 90 days.',
+    icon: Handshake,
+  },
+  {
+    id: 4,
+    title: 'Plan your runway',
+    description: 'Compare salary, equity, and contract details with our built-in calculator.',
+    icon: ClipboardList,
+  },
+  {
+    id: 5,
     title: 'Launch together',
     description: 'Go from first intro to signed offer in under three weeks on average.',
     icon: Rocket,
+  },
+  {
+    id: 6,
+    title: 'Celebrate the win',
+    description: 'Join alumni sessions to swap tips and prepare for your first day.',
+    icon: Trophy,
   },
 ];
 
@@ -419,16 +442,18 @@ const SALARY_FILTER_HELPERS = {
   hour: 'CHF hourly',
   week: 'CHF weekly',
   month: 'CHF monthly (default)',
-  year: 'CHF yearly · 13th salary',
+  year: 'CHF yearly / total',
 };
 const SALARY_FILTER_CADENCE_OPTIONS = [
-  { value: 'month', label: 'Monthly' },
-  { value: 'year', label: 'Yearly' },
-  { value: 'week', label: 'Weekly' },
   { value: 'hour', label: 'Hourly' },
+  { value: 'week', label: 'Weekly' },
+  { value: 'month', label: 'Monthly' },
+  { value: 'year', label: 'Yearly / total' },
 ];
 
 const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
+
+const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
 
 const getFileExtension = (fileName) => {
   if (!fileName) return '';
@@ -550,6 +575,67 @@ const sanitizeDecimalInput = (value) => {
     .replace(/[.,]/g, '');
 
   return `${before}${after}`;
+};
+
+const parseDurationMonths = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+  }
+
+  if (typeof value === 'string') {
+    const match = value.match(/\d+/);
+    if (!match) {
+      return null;
+    }
+    const parsed = Number.parseInt(match[0], 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  return null;
+};
+
+const formatDurationLabel = (months) => {
+  if (!Number.isFinite(months) || months <= 0) {
+    return '';
+  }
+  const rounded = Math.round(months);
+  const unit = rounded === 1 ? 'month' : 'months';
+  return `${rounded} ${unit}`;
+};
+
+const buildTimingText = (job) => {
+  if (!job) {
+    return '';
+  }
+
+  const segments = [
+    job.employment_type,
+    job.internship_duration_label || job.duration_label,
+    job.weekly_hours_label,
+  ].filter(Boolean);
+
+  const withPosted = [...segments, job.posted].filter(Boolean);
+  return withPosted.join(' • ');
+};
+
+const formatCalculatorCurrency = (value, cadence) => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  if (cadence === 'hour') {
+    const rounded = Math.round(value * 100) / 100;
+    return rounded
+      .toFixed(2)
+      .replace(/\.00$/, '')
+      .replace(/(\.\d)0$/, '$1');
+  }
+
+  return formatSalaryDisplayValue(value) ?? `${Math.round(value)}`;
 };
 
 const parseNumericValue = (value) => {
@@ -826,43 +912,16 @@ const formatRangeLabel = (min, max, suffix) => {
   return single ? `${single} ${suffix}` : '';
 };
 
-const composeSalaryDisplay = ({
-  baseMin,
-  baseMax,
-  cadence,
-  fallbackText = '',
-  monthlyMin,
-  monthlyMax,
-  employmentType,
-}) => {
+const composeSalaryDisplay = ({ baseMin, baseMax, cadence, fallbackText = '' }) => {
   const cadenceKey = normalizeSalaryCadence(cadence);
   const hasBase = Number.isFinite(baseMin) || Number.isFinite(baseMax);
-  const baseLabel = hasBase
-    ? formatSalaryDisplay(baseMin, baseMax, cadenceKey, fallbackText)
-    : fallbackText?.trim() || 'Compensation undisclosed';
 
-  const monthlyLabel = formatRangeLabel(monthlyMin, monthlyMax, 'CHF / month');
-  const yearlyLabel = formatRangeLabel(
-    Number.isFinite(monthlyMin) ? monthlyMin * THIRTEENTH_MONTHS_PER_YEAR : null,
-    Number.isFinite(monthlyMax) ? monthlyMax * THIRTEENTH_MONTHS_PER_YEAR : null,
-    'CHF / year (13th salary)'
-  );
-
-  const extras = [];
-
-  if (cadenceKey && cadenceKey !== 'month' && monthlyLabel) {
-    extras.push(monthlyLabel);
+  if (!hasBase) {
+    const fallback = fallbackText?.trim();
+    return fallback || 'Compensation undisclosed';
   }
 
-  if (employmentType === 'Full-time' && yearlyLabel) {
-    extras.push(yearlyLabel);
-  }
-
-  if (extras.length === 0) {
-    return baseLabel;
-  }
-
-  return `${baseLabel} (≈ ${extras.join(' · ')})`;
+  return formatSalaryDisplay(baseMin, baseMax, cadenceKey, fallbackText);
 };
 
 const convertToMonthly = (value, period, salaryText, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
@@ -1190,6 +1249,7 @@ const SwissStartupConnect = () => {
     location: '',
     employment_type: 'Full-time',
     weekly_hours: '',
+    internship_duration_months: '',
     salary_min: '',
     salary_max: '',
     salary_cadence: '',
@@ -1200,6 +1260,9 @@ const SwissStartupConnect = () => {
     tags: '',
     motivational_letter_required: false,
   });
+  const [salaryCalculatorOpen, setSalaryCalculatorOpen] = useState(false);
+  const [salaryCalculatorCompany, setSalaryCalculatorCompany] = useState('');
+  const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
 
@@ -1208,6 +1271,21 @@ const SwissStartupConnect = () => {
     const timeout = setTimeout(clearFeedback, 4000);
     return () => clearTimeout(timeout);
   }, [feedback, clearFeedback]);
+
+  useEffect(() => {
+    if (!salaryCalculatorOpen || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSalaryCalculatorOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [salaryCalculatorOpen]);
 
   useEffect(() => {
     const initialiseSession = async () => {
@@ -1885,6 +1963,16 @@ const SwissStartupConnect = () => {
       const hoursForConversion = resolveWeeklyHours(weeklyHoursValueRaw);
       const weeklyHoursValue = isPartTime && Number.isFinite(weeklyHoursValueRaw) ? weeklyHoursValueRaw : null;
       const weeklyHoursLabel = isPartTime ? weeklyHoursLabelRaw : '';
+      const rawDuration =
+        job.duration_months ?? job.contract_duration_months ?? job.internship_duration_months ?? null;
+      const parsedDuration = parseDurationMonths(rawDuration);
+      const internshipDuration =
+        job.employment_type === 'Internship'
+          ? parseDurationMonths(job.internship_duration_months ?? rawDuration)
+          : null;
+      const durationMonths = internshipDuration ?? parsedDuration;
+      const durationLabel = formatDurationLabel(durationMonths);
+      const internshipDurationLabel = formatDurationLabel(internshipDuration);
       const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
       const [equityMinValue, equityMaxValue] = computeEquityRange(job);
       const normalizedSalaryMin = Number.isFinite(job.salary_min_value)
@@ -1908,14 +1996,16 @@ const SwissStartupConnect = () => {
       const baseMax = Number.isFinite(monthlyMax)
         ? convertMonthlyValueToCadence(monthlyMax, salaryCadence || 'month', hoursForConversion)
         : null;
+      const includesThirteenthSalary = Boolean(
+        job.has_thirteenth_salary ??
+          job.includes_thirteenth_salary ??
+          (salaryCadence === 'month' || salaryCadence === 'year')
+      );
       const salaryDisplay = composeSalaryDisplay({
         baseMin,
         baseMax,
         cadence: salaryCadence,
         fallbackText: job.salary,
-        monthlyMin,
-        monthlyMax,
-        employmentType: job.employment_type,
       });
       const equityDisplay = formatEquityDisplay(normalizedEquityMin, normalizedEquityMax);
       const metaFromId = idKey ? companyMetaLookup[`id:${idKey}`] : null;
@@ -1937,6 +2027,11 @@ const SwissStartupConnect = () => {
         equity: equityDisplay,
         weekly_hours_value: weeklyHoursValue,
         weekly_hours_label: weeklyHoursLabel,
+        duration_months: durationMonths,
+        duration_label: durationLabel,
+        internship_duration_months: internshipDuration,
+        internship_duration_label: internshipDurationLabel,
+        includes_thirteenth_salary: includesThirteenthSalary,
         company_team:
           job.company_team ||
           job.team ||
@@ -1955,6 +2050,176 @@ const SwissStartupConnect = () => {
       };
     });
   }, [jobs, companyMetaLookup, companyNameLookup]);
+
+  const calculatorCompanies = useMemo(() => {
+    const map = new Map();
+
+    normalizedJobs.forEach((job) => {
+      const name = job.company_name?.trim();
+      if (!name) {
+        return;
+      }
+
+      const key = job.startup_id ? `id:${job.startup_id}` : `name:${name.toLowerCase()}`;
+      if (!map.has(key)) {
+        map.set(key, { key, label: name });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [normalizedJobs]);
+
+  const calculatorJobs = useMemo(() => {
+    if (!salaryCalculatorCompany) {
+      return [];
+    }
+
+    return normalizedJobs
+      .filter((job) => {
+        const name = job.company_name?.trim();
+        if (!name) {
+          return false;
+        }
+        const key = job.startup_id ? `id:${job.startup_id}` : `name:${name.toLowerCase()}`;
+        return key === salaryCalculatorCompany;
+      })
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [normalizedJobs, salaryCalculatorCompany]);
+
+  useEffect(() => {
+    if (calculatorCompanies.length === 0) {
+      if (salaryCalculatorCompany) {
+        setSalaryCalculatorCompany('');
+      }
+      return;
+    }
+
+    const hasSelected = calculatorCompanies.some((company) => company.key === salaryCalculatorCompany);
+    if (!hasSelected) {
+      setSalaryCalculatorCompany(calculatorCompanies[0].key);
+    }
+  }, [calculatorCompanies, salaryCalculatorCompany]);
+
+  useEffect(() => {
+    if (calculatorJobs.length === 0) {
+      if (salaryCalculatorJobId) {
+        setSalaryCalculatorJobId('');
+      }
+      return;
+    }
+
+    const hasSelected = calculatorJobs.some((job) => job.id === salaryCalculatorJobId);
+    if (!hasSelected) {
+      setSalaryCalculatorJobId(calculatorJobs[0].id);
+    }
+  }, [calculatorJobs, salaryCalculatorJobId]);
+
+  const selectedCalculatorJob = useMemo(() => {
+    if (!salaryCalculatorJobId) {
+      return null;
+    }
+
+    return calculatorJobs.find((job) => job.id === salaryCalculatorJobId) || null;
+  }, [calculatorJobs, salaryCalculatorJobId]);
+
+  const salaryCalculatorSummary = useMemo(() => {
+    if (!selectedCalculatorJob) {
+      return { rows: [], note: '' };
+    }
+
+    const monthlyMin = Number.isFinite(selectedCalculatorJob.salary_min_value)
+      ? selectedCalculatorJob.salary_min_value
+      : null;
+    const monthlyMax = Number.isFinite(selectedCalculatorJob.salary_max_value)
+      ? selectedCalculatorJob.salary_max_value
+      : null;
+    const weeklyHours = selectedCalculatorJob.weekly_hours_value ?? FULL_TIME_WEEKLY_HOURS;
+    const durationMonths = Number.isFinite(selectedCalculatorJob.duration_months)
+      ? selectedCalculatorJob.duration_months
+      : null;
+    const showTotal = Number.isFinite(durationMonths) && durationMonths > 0 && durationMonths < 12;
+
+    const formatRowValue = (cadence) => {
+      const convertValue = (value) =>
+        cadence === 'month' ? value : convertMonthlyValueToCadence(value, cadence, weeklyHours);
+
+      const minConverted = Number.isFinite(monthlyMin) ? convertValue(monthlyMin) : null;
+      const maxConverted = Number.isFinite(monthlyMax) ? convertValue(monthlyMax) : null;
+      const formattedMin = formatCalculatorCurrency(minConverted, cadence);
+      const formattedMax = formatCalculatorCurrency(maxConverted, cadence);
+
+      if (!formattedMin && !formattedMax) {
+        return 'Not disclosed';
+      }
+
+      const range = formattedMin && formattedMax
+        ? formattedMin === formattedMax
+          ? formattedMin
+          : `${formattedMin} – ${formattedMax}`
+        : formattedMin || formattedMax;
+
+      return `CHF ${range}`;
+    };
+
+    const monthLabel = formatDurationLabel(durationMonths);
+
+    const rowDefinitions = [
+      { key: 'hour', label: 'Hourly', suffix: ' / hour' },
+      { key: 'week', label: 'Weekly', suffix: ' / week' },
+      { key: 'month', label: 'Monthly', suffix: ' / month' },
+      { key: 'year', label: 'Yearly / total', suffix: ' / year' },
+    ];
+
+    const rows = rowDefinitions.map((definition) => {
+      if (definition.key === 'year' && showTotal) {
+        const totalMin = Number.isFinite(monthlyMin) ? monthlyMin * durationMonths : null;
+        const totalMax = Number.isFinite(monthlyMax) ? monthlyMax * durationMonths : null;
+        const formattedMin = formatCalculatorCurrency(totalMin, 'year');
+        const formattedMax = formatCalculatorCurrency(totalMax, 'year');
+
+        if (!formattedMin && !formattedMax) {
+          return { key: definition.key, label: definition.label, value: 'Not disclosed' };
+        }
+
+        const range = formattedMin && formattedMax
+          ? formattedMin === formattedMax
+            ? formattedMin
+            : `${formattedMin} – ${formattedMax}`
+          : formattedMin || formattedMax;
+
+        const suffix = monthLabel ? ` (${monthLabel})` : '';
+        return {
+          key: definition.key,
+          label: definition.label,
+          value: `CHF ${range} total${suffix}`,
+        };
+      }
+
+      const value = formatRowValue(definition.key);
+      if (value === 'Not disclosed') {
+        return { key: definition.key, label: definition.label, value };
+      }
+
+      return { key: definition.key, label: definition.label, value: `${value}${definition.suffix}` };
+    });
+
+    const hoursLabel = selectedCalculatorJob.weekly_hours_label
+      ? selectedCalculatorJob.weekly_hours_label.replace(/\s+/g, ' ')
+      : `${weeklyHours} hours/week`;
+    const noteParts = ['Based on the posted salary range'];
+    if (hoursLabel) {
+      noteParts.push(`Converted with ${hoursLabel}`);
+    }
+    if (showTotal) {
+      if (monthLabel) {
+        noteParts.push(`Contract lasts ${monthLabel}`);
+      }
+    } else {
+      noteParts.push('Yearly amounts include a 13th salary');
+    }
+
+    return { rows, note: `${noteParts.join(' · ')}.` };
+  }, [selectedCalculatorJob]);
 
   useEffect(() => {
     const nextBounds = deriveSalaryBoundsFromJobs(normalizedJobs);
@@ -2719,6 +2984,20 @@ const SwissStartupConnect = () => {
         weeklyHoursNumeric = parsedWeeklyHours;
       }
 
+      let internshipDurationNumeric = null;
+      if (jobForm.employment_type === 'Internship') {
+        const durationRaw = jobForm.internship_duration_months?.trim() ?? '';
+        const parsedDuration = Number.parseInt(durationRaw, 10);
+
+        if (!Number.isFinite(parsedDuration) || parsedDuration <= 0) {
+          setPostJobError('Share how many months the internship will last.');
+          setPostingJob(false);
+          return;
+        }
+
+        internshipDurationNumeric = parsedDuration;
+      }
+
       const hoursForConversion = weeklyHoursNumeric ?? FULL_TIME_WEEKLY_HOURS;
       const monthlyMin = convertCadenceValueToMonthly(salaryMinValue, cadenceSelection, hoursForConversion);
       const monthlyMax = convertCadenceValueToMonthly(salaryMaxValue, cadenceSelection, hoursForConversion);
@@ -2733,9 +3012,6 @@ const SwissStartupConnect = () => {
         baseMin: salaryMinValue,
         baseMax: salaryMaxValue,
         cadence: cadenceSelection,
-        monthlyMin,
-        monthlyMax,
-        employmentType: jobForm.employment_type,
       });
 
       const equityRaw = sanitizeDecimalInput(jobForm.equity?.trim() ?? '');
@@ -2782,6 +3058,7 @@ const SwissStartupConnect = () => {
         posted: 'Just now',
         weekly_hours_value: weeklyHoursNumeric,
         weekly_hours: weeklyHoursNumeric != null ? formatWeeklyHoursLabel(weeklyHoursNumeric) : null,
+        internship_duration_months: internshipDurationNumeric,
       };
 
       const { error } = await supabase.from('jobs').insert(payload);
@@ -2797,6 +3074,7 @@ const SwissStartupConnect = () => {
         location: '',
         employment_type: 'Full-time',
         weekly_hours: '',
+        internship_duration_months: '',
         salary_min: '',
         salary_max: '',
         salary_cadence: '',
@@ -3867,6 +4145,90 @@ const SwissStartupConnect = () => {
                 </div>
               </div>
 
+              {normalizedJobs.length > 0 && (
+                <div className="ssc__calculator-anchor">
+                  <button
+                    type="button"
+                    className={`ssc__calculator-toggle ${salaryCalculatorOpen ? 'is-open' : ''}`}
+                    onClick={() => setSalaryCalculatorOpen((prev) => !prev)}
+                    aria-expanded={salaryCalculatorOpen}
+                    aria-controls={SALARY_CALCULATOR_PANEL_ID}
+                    aria-label="Toggle salary calculator"
+                  >
+                    <Calculator size={22} />
+                  </button>
+                  <aside
+                    id={SALARY_CALCULATOR_PANEL_ID}
+                    className={`ssc__calculator-panel ${salaryCalculatorOpen ? 'is-open' : ''}`}
+                    aria-hidden={!salaryCalculatorOpen}
+                  >
+                    <div className="ssc__calculator-head">
+                      <h3>Salary calculator</h3>
+                      <button
+                        type="button"
+                        className="ssc__calculator-close"
+                        onClick={() => setSalaryCalculatorOpen(false)}
+                        aria-label="Close salary calculator"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    {calculatorCompanies.length === 0 ? (
+                      <p className="ssc__calculator-empty">No roles available to convert yet.</p>
+                    ) : (
+                      <>
+                        <div className="ssc__calculator-fields">
+                          <label>
+                            <span>Company</span>
+                            <select
+                              value={salaryCalculatorCompany}
+                              onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
+                            >
+                              {calculatorCompanies.map((company) => (
+                                <option key={company.key} value={company.key}>
+                                  {company.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            <span>Role</span>
+                            <select
+                              value={salaryCalculatorJobId}
+                              onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
+                              disabled={calculatorJobs.length === 0}
+                            >
+                              {calculatorJobs.length === 0 ? (
+                                <option value="" disabled>
+                                  No roles available
+                                </option>
+                              ) : (
+                                calculatorJobs.map((job) => (
+                                  <option key={job.id} value={job.id}>
+                                    {job.title}
+                                  </option>
+                                ))
+                              )}
+                            </select>
+                          </label>
+                        </div>
+                        <div className="ssc__calculator-results">
+                          {salaryCalculatorSummary.rows.map((row) => (
+                            <div key={row.key} className="ssc__calculator-row">
+                              <span>{row.label}</span>
+                              <strong>{row.value}</strong>
+                            </div>
+                          ))}
+                        </div>
+                        {salaryCalculatorSummary.note && (
+                          <p className="ssc__calculator-note">{salaryCalculatorSummary.note}</p>
+                        )}
+                      </>
+                    )}
+                  </aside>
+                </div>
+              )}
+
               {jobsLoading ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((index) => (
@@ -3878,6 +4240,7 @@ const SwissStartupConnect = () => {
                   {sortedFilteredJobs.map((job) => {
                     const isSaved = savedJobs.includes(job.id);
                     const hasApplied = appliedJobs.includes(job.id);
+                    const timingText = buildTimingText(job);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -3906,9 +4269,7 @@ const SwissStartupConnect = () => {
                           </span>
                           <span>
                             <Clock size={16} />
-                            {job.employment_type}
-                            {job.weekly_hours_label ? ` • ${job.weekly_hours_label}` : ''}
-                            {` • ${job.posted}`}
+                            {timingText}
                           </span>
                           <span>
                             <Users size={16} />
@@ -3930,6 +4291,12 @@ const SwissStartupConnect = () => {
                                 {job.company_fundraising}
                               </span>
                             )}
+                          </div>
+                        )}
+
+                        {job.includes_thirteenth_salary && (
+                          <div className="ssc__thirteenth-note">
+                            <Star size={14} /> 13th salary
                           </div>
                         )}
 
@@ -4337,48 +4704,97 @@ const SwissStartupConnect = () => {
                 </div>
               ) : savedJobList.length > 0 ? (
                 <div className="ssc__grid">
-                  {savedJobList.map((job) => (
-                    <article key={job.id} className="ssc__job-card">
-                      <div className="ssc__job-header">
-                        <div>
-                          <h3>{job.title}</h3>
-                          <p>{job.company_name}</p>
-                        </div>
-                        <button
-                          type="button"
-                          className="ssc__save-btn is-active"
-                          onClick={() => toggleSavedJob(job.id)}
-                        >
-                          <Heart size={18} strokeWidth={0} fill="currentColor" />
-                        </button>
-                      </div>
-                      <p className="ssc__job-summary">{job.description}</p>
-                      <div className="ssc__job-footer">
-                        <div className="ssc__salary">
-                          <span>{job.salary}</span>
-                          {job.equity && job.equity !== 'No equity disclosed' ? (
-                            <small>+ {job.equity}</small>
-                          ) : null}
-                        </div>
-                      <div className="ssc__job-actions">
-                        <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                          View role
-                        </button>
-                        {canApply ? (
+                  {savedJobList.map((job) => {
+                    const timingText = buildTimingText(job);
+                    return (
+                      <article key={job.id} className="ssc__job-card">
+                        <div className="ssc__job-header">
+                          <div>
+                            <h3>{job.title}</h3>
+                            <p>{job.company_name}</p>
+                          </div>
                           <button
                             type="button"
-                            className="ssc__primary-btn"
-                            onClick={() => openApplyModal(job)}
+                            className="ssc__save-btn is-active"
+                            onClick={() => toggleSavedJob(job.id)}
                           >
-                            Apply now
+                            <Heart size={18} strokeWidth={0} fill="currentColor" />
                           </button>
-                        ) : (
-                          <span className="ssc__job-note">{applyRestrictionMessage}</span>
+                        </div>
+                        <p className="ssc__job-summary">{job.description}</p>
+                        <div className="ssc__job-meta">
+                          <span>
+                            <MapPin size={16} />
+                            {job.location}
+                          </span>
+                          <span>
+                            <Clock size={16} />
+                            {timingText}
+                          </span>
+                          <span>
+                            <Users size={16} />
+                            {job.applicants} applicants
+                          </span>
+                        </div>
+                        {(job.company_team || job.company_fundraising) && (
+                          <div className="ssc__job-company-insights">
+                            {job.company_team && (
+                              <span className="ssc__company-pill ssc__company-pill--team">
+                                <Users size={14} />
+                                {job.company_team}
+                              </span>
+                            )}
+                            {job.company_fundraising && (
+                              <span className="ssc__company-pill ssc__company-pill--funding">
+                                <Sparkles size={14} />
+                                {job.company_fundraising}
+                              </span>
+                            )}
+                          </div>
                         )}
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                        {job.includes_thirteenth_salary && (
+                          <div className="ssc__thirteenth-note">
+                            <Star size={14} /> 13th salary
+                          </div>
+                        )}
+                        <div className="ssc__job-tags">
+                          {job.tags?.map((tag) => (
+                            <span key={tag} className="ssc__tag">
+                              {tag}
+                            </span>
+                          ))}
+                          <span className="ssc__tag ssc__tag--soft">{job.stage || 'Seed'}</span>
+                          {job.motivational_letter_required && (
+                            <span className="ssc__tag ssc__tag--required">Motivational letter</span>
+                          )}
+                        </div>
+                        <div className="ssc__job-footer">
+                          <div className="ssc__salary">
+                            <span>{job.salary}</span>
+                            {job.equity && job.equity !== 'No equity disclosed' ? (
+                              <small>+ {job.equity}</small>
+                            ) : null}
+                          </div>
+                          <div className="ssc__job-actions">
+                            <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
+                              View role
+                            </button>
+                            {canApply ? (
+                              <button
+                                type="button"
+                                className="ssc__primary-btn"
+                                onClick={() => openApplyModal(job)}
+                              >
+                                Apply now
+                              </button>
+                            ) : (
+                              <span className="ssc__job-note">{applyRestrictionMessage}</span>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="ssc__empty-state">
@@ -4397,7 +4813,7 @@ const SwissStartupConnect = () => {
               <div className="ssc__max ssc__two-column">
                 <div className="ssc__steps">
                   <h2>How it works</h2>
-                  <p>Three steps to land a role with a Swiss startup that shares your ambition.</p>
+                  <p>Six steps to land a role with a Swiss startup that shares your ambition.</p>
                   <div className="ssc__step-grid">
                     {steps.map((step) => (
                       <article key={step.id} className="ssc__step-card">
@@ -4763,9 +5179,7 @@ const SwissStartupConnect = () => {
                 </span>
                 <span>
                   <Clock size={16} />
-                  {selectedJob.employment_type}
-                  {selectedJob.weekly_hours_label ? ` • ${selectedJob.weekly_hours_label}` : ''}
-                  {` • ${selectedJob.posted}`}
+                  {buildTimingText(selectedJob)}
                 </span>
                 <span>
                   <Users size={16} />
@@ -4786,6 +5200,11 @@ const SwissStartupConnect = () => {
                       {selectedJob.company_fundraising}
                     </span>
                   )}
+                </div>
+              )}
+              {selectedJob.includes_thirteenth_salary && (
+                <div className="ssc__thirteenth-note">
+                  <Star size={14} /> 13th salary
                 </div>
               )}
             </header>
@@ -5233,6 +5652,8 @@ const SwissStartupConnect = () => {
                         ...prev,
                         employment_type: event.target.value,
                         weekly_hours: event.target.value === 'Part-time' ? prev.weekly_hours : '',
+                        internship_duration_months:
+                          event.target.value === 'Internship' ? prev.internship_duration_months : '',
                       }))
                     }
                   >
@@ -5261,6 +5682,25 @@ const SwissStartupConnect = () => {
                     <small className="ssc__field-note">Used to scale monthly and yearly salary.</small>
                   </label>
                 )}
+                {jobForm.employment_type === 'Internship' && (
+                  <label className="ssc__field">
+                    <span>Internship length (months)</span>
+                    <input
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={jobForm.internship_duration_months}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({
+                          ...prev,
+                          internship_duration_months: event.target.value.replace(/[^0-9]/g, ''),
+                        }))
+                      }
+                      placeholder="e.g. 6"
+                      required
+                    />
+                    <small className="ssc__field-note">Internships must last at least 1 month.</small>
+                  </label>
+                )}
                 <label className="ssc__field">
                   <span>Salary cadence</span>
                   <select
@@ -5279,7 +5719,7 @@ const SwissStartupConnect = () => {
                     <option value="hour">Hourly</option>
                     <option value="week">Weekly</option>
                     <option value="month">Monthly</option>
-                    <option value="year">Yearly</option>
+                    <option value="year">Yearly / total</option>
                   </select>
                 </label>
                 <div className="ssc__field ssc__field--range">

@@ -1223,6 +1223,8 @@
   align-items: flex-end;
   flex-wrap: wrap;
   gap: 1rem;
+  margin-top: auto;
+  width: 100%;
 }
 
 .ssc__job-skeleton {
@@ -1252,6 +1254,20 @@
   display: block;
   margin-top: 0.3rem;
   color: var(--ssc-muted);
+}
+
+.ssc__thirteenth-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--ssc-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  margin-top: 0.45rem;
+  width: fit-content;
 }
 
 .ssc__job-actions {
@@ -1318,6 +1334,174 @@
   width: 100%;
   justify-content: center;
   margin-top: 0.5rem;
+}
+
+.ssc__calculator-anchor {
+  position: fixed;
+  right: 3vw;
+  top: 55vh;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+  z-index: 30;
+}
+
+.ssc__calculator-toggle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--ssc-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 40px rgba(37, 99, 235, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.ssc__calculator-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px rgba(37, 99, 235, 0.34);
+}
+
+.ssc__calculator-toggle.is-open {
+  background: var(--ssc-primary);
+  color: #fff;
+  box-shadow: 0 26px 52px rgba(37, 99, 235, 0.36);
+}
+
+.ssc__calculator-panel {
+  width: 320px;
+  max-width: calc(100vw - 3rem);
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid var(--ssc-border);
+  box-shadow: 0 28px 56px rgba(15, 23, 42, 0.22);
+  padding: 1.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ssc__calculator-panel.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.ssc__calculator-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ssc__calculator-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.ssc__calculator-close {
+  border: none;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ssc-muted);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ssc__calculator-close:hover {
+  background: rgba(37, 99, 235, 0.2);
+  color: var(--ssc-primary);
+}
+
+.ssc__calculator-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ssc__calculator-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__calculator-fields select {
+  border-radius: 12px;
+  border: 1px solid var(--ssc-border);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.ssc__calculator-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.ssc__calculator-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.ssc__calculator-row span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ssc-muted);
+}
+
+.ssc__calculator-row strong {
+  font-size: 0.95rem;
+}
+
+.ssc__calculator-note {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--ssc-muted);
+  line-height: 1.45;
+}
+
+.ssc__calculator-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ssc-muted);
+}
+
+@media (max-width: 1024px) {
+  .ssc__calculator-anchor {
+    top: auto;
+    bottom: 1.75rem;
+    right: 1.75rem;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ssc__calculator-anchor {
+    right: 1.25rem;
+    bottom: 1.25rem;
+  }
+
+  .ssc__calculator-panel {
+    width: calc(100vw - 2.5rem);
+  }
 }
 
 .ssc__empty-state {
@@ -1592,9 +1776,9 @@
 }
 
 .ssc__step-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .ssc__step-card {
