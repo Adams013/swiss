@@ -64,6 +64,26 @@ const mockJobs = [
     motivational_letter_required: true,
   },
   {
+    id: 'mock-4',
+    title: 'Community & Partnerships Lead',
+    company_name: 'Alpine Health',
+    startup_id: 'mock-company-2',
+    location: 'Remote within Switzerland',
+    employment_type: 'Part-time',
+    weekly_hours_value: 24,
+    salary: '28 – 34 CHF / hour',
+    equity: '0.1% – 0.2%',
+    description:
+      'Partner with founders to tell patient impact stories, grow our clinical community, and organise monthly events. Flexible schedule with remote-first collaboration.',
+    requirements: ['3+ years in community or partnerships', 'Bilingual German/English', 'Comfort with remote collaboration'],
+    benefits: ['Flexible hours', 'Wellness stipend', 'Annual team offsite'],
+    posted: '4 days ago',
+    applicants: 7,
+    tags: ['Community', 'Partnerships'],
+    stage: 'Seed',
+    motivational_letter_required: false,
+  },
+  {
     id: 'mock-3',
     title: 'Machine Learning Intern',
     company_name: 'Cognivia Labs',
@@ -352,6 +372,17 @@ const SALARY_MAX_FIELDS = [
 
 const EQUITY_MIN_FIELDS = ['equity_min', 'equity_min_percentage', 'equity_floor', 'equity_low'];
 const EQUITY_MAX_FIELDS = ['equity_max', 'equity_max_percentage', 'equity_ceiling', 'equity_high'];
+const WEEKLY_HOURS_FIELDS = [
+  'weekly_hours_value',
+  'weekly_hours',
+  'weekly_hours_label',
+  'hours_per_week',
+  'work_hours',
+  'hours_week',
+  'hours',
+  'hoursWeekly',
+  'weeklyHours',
+];
 
 const SALARY_PERIOD_FIELDS = [
   'salary_period',
@@ -580,6 +611,78 @@ const parsePercentageValue = (value) => {
   return Number.isFinite(numeric) ? numeric : null;
 };
 
+const parseWeeklyHoursValue = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const match = value.match(/(\d+(?:[.,]\d+)?)/);
+  if (!match) {
+    return null;
+  }
+
+  const numeric = Number.parseFloat(match[1].replace(',', '.'));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const formatWeeklyHoursLabel = (value) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '';
+  }
+
+  const rounded = Number.isInteger(value) ? value : Number(value.toFixed(1));
+  return `${rounded}h/week`;
+};
+
+const resolveWeeklyHours = (value) => {
+  return Number.isFinite(value) && value > 0 ? value : FULL_TIME_WEEKLY_HOURS;
+};
+
+const getWeeklyHoursMeta = (job) => {
+  if (!job) {
+    return { value: null, label: '' };
+  }
+
+  if (Number.isFinite(job.weekly_hours_value) && job.weekly_hours_value > 0) {
+    return {
+      value: job.weekly_hours_value,
+      label: formatWeeklyHoursLabel(job.weekly_hours_value),
+    };
+  }
+
+  for (const field of WEEKLY_HOURS_FIELDS) {
+    const raw = job?.[field];
+    if (raw == null) {
+      continue;
+    }
+
+    const parsed = parseWeeklyHoursValue(raw);
+    if (Number.isFinite(parsed)) {
+      return {
+        value: parsed,
+        label: formatWeeklyHoursLabel(parsed),
+      };
+    }
+
+    if (typeof raw === 'string' && raw.trim()) {
+      return {
+        value: null,
+        label: raw.trim(),
+      };
+    }
+  }
+
+  return { value: null, label: '' };
+};
+
 const detectSalaryPeriod = (job, salaryText) => {
   const baseText = [
     salaryText ?? '',
@@ -614,13 +717,14 @@ const normalizeSalaryCadence = (value) => {
   return null;
 };
 
-const convertCadenceValueToMonthly = (value, cadence) => {
+const convertCadenceValueToMonthly = (value, cadence, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
   if (!Number.isFinite(value)) {
     return null;
   }
 
   const normalized = normalizeSalaryCadence(cadence);
   const lowered = cadence ? String(cadence).toLowerCase() : '';
+  const hoursPerWeek = resolveWeeklyHours(weeklyHours);
 
   if (!normalized && lowered.includes('day')) {
     return value * FULL_TIME_WORKING_DAYS * WEEKS_PER_MONTH;
@@ -628,7 +732,7 @@ const convertCadenceValueToMonthly = (value, cadence) => {
 
   switch (normalized) {
     case 'hour':
-      return value * FULL_TIME_WEEKLY_HOURS * WEEKS_PER_MONTH;
+      return value * hoursPerWeek * WEEKS_PER_MONTH;
     case 'week':
       return value * WEEKS_PER_MONTH;
     case 'year':
@@ -639,13 +743,14 @@ const convertCadenceValueToMonthly = (value, cadence) => {
   }
 };
 
-const convertMonthlyValueToCadence = (value, cadence) => {
+const convertMonthlyValueToCadence = (value, cadence, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
   if (!Number.isFinite(value)) {
     return null;
   }
 
   const normalized = normalizeSalaryCadence(cadence);
   const lowered = cadence ? String(cadence).toLowerCase() : '';
+  const hoursPerWeek = resolveWeeklyHours(weeklyHours);
 
   if (!normalized && lowered.includes('day')) {
     return value / (FULL_TIME_WORKING_DAYS * WEEKS_PER_MONTH);
@@ -653,7 +758,7 @@ const convertMonthlyValueToCadence = (value, cadence) => {
 
   switch (normalized) {
     case 'hour':
-      return value / (FULL_TIME_WEEKLY_HOURS * WEEKS_PER_MONTH);
+      return value / (hoursPerWeek * WEEKS_PER_MONTH);
     case 'week':
       return value / WEEKS_PER_MONTH;
     case 'year':
@@ -664,12 +769,12 @@ const convertMonthlyValueToCadence = (value, cadence) => {
   }
 };
 
-const formatSalaryValue = (value, cadence = 'month') => {
+const formatSalaryValue = (value, cadence = 'month', weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
   if (!Number.isFinite(value)) {
     return '';
   }
 
-  const converted = convertMonthlyValueToCadence(value, cadence);
+  const converted = convertMonthlyValueToCadence(value, cadence, weeklyHours);
 
   if (!Number.isFinite(converted)) {
     return '';
@@ -760,7 +865,7 @@ const composeSalaryDisplay = ({
   return `${baseLabel} (≈ ${extras.join(' · ')})`;
 };
 
-const convertToMonthly = (value, period, salaryText) => {
+const convertToMonthly = (value, period, salaryText, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
   if (!Number.isFinite(value) || value <= 0) {
     return null;
   }
@@ -783,13 +888,15 @@ const convertToMonthly = (value, period, salaryText) => {
     }
   }
 
-  const converted = convertCadenceValueToMonthly(value, resolvedPeriod);
+  const converted = convertCadenceValueToMonthly(value, resolvedPeriod, weeklyHours);
   return Number.isFinite(converted) ? converted : value;
 };
 
 const computeSalaryRange = (job) => {
   const salaryText = job?.salary ?? '';
   const period = detectSalaryPeriod(job, salaryText);
+  const { value: weeklyHoursValue } = getWeeklyHoursMeta(job);
+  const hoursForConversion = resolveWeeklyHours(weeklyHoursValue);
 
   const minCandidate = SALARY_MIN_FIELDS.map((field) => parseNumericValue(job?.[field]))
     .find((value) => value != null);
@@ -798,7 +905,7 @@ const computeSalaryRange = (job) => {
 
   const directValues = [minCandidate, maxCandidate]
     .filter((value) => value != null)
-    .map((value) => convertToMonthly(value, period, salaryText))
+    .map((value) => convertToMonthly(value, period, salaryText, hoursForConversion))
     .filter((value) => Number.isFinite(value));
 
   const parsedFromString = Array.from(
@@ -813,7 +920,7 @@ const computeSalaryRange = (job) => {
       }
       if (match[2] === 'm') numeric *= 1_000_000;
       if (match[2] === 'k') numeric *= 1_000;
-      return convertToMonthly(numeric, period, salaryText);
+      return convertToMonthly(numeric, period, salaryText, hoursForConversion);
     })
     .filter((value) => Number.isFinite(value));
 
@@ -1082,6 +1189,7 @@ const SwissStartupConnect = () => {
     title: '',
     location: '',
     employment_type: 'Full-time',
+    weekly_hours: '',
     salary_min: '',
     salary_max: '',
     salary_cadence: '',
@@ -1772,6 +1880,11 @@ const SwissStartupConnect = () => {
       const idKey = job.startup_id ? String(job.startup_id) : null;
       const nameFromLookup = idKey ? companyNameLookup[idKey] : null;
       const ensuredName = job.company_name?.trim() || nameFromLookup || 'Verified startup';
+      const isPartTime = job.employment_type?.toLowerCase().includes('part');
+      const { value: weeklyHoursValueRaw, label: weeklyHoursLabelRaw } = getWeeklyHoursMeta(job);
+      const hoursForConversion = resolveWeeklyHours(weeklyHoursValueRaw);
+      const weeklyHoursValue = isPartTime && Number.isFinite(weeklyHoursValueRaw) ? weeklyHoursValueRaw : null;
+      const weeklyHoursLabel = isPartTime ? weeklyHoursLabelRaw : '';
       const [salaryMinValue, salaryMaxValue] = computeSalaryRange(job);
       const [equityMinValue, equityMaxValue] = computeEquityRange(job);
       const normalizedSalaryMin = Number.isFinite(job.salary_min_value)
@@ -1790,10 +1903,10 @@ const SwissStartupConnect = () => {
       const monthlyMin = Number.isFinite(normalizedSalaryMin) ? normalizedSalaryMin : null;
       const monthlyMax = Number.isFinite(normalizedSalaryMax) ? normalizedSalaryMax : null;
       const baseMin = Number.isFinite(monthlyMin)
-        ? convertMonthlyValueToCadence(monthlyMin, salaryCadence || 'month')
+        ? convertMonthlyValueToCadence(monthlyMin, salaryCadence || 'month', hoursForConversion)
         : null;
       const baseMax = Number.isFinite(monthlyMax)
-        ? convertMonthlyValueToCadence(monthlyMax, salaryCadence || 'month')
+        ? convertMonthlyValueToCadence(monthlyMax, salaryCadence || 'month', hoursForConversion)
         : null;
       const salaryDisplay = composeSalaryDisplay({
         baseMin,
@@ -1822,6 +1935,8 @@ const SwissStartupConnect = () => {
         equity_max_value: normalizedEquityMax,
         equity_original: job.equity,
         equity: equityDisplay,
+        weekly_hours_value: weeklyHoursValue,
+        weekly_hours_label: weeklyHoursLabel,
         company_team:
           job.company_team ||
           job.team ||
@@ -2443,13 +2558,29 @@ const SwissStartupConnect = () => {
 
   const jobSalaryCadence = normalizeSalaryCadence(jobForm.salary_cadence);
   const jobSalaryMinimum = jobSalaryCadence ? SALARY_MINIMUMS_BY_CADENCE[jobSalaryCadence] : null;
+  const jobIsPartTime = jobForm.employment_type === 'Part-time';
+  const jobWeeklyHoursInput = jobIsPartTime ? parseWeeklyHoursValue(jobForm.weekly_hours) : null;
+  const jobWeeklyHoursLabel = jobIsPartTime && Number.isFinite(jobWeeklyHoursInput)
+    ? formatWeeklyHoursLabel(jobWeeklyHoursInput)
+    : '';
+  const jobSalaryHelperExtra = jobIsPartTime
+    ? Number.isFinite(jobWeeklyHoursInput)
+      ? ` Calculations will use ${jobWeeklyHoursLabel}.`
+      : ' Add weekly hours so we can convert part-time pay.'
+    : '';
   const jobSalaryHelperText = jobSalaryCadence
-    ? `Enter CHF ${SALARY_CADENCE_LABELS[jobSalaryCadence]} amounts (minimum CHF ${jobSalaryMinimum}).`
+    ? `Enter CHF ${SALARY_CADENCE_LABELS[jobSalaryCadence]} amounts (minimum CHF ${jobSalaryMinimum}).${jobSalaryHelperExtra}`
     : 'Choose the salary cadence before entering amounts.';
   const jobSalaryPlaceholder = jobSalaryCadence ? SALARY_PLACEHOLDER_BY_CADENCE[jobSalaryCadence] : '';
   const jobSalaryPreview = useMemo(() => {
     const cadence = normalizeSalaryCadence(jobForm.salary_cadence);
     if (!cadence) {
+      return '';
+    }
+
+    const isPartTimeRole = jobForm.employment_type === 'Part-time';
+    const weeklyHoursInput = isPartTimeRole ? parseWeeklyHoursValue(jobForm.weekly_hours) : null;
+    if (isPartTimeRole && !Number.isFinite(weeklyHoursInput)) {
       return '';
     }
 
@@ -2461,8 +2592,9 @@ const SwissStartupConnect = () => {
     const maxCandidate = Number.parseFloat((jobForm.salary_max || '').replace(',', '.'));
     const max = Number.isFinite(maxCandidate) ? maxCandidate : min;
 
-    const monthlyMin = convertCadenceValueToMonthly(min, cadence);
-    const monthlyMax = convertCadenceValueToMonthly(max, cadence);
+    const hoursForPreview = isPartTimeRole ? weeklyHoursInput : FULL_TIME_WEEKLY_HOURS;
+    const monthlyMin = convertCadenceValueToMonthly(min, cadence, hoursForPreview);
+    const monthlyMax = convertCadenceValueToMonthly(max, cadence, hoursForPreview);
 
     if (!Number.isFinite(monthlyMin) || !Number.isFinite(monthlyMax)) {
       return '';
@@ -2485,8 +2617,12 @@ const SwissStartupConnect = () => {
       previews.push(yearlyLabel);
     }
 
+    if (isPartTimeRole && Number.isFinite(weeklyHoursInput)) {
+      previews.push(formatWeeklyHoursLabel(weeklyHoursInput));
+    }
+
     return previews.join(' · ');
-  }, [jobForm.salary_cadence, jobForm.salary_min, jobForm.salary_max, jobForm.employment_type]);
+  }, [jobForm.salary_cadence, jobForm.salary_min, jobForm.salary_max, jobForm.employment_type, jobForm.weekly_hours]);
 
   const handleJobEquityBlur = () => {
     setJobForm((prev) => {
@@ -2570,8 +2706,22 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const monthlyMin = convertCadenceValueToMonthly(salaryMinValue, cadenceSelection);
-      const monthlyMax = convertCadenceValueToMonthly(salaryMaxValue, cadenceSelection);
+      let weeklyHoursNumeric = null;
+      if (jobForm.employment_type === 'Part-time') {
+        const weeklyHoursRaw = jobForm.weekly_hours?.trim() ?? '';
+        const parsedWeeklyHours = parseWeeklyHoursValue(weeklyHoursRaw);
+        if (!Number.isFinite(parsedWeeklyHours)) {
+          setPostJobError('Enter the weekly working hours for part-time roles.');
+          setPostingJob(false);
+          return;
+        }
+
+        weeklyHoursNumeric = parsedWeeklyHours;
+      }
+
+      const hoursForConversion = weeklyHoursNumeric ?? FULL_TIME_WEEKLY_HOURS;
+      const monthlyMin = convertCadenceValueToMonthly(salaryMinValue, cadenceSelection, hoursForConversion);
+      const monthlyMax = convertCadenceValueToMonthly(salaryMaxValue, cadenceSelection, hoursForConversion);
 
       if (!Number.isFinite(monthlyMin) || !Number.isFinite(monthlyMax)) {
         setPostJobError('Could not derive CHF salary values from the provided cadence.');
@@ -2630,6 +2780,8 @@ const SwissStartupConnect = () => {
           : [],
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
+        weekly_hours_value: weeklyHoursNumeric,
+        weekly_hours: weeklyHoursNumeric != null ? formatWeeklyHoursLabel(weeklyHoursNumeric) : null,
       };
 
       const { error } = await supabase.from('jobs').insert(payload);
@@ -2644,6 +2796,7 @@ const SwissStartupConnect = () => {
         title: '',
         location: '',
         employment_type: 'Full-time',
+        weekly_hours: '',
         salary_min: '',
         salary_max: '',
         salary_cadence: '',
@@ -3753,7 +3906,9 @@ const SwissStartupConnect = () => {
                           </span>
                           <span>
                             <Clock size={16} />
-                            {job.employment_type} • {job.posted}
+                            {job.employment_type}
+                            {job.weekly_hours_label ? ` • ${job.weekly_hours_label}` : ''}
+                            {` • ${job.posted}`}
                           </span>
                           <span>
                             <Users size={16} />
@@ -4608,7 +4763,9 @@ const SwissStartupConnect = () => {
                 </span>
                 <span>
                   <Clock size={16} />
-                  {selectedJob.employment_type} • {selectedJob.posted}
+                  {selectedJob.employment_type}
+                  {selectedJob.weekly_hours_label ? ` • ${selectedJob.weekly_hours_label}` : ''}
+                  {` • ${selectedJob.posted}`}
                 </span>
                 <span>
                   <Users size={16} />
@@ -5071,7 +5228,13 @@ const SwissStartupConnect = () => {
                   <span>Employment type</span>
                   <select
                     value={jobForm.employment_type}
-                    onChange={(event) => setJobForm((prev) => ({ ...prev, employment_type: event.target.value }))}
+                    onChange={(event) =>
+                      setJobForm((prev) => ({
+                        ...prev,
+                        employment_type: event.target.value,
+                        weekly_hours: event.target.value === 'Part-time' ? prev.weekly_hours : '',
+                      }))
+                    }
                   >
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -5079,6 +5242,25 @@ const SwissStartupConnect = () => {
                     <option value="Contract">Contract</option>
                   </select>
                 </label>
+                {jobForm.employment_type === 'Part-time' && (
+                  <label className="ssc__field">
+                    <span>Weekly hours</span>
+                    <input
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      value={jobForm.weekly_hours}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({
+                          ...prev,
+                          weekly_hours: sanitizeDecimalInput(event.target.value),
+                        }))
+                      }
+                      placeholder="e.g. 24"
+                      required
+                    />
+                    <small className="ssc__field-note">Used to scale monthly and yearly salary.</small>
+                  </label>
+                )}
                 <label className="ssc__field">
                   <span>Salary cadence</span>
                   <select

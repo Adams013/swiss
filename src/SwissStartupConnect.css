@@ -2397,17 +2397,25 @@
 }
 
 .ssc__field input,
-.ssc__field select {
+.ssc__field select,
+.ssc__field textarea {
   border-radius: 12px;
-  border: 1px solid var(--ssc-border);
+  border: 1px solid rgba(15, 23, 42, 0.16);
   padding: 0.65rem 0.85rem;
   background: #fff;
   color: var(--ssc-ink);
   font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ssc__field textarea {
+  min-height: 132px;
+  resize: vertical;
 }
 
 .ssc__field input:focus,
-.ssc__field select:focus {
+.ssc__field select:focus,
+.ssc__field textarea:focus {
   outline: none;
   border-color: var(--ssc-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
