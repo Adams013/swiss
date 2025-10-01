@@ -809,6 +809,14 @@
   flex-wrap: wrap;
 }
 
+.ssc__field-range-row--single {
+  justify-content: flex-start;
+}
+
+.ssc__field-range-row--single .ssc__field-range-input {
+  flex-basis: 100%;
+}
+
 .ssc__field-range-input {
   display: flex;
   flex-direction: column;
@@ -866,6 +874,15 @@
   outline: none;
   border-color: var(--ssc-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.ssc__field-equity--stacked {
+  margin-top: 0.35rem;
+}
+
+.ssc__field-range-toggle {
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (min-width: 768px) {

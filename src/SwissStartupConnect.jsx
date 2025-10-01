@@ -1374,6 +1374,7 @@ const SwissStartupConnect = () => {
     salary_min: '',
     salary_max: '',
     salary_cadence: '',
+    salary_is_bracket: false,
     equity: '',
     description: '',
     requirements: '',
@@ -2998,6 +2999,9 @@ const SwissStartupConnect = () => {
   };
 
   const jobSalaryCadence = normalizeSalaryCadence(jobForm.salary_cadence);
+  const jobSalaryIsBracket = Boolean(jobForm.salary_is_bracket);
+  const jobSalaryLabel = jobSalaryIsBracket ? 'Salary range' : 'Salary';
+  const jobSalaryMinLabel = jobSalaryIsBracket ? 'Min' : 'Amount';
   const jobSalaryMinimum = jobSalaryCadence ? SALARY_MINIMUMS_BY_CADENCE[jobSalaryCadence] : null;
   const jobIsPartTime = jobForm.employment_type === 'Part-time';
   const jobWeeklyHoursInput = jobIsPartTime ? parseWeeklyHoursValue(jobForm.weekly_hours) : null;
@@ -3010,7 +3014,9 @@ const SwissStartupConnect = () => {
       : ' Add weekly hours so we can convert part-time pay.'
     : '';
   const jobSalaryHelperText = jobSalaryCadence
-    ? `Enter CHF ${SALARY_CADENCE_LABELS[jobSalaryCadence]} amounts (minimum CHF ${jobSalaryMinimum}).${jobSalaryHelperExtra}`
+    ? `Enter CHF ${SALARY_CADENCE_LABELS[jobSalaryCadence]} ${
+        jobSalaryIsBracket ? 'amounts for your bracket' : 'amount'
+      } (minimum CHF ${jobSalaryMinimum}).${jobSalaryHelperExtra}`
     : 'Choose the salary cadence before entering amounts.';
   const jobSalaryPlaceholder = jobSalaryCadence ? SALARY_PLACEHOLDER_BY_CADENCE[jobSalaryCadence] : '';
   const jobSalaryPreview = useMemo(() => {
@@ -3030,8 +3036,14 @@ const SwissStartupConnect = () => {
       return '';
     }
 
-    const maxCandidate = Number.parseFloat((jobForm.salary_max || '').replace(',', '.'));
-    const max = Number.isFinite(maxCandidate) ? maxCandidate : min;
+    let max = min;
+    if (jobSalaryIsBracket) {
+      const maxCandidate = Number.parseFloat((jobForm.salary_max || '').replace(',', '.'));
+      if (!Number.isFinite(maxCandidate)) {
+        return '';
+      }
+      max = maxCandidate;
+    }
 
     const hoursForPreview = isPartTimeRole ? weeklyHoursInput : FULL_TIME_WEEKLY_HOURS;
     const monthlyMin = convertCadenceValueToMonthly(min, cadence, hoursForPreview);
@@ -3063,7 +3075,22 @@ const SwissStartupConnect = () => {
     }
 
     return previews.join(' · ');
-  }, [jobForm.salary_cadence, jobForm.salary_min, jobForm.salary_max, jobForm.employment_type, jobForm.weekly_hours]);
+  }, [
+    jobForm.salary_cadence,
+    jobForm.salary_min,
+    jobForm.salary_max,
+    jobSalaryIsBracket,
+    jobForm.employment_type,
+    jobForm.weekly_hours,
+  ]);
+
+  const handleJobSalaryBracketChange = useCallback((nextValue) => {
+    setJobForm((prev) => ({
+      ...prev,
+      salary_is_bracket: nextValue,
+      salary_max: nextValue ? prev.salary_max : '',
+    }));
+  }, []);
 
   const handleJobEquityBlur = () => {
     setJobForm((prev) => {
@@ -3193,8 +3220,9 @@ const SwissStartupConnect = () => {
         return;
       }
 
+      const salaryIsBracket = Boolean(jobForm.salary_is_bracket);
       const salaryMinRaw = jobForm.salary_min?.trim() ?? '';
-      const salaryMaxRaw = jobForm.salary_max?.trim() ?? '';
+      const salaryMaxRaw = salaryIsBracket ? jobForm.salary_max?.trim() ?? '' : salaryMinRaw;
 
       const salaryMinValue = Number.parseFloat(salaryMinRaw.replace(',', '.'));
       const salaryMaxValueInput = Number.parseFloat(salaryMaxRaw.replace(',', '.'));
@@ -3214,18 +3242,28 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const salaryMaxValue = Number.isFinite(salaryMaxValueInput) ? salaryMaxValueInput : salaryMinValue;
+      let salaryMaxValue = salaryMinValue;
 
-      if (salaryMaxValue < salaryMinValue) {
-        setPostJobError('Maximum salary cannot be lower than the minimum salary.');
-        setPostingJob(false);
-        return;
-      }
+      if (salaryIsBracket) {
+        if (!Number.isFinite(salaryMaxValueInput)) {
+          setPostJobError('Enter the maximum salary for the bracket.');
+          setPostingJob(false);
+          return;
+        }
 
-      if (salaryMaxValue < cadenceMinimum) {
-        setPostJobError(`Maximum ${cadenceLabel} salary must be at least CHF ${cadenceMinimum}.`);
-        setPostingJob(false);
-        return;
+        salaryMaxValue = salaryMaxValueInput;
+
+        if (salaryMaxValue < salaryMinValue) {
+          setPostJobError('Maximum salary cannot be lower than the minimum salary.');
+          setPostingJob(false);
+          return;
+        }
+
+        if (salaryMaxValue < cadenceMinimum) {
+          setPostJobError(`Maximum ${cadenceLabel} salary must be at least CHF ${cadenceMinimum}.`);
+          setPostingJob(false);
+          return;
+        }
       }
 
       let employmentTypeForPayload = jobForm.employment_type;
@@ -3320,7 +3358,6 @@ const SwissStartupConnect = () => {
         salary_min_value: Math.round(monthlyMin),
         salary_max_value: Math.round(monthlyMax),
         equity: equityNumericValue != null ? equityDisplay : null,
-        equity_min_value: equityNumericValue != null ? equityNumericValue : null,
         description: jobForm.description.trim(),
         requirements: jobForm.requirements
           ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
@@ -3363,6 +3400,7 @@ const SwissStartupConnect = () => {
         salary_min: '',
         salary_max: '',
         salary_cadence: '',
+        salary_is_bracket: false,
         equity: '',
         description: '',
         requirements: '',
@@ -6092,10 +6130,24 @@ const SwissStartupConnect = () => {
                     <ChevronDown className="ssc__select-caret" size={16} />
                   </div>
                 </label>
+                <label className="ssc__field ssc__field-equity ssc__field-equity--stacked">
+                  <span>Equity (%)</span>
+                  <input
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
+                    value={jobForm.equity}
+                    onChange={(event) =>
+                      setJobForm((prev) => ({ ...prev, equity: sanitizeDecimalInput(event.target.value) }))
+                    }
+                    onBlur={handleJobEquityBlur}
+                    placeholder="Optional (e.g. 0.5)"
+                  />
+                  <small className="ssc__field-note">Allowed range: 0.1 – 100. Leave blank if none.</small>
+                </label>
                 <div className="ssc__field ssc__field--comp">
                   <div className="ssc__field-range">
                     <div className="ssc__field-label-row">
-                      <span className="ssc__field-label">Salary range</span>
+                      <span className="ssc__field-label">{jobSalaryLabel}</span>
                       <div className="ssc__field-pill-group">
                         {SALARY_CADENCE_OPTIONS.map((option) => (
                           <button
@@ -6109,9 +6161,19 @@ const SwissStartupConnect = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="ssc__field-range-row">
+                    <div className="ssc__field-range-toggle">
+                      <label className="ssc__switch">
+                        <input
+                          type="checkbox"
+                          checked={jobSalaryIsBracket}
+                          onChange={(event) => handleJobSalaryBracketChange(event.target.checked)}
+                        />
+                        <span>Show salary bracket</span>
+                      </label>
+                    </div>
+                    <div className={`ssc__field-range-row ${jobSalaryIsBracket ? '' : 'ssc__field-range-row--single'}`}>
                       <label className="ssc__field-range-input">
-                        <span>Min</span>
+                        <span>{jobSalaryMinLabel}</span>
                         <input
                           inputMode="decimal"
                           pattern="[0-9]*[.,]?[0-9]*"
@@ -6124,23 +6186,30 @@ const SwissStartupConnect = () => {
                           disabled={!jobSalaryCadence}
                         />
                       </label>
-                      <div className="ssc__field-range-divider" aria-hidden="true">
-                        –
-                      </div>
-                      <label className="ssc__field-range-input">
-                        <span>Max</span>
-                        <input
-                          inputMode="decimal"
-                          pattern="[0-9]*[.,]?[0-9]*"
-                          value={jobForm.salary_max}
-                          onChange={(event) =>
-                            setJobForm((prev) => ({ ...prev, salary_max: sanitizeDecimalInput(event.target.value) }))
-                          }
-                          onBlur={() => handleJobSalaryBlur('salary_max')}
-                          placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
-                          disabled={!jobSalaryCadence}
-                        />
-                      </label>
+                      {jobSalaryIsBracket && (
+                        <>
+                          <div className="ssc__field-range-divider" aria-hidden="true">
+                            –
+                          </div>
+                          <label className="ssc__field-range-input">
+                            <span>Max</span>
+                            <input
+                              inputMode="decimal"
+                              pattern="[0-9]*[.,]?[0-9]*"
+                              value={jobForm.salary_max}
+                              onChange={(event) =>
+                                setJobForm((prev) => ({
+                                  ...prev,
+                                  salary_max: sanitizeDecimalInput(event.target.value),
+                                }))
+                              }
+                              onBlur={() => handleJobSalaryBlur('salary_max')}
+                              placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                              disabled={!jobSalaryCadence}
+                            />
+                          </label>
+                        </>
+                      )}
                     </div>
                     <small className="ssc__field-note">{jobSalaryHelperText}</small>
                     {jobSalaryPreview && (
@@ -6151,20 +6220,6 @@ const SwissStartupConnect = () => {
                       </small>
                     )}
                   </div>
-                  <label className="ssc__field-equity">
-                    <span>Equity (%)</span>
-                    <input
-                      inputMode="decimal"
-                      pattern="[0-9]*[.,]?[0-9]*"
-                      value={jobForm.equity}
-                      onChange={(event) =>
-                        setJobForm((prev) => ({ ...prev, equity: sanitizeDecimalInput(event.target.value) }))
-                      }
-                      onBlur={handleJobEquityBlur}
-                      placeholder="Optional (e.g. 0.5)"
-                    />
-                    <small className="ssc__field-note">Allowed range: 0.1 – 100. Leave blank if none.</small>
-                  </label>
                 </div>
               </div>
 
