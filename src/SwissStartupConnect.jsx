@@ -2172,7 +2172,10 @@ const SwissStartupConnect = () => {
     const durationMonths = Number.isFinite(selectedCalculatorJob.duration_months)
       ? selectedCalculatorJob.duration_months
       : null;
-    const showTotal = Number.isFinite(durationMonths) && durationMonths > 0 && durationMonths < 12;
+    const employmentType = selectedCalculatorJob.employment_type || '';
+    const isFullTimeRole = employmentType.toLowerCase().includes('full');
+    const hasFiniteDuration = Number.isFinite(durationMonths) && durationMonths > 0;
+    const shouldShowTotal = !isFullTimeRole;
 
     const formatRowValue = (cadence) => {
       const convertValue = (value) =>
@@ -2202,13 +2205,14 @@ const SwissStartupConnect = () => {
       { key: 'hour', label: 'Hourly', suffix: ' / hour' },
       { key: 'week', label: 'Weekly', suffix: ' / week' },
       { key: 'month', label: 'Monthly', suffix: ' / month' },
-      { key: 'year', label: 'Yearly / total', suffix: ' / year' },
+      { key: 'year', label: isFullTimeRole ? 'Yearly' : 'Total', suffix: isFullTimeRole ? ' / year' : '' },
     ];
 
     const rows = rowDefinitions.map((definition) => {
-      if (definition.key === 'year' && showTotal) {
-        const totalMin = Number.isFinite(monthlyMin) ? monthlyMin * durationMonths : null;
-        const totalMax = Number.isFinite(monthlyMax) ? monthlyMax * durationMonths : null;
+      if (definition.key === 'year' && shouldShowTotal) {
+        const monthsForTotal = hasFiniteDuration ? durationMonths : THIRTEENTH_MONTHS_PER_YEAR;
+        const totalMin = Number.isFinite(monthlyMin) ? monthlyMin * monthsForTotal : null;
+        const totalMax = Number.isFinite(monthlyMax) ? monthlyMax * monthsForTotal : null;
         const formattedMin = formatCalculatorCurrency(totalMin, 'year');
         const formattedMax = formatCalculatorCurrency(totalMax, 'year');
 
@@ -2222,7 +2226,7 @@ const SwissStartupConnect = () => {
             : `${formattedMin} – ${formattedMax}`
           : formattedMin || formattedMax;
 
-        const suffix = monthLabel ? ` (${monthLabel})` : '';
+        const suffix = hasFiniteDuration && monthLabel ? ` (${monthLabel})` : '';
         return {
           key: definition.key,
           label: definition.label,
@@ -2245,11 +2249,11 @@ const SwissStartupConnect = () => {
     if (hoursLabel) {
       noteParts.push(`Converted with ${hoursLabel}`);
     }
-    if (showTotal) {
-      if (monthLabel) {
+    if (shouldShowTotal) {
+      if (hasFiniteDuration && monthLabel) {
         noteParts.push(`Contract lasts ${monthLabel}`);
       }
-    } else {
+    } else if (selectedCalculatorJob.includes_thirteenth_salary) {
       noteParts.push('Yearly amounts include a 13th salary');
     }
 
