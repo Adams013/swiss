@@ -211,6 +211,136 @@ const TRANSLATIONS = {
       noMatchesTitle: 'Aucun résultat',
       noMatchesBody: 'Retirez un filtre ou élargissez votre fourchette salariale.',
     },
+    calculator: {
+      toggleLabel: 'Afficher/masquer le calculateur de salaire',
+      closeLabel: 'Fermer le calculateur de salaire',
+      chip: 'Analyse de la rémunération',
+      title: 'Calculateur de salaire',
+      empty: 'Aucun poste à convertir pour le moment.',
+      company: 'Startup',
+      role: 'Poste',
+      noRoles: 'Aucun poste disponible',
+      currency: 'CHF',
+      notDisclosed: 'Non communiqué',
+      duration: {
+        one: '{{count}} mois',
+        other: '{{count}} mois',
+      },
+      rows: {
+        hour: { label: 'Horaire', suffix: ' / heure' },
+        week: { label: 'Hebdomadaire', suffix: ' / semaine' },
+        month: { label: 'Mensuel', suffix: ' / mois' },
+        year: { label: 'Annuel', suffix: ' / an' },
+        total: {
+          label: 'Total',
+          durationSuffix: ' ({{duration}})',
+          value: '{{value}} au total{{suffix}}',
+        },
+        valueWithSuffix: '{{value}}{{suffix}}',
+      },
+      hoursFallback: '{{hours}} h/semaine',
+      note: {
+        base: 'Basé sur la fourchette de salaire publiée',
+        converted: 'Converti avec {{hours}}',
+        contract: 'Contrat d’une durée de {{duration}}',
+        thirteenth: 'Les montants annuels incluent un 13e salaire',
+      },
+    },
+    accountMenu: {
+      profile: 'Profil',
+      security: 'Confidentialité & sécurité',
+      logout: 'Se déconnecter',
+      myJobs: 'Mes offres',
+      companyProfile: 'Profil startup',
+      postVacancy: 'Publier une offre',
+      viewApplicants: 'Voir les candidats',
+    },
+    profileModal: {
+      title: 'Mettez à jour votre profil',
+      subtitle: 'Tenez les startups informées de vos derniers projets, études et documents.',
+      avatarAlt: 'Avatar du profil',
+      fields: {
+        fullName: 'Nom complet',
+        school: 'Université ou école',
+        program: 'Programme',
+        experience: 'Points forts de votre expérience',
+        bio: 'Mini bio',
+        portfolio: 'Portfolio ou LinkedIn',
+        schoolOptional: 'École / université (facultatif)',
+        role: 'Rôle dans cette startup',
+        hobbies: 'Compétences & loisirs (facultatif)',
+        photo: 'Télécharger une photo de profil',
+        cv: 'Télécharger le CV',
+      },
+      placeholders: {
+        school: 'ETH Zurich, EPFL, HSG, ZHAW…',
+        program: 'BSc Informatique',
+        experience: 'Stage chez AlpTech — dashboards supply; Projet étudiant : Routeur d’énergie intelligent…',
+        bio: 'Décrivez ce qui vous passionne et l’équipe dans laquelle vous vous épanouissez.',
+        portfolio: 'https://',
+        schoolOptional: 'Où avez-vous étudié ?',
+        role: 'Fondateur·rice & CEO, Head of Growth…',
+        hobbies: 'Design sprints, ski, storytelling produit…',
+      },
+      cvAccepted: 'Formats acceptés : PDF, Word (.doc/.docx), TeX.',
+      viewCurrentCv: 'Voir le CV actuel',
+      cvVisibilityOn: 'CV visible par les startups',
+      cvVisibilityOff: 'Garder le CV privé jusqu’à la candidature',
+      buttons: {
+        cancel: 'Annuler',
+        save: 'Enregistrer le profil',
+        saving: 'Enregistrement…',
+      },
+    },
+    authModal: {
+      titleRegister: 'Créez votre profil',
+      titleLogin: 'Bon retour',
+      bodyRegister: 'Parlez-nous de vous afin de vous proposer les bonnes opportunités.',
+      bodyLogin: 'Connectez-vous pour accéder à vos favoris, candidatures et profil.',
+      fields: {
+        fullName: 'Nom complet',
+        type: 'Je suis',
+        email: 'E-mail',
+        password: 'Mot de passe',
+        confirmPassword: 'Confirmer le mot de passe',
+      },
+      typeOptions: {
+        student: 'Étudiant·e',
+        startup: 'Startup',
+      },
+      actions: {
+        hide: 'Masquer',
+        show: 'Afficher',
+        forgotPassword: 'Mot de passe oublié ?',
+        createAccount: 'Créer un compte',
+        signIn: 'Se connecter',
+      },
+      switch: {
+        haveAccount: 'Vous avez déjà un compte ?',
+        newHere: 'Nouveau sur SwissStartup Connect ?',
+        signInInstead: 'Se connecter',
+        createProfile: 'Créer un profil',
+      },
+      errors: {
+        missingEmail: 'Saisissez votre e-mail ci-dessus pour recevoir les instructions de réinitialisation.',
+      },
+      forgot: {
+        sending: 'Envoi de l’e-mail de réinitialisation…',
+        failed: 'Échec de la réinitialisation : {{message}}',
+        success: 'Consultez votre boîte mail pour le lien de réinitialisation.',
+      },
+      feedback: {
+        verificationSent: 'E-mail de vérification envoyé. Vérifiez votre boîte de réception et vos spams.',
+        confirmEmail: 'Confirmez votre e-mail pour débloquer toutes les fonctionnalités.',
+        welcome: 'Bon retour, {{name}} !',
+      },
+      notice: {
+        confirmEmail:
+          'Confirmez votre adresse e-mail pour débloquer toutes les fonctionnalités. Une fois confirmé, rafraîchissez la page pour postuler.',
+        sending: 'Envoi…',
+        resend: 'Renvoyer l’e-mail de vérification',
+      },
+    },
     companies: {
       sort: {
         recent: 'Plus récentes',
@@ -573,6 +703,137 @@ const TRANSLATIONS = {
       seeMoreButton: 'Rollen ansehen',
       noMatchesTitle: 'Keine Treffer',
       noMatchesBody: 'Entfernen Sie einen Filter oder erweitern Sie Ihre Gehaltsspanne.',
+    },
+    calculator: {
+      toggleLabel: 'Gehaltsrechner ein-/ausblenden',
+      closeLabel: 'Gehaltsrechner schliessen',
+      chip: 'Vergütungsübersicht',
+      title: 'Gehaltsrechner',
+      empty: 'Noch keine Rollen zur Umrechnung verfügbar.',
+      company: 'Startup',
+      role: 'Rolle',
+      noRoles: 'Keine Rollen verfügbar',
+      currency: 'CHF',
+      notDisclosed: 'Nicht angegeben',
+      duration: {
+        one: '{{count}} Monat',
+        other: '{{count}} Monate',
+      },
+      rows: {
+        hour: { label: 'Stündlich', suffix: ' / Stunde' },
+        week: { label: 'Wöchentlich', suffix: ' / Woche' },
+        month: { label: 'Monatlich', suffix: ' / Monat' },
+        year: { label: 'Jährlich', suffix: ' / Jahr' },
+        total: {
+          label: 'Gesamt',
+          durationSuffix: ' ({{duration}})',
+          value: '{{value}} gesamt{{suffix}}',
+        },
+        valueWithSuffix: '{{value}}{{suffix}}',
+      },
+      hoursFallback: '{{hours}} Std./Woche',
+      note: {
+        base: 'Basierend auf der angegebenen Gehaltsspanne',
+        converted: 'Umgerechnet mit {{hours}}',
+        contract: 'Vertrag läuft {{duration}}',
+        thirteenth: 'Jahresbeträge beinhalten einen 13. Monatslohn',
+      },
+    },
+    accountMenu: {
+      profile: 'Profil',
+      security: 'Datenschutz & Sicherheit',
+      logout: 'Abmelden',
+      myJobs: 'Meine Inserate',
+      companyProfile: 'Unternehmensprofil',
+      postVacancy: 'Stelle veröffentlichen',
+      viewApplicants: 'Bewerber ansehen',
+    },
+    profileModal: {
+      title: 'Aktualisieren Sie Ihr Profil',
+      subtitle: 'Halten Sie Start-ups mit Ihren aktuellen Projekten, Studien und Dokumenten auf dem Laufenden.',
+      avatarAlt: 'Profilavatar',
+      fields: {
+        fullName: 'Vollständiger Name',
+        school: 'Universität oder Schule',
+        program: 'Studiengang',
+        experience: 'Erfahrungs-Highlights',
+        bio: 'Kurzprofil',
+        portfolio: 'Portfolio oder LinkedIn',
+        schoolOptional: 'Schule / Universität (optional)',
+        role: 'Rolle in diesem Startup',
+        hobbies: 'Fähigkeiten & Hobbys (optional)',
+        photo: 'Profilfoto hochladen',
+        cv: 'CV hochladen',
+      },
+      placeholders: {
+        school: 'ETH Zürich, EPFL, HSG, ZHAW…',
+        program: 'BSc Informatik',
+        experience:
+          'Praktikum bei AlpTech – Supply-Dashboards gebaut; Studentenprojekt: Intelligenter Energieregler…',
+        bio: 'Beschreibe, wofür du brennst und in welchem Team du aufblühst.',
+        portfolio: 'https://',
+        schoolOptional: 'Wo hast du deinen Abschluss gemacht?',
+        role: 'Founder & CEO, Head of Growth…',
+        hobbies: 'Design Sprints, Skifahren, Storytelling…',
+      },
+      cvAccepted: 'Akzeptiert: PDF, Word (.doc/.docx), TeX.',
+      viewCurrentCv: 'Aktuellen CV ansehen',
+      cvVisibilityOn: 'CV für Startups sichtbar',
+      cvVisibilityOff: 'CV privat halten bis zur Bewerbung',
+      buttons: {
+        cancel: 'Abbrechen',
+        save: 'Profil speichern',
+        saving: 'Speichern…',
+      },
+    },
+    authModal: {
+      titleRegister: 'Profil erstellen',
+      titleLogin: 'Willkommen zurück',
+      bodyRegister: 'Erzähl uns etwas über dich, damit wir passende Matches vorschlagen können.',
+      bodyLogin: 'Melde dich an, um auf deine Favoriten, Bewerbungen und dein Profil zuzugreifen.',
+      fields: {
+        fullName: 'Vollständiger Name',
+        type: 'Ich bin',
+        email: 'E-Mail',
+        password: 'Passwort',
+        confirmPassword: 'Passwort bestätigen',
+      },
+      typeOptions: {
+        student: 'Student·in',
+        startup: 'Startup',
+      },
+      actions: {
+        hide: 'Ausblenden',
+        show: 'Anzeigen',
+        forgotPassword: 'Passwort vergessen?',
+        createAccount: 'Account erstellen',
+        signIn: 'Anmelden',
+      },
+      switch: {
+        haveAccount: 'Schon ein Konto?',
+        newHere: 'Neu bei SwissStartup Connect?',
+        signInInstead: 'Stattdessen anmelden',
+        createProfile: 'Profil erstellen',
+      },
+      errors: {
+        missingEmail: 'Gib oben deine E-Mail ein, damit wir Anweisungen senden können.',
+      },
+      forgot: {
+        sending: 'Passwort-Mail wird gesendet…',
+        failed: 'Zurücksetzen fehlgeschlagen: {{message}}',
+        success: 'Prüfe dein Postfach auf den Link zum Zurücksetzen.',
+      },
+      feedback: {
+        verificationSent: 'Verifizierungs-E-Mail gesendet. Prüfe Posteingang und Spam.',
+        confirmEmail: 'Bestätige deine E-Mail, um alle Funktionen freizuschalten.',
+        welcome: 'Willkommen zurück, {{name}}!',
+      },
+      notice: {
+        confirmEmail:
+          'Bitte bestätige deine E-Mail-Adresse, um alle Funktionen freizuschalten. Nach der Bestätigung Seite aktualisieren, um dich zu bewerben.',
+        sending: 'Senden…',
+        resend: 'Verifizierungs-E-Mail erneut senden',
+      },
     },
     companies: {
       sort: {
@@ -3579,6 +3840,8 @@ const SwissStartupConnect = () => {
     const isFullTimeRole = employmentType.toLowerCase().includes('full');
     const hasFiniteDuration = Number.isFinite(durationMonths) && durationMonths > 0;
     const shouldShowTotal = !isFullTimeRole;
+    const currencyPrefix = translate('calculator.currency', 'CHF');
+    const notDisclosed = translate('calculator.notDisclosed', 'Not disclosed');
 
     const formatRowValue = (cadence) => {
       const convertValue = (value) =>
@@ -3590,7 +3853,7 @@ const SwissStartupConnect = () => {
       const formattedMax = formatCalculatorCurrency(maxConverted, cadence);
 
       if (!formattedMin && !formattedMax) {
-        return 'Not disclosed';
+        return notDisclosed;
       }
 
       const range = formattedMin && formattedMax
@@ -3599,16 +3862,43 @@ const SwissStartupConnect = () => {
           : `${formattedMin} – ${formattedMax}`
         : formattedMin || formattedMax;
 
-      return `CHF ${range}`;
+      return `${currencyPrefix} ${range}`;
     };
 
-    const monthLabel = formatDurationLabel(durationMonths);
+    const durationLabel = Number.isFinite(durationMonths)
+      ? translate(
+          durationMonths === 1 ? 'calculator.duration.one' : 'calculator.duration.other',
+          durationMonths === 1 ? '{{count}} month' : '{{count}} months',
+          { count: Math.round(durationMonths) }
+        )
+      : '';
 
     const rowDefinitions = [
-      { key: 'hour', label: 'Hourly', suffix: ' / hour' },
-      { key: 'week', label: 'Weekly', suffix: ' / week' },
-      { key: 'month', label: 'Monthly', suffix: ' / month' },
-      { key: 'year', label: isFullTimeRole ? 'Yearly' : 'Total', suffix: isFullTimeRole ? ' / year' : '' },
+      {
+        key: 'hour',
+        label: translate('calculator.rows.hour.label', 'Hourly'),
+        suffix: translate('calculator.rows.hour.suffix', ' / hour'),
+      },
+      {
+        key: 'week',
+        label: translate('calculator.rows.week.label', 'Weekly'),
+        suffix: translate('calculator.rows.week.suffix', ' / week'),
+      },
+      {
+        key: 'month',
+        label: translate('calculator.rows.month.label', 'Monthly'),
+        suffix: translate('calculator.rows.month.suffix', ' / month'),
+      },
+      {
+        key: 'year',
+        label: translate(
+          shouldShowTotal ? 'calculator.rows.total.label' : 'calculator.rows.year.label',
+          shouldShowTotal ? 'Total' : 'Yearly'
+        ),
+        suffix: shouldShowTotal
+          ? ''
+          : translate('calculator.rows.year.suffix', ' / year'),
+      },
     ];
 
     const rows = rowDefinitions.map((definition) => {
@@ -3620,7 +3910,7 @@ const SwissStartupConnect = () => {
         const formattedMax = formatCalculatorCurrency(totalMax, 'year');
 
         if (!formattedMin && !formattedMax) {
-          return { key: definition.key, label: definition.label, value: 'Not disclosed' };
+          return { key: definition.key, label: definition.label, value: notDisclosed };
         }
 
         const range = formattedMin && formattedMax
@@ -3629,39 +3919,66 @@ const SwissStartupConnect = () => {
             : `${formattedMin} – ${formattedMax}`
           : formattedMin || formattedMax;
 
-        const suffix = hasFiniteDuration && monthLabel ? ` (${monthLabel})` : '';
+        const durationSuffix = hasFiniteDuration && durationLabel
+          ? translate('calculator.rows.total.durationSuffix', ' ({{duration}})', {
+              duration: durationLabel,
+            })
+          : '';
+
         return {
           key: definition.key,
           label: definition.label,
-          value: `CHF ${range} total${suffix}`,
+          value: translate('calculator.rows.total.value', '{{value}} total{{suffix}}', {
+            value: `${currencyPrefix} ${range}`,
+            suffix: durationSuffix,
+          }),
         };
       }
 
       const value = formatRowValue(definition.key);
-      if (value === 'Not disclosed') {
+      if (value === notDisclosed) {
         return { key: definition.key, label: definition.label, value };
       }
 
-      return { key: definition.key, label: definition.label, value: `${value}${definition.suffix}` };
+      return {
+        key: definition.key,
+        label: definition.label,
+        value: translate('calculator.rows.valueWithSuffix', '{{value}}{{suffix}}', {
+          value,
+          suffix: definition.suffix,
+        }),
+      };
     });
 
-    const hoursLabel = selectedCalculatorJob.weekly_hours_label
+    const baseHoursLabel = selectedCalculatorJob.weekly_hours_label
       ? selectedCalculatorJob.weekly_hours_label.replace(/\s+/g, ' ')
-      : `${weeklyHours} hours/week`;
-    const noteParts = ['Based on the posted salary range'];
+      : '';
+    const hoursLabel = baseHoursLabel
+      ? baseHoursLabel
+      : translate('calculator.hoursFallback', '{{hours}} hours/week', { hours: weeklyHours });
+
+    const noteParts = [translate('calculator.note.base', 'Based on the posted salary range')];
     if (hoursLabel) {
-      noteParts.push(`Converted with ${hoursLabel}`);
+      noteParts.push(translate('calculator.note.converted', 'Converted with {{hours}}', { hours: hoursLabel }));
     }
     if (shouldShowTotal) {
-      if (hasFiniteDuration && monthLabel) {
-        noteParts.push(`Contract lasts ${monthLabel}`);
+      if (hasFiniteDuration && durationLabel) {
+        noteParts.push(
+          translate('calculator.note.contract', 'Contract lasts {{duration}}', {
+            duration: durationLabel,
+          })
+        );
       }
     } else if (selectedCalculatorJob.includes_thirteenth_salary) {
-      noteParts.push('Yearly amounts include a 13th salary');
+      noteParts.push(
+        translate('calculator.note.thirteenth', 'Yearly amounts include a 13th salary')
+      );
     }
 
-    return { rows, note: `${noteParts.join(' · ')}.` };
-  }, [selectedCalculatorJob]);
+    const note = noteParts.length > 0 ? `${noteParts.join(' · ')}.` : '';
+
+    return { rows, note };
+  }, [selectedCalculatorJob, translate]);
 
   useEffect(() => {
     const nextBounds = deriveSalaryBoundsFromJobs(normalizedJobs);
@@ -4758,7 +5075,10 @@ const SwissStartupConnect = () => {
       } else {
         setFeedback({
           type: 'success',
-          message: 'Verification email sent. Check your inbox and spam folder.',
+          message: translate(
+            'authModal.feedback.verificationSent',
+            'Verification email sent. Check your inbox and spam folder.'
+          ),
         });
       }
     } catch (error) {
@@ -4770,23 +5090,40 @@ const SwissStartupConnect = () => {
 
   const handleForgotPassword = async () => {
     if (!loginForm.email.trim()) {
-      setAuthError('Enter your email above so we can send reset instructions.');
+      setAuthError(
+        translate(
+          'authModal.errors.missingEmail',
+          'Enter your email above so we can send reset instructions.'
+        )
+      );
       return;
     }
 
-    setForgotPasswordMessage('Sending reset email…');
+    setForgotPasswordMessage(
+      translate('authModal.forgot.sending', 'Sending reset email…')
+    );
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(loginForm.email.trim(), {
         redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
       });
 
       if (error) {
-        setForgotPasswordMessage(`Reset failed: ${error.message}`);
+        setForgotPasswordMessage(
+          translate('authModal.forgot.failed', 'Reset failed: {{message}}', {
+            message: error.message,
+          })
+        );
       } else {
-        setForgotPasswordMessage('Check your inbox for a password reset link.');
+        setForgotPasswordMessage(
+          translate('authModal.forgot.success', 'Check your inbox for a password reset link.')
+        );
       }
     } catch (error) {
-      setForgotPasswordMessage(`Reset failed: ${error.message}`);
+      setForgotPasswordMessage(
+        translate('authModal.forgot.failed', 'Reset failed: {{message}}', {
+          message: error.message,
+        })
+      );
     }
   };
 
@@ -4809,10 +5146,18 @@ const SwissStartupConnect = () => {
         if (!data.user.email_confirmed_at) {
           setFeedback({
             type: 'info',
-            message: 'Check your inbox and confirm your email to unlock all features.',
+            message: translate(
+              'authModal.feedback.confirmEmail',
+              'Check your inbox and confirm your email to unlock all features.'
+            ),
           });
         }
-        setFeedback({ type: 'success', message: `Welcome back, ${mapped.name}!` });
+        setFeedback({
+          type: 'success',
+          message: translate('authModal.feedback.welcome', 'Welcome back, {{name}}!', {
+            name: mapped.name,
+          }),
+        });
       }
       setLoginForm({ email: '', password: '' });
       setForgotPasswordMessage('');
@@ -5446,7 +5791,7 @@ const SwissStartupConnect = () => {
                       </div>
                     </header>
                     <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
-                      Profile
+                      {translate('accountMenu.profile', 'Profile')}
                     </button>
                     <button
                       type="button"
@@ -5458,15 +5803,15 @@ const SwissStartupConnect = () => {
                         setShowUserMenu(false);
                       }}
                     >
-                      Privacy & security
+                      {translate('accountMenu.security', 'Privacy & security')}
                     </button>
                     {user.type === 'startup' && (
                       <>
                         <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>
-                          My jobs
+                          {translate('accountMenu.myJobs', 'My jobs')}
                         </button>
                         <button type="button" onClick={() => { setStartupModalOpen(true); setShowUserMenu(false); }}>
-                          Company profile
+                          {translate('accountMenu.companyProfile', 'Company profile')}
                         </button>
                         <button
                           type="button"
@@ -5475,15 +5820,15 @@ const SwissStartupConnect = () => {
                             openPostJobFlow();
                           }}
                         >
-                          Post vacancy
+                          {translate('accountMenu.postVacancy', 'Post vacancy')}
                         </button>
                         <button type="button" onClick={() => { setActiveTab('applications'); setShowUserMenu(false); }}>
-                          View applicants
+                          {translate('accountMenu.viewApplicants', 'View applicants')}
                         </button>
                       </>
                     )}
                     <button type="button" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
-                      Log out
+                      {translate('accountMenu.logout', 'Log out')}
                     </button>
                   </div>
                 )}
@@ -5497,11 +5842,15 @@ const SwissStartupConnect = () => {
         {user && !emailVerified && (
           <div className="ssc__notice">
             <p>
-              Please confirm your email address to unlock all features. Once confirmed, refresh this page and you can
-              apply to roles.
+              {translate(
+                'authModal.notice.confirmEmail',
+                'Please confirm your email address to unlock all features. Once confirmed, refresh this page and you can apply to roles.'
+              )}
             </p>
             <button type="button" onClick={resendVerificationEmail} disabled={resendingEmail}>
-              {resendingEmail ? 'Sending…' : 'Resend verification email'}
+              {resendingEmail
+                ? translate('authModal.notice.sending', 'Sending…')
+                : translate('authModal.notice.resend', 'Resend verification email')}
             </button>
           </div>
         )}
@@ -5850,7 +6199,7 @@ const SwissStartupConnect = () => {
                     onClick={() => setSalaryCalculatorOpen((prev) => !prev)}
                     aria-expanded={salaryCalculatorOpen}
                     aria-controls={SALARY_CALCULATOR_PANEL_ID}
-                    aria-label="Toggle salary calculator"
+                    aria-label={translate('calculator.toggleLabel', 'Toggle salary calculator')}
                     disabled={!salaryCalculatorRevealed}
                   >
                     <Calculator size={22} />
@@ -5862,25 +6211,29 @@ const SwissStartupConnect = () => {
                   >
                     <div className="ssc__calculator-head">
                       <div className="ssc__calculator-title">
-                        <span className="ssc__calculator-chip">Compensation insights</span>
-                        <h3>Salary calculator</h3>
+                        <span className="ssc__calculator-chip">
+                          {translate('calculator.chip', 'Compensation insights')}
+                        </span>
+                        <h3>{translate('calculator.title', 'Salary calculator')}</h3>
                       </div>
                       <button
                         type="button"
                         className="ssc__calculator-close"
                         onClick={() => setSalaryCalculatorOpen(false)}
-                        aria-label="Close salary calculator"
+                        aria-label={translate('calculator.closeLabel', 'Close salary calculator')}
                       >
                         <X size={16} />
                       </button>
                     </div>
                     {calculatorCompanies.length === 0 ? (
-                      <p className="ssc__calculator-empty">No roles available to convert yet.</p>
+                      <p className="ssc__calculator-empty">
+                        {translate('calculator.empty', 'No roles available to convert yet.')}
+                      </p>
                     ) : (
                       <>
                         <div className="ssc__calculator-fields">
                           <label htmlFor="calculator-company">
-                            <span>Company</span>
+                            <span>{translate('calculator.company', 'Company')}</span>
                             <div className="ssc__select-wrapper">
                               <select
                                 id="calculator-company"
@@ -5898,7 +6251,7 @@ const SwissStartupConnect = () => {
                             </div>
                           </label>
                           <label htmlFor="calculator-role">
-                            <span>Role</span>
+                            <span>{translate('calculator.role', 'Role')}</span>
                             <div className="ssc__select-wrapper">
                               <select
                                 id="calculator-role"
@@ -5909,7 +6262,7 @@ const SwissStartupConnect = () => {
                               >
                                 {calculatorJobs.length === 0 ? (
                                   <option value="" disabled>
-                                    No roles available
+                                    {translate('calculator.noRoles', 'No roles available')}
                                   </option>
                                 ) : (
                                   calculatorJobs.map((job) => (
@@ -7330,13 +7683,18 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Update your profile</h2>
-              <p>Keep startups in the loop with your latest projects, studies, and documents.</p>
+              <h2>{translate('profileModal.title', 'Update your profile')}</h2>
+              <p>
+                {translate(
+                  'profileModal.subtitle',
+                  'Keep startups in the loop with your latest projects, studies, and documents.'
+                )}
+              </p>
             </header>
             <form className="ssc__modal-body" onSubmit={handleProfileSubmit}>
               <div className="ssc__profile-grid">
                 <label className="ssc__field">
-                  <span>Full name</span>
+                  <span>{translate('profileModal.fields.fullName', 'Full name')}</span>
                   <input
                     type="text"
                     value={profileForm.full_name}
@@ -7348,100 +7706,127 @@ const SwissStartupConnect = () => {
                 {isStudent ? (
                   <>
                     <label className="ssc__field">
-                      <span>University or school</span>
+                      <span>{translate('profileModal.fields.school', 'University or school')}</span>
                       <input
                         type="text"
                         value={profileForm.university}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, university: event.target.value }))}
-                        placeholder="ETH Zürich, EPFL, HSG, ZHAW…"
+                        placeholder={translate(
+                          'profileModal.placeholders.school',
+                          'ETH Zürich, EPFL, HSG, ZHAW…'
+                        )}
                       />
                     </label>
                     <label className="ssc__field">
-                      <span>Programme</span>
+                      <span>{translate('profileModal.fields.program', 'Programme')}</span>
                       <input
                         type="text"
                         value={profileForm.program}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, program: event.target.value }))}
-                        placeholder="BSc Computer Science"
+                        placeholder={translate(
+                          'profileModal.placeholders.program',
+                          'BSc Computer Science'
+                        )}
                       />
                     </label>
                     <label className="ssc__field">
-                      <span>Experience highlights</span>
+                      <span>{translate('profileModal.fields.experience', 'Experience highlights')}</span>
                       <textarea
                         rows={3}
                         value={profileForm.experience}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, experience: event.target.value }))}
-                        placeholder="Intern at AlpTech—built supply dashboards; Student project: Smart energy router…"
+                        placeholder={translate(
+                          'profileModal.placeholders.experience',
+                          'Intern at AlpTech—built supply dashboards; Student project: Smart energy router…'
+                        )}
                       />
                     </label>
                     <label className="ssc__field">
-                      <span>Short bio</span>
+                      <span>{translate('profileModal.fields.bio', 'Short bio')}</span>
                       <textarea
                         rows={3}
                         value={profileForm.bio}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value }))}
-                        placeholder="Describe what you’re passionate about and the kind of team you thrive in."
+                        placeholder={translate(
+                          'profileModal.placeholders.bio',
+                          'Describe what you’re passionate about and the kind of team you thrive in.'
+                        )}
                       />
                     </label>
                     <label className="ssc__field">
-                      <span>Portfolio or LinkedIn</span>
+                      <span>{translate('profileModal.fields.portfolio', 'Portfolio or LinkedIn')}</span>
                       <input
                         type="url"
                         value={profileForm.portfolio_url}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, portfolio_url: event.target.value }))}
-                        placeholder="https://"
+                        placeholder={translate('profileModal.placeholders.portfolio', 'https://')}
                       />
                     </label>
                   </>
                 ) : (
                   <>
                     <label className="ssc__field">
-                      <span>School / University (optional)</span>
+                      <span>{translate('profileModal.fields.schoolOptional', 'School / University (optional)')}</span>
                       <input
                         type="text"
                         value={profileForm.university}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, university: event.target.value }))}
-                        placeholder="Where did you graduate from?"
+                        placeholder={translate(
+                          'profileModal.placeholders.schoolOptional',
+                          'Where did you graduate from?'
+                        )}
                       />
                     </label>
                     <label className="ssc__field">
-                      <span>Role in this startup</span>
+                      <span>{translate('profileModal.fields.role', 'Role in this startup')}</span>
                       <input
                         type="text"
                         value={profileForm.experience}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, experience: event.target.value }))}
-                        placeholder="Founder & CEO, Head of Growth…"
+                        placeholder={translate(
+                          'profileModal.placeholders.role',
+                          'Founder & CEO, Head of Growth…'
+                        )}
                       />
                     </label>
                     <label className="ssc__field">
-                      <span>Skills & hobbies (optional)</span>
+                      <span>{translate('profileModal.fields.hobbies', 'Skills & hobbies (optional)')}</span>
                       <textarea
                         rows={3}
                         value={profileForm.bio}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value }))}
-                        placeholder="Design sprints, skiing, product storytelling…"
+                        placeholder={translate(
+                          'profileModal.placeholders.hobbies',
+                          'Design sprints, skiing, product storytelling…'
+                        )}
                       />
                     </label>
                   </>
                 )}
 
                 <label className="ssc__field">
-                  <span>Upload profile photo</span>
+                  <span>{translate('profileModal.fields.photo', 'Upload profile photo')}</span>
                   <input type="file" accept="image/*" onChange={handleAvatarUpload} />
                   {profileForm.avatar_url && (
-                    <img className="ssc__avatar-preview" src={profileForm.avatar_url} alt="Profile avatar" />
+                    <img
+                      className="ssc__avatar-preview"
+                      src={profileForm.avatar_url}
+                      alt={translate('profileModal.avatarAlt', 'Profile avatar')}
+                    />
                   )}
                 </label>
 
                 {isStudent && (
                   <label className="ssc__field">
-                    <span>Upload CV</span>
+                    <span>{translate('profileModal.fields.cv', 'Upload CV')}</span>
                     <input type="file" accept=".pdf,.doc,.docx,.tex" onChange={handleCvUpload} />
-                    <small className="ssc__field-note">Accepted: PDF, Word (.doc/.docx), TeX.</small>
+                    <small className="ssc__field-note">
+                      {translate('profileModal.cvAccepted', 'Accepted: PDF, Word (.doc/.docx), TeX.')}
+                    </small>
                     {profileForm.cv_url && (
                       <div className="ssc__cv-visibility">
                         <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
-                          View current CV
+                          {translate('profileModal.viewCurrentCv', 'View current CV')}
                         </a>
                         <label className="ssc__switch">
                           <input
@@ -7453,8 +7838,8 @@ const SwissStartupConnect = () => {
                           />
                           <span>
                             {profileForm.cv_public
-                              ? 'CV visible to startups'
-                              : 'Keep CV private until you apply'}
+                              ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
+                              : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
                           </span>
                         </label>
                       </div>
@@ -7465,10 +7850,12 @@ const SwissStartupConnect = () => {
 
               <div className="ssc__modal-actions">
                 <button type="button" className="ssc__ghost-btn" onClick={() => setProfileModalOpen(false)}>
-                  Cancel
+                  {translate('profileModal.buttons.cancel', 'Cancel')}
                 </button>
                 <button type="submit" className="ssc__primary-btn" disabled={profileSaving}>
-                  {profileSaving ? 'Saving…' : 'Save profile'}
+                  {profileSaving
+                    ? translate('profileModal.buttons.saving', 'Saving…')
+                    : translate('profileModal.buttons.save', 'Save profile')}
                 </button>
               </div>
             </form>
@@ -7857,11 +8244,21 @@ const SwissStartupConnect = () => {
             >
               <X size={18} />
             </button>
-            <h2>{isRegistering ? 'Create your profile' : 'Welcome back'}</h2>
+            <h2>
+              {isRegistering
+                ? translate('authModal.titleRegister', 'Create your profile')
+                : translate('authModal.titleLogin', 'Welcome back')}
+            </h2>
             <p>
               {isRegistering
-                ? 'Tell us a little about yourself so we can surface the right matches.'
-                : 'Sign in to access your saved roles, applications, and profile.'}
+                ? translate(
+                    'authModal.bodyRegister',
+                    'Tell us a little about yourself so we can surface the right matches.'
+                  )
+                : translate(
+                    'authModal.bodyLogin',
+                    'Sign in to access your saved roles, applications, and profile.'
+                  )}
             </p>
 
             {authError && <div className="ssc__alert">{authError}</div>}
@@ -7870,7 +8267,7 @@ const SwissStartupConnect = () => {
               {isRegistering && (
                 <>
                   <label className="ssc__field">
-                    <span>Full name</span>
+                    <span>{translate('authModal.fields.fullName', 'Full name')}</span>
                     <input
                       type="text"
                       value={registerForm.name}
@@ -7879,20 +8276,24 @@ const SwissStartupConnect = () => {
                     />
                   </label>
                   <label className="ssc__field">
-                    <span>I am a</span>
+                    <span>{translate('authModal.fields.type', 'I am a')}</span>
                     <select
                       value={registerForm.type}
                       onChange={(event) => setRegisterForm((prev) => ({ ...prev, type: event.target.value }))}
                     >
-                      <option value="student">Student</option>
-                      <option value="startup">Startup</option>
+                      <option value="student">
+                        {translate('authModal.typeOptions.student', 'Student')}
+                      </option>
+                      <option value="startup">
+                        {translate('authModal.typeOptions.startup', 'Startup')}
+                      </option>
                     </select>
                   </label>
                 </>
               )}
 
               <label className="ssc__field">
-                <span>Email</span>
+                <span>{translate('authModal.fields.email', 'Email')}</span>
                 <input
                   type="email"
                   value={isRegistering ? registerForm.email : loginForm.email}
@@ -7906,7 +8307,7 @@ const SwissStartupConnect = () => {
               </label>
 
               <label className="ssc__field">
-                <span>Password</span>
+                <span>{translate('authModal.fields.password', 'Password')}</span>
                 <div className="ssc__password-input">
                   <input
                     type={isRegistering ? (showRegisterPassword ? 'text' : 'password') : showLoginPassword ? 'text' : 'password'}
@@ -7929,18 +8330,18 @@ const SwissStartupConnect = () => {
                   >
                     {isRegistering
                       ? showRegisterPassword
-                        ? 'Hide'
-                        : 'Show'
+                        ? translate('authModal.actions.hide', 'Hide')
+                        : translate('authModal.actions.show', 'Show')
                       : showLoginPassword
-                      ? 'Hide'
-                      : 'Show'}
+                      ? translate('authModal.actions.hide', 'Hide')
+                      : translate('authModal.actions.show', 'Show')}
                   </button>
                 </div>
               </label>
 
               {isRegistering && (
                 <label className="ssc__field">
-                  <span>Confirm password</span>
+                  <span>{translate('authModal.fields.confirmPassword', 'Confirm password')}</span>
                   <div className="ssc__password-input">
                     <input
                       type={showRegisterConfirm ? 'text' : 'password'}
@@ -7953,7 +8354,9 @@ const SwissStartupConnect = () => {
                       className="ssc__link-button"
                       onClick={() => setShowRegisterConfirm((prev) => !prev)}
                     >
-                      {showRegisterConfirm ? 'Hide' : 'Show'}
+                      {showRegisterConfirm
+                        ? translate('authModal.actions.hide', 'Hide')
+                        : translate('authModal.actions.show', 'Show')}
                     </button>
                   </div>
                 </label>
@@ -7962,19 +8365,23 @@ const SwissStartupConnect = () => {
               {!isRegistering && (
                 <div className="ssc__forgot">
                   <button type="button" className="ssc__link-button" onClick={handleForgotPassword}>
-                    Forgot password?
+                    {translate('authModal.actions.forgotPassword', 'Forgot password?')}
                   </button>
                   {forgotPasswordMessage && <small>{forgotPasswordMessage}</small>}
                 </div>
               )}
 
               <button type="submit" className="ssc__primary-btn ssc__primary-btn--full">
-                {isRegistering ? 'Create account' : 'Sign in'}
+                {isRegistering
+                  ? translate('authModal.actions.createAccount', 'Create account')
+                  : translate('authModal.actions.signIn', 'Sign in')}
               </button>
             </form>
 
             <div className="ssc__auth-switch">
-              {isRegistering ? 'Already have an account?' : 'New to SwissStartup Connect?'}{' '}
+              {isRegistering
+                ? translate('authModal.switch.haveAccount', 'Already have an account?')
+                : translate('authModal.switch.newHere', 'New to SwissStartup Connect?')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -7984,7 +8391,9 @@ const SwissStartupConnect = () => {
                   setRegisterConfirm('');
                 }}
               >
-                {isRegistering ? 'Sign in instead' : 'Create a profile'}
+                {isRegistering
+                  ? translate('authModal.switch.signInInstead', 'Sign in instead')
+                  : translate('authModal.switch.createProfile', 'Create a profile')}
               </button>
             </div>
           </div>
