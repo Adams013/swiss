@@ -1583,7 +1583,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 1.2rem;
-  z-index: 30;
+  z-index: 18;
   opacity: 0;
   transform: translateY(18px);
   transition: opacity 0.25s ease, transform 0.25s ease;
