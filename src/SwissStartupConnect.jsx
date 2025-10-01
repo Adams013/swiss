@@ -561,6 +561,8 @@ const SALARY_FILTER_CADENCE_OPTIONS = [
   { value: 'year', label: 'Yearly / total' },
 ];
 
+const SALARY_CADENCE_OPTIONS = SALARY_FILTER_CADENCE_OPTIONS;
+
 const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
 
 const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
@@ -1271,6 +1273,7 @@ const SwissStartupConnect = () => {
   const [selectedJob, setSelectedJob] = useState(null);
 
   const [feedback, setFeedback] = useState(null);
+  const [toast, setToast] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -1384,12 +1387,21 @@ const SwissStartupConnect = () => {
   const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
+  const showToast = useCallback((message) => {
+    setToast({ id: Date.now(), message });
+  }, []);
 
   useEffect(() => {
     if (!feedback) return undefined;
     const timeout = setTimeout(clearFeedback, 4000);
     return () => clearTimeout(timeout);
   }, [feedback, clearFeedback]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timeout = setTimeout(() => setToast(null), 1000);
+    return () => clearTimeout(timeout);
+  }, [toast]);
 
   useEffect(() => {
     if (!salaryCalculatorOpen || typeof window === 'undefined') {
@@ -2870,7 +2882,8 @@ const SwissStartupConnect = () => {
           name: user.name,
           type: user.type,
         });
-        setFeedback({ type: 'success', message: 'Profile updated.' });
+        showToast('Saved successfully!');
+        clearFeedback();
         setProfileModalOpen(false);
       }
     } catch (error) {
@@ -2905,8 +2918,9 @@ const SwissStartupConnect = () => {
         setFeedback({ type: 'error', message: error.message });
       } else {
         setStartupProfile(data);
+        showToast('Saved successfully!');
         setFeedback({
-          type: 'success',
+          type: 'info',
           message: 'Startup profile submitted. Verification updates will appear here.',
         });
         setStartupModalOpen(false);
@@ -3330,10 +3344,15 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const successMessage = convertedToFullTime
-        ? 'Job posted as a full-time role because it exceeds 40 hours per week.'
-        : 'Job posted successfully!';
-      setFeedback({ type: 'success', message: successMessage });
+      showToast('Job published successfully!');
+      if (convertedToFullTime) {
+        setFeedback({
+          type: 'info',
+          message: 'Job posted as a full-time role because it exceeds 40 hours per week.',
+        });
+      } else {
+        clearFeedback();
+      }
       setPostJobModalOpen(false);
       setJobForm({
         title: '',
@@ -3986,6 +4005,12 @@ const SwissStartupConnect = () => {
 
   return (
     <div className="ssc">
+      {toast && (
+        <div className="ssc__toast" role="status" aria-live="polite">
+          <CheckCircle2 size={20} />
+          <span className="ssc__toast-message">{toast.message}</span>
+        </div>
+      )}
       <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__brand">
@@ -6067,62 +6092,80 @@ const SwissStartupConnect = () => {
                     <ChevronDown className="ssc__select-caret" size={16} />
                   </div>
                 </label>
-                <div className="ssc__field ssc__field--range">
-                  <span className="ssc__field-label">Salary range</span>
-                  <div className="ssc__field-range-row">
-                    <label className="ssc__field-range-input">
-                      <span>Min</span>
-                      <input
-                        inputMode="decimal"
-                        pattern="[0-9]*[.,]?[0-9]*"
-                        value={jobForm.salary_min}
-                        onChange={(event) =>
-                          setJobForm((prev) => ({ ...prev, salary_min: sanitizeDecimalInput(event.target.value) }))
-                        }
-                        placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
-                        disabled={!jobSalaryCadence}
-                      />
-                    </label>
-                    <div className="ssc__field-range-divider" aria-hidden="true">
-                      –
+                <div className="ssc__field ssc__field--comp">
+                  <div className="ssc__field-range">
+                    <div className="ssc__field-label-row">
+                      <span className="ssc__field-label">Salary range</span>
+                      <div className="ssc__field-pill-group">
+                        {SALARY_CADENCE_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`ssc__field-pill ${jobSalaryCadence === option.value ? 'is-active' : ''}`}
+                            onClick={() => handleJobSalaryCadenceChange(option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <label className="ssc__field-range-input">
-                      <span>Max</span>
-                      <input
-                        inputMode="decimal"
-                        pattern="[0-9]*[.,]?[0-9]*"
-                        value={jobForm.salary_max}
-                        onChange={(event) =>
-                          setJobForm((prev) => ({ ...prev, salary_max: sanitizeDecimalInput(event.target.value) }))
-                        }
-                        placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
-                        disabled={!jobSalaryCadence}
-                      />
-                    </label>
+                    <div className="ssc__field-range-row">
+                      <label className="ssc__field-range-input">
+                        <span>Min</span>
+                        <input
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          value={jobForm.salary_min}
+                          onChange={(event) =>
+                            setJobForm((prev) => ({ ...prev, salary_min: sanitizeDecimalInput(event.target.value) }))
+                          }
+                          onBlur={() => handleJobSalaryBlur('salary_min')}
+                          placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                          disabled={!jobSalaryCadence}
+                        />
+                      </label>
+                      <div className="ssc__field-range-divider" aria-hidden="true">
+                        –
+                      </div>
+                      <label className="ssc__field-range-input">
+                        <span>Max</span>
+                        <input
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          value={jobForm.salary_max}
+                          onChange={(event) =>
+                            setJobForm((prev) => ({ ...prev, salary_max: sanitizeDecimalInput(event.target.value) }))
+                          }
+                          onBlur={() => handleJobSalaryBlur('salary_max')}
+                          placeholder={jobSalaryCadence ? `e.g. ${jobSalaryPlaceholder}` : 'Select cadence first'}
+                          disabled={!jobSalaryCadence}
+                        />
+                      </label>
+                    </div>
+                    <small className="ssc__field-note">{jobSalaryHelperText}</small>
+                    {jobSalaryPreview && (
+                      <small className="ssc__field-note ssc__field-note--muted">
+                        {jobForm.employment_type === 'Full-time'
+                          ? `Full-time equivalent: ${jobSalaryPreview}`
+                          : `Approximate: ${jobSalaryPreview}`}
+                      </small>
+                    )}
                   </div>
-                  <small className="ssc__field-note">{jobSalaryHelperText}</small>
-                  {jobSalaryPreview && (
-                    <small className="ssc__field-note ssc__field-note--muted">
-                      {jobForm.employment_type === 'Full-time'
-                        ? `Full-time equivalent: ${jobSalaryPreview}`
-                        : `Approximate: ${jobSalaryPreview}`}
-                    </small>
-                  )}
+                  <label className="ssc__field-equity">
+                    <span>Equity (%)</span>
+                    <input
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      value={jobForm.equity}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({ ...prev, equity: sanitizeDecimalInput(event.target.value) }))
+                      }
+                      onBlur={handleJobEquityBlur}
+                      placeholder="Optional (e.g. 0.5)"
+                    />
+                    <small className="ssc__field-note">Allowed range: 0.1 – 100. Leave blank if none.</small>
+                  </label>
                 </div>
-                <label className="ssc__field">
-                  <span>Equity (%)</span>
-                  <input
-                    inputMode="decimal"
-                    pattern="[0-9]*[.,]?[0-9]*"
-                    value={jobForm.equity}
-                    onChange={(event) =>
-                      setJobForm((prev) => ({ ...prev, equity: sanitizeDecimalInput(event.target.value) }))
-                    }
-                    onBlur={handleJobEquityBlur}
-                    placeholder="Optional (e.g. 0.5)"
-                  />
-                  <small className="ssc__field-note">Allowed range: 0.1 – 100. Leave blank if none.</small>
-                </label>
               </div>
 
               <label className="ssc__field">
