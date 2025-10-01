@@ -152,6 +152,73 @@ const mockCompanies = [
   },
 ];
 
+const SWISS_LOCATION_OPTIONS = [
+  { value: 'Zurich, Switzerland', label: 'Zurich' },
+  { value: 'Geneva, Switzerland', label: 'Geneva' },
+  { value: 'Basel, Switzerland', label: 'Basel' },
+  { value: 'Bern, Switzerland', label: 'Bern' },
+  { value: 'Lausanne, Switzerland', label: 'Lausanne' },
+  { value: 'Lugano, Switzerland', label: 'Lugano' },
+  { value: 'Lucerne, Switzerland', label: 'Lucerne' },
+  { value: 'St. Gallen, Switzerland', label: 'St. Gallen' },
+  { value: 'Fribourg, Switzerland', label: 'Fribourg' },
+  { value: 'Neuchâtel, Switzerland', label: 'Neuchâtel' },
+  { value: 'Winterthur, Switzerland', label: 'Winterthur' },
+  { value: 'Zug, Switzerland', label: 'Zug' },
+  { value: 'Sion, Switzerland', label: 'Sion' },
+  { value: 'Chur, Switzerland', label: 'Chur' },
+  { value: 'Biel/Bienne, Switzerland', label: 'Biel/Bienne' },
+  { value: 'Schaffhausen, Switzerland', label: 'Schaffhausen' },
+  { value: 'Thun, Switzerland', label: 'Thun' },
+  { value: 'La Chaux-de-Fonds, Switzerland', label: 'La Chaux-de-Fonds' },
+  { value: 'Locarno, Switzerland', label: 'Locarno' },
+  { value: 'Bellinzona, Switzerland', label: 'Bellinzona' },
+  { value: 'Aarau, Switzerland', label: 'Aarau' },
+  { value: 'St. Moritz, Switzerland', label: 'St. Moritz' },
+  { value: 'Canton of Zurich', label: 'Canton of Zurich' },
+  { value: 'Canton of Bern', label: 'Canton of Bern' },
+  { value: 'Canton of Lucerne', label: 'Canton of Lucerne' },
+  { value: 'Canton of Uri', label: 'Canton of Uri' },
+  { value: 'Canton of Schwyz', label: 'Canton of Schwyz' },
+  { value: 'Canton of Obwalden', label: 'Canton of Obwalden' },
+  { value: 'Canton of Nidwalden', label: 'Canton of Nidwalden' },
+  { value: 'Canton of Glarus', label: 'Canton of Glarus' },
+  { value: 'Canton of Zug', label: 'Canton of Zug' },
+  { value: 'Canton of Fribourg', label: 'Canton of Fribourg' },
+  { value: 'Canton of Solothurn', label: 'Canton of Solothurn' },
+  { value: 'Canton of Basel-Stadt', label: 'Canton of Basel-Stadt' },
+  { value: 'Canton of Basel-Landschaft', label: 'Canton of Basel-Landschaft' },
+  { value: 'Canton of Schaffhausen', label: 'Canton of Schaffhausen' },
+  { value: 'Canton of Appenzell Ausserrhoden', label: 'Canton of Appenzell Ausserrhoden' },
+  { value: 'Canton of Appenzell Innerrhoden', label: 'Canton of Appenzell Innerrhoden' },
+  { value: 'Canton of St. Gallen', label: 'Canton of St. Gallen' },
+  { value: 'Canton of Graubünden', label: 'Canton of Graubünden' },
+  { value: 'Canton of Aargau', label: 'Canton of Aargau' },
+  { value: 'Canton of Thurgau', label: 'Canton of Thurgau' },
+  { value: 'Canton of Ticino', label: 'Canton of Ticino' },
+  { value: 'Canton of Vaud', label: 'Canton of Vaud' },
+  { value: 'Canton of Valais', label: 'Canton of Valais' },
+  { value: 'Canton of Neuchâtel', label: 'Canton of Neuchâtel' },
+  { value: 'Canton of Geneva', label: 'Canton of Geneva' },
+  { value: 'Canton of Jura', label: 'Canton of Jura' },
+  { value: 'Remote within Switzerland', label: 'Remote within Switzerland' },
+  { value: 'Hybrid (Zurich)', label: 'Hybrid – Zurich' },
+  { value: 'Hybrid (Geneva)', label: 'Hybrid – Geneva' },
+  { value: 'Hybrid (Lausanne)', label: 'Hybrid – Lausanne' },
+  { value: 'Hybrid (Basel)', label: 'Hybrid – Basel' },
+  { value: 'Across Switzerland', label: 'Across Switzerland' },
+];
+
+const ALLOWED_SWISS_LOCATIONS = new Set(
+  SWISS_LOCATION_OPTIONS.map((option) =>
+    option.value
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase(),
+  ),
+);
+
 const steps = [
   {
     id: 1,
@@ -368,6 +435,34 @@ const filterPredicates = quickFilters.reduce((acc, filter) => {
   return acc;
 }, {});
 
+const normalizeLocationValue = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+};
+
+const isAllowedSwissLocation = (value) => {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = normalizeLocationValue(value);
+  if (ALLOWED_SWISS_LOCATIONS.has(normalized)) {
+    return true;
+  }
+
+  // Allow values that include a known location keyword even if prefixed with descriptors (e.g., "Hybrid (Zurich)").
+  return Array.from(ALLOWED_SWISS_LOCATIONS).some((candidate) => {
+    return normalized.includes(candidate);
+  });
+};
+
 const SALARY_MIN_FIELDS = [
   'salary_min',
   'salary_min_chf',
@@ -394,8 +489,22 @@ const SALARY_MAX_FIELDS = [
   'pay_max',
 ];
 
-const EQUITY_MIN_FIELDS = ['equity_min', 'equity_min_percentage', 'equity_floor', 'equity_low'];
-const EQUITY_MAX_FIELDS = ['equity_max', 'equity_max_percentage', 'equity_ceiling', 'equity_high'];
+const EQUITY_MIN_FIELDS = [
+  'equity_min',
+  'equity_min_percentage',
+  'equity_percentage',
+  'equity_value',
+  'equity_floor',
+  'equity_low',
+];
+const EQUITY_MAX_FIELDS = [
+  'equity_max',
+  'equity_max_percentage',
+  'equity_percentage',
+  'equity_value',
+  'equity_ceiling',
+  'equity_high',
+];
 const WEEKLY_HOURS_FIELDS = [
   'weekly_hours_value',
   'weekly_hours',
@@ -2016,12 +2125,16 @@ const SwissStartupConnect = () => {
       const normalizedSalaryMax = Number.isFinite(job.salary_max_value)
         ? job.salary_max_value
         : salaryMaxValue;
-      const normalizedEquityMin = Number.isFinite(job.equity_min_value)
+      const resolvedEquityMin = Number.isFinite(job.equity_min_value)
         ? job.equity_min_value
         : equityMinValue;
-      const normalizedEquityMax = Number.isFinite(job.equity_max_value)
+      const resolvedEquityMaxCandidate = Number.isFinite(job.equity_max_value)
         ? job.equity_max_value
         : equityMaxValue;
+      const normalizedEquityMin = Number.isFinite(resolvedEquityMin) ? resolvedEquityMin : null;
+      const normalizedEquityMax = Number.isFinite(resolvedEquityMaxCandidate)
+        ? resolvedEquityMaxCandidate
+        : normalizedEquityMin;
       const salaryCadence = normalizeSalaryCadence(job.salary_cadence || detectSalaryPeriod(job, job.salary));
       const monthlyMin = Number.isFinite(normalizedSalaryMin) ? normalizedSalaryMin : null;
       const monthlyMax = Number.isFinite(normalizedSalaryMax) ? normalizedSalaryMax : null;
@@ -2962,6 +3075,75 @@ const SwissStartupConnect = () => {
     });
   };
 
+  const handleJobWeeklyHoursBlur = () => {
+    let convertedToFullTime = false;
+    setJobForm((prev) => {
+      if (prev.employment_type !== 'Part-time') {
+        return prev;
+      }
+
+      const sanitized = sanitizeDecimalInput(prev.weekly_hours ?? '');
+      if (!sanitized) {
+        return { ...prev, weekly_hours: '' };
+      }
+
+      const numeric = Number.parseFloat(sanitized.replace(',', '.'));
+      if (!Number.isFinite(numeric)) {
+        return { ...prev, weekly_hours: '' };
+      }
+
+      if (numeric > 40) {
+        convertedToFullTime = true;
+        return {
+          ...prev,
+          employment_type: 'Full-time',
+          weekly_hours: '',
+        };
+      }
+
+      const normalized = Number.isInteger(numeric)
+        ? String(numeric)
+        : formatEquityValue(numeric).replace('%', '');
+
+      return {
+        ...prev,
+        weekly_hours: normalized,
+      };
+    });
+
+    if (convertedToFullTime) {
+      setFeedback({ type: 'info', message: 'Part-time roles over 40h/week switch to full-time automatically.' });
+    }
+  };
+
+  const handleInternshipDurationBlur = () => {
+    let clamped = false;
+    setJobForm((prev) => {
+      if (prev.employment_type !== 'Internship') {
+        return prev;
+      }
+
+      const raw = prev.internship_duration_months ?? '';
+      const numeric = Number.parseInt(raw.replace(/[^0-9]/g, ''), 10);
+
+      if (!Number.isFinite(numeric)) {
+        return { ...prev, internship_duration_months: '' };
+      }
+
+      const limited = clamp(numeric, 1, 12);
+      clamped = limited !== numeric;
+
+      return {
+        ...prev,
+        internship_duration_months: String(limited),
+      };
+    });
+
+    if (clamped) {
+      setFeedback({ type: 'info', message: 'Internships can run for a maximum of 12 months.' });
+    }
+  };
+
   const handlePostJobSubmit = async (event) => {
     event.preventDefault();
     if (!startupProfile?.id || !user) {
@@ -2978,6 +3160,18 @@ const SwissStartupConnect = () => {
     setPostJobError('');
 
     try {
+      const locationSelection = jobForm.location?.trim() ?? '';
+      if (!isAllowedSwissLocation(locationSelection)) {
+        setPostJobError('Choose a Swiss city, canton, or remote option from the list.');
+        setPostingJob(false);
+        return;
+      }
+
+      const locationOption = SWISS_LOCATION_OPTIONS.find(
+        (option) => normalizeLocationValue(option.value) === normalizeLocationValue(locationSelection),
+      );
+      const locationValue = locationOption ? locationOption.value : locationSelection;
+
       const cadenceSelection = normalizeSalaryCadence(jobForm.salary_cadence) || null;
       if (!cadenceSelection) {
         setPostJobError('Select whether the salary is hourly, weekly, monthly, or yearly.');
@@ -3020,8 +3214,9 @@ const SwissStartupConnect = () => {
         return;
       }
 
+      let employmentTypeForPayload = jobForm.employment_type;
       let weeklyHoursNumeric = null;
-      if (jobForm.employment_type === 'Part-time') {
+      if (employmentTypeForPayload === 'Part-time') {
         const weeklyHoursRaw = jobForm.weekly_hours?.trim() ?? '';
         const parsedWeeklyHours = parseWeeklyHoursValue(weeklyHoursRaw);
         if (!Number.isFinite(parsedWeeklyHours)) {
@@ -3030,11 +3225,17 @@ const SwissStartupConnect = () => {
           return;
         }
 
-        weeklyHoursNumeric = parsedWeeklyHours;
+        if (parsedWeeklyHours > 40) {
+          employmentTypeForPayload = 'Full-time';
+        } else {
+          weeklyHoursNumeric = parsedWeeklyHours;
+        }
       }
 
+      const convertedToFullTime = jobForm.employment_type === 'Part-time' && employmentTypeForPayload === 'Full-time';
+
       let internshipDurationNumeric = null;
-      if (jobForm.employment_type === 'Internship') {
+      if (employmentTypeForPayload === 'Internship') {
         const durationRaw = jobForm.internship_duration_months?.trim() ?? '';
         const parsedDuration = Number.parseInt(durationRaw, 10);
 
@@ -3044,10 +3245,19 @@ const SwissStartupConnect = () => {
           return;
         }
 
+        if (parsedDuration > 12) {
+          setPostJobError('Internships can run for a maximum of 12 months.');
+          setPostingJob(false);
+          return;
+        }
+
         internshipDurationNumeric = parsedDuration;
       }
 
-      const hoursForConversion = weeklyHoursNumeric ?? FULL_TIME_WEEKLY_HOURS;
+      const hoursForConversion =
+        employmentTypeForPayload === 'Part-time' && Number.isFinite(weeklyHoursNumeric)
+          ? weeklyHoursNumeric
+          : FULL_TIME_WEEKLY_HOURS;
       const monthlyMin = convertCadenceValueToMonthly(salaryMinValue, cadenceSelection, hoursForConversion);
       const monthlyMax = convertCadenceValueToMonthly(salaryMaxValue, cadenceSelection, hoursForConversion);
 
@@ -3080,19 +3290,23 @@ const SwissStartupConnect = () => {
         equityDisplay = `${formatEquityValue(parsedEquity)}%`;
       }
 
+      const weeklyHoursLabel =
+        employmentTypeForPayload === 'Part-time' && Number.isFinite(weeklyHoursNumeric)
+          ? formatWeeklyHoursLabel(weeklyHoursNumeric)
+          : null;
+
       const payload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
-        location: jobForm.location.trim(),
-        employment_type: jobForm.employment_type,
+        location: locationValue,
+        employment_type: employmentTypeForPayload,
         salary: salaryDisplay,
         salary_cadence: cadenceSelection,
         salary_min_value: Math.round(monthlyMin),
         salary_max_value: Math.round(monthlyMax),
         equity: equityNumericValue != null ? equityDisplay : null,
         equity_min_value: equityNumericValue != null ? equityNumericValue : null,
-        equity_max_value: equityNumericValue != null ? equityNumericValue : null,
         description: jobForm.description.trim(),
         requirements: jobForm.requirements
           ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
@@ -3105,9 +3319,9 @@ const SwissStartupConnect = () => {
           : [],
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
-        weekly_hours_value: weeklyHoursNumeric,
-        weekly_hours: weeklyHoursNumeric != null ? formatWeeklyHoursLabel(weeklyHoursNumeric) : null,
-        internship_duration_months: internshipDurationNumeric,
+        weekly_hours_value: employmentTypeForPayload === 'Part-time' ? weeklyHoursNumeric : null,
+        weekly_hours: weeklyHoursLabel,
+        internship_duration_months: employmentTypeForPayload === 'Internship' ? internshipDurationNumeric : null,
       };
 
       const { error } = await supabase.from('jobs').insert(payload);
@@ -3116,7 +3330,10 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      setFeedback({ type: 'success', message: 'Job posted successfully!' });
+      const successMessage = convertedToFullTime
+        ? 'Job posted as a full-time role because it exceeds 40 hours per week.'
+        : 'Job posted successfully!';
+      setFeedback({ type: 'success', message: successMessage });
       setPostJobModalOpen(false);
       setJobForm({
         title: '',
@@ -5742,33 +5959,48 @@ const SwissStartupConnect = () => {
                 </label>
                 <label className="ssc__field">
                   <span>Location</span>
-                  <input
-                    type="text"
-                    value={jobForm.location}
-                    onChange={(event) => setJobForm((prev) => ({ ...prev, location: event.target.value }))}
-                    placeholder="Zurich, Remote within Switzerland…"
-                    required
-                  />
+                  <div className="ssc__select-wrapper">
+                    <select
+                      className="ssc__select"
+                      value={jobForm.location}
+                      onChange={(event) => setJobForm((prev) => ({ ...prev, location: event.target.value }))}
+                      required
+                    >
+                      <option value="" disabled>
+                        Select a Swiss location
+                      </option>
+                      {SWISS_LOCATION_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="ssc__select-caret" size={16} />
+                  </div>
                 </label>
                 <label className="ssc__field">
                   <span>Employment type</span>
-                  <select
-                    value={jobForm.employment_type}
-                    onChange={(event) =>
-                      setJobForm((prev) => ({
-                        ...prev,
-                        employment_type: event.target.value,
-                        weekly_hours: event.target.value === 'Part-time' ? prev.weekly_hours : '',
-                        internship_duration_months:
-                          event.target.value === 'Internship' ? prev.internship_duration_months : '',
-                      }))
-                    }
-                  >
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Internship">Internship</option>
-                    <option value="Contract">Contract</option>
-                  </select>
+                  <div className="ssc__select-wrapper">
+                    <select
+                      className="ssc__select"
+                      value={jobForm.employment_type}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({
+                          ...prev,
+                          employment_type: event.target.value,
+                          weekly_hours: event.target.value === 'Part-time' ? prev.weekly_hours : '',
+                          internship_duration_months:
+                            event.target.value === 'Internship' ? prev.internship_duration_months : '',
+                        }))
+                      }
+                    >
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Contract">Contract</option>
+                    </select>
+                    <ChevronDown className="ssc__select-caret" size={16} />
+                  </div>
                 </label>
                 {jobForm.employment_type === 'Part-time' && (
                   <label className="ssc__field">
@@ -5784,9 +6016,10 @@ const SwissStartupConnect = () => {
                         }))
                       }
                       placeholder="e.g. 24"
+                      onBlur={handleJobWeeklyHoursBlur}
                       required
                     />
-                    <small className="ssc__field-note">Used to scale monthly and yearly salary.</small>
+                    <small className="ssc__field-note">Used to scale monthly and yearly salary. Max 40h/week.</small>
                   </label>
                 )}
                 {jobForm.employment_type === 'Internship' && (
@@ -5803,31 +6036,36 @@ const SwissStartupConnect = () => {
                         }))
                       }
                       placeholder="e.g. 6"
+                      onBlur={handleInternshipDurationBlur}
                       required
                     />
-                    <small className="ssc__field-note">Internships must last at least 1 month.</small>
+                    <small className="ssc__field-note">Internships must last between 1 and 12 months.</small>
                   </label>
                 )}
                 <label className="ssc__field">
                   <span>Salary cadence</span>
-                  <select
-                    value={jobForm.salary_cadence}
-                    onChange={(event) =>
-                      setJobForm((prev) => ({
-                        ...prev,
-                        salary_cadence: event.target.value,
-                        salary_min: '',
-                        salary_max: '',
-                      }))
-                    }
-                    required
-                  >
-                    <option value="">Select cadence</option>
-                    <option value="hour">Hourly</option>
-                    <option value="week">Weekly</option>
-                    <option value="month">Monthly</option>
-                    <option value="year">Yearly / total</option>
-                  </select>
+                  <div className="ssc__select-wrapper">
+                    <select
+                      className="ssc__select"
+                      value={jobForm.salary_cadence}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({
+                          ...prev,
+                          salary_cadence: event.target.value,
+                          salary_min: '',
+                          salary_max: '',
+                        }))
+                      }
+                      required
+                    >
+                      <option value="">Select cadence</option>
+                      <option value="hour">Hourly</option>
+                      <option value="week">Weekly</option>
+                      <option value="month">Monthly</option>
+                      <option value="year">Yearly / total</option>
+                    </select>
+                    <ChevronDown className="ssc__select-caret" size={16} />
+                  </div>
                 </label>
                 <div className="ssc__field ssc__field--range">
                   <span className="ssc__field-label">Salary range</span>

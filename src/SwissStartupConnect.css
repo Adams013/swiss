@@ -2759,9 +2759,13 @@
   color: var(--ssc-muted);
 }
 
+.ssc__field .ssc__select-wrapper {
+  width: 100%;
+}
+
 .ssc__field input,
-.ssc__field select,
-.ssc__field textarea {
+.ssc__field textarea,
+.ssc__field select:not(.ssc__select) {
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.16);
   padding: 0.65rem 0.85rem;
@@ -2777,8 +2781,8 @@
 }
 
 .ssc__field input:focus,
-.ssc__field select:focus,
-.ssc__field textarea:focus {
+.ssc__field textarea:focus,
+.ssc__field select:not(.ssc__select):focus {
   outline: none;
   border-color: var(--ssc-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
