@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Handshake,
   Heart,
+  Languages,
   Lightbulb,
   Layers,
   MapPin,
@@ -30,10 +31,50 @@ import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 
 const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'fr', label: 'Français' },
-  { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'English', shortLabel: 'EN' },
+  { value: 'fr', label: 'Français', shortLabel: 'FR' },
+  { value: 'de', label: 'Deutsch', shortLabel: 'DE' },
 ];
+
+const JOB_LANGUAGE_LABELS = {
+  en: {
+    english: 'English',
+    french: 'French',
+    german: 'German',
+    italian: 'Italian',
+  },
+  fr: {
+    english: 'Anglais',
+    french: 'Français',
+    german: 'Allemand',
+    italian: 'Italien',
+  },
+  de: {
+    english: 'Englisch',
+    french: 'Französisch',
+    german: 'Deutsch',
+    italian: 'Italienisch',
+  },
+};
+
+const JOB_LANGUAGE_ALIASES = {
+  english: 'english',
+  anglais: 'english',
+  anglaise: 'english',
+  englisch: 'english',
+  german: 'german',
+  deutsch: 'german',
+  germanophone: 'german',
+  allemand: 'german',
+  french: 'french',
+  francais: 'french',
+  français: 'french',
+  franzoesisch: 'french',
+  italien: 'italian',
+  italian: 'italian',
+  italiano: 'italian',
+  italienisch: 'italian',
+};
 
 const TRANSLATIONS = {
   fr: {
@@ -138,6 +179,12 @@ const TRANSLATIONS = {
       saveTooltip: 'Connectez-vous avec un compte étudiant pour enregistrer des offres',
       thirteenth: '13e salaire',
       motivationalTag: 'Lettre de motivation',
+      languagesLabel: 'Langues requises',
+      requirementsHeading: 'Pré-requis',
+      benefitsHeading: 'Avantages',
+      saveForLater: 'Enregistrer pour plus tard',
+      savedLabel: 'Enregistré',
+      applyNow: 'Postuler maintenant',
       savedHeading: 'Postes enregistrés',
       savedSubheading: 'Gardez un œil sur les opportunités à revisiter ou à candidater plus tard.',
       savedCount: '{{count}} favori{{plural}}',
@@ -495,6 +542,12 @@ const TRANSLATIONS = {
       saveTooltip: 'Mit Studierendenkonto anmelden, um Stellen zu merken',
       thirteenth: '13. Monatslohn',
       motivationalTag: 'Motivationsschreiben',
+      languagesLabel: 'Erforderliche Sprachen',
+      requirementsHeading: 'Anforderungen',
+      benefitsHeading: 'Leistungen',
+      saveForLater: 'Für später speichern',
+      savedLabel: 'Gespeichert',
+      applyNow: 'Jetzt bewerben',
       savedHeading: 'Gemerkte Stellen',
       savedSubheading: 'Behalten Sie spannende Optionen im Blick oder bewerben Sie sich später.',
       savedCount: '{{count}} gespeichert',
@@ -796,6 +849,39 @@ const mockJobs = [
     tags: ['React', 'UI Engineering'],
     stage: 'Series A',
     motivational_letter_required: false,
+    language_requirements: ['English', 'German'],
+    translations: {
+      fr: {
+        title: 'Ingénieur Frontend',
+        description:
+          'Rejoignez une équipe orientée produit qui réinvente la gestion de trésorerie des PME suisses. Vous collaborerez avec le design et le produit pour livrer des interfaces impeccables et intuitives.',
+        requirements: [
+          '3+ ans d’expérience en applications web modernes',
+          'Maîtrise de React et des gestions d’état contemporaines',
+          'Sens aigu de l’accessibilité et de la performance',
+        ],
+        benefits: [
+          'Remboursement de l’abonnement demi-tarif',
+          'Budget formation et mentorat',
+          'Stock-options employé',
+        ],
+      },
+      de: {
+        title: 'Frontend Engineer:in',
+        description:
+          'Schliessen Sie sich einem produktorientierten Team an, das das Liquiditätsmanagement für Schweizer KMU neu denkt. Sie arbeiten eng mit Design und Product zusammen und liefern pixelgenaue, mühelose Interfaces.',
+        requirements: [
+          '3+ Jahre Erfahrung mit modernen Webanwendungen',
+          'Sicher im Umgang mit React und zeitgemässem State-Management',
+          'Fokus auf Barrierefreiheit und Performance',
+        ],
+        benefits: [
+          'Halbtax-Abonnement wird erstattet',
+          'Weiterbildungsbudget & Mentoring',
+          'Mitarbeiterbeteiligungsprogramm',
+        ],
+      },
+    },
   },
   {
     id: 'mock-2',
@@ -815,6 +901,39 @@ const mockJobs = [
     tags: ['Product', 'Healthcare'],
     stage: 'Seed',
     motivational_letter_required: true,
+    language_requirements: ['English', 'French'],
+    translations: {
+      fr: {
+        title: 'Product Manager',
+        description:
+          'Pilotez la découverte puis la livraison d’expériences de santé connectée pour plus de 50 000 patient·e·s. Vous co-créerez avec les équipes médicales, design et ingénierie pour livrer des fonctionnalités appréciées.',
+        requirements: [
+          'Maîtrise des méthodes de discovery produit',
+          'Expérience en santé ou marché régulé',
+          'Excellente analyse et narration',
+        ],
+        benefits: [
+          'Équité équipe fondatrice',
+          'Budget bien-être',
+          'Retraites trimestrielles dans les Alpes',
+        ],
+      },
+      de: {
+        title: 'Product Manager:in',
+        description:
+          'Übernehmen Sie Discovery bis Delivery für vernetzte Gesundheits-Erlebnisse mit über 50 000 Patient:innen. Sie arbeiten mit Klinikteams, Design und Engineering zusammen, um geliebte Features zu liefern.',
+        requirements: [
+          'Souverän in Product-Discovery-Methoden',
+          'Erfahrung im Gesundheitswesen oder regulierten Märkten',
+          'Starke Analyse- und Storytelling-Fähigkeiten',
+        ],
+        benefits: [
+          'Equity im Founding-Team',
+          'Budget für Wohlbefinden',
+          'Quartalsweise Retreats in den Alpen',
+        ],
+      },
+    },
   },
   {
     id: 'mock-4',
@@ -835,6 +954,39 @@ const mockJobs = [
     tags: ['Community', 'Partnerships'],
     stage: 'Seed',
     motivational_letter_required: false,
+    language_requirements: ['German', 'English'],
+    translations: {
+      fr: {
+        title: 'Responsable Communauté & Partenariats',
+        description:
+          'Collaborez avec les fondateur·rice·s pour raconter l’impact patient, développer notre réseau clinique et organiser des événements mensuels. Horaires flexibles et collaboration à distance.',
+        requirements: [
+          '3+ ans en communauté ou partenariats',
+          'Bilingue allemand / anglais',
+          'À l’aise avec le travail à distance',
+        ],
+        benefits: [
+          'Horaires flexibles',
+          'Allocation bien-être',
+          'Retraite annuelle d’équipe',
+        ],
+      },
+      de: {
+        title: 'Community & Partnerships Lead',
+        description:
+          'Arbeiten Sie mit den Gründer:innen zusammen, erzählen Sie Patientengeschichten, bauen Sie unsere Kliniker-Community aus und organisieren Sie monatliche Events. Flexible Arbeitszeiten und Remote-first Zusammenarbeit.',
+        requirements: [
+          '3+ Jahre Erfahrung in Community oder Partnerschaften',
+          'Zweisprachig Deutsch/Englisch',
+          'Souverän in verteilter Zusammenarbeit',
+        ],
+        benefits: [
+          'Flexible Arbeitszeiten',
+          'Wellness-Zuschuss',
+          'Jährliches Team-Offsite',
+        ],
+      },
+    },
   },
   {
     id: 'mock-3',
@@ -855,6 +1007,39 @@ const mockJobs = [
     tags: ['AI/ML', 'Python'],
     stage: 'Series B',
     motivational_letter_required: true,
+    language_requirements: ['English', 'French'],
+    translations: {
+      fr: {
+        title: 'Stagiaire Machine Learning',
+        description:
+          'Rejoignez une escouade de recherche senior pour transformer le ML de pointe en outils de découverte. Attendez-vous à une itération rapide, du mentorat et un impact mesurable.',
+        requirements: [
+          'Master ou dernière année de Bachelor en informatique / mathématiques',
+          'Pratique de PyTorch ou TensorFlow',
+          'À l’aise avec les pipelines d’expérimentation',
+        ],
+        benefits: [
+          'Mentorat de recherche',
+          'Prise en charge des conférences',
+          'Voie rapide vers un poste fixe',
+        ],
+      },
+      de: {
+        title: 'Machine-Learning-Praktikant:in',
+        description:
+          'Arbeiten Sie mit einem Senior-Research-Team zusammen, um Cutting-Edge-ML in produktive Discovery-Tools zu übersetzen. Freuen Sie sich auf schnelle Iteration, Mentoring und messbaren Impact.',
+        requirements: [
+          'MSc oder letztes Bachelorjahr in Informatik/Mathematik',
+          'Praktische Erfahrung mit PyTorch oder TensorFlow',
+          'Vertraut mit Experimentier-Pipelines',
+        ],
+        benefits: [
+          'Forschungs-Mentoring',
+          'Unterstützung für Konferenzreisen',
+          'Schnellspur zum Festangebot',
+        ],
+      },
+    },
   },
 ];
 
@@ -899,6 +1084,93 @@ const mockCompanies = [
     created_at: '2024-01-18T14:45:00Z',
   },
 ];
+
+const collectLanguageKeys = (value, accumulator) => {
+  if (!value) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectLanguageKeys(entry, accumulator));
+    return;
+  }
+
+  if (typeof value === 'object') {
+    Object.values(value).forEach((entry) => collectLanguageKeys(entry, accumulator));
+    return;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const tokens = normalized.split(/[^a-z]+/).filter(Boolean);
+    let matched = false;
+
+    tokens.forEach((token) => {
+      const canonical = JOB_LANGUAGE_ALIASES[token];
+      if (canonical && !accumulator.includes(canonical)) {
+        accumulator.push(canonical);
+        matched = true;
+      }
+    });
+
+    if (!matched) {
+      const trimmed = value.trim();
+      if (trimmed && !accumulator.includes(trimmed)) {
+        accumulator.push(trimmed);
+      }
+    }
+  }
+};
+
+const resolveJobLanguageLabels = (job) => {
+  if (job?.language_labels && typeof job.language_labels === 'object') {
+    const englishLabels = Array.isArray(job.language_labels.en) ? job.language_labels.en : [];
+    const keys = [];
+    englishLabels.forEach((label) => collectLanguageKeys(label, keys));
+    const normalizedKeys = keys.length > 0 ? keys : ['english'];
+    const labels = {};
+    Object.entries(JOB_LANGUAGE_LABELS).forEach(([locale, mapping]) => {
+      if (Array.isArray(job.language_labels[locale]) && job.language_labels[locale].length > 0) {
+        labels[locale] = job.language_labels[locale];
+      } else {
+        labels[locale] = normalizedKeys.map((key) => mapping[key] || key);
+      }
+    });
+    return { keys: normalizedKeys, labels };
+  }
+
+  const keys = [];
+  const candidates = [
+    job?.language_requirements,
+    job?.languages_required,
+    job?.languages,
+    job?.language,
+  ];
+
+  candidates.forEach((value) => collectLanguageKeys(value, keys));
+
+  if (keys.length === 0 && job?.translations) {
+    Object.values(job.translations).forEach((translation) => {
+      if (translation && typeof translation === 'object') {
+        collectLanguageKeys(translation.languages, keys);
+      }
+    });
+  }
+
+  if (keys.length === 0) {
+    keys.push('english');
+  }
+
+  const labels = {};
+  Object.entries(JOB_LANGUAGE_LABELS).forEach(([locale, mapping]) => {
+    labels[locale] = keys.map((key) => mapping[key] || key);
+  });
+
+  return { keys, labels };
+};
 
 const SWISS_LOCATION_OPTIONS = [
   { value: 'Zurich, Switzerland', label: 'Zurich' },
@@ -2093,6 +2365,72 @@ const SwissStartupConnect = () => {
     [language]
   );
 
+  const getLocalizedJobText = useCallback(
+    (job, field) => {
+      if (!job) {
+        return '';
+      }
+
+      if (language !== 'en') {
+        const localized = job?.translations?.[language]?.[field];
+        if (typeof localized === 'string' && localized.trim()) {
+          return localized;
+        }
+      }
+
+      const original = job?.[field];
+      return typeof original === 'string' ? original : '';
+    },
+    [language]
+  );
+
+  const getLocalizedJobList = useCallback(
+    (job, field) => {
+      if (!job) {
+        return [];
+      }
+
+      if (language !== 'en') {
+        const localized = job?.translations?.[language]?.[field];
+        if (Array.isArray(localized) && localized.length > 0) {
+          return localized;
+        }
+      }
+
+      const original = job?.[field];
+      if (Array.isArray(original)) {
+        return original;
+      }
+      if (typeof original === 'string' && original.trim()) {
+        return [original];
+      }
+      return [];
+    },
+    [language]
+  );
+
+  const getJobLanguages = useCallback(
+    (job) => {
+      if (!job) {
+        return [];
+      }
+
+      if (job.language_labels && typeof job.language_labels === 'object') {
+        const localized = job.language_labels[language];
+        if (Array.isArray(localized) && localized.length > 0) {
+          return localized;
+        }
+        if (Array.isArray(job.language_labels.en) && job.language_labels.en.length > 0) {
+          return job.language_labels.en;
+        }
+      }
+
+      const resolved = resolveJobLanguageLabels(job);
+      return resolved.labels[language] || resolved.labels.en || [];
+    },
+    [language]
+  );
+
   const acknowledgeMessage = translate(
     'applications.acknowledge',
     'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.'
@@ -2242,6 +2580,34 @@ const SwissStartupConnect = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordResetError, setPasswordResetError] = useState('');
   const [passwordResetSaving, setPasswordResetSaving] = useState(false);
+
+  const localizedSelectedJob = useMemo(() => {
+    if (!selectedJob) {
+      return null;
+    }
+
+    return {
+      ...selectedJob,
+      localizedTitle: getLocalizedJobText(selectedJob, 'title'),
+      localizedDescription: getLocalizedJobText(selectedJob, 'description'),
+      localizedRequirements: getLocalizedJobList(selectedJob, 'requirements'),
+      localizedBenefits: getLocalizedJobList(selectedJob, 'benefits'),
+      localizedLanguages: getJobLanguages(selectedJob),
+    };
+  }, [selectedJob, getJobLanguages, getLocalizedJobList, getLocalizedJobText]);
+
+  const localizedApplicationModal = useMemo(() => {
+    if (!applicationModal) {
+      return null;
+    }
+
+    return {
+      ...applicationModal,
+      localizedTitle: getLocalizedJobText(applicationModal, 'title'),
+      localizedDescription: getLocalizedJobText(applicationModal, 'description'),
+      localizedLanguages: getJobLanguages(applicationModal),
+    };
+  }, [applicationModal, getJobLanguages, getLocalizedJobText]);
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
   const [securityOldPassword, setSecurityOldPassword] = useState('');
@@ -3082,6 +3448,7 @@ const SwissStartupConnect = () => {
         ? companyMetaLookup[`name:${ensuredName.trim().toLowerCase()}`]
         : null;
       const companyMeta = metaFromId || metaFromName || {};
+      const { keys: languageKeys, labels: languageLabels } = resolveJobLanguageLabels(job);
       return {
         ...job,
         company_name: ensuredName,
@@ -3101,6 +3468,8 @@ const SwissStartupConnect = () => {
         internship_duration_months: internshipDuration,
         internship_duration_label: internshipDurationLabel,
         includes_thirteenth_salary: includesThirteenthSalary,
+        language_keys: languageKeys,
+        language_labels: languageLabels,
         company_team:
           job.company_team ||
           job.team ||
@@ -5008,18 +5377,23 @@ const SwissStartupConnect = () => {
             ))}
           </nav>
 
-          <div className="ssc__language-select">
-            <select
-              value={language}
-              onChange={(event) => setLanguage(event.target.value)}
-              aria-label={translate('nav.language', 'Language')}
-            >
-              {LANGUAGE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          <div
+            className="ssc__language-toggle"
+            role="group"
+            aria-label={translate('nav.language', 'Language')}
+          >
+            {LANGUAGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`ssc__language-option ${language === option.value ? 'is-active' : ''}`}
+                onClick={() => setLanguage(option.value)}
+                aria-pressed={language === option.value}
+                title={option.label}
+              >
+                {option.shortLabel || option.label}
+              </button>
+            ))}
           </div>
 
           <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
@@ -5540,7 +5914,7 @@ const SwissStartupConnect = () => {
                                 ) : (
                                   calculatorJobs.map((job) => (
                                     <option key={job.id} value={job.id}>
-                                      {job.title}
+                                      {getLocalizedJobText(job, 'title') || job.title}
                                     </option>
                                   ))
                                 )}
@@ -5578,11 +5952,14 @@ const SwissStartupConnect = () => {
                     const isSaved = savedJobs.includes(job.id);
                     const hasApplied = appliedJobs.includes(job.id);
                     const timingText = buildTimingText(job);
+                    const jobTitle = getLocalizedJobText(job, 'title');
+                    const jobDescription = getLocalizedJobText(job, 'description');
+                    const jobLanguages = getJobLanguages(job);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
                           <div>
-                            <h3>{job.title}</h3>
+                            <h3>{jobTitle}</h3>
                             <p>{job.company_name}</p>
                           </div>
                           <button
@@ -5601,7 +5978,7 @@ const SwissStartupConnect = () => {
                           </button>
                         </div>
 
-                        <p className="ssc__job-summary">{job.description}</p>
+                        <p className="ssc__job-summary">{jobDescription}</p>
 
                         <div className="ssc__job-meta">
                           <span>
@@ -5619,6 +5996,12 @@ const SwissStartupConnect = () => {
                               plural: buildPluralSuffix(job.applicants),
                             })}
                           </span>
+                          {jobLanguages.length > 0 && (
+                            <span>
+                              <Languages size={16} />
+                              {jobLanguages.join(' · ')}
+                            </span>
+                          )}
                         </div>
 
                         {(job.company_team || job.company_fundraising) && (
@@ -5909,16 +6292,19 @@ const SwissStartupConnect = () => {
                     const postedLabel = postedAt
                       ? postedAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                       : job.posted || translate('companies.recentlyPosted', 'Recently posted');
+                    const jobTitle = getLocalizedJobText(job, 'title');
+                    const jobDescription = getLocalizedJobText(job, 'description');
+                    const jobLanguages = getJobLanguages(job);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
                           <div>
-                            <h3>{job.title}</h3>
+                            <h3>{jobTitle}</h3>
                             <p>{job.company_name}</p>
                           </div>
                           <span className="ssc__pill ssc__pill--muted">{postedLabel}</span>
                         </div>
-                        <p className="ssc__job-summary">{job.description}</p>
+                        <p className="ssc__job-summary">{jobDescription}</p>
                         <div className="ssc__job-meta">
                           <span>
                             <MapPin size={16} />
@@ -5935,6 +6321,12 @@ const SwissStartupConnect = () => {
                               plural: buildPluralSuffix(job.applicants),
                             })}
                           </span>
+                          {jobLanguages.length > 0 && (
+                            <span>
+                              <Languages size={16} />
+                              {jobLanguages.join(' · ')}
+                            </span>
+                          )}
                         </div>
                         <div className="ssc__job-actions">
                           <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
@@ -6010,13 +6402,14 @@ const SwissStartupConnect = () => {
                     {applications.map((application) => {
                       const candidate = application.profiles;
                       const job = application.jobs;
+                      const jobTitle = getLocalizedJobText(job, 'title');
                       const cvLink = application.cv_override_url || candidate?.cv_url;
                       const appliedDate = new Date(application.created_at).toLocaleDateString();
                       return (
                         <article key={application.id} className="ssc__application-card">
                         <header className="ssc__application-header">
                           <div>
-                            <h3>{job?.title}</h3>
+                            <h3>{jobTitle}</h3>
                             <p>{job?.company_name}</p>
                           </div>
                           <div className="ssc__status-select">
@@ -6162,11 +6555,14 @@ const SwissStartupConnect = () => {
                 <div className="ssc__grid">
                   {savedJobList.map((job) => {
                     const timingText = buildTimingText(job);
+                    const jobTitle = getLocalizedJobText(job, 'title');
+                    const jobDescription = getLocalizedJobText(job, 'description');
+                    const jobLanguages = getJobLanguages(job);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
                           <div>
-                            <h3>{job.title}</h3>
+                            <h3>{jobTitle}</h3>
                             <p>{job.company_name}</p>
                           </div>
                           <button
@@ -6177,7 +6573,7 @@ const SwissStartupConnect = () => {
                             <Heart size={18} strokeWidth={0} fill="currentColor" />
                           </button>
                         </div>
-                        <p className="ssc__job-summary">{job.description}</p>
+                        <p className="ssc__job-summary">{jobDescription}</p>
                         <div className="ssc__job-meta">
                           <span>
                             <MapPin size={16} />
@@ -6194,6 +6590,12 @@ const SwissStartupConnect = () => {
                               plural: buildPluralSuffix(job.applicants),
                             })}
                           </span>
+                          {jobLanguages.length > 0 && (
+                            <span>
+                              <Languages size={16} />
+                              {jobLanguages.join(' · ')}
+                            </span>
+                          )}
                         </div>
                         {(job.company_team || job.company_fundraising) && (
                           <div className="ssc__job-company-insights">
@@ -6680,67 +7082,85 @@ const SwissStartupConnect = () => {
         </div>
       )}
 
-      {selectedJob && (
+      {localizedSelectedJob && (
         <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
           <div className="ssc__modal">
             <button type="button" className="ssc__modal-close" onClick={() => setSelectedJob(null)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{selectedJob.title}</h2>
-              <p>{selectedJob.company_name}</p>
+              <h2>{localizedSelectedJob.localizedTitle}</h2>
+              <p>{localizedSelectedJob.company_name}</p>
               <div className="ssc__modal-meta">
                 <span>
                   <MapPin size={16} />
-                  {selectedJob.location}
+                  {localizedSelectedJob.location}
                 </span>
                 <span>
                   <Clock size={16} />
-                  {buildTimingText(selectedJob)}
+                  {buildTimingText(localizedSelectedJob)}
                 </span>
                 <span>
                   <Users size={16} />
-                  {selectedJob.applicants} applicants
+                  {translate('jobs.applicants', '{{count}} applicant{{plural}}', {
+                    count: localizedSelectedJob.applicants,
+                    plural: buildPluralSuffix(localizedSelectedJob.applicants),
+                  })}
                 </span>
+                {localizedSelectedJob.localizedLanguages.length > 0 && (
+                  <span>
+                    <Languages size={16} />
+                    {localizedSelectedJob.localizedLanguages.join(' · ')}
+                  </span>
+                )}
               </div>
-              {(selectedJob.company_team || selectedJob.company_fundraising) && (
+              {(localizedSelectedJob.company_team || localizedSelectedJob.company_fundraising) && (
                 <div className="ssc__modal-company-insights">
-                  {selectedJob.company_team && (
+                  {localizedSelectedJob.company_team && (
                     <span className="ssc__company-pill ssc__company-pill--team">
                       <Users size={14} />
-                      {selectedJob.company_team}
+                      {localizedSelectedJob.company_team}
                     </span>
                   )}
-                  {selectedJob.company_fundraising && (
+                  {localizedSelectedJob.company_fundraising && (
                     <span className="ssc__company-pill ssc__company-pill--funding">
                       <Sparkles size={14} />
-                      {selectedJob.company_fundraising}
+                      {localizedSelectedJob.company_fundraising}
                     </span>
                   )}
                 </div>
               )}
-              {selectedJob.includes_thirteenth_salary && (
+              {localizedSelectedJob.includes_thirteenth_salary && (
                 <div className="ssc__thirteenth-note">
-                  <Star size={14} /> 13th salary
+                  <Star size={14} /> {translate('jobs.thirteenth', '13th salary')}
                 </div>
               )}
             </header>
             <div className="ssc__modal-body">
-              <p>{selectedJob.description}</p>
+              <p>{localizedSelectedJob.localizedDescription}</p>
+
+              {localizedSelectedJob.localizedLanguages.length > 0 && (
+                <div className="ssc__modal-section">
+                  <h3>{translate('jobs.languagesLabel', 'Languages required')}</h3>
+                  <p className="ssc__modal-languages">
+                    {localizedSelectedJob.localizedLanguages.join(' · ')}
+                  </p>
+                </div>
+              )}
 
               <div className="ssc__modal-section">
-                <h3>Requirements</h3>
+                <h3>{translate('jobs.requirementsHeading', 'Requirements')}</h3>
                 <ul className="ssc__modal-list">
-                  {selectedJob.requirements?.map((item) => (
+                  {localizedSelectedJob.localizedRequirements.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>
 
               <div className="ssc__modal-section">
-                <h3>Benefits</h3>
+                <h3>{translate('jobs.benefitsHeading', 'Benefits')}</h3>
                 <ul className="ssc__modal-list">
-                  {selectedJob.benefits?.map((item) => (
+                  {localizedSelectedJob.localizedBenefits.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
@@ -6748,11 +7168,13 @@ const SwissStartupConnect = () => {
             </div>
             <div className="ssc__modal-actions">
               <button type="button" className="ssc__ghost-btn" onClick={() => toggleSavedJob(selectedJob.id)}>
-                {savedJobs.includes(selectedJob.id) ? 'Saved' : 'Save for later'}
+                {savedJobs.includes(selectedJob.id)
+                  ? translate('jobs.savedLabel', 'Saved')
+                  : translate('jobs.saveForLater', 'Save for later')}
               </button>
               {canApply ? (
                 <button type="button" className="ssc__primary-btn" onClick={() => openApplyModal(selectedJob)}>
-                  Apply now
+                  {translate('jobs.applyNow', 'Apply now')}
                 </button>
               ) : (
                 <span className="ssc__job-note">{applyRestrictionMessage}</span>
@@ -6762,7 +7184,7 @@ const SwissStartupConnect = () => {
         </div>
       )}
 
-      {applicationModal && (
+      {localizedApplicationModal && (
         <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
           <div className="ssc__modal ssc__modal--wide">
             <button type="button" className="ssc__modal-close" onClick={closeApplicationModal}>
@@ -6771,8 +7193,13 @@ const SwissStartupConnect = () => {
             <header className="ssc__modal-header">
               <h2>Submit your application</h2>
               <p>
-                {applicationModal.title} · {applicationModal.company_name}
+                {localizedApplicationModal.localizedTitle} · {localizedApplicationModal.company_name}
               </p>
+              {localizedApplicationModal.localizedLanguages.length > 0 && (
+                <p className="ssc__modal-languages">
+                  {localizedApplicationModal.localizedLanguages.join(' · ')}
+                </p>
+              )}
             </header>
             <div className="ssc__modal-body">
               <div className="ssc__application-summary">
@@ -6855,7 +7282,7 @@ const SwissStartupConnect = () => {
 
               <label className="ssc__field">
                 <span>
-                  Motivational letter {applicationModal.motivational_letter_required ? '(required)' : '(optional)'}
+                  Motivational letter {localizedApplicationModal.motivational_letter_required ? '(required)' : '(optional)'}
                 </span>
                 <div className="ssc__upload-inline">
                   <input
