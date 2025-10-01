@@ -45,6 +45,28 @@
   padding: 0 1.5rem;
 }
 
+.ssc__toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+  border-radius: 18px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  min-width: 260px;
+  justify-content: center;
+  z-index: 60;
+}
+
+.ssc__toast-icon {
+  color: #16a34a;
+}
+
 .ssc__header {
   position: sticky;
   top: 0;
@@ -320,9 +342,9 @@
 
 .ssc__hero {
   position: relative;
-  padding: 4.5rem 0 3.5rem;
+  padding: 3.25rem 0 2.75rem;
   text-align: center;
-  min-height: calc(100vh - 5rem);
+  min-height: calc(100vh - 8rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -506,7 +528,7 @@
 }
 
 .ssc__stats {
-  margin-top: 3rem;
+  margin-top: 2.5rem;
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -542,7 +564,7 @@
   background: #fff;
   border-top: 1px solid var(--ssc-border);
   border-bottom: 1px solid var(--ssc-border);
-  padding: 2.6rem 0;
+  padding: 2.25rem 0;
 }
 
 .ssc__filters-header {
@@ -966,7 +988,7 @@
 }
 
 .ssc__section {
-  padding: 3.5rem 0;
+  padding: 3rem 0;
 }
 
 .ssc__section + .ssc__section {
@@ -2155,6 +2177,26 @@
   display: grid;
   gap: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.ssc__profile-grid--job {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.1rem;
+  align-items: flex-start;
+}
+
+.ssc__profile-grid--job .ssc__field--wide {
+  grid-column: span 2;
+}
+
+.ssc__profile-grid--job .ssc__field--equity {
+  align-self: stretch;
+}
+
+@media (max-width: 720px) {
+  .ssc__profile-grid--job .ssc__field--wide {
+    grid-column: span 1;
+  }
 }
 
 .ssc__avatar-preview {
