@@ -14,9 +14,11 @@ import {
   Lightbulb,
   Layers,
   MapPin,
+  Percent,
   Rocket,
   Search,
   Sparkles,
+  TrendingUp,
   Trophy,
   Users,
   X,
@@ -1144,6 +1146,14 @@ const SwissStartupConnect = () => {
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [jobSort, setJobSort] = useState('recent');
+  const jobSortOptions = useMemo(
+    () => [
+      { value: 'recent', label: 'Most recent', icon: Clock },
+      { value: 'salary_desc', label: 'Highest salary', icon: TrendingUp },
+      { value: 'equity_desc', label: 'Highest equity', icon: Percent },
+    ],
+    []
+  );
 
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -2518,6 +2528,16 @@ const SwissStartupConnect = () => {
     return sorted.map((entry) => entry.job);
   }, [filteredJobs, jobSort]);
 
+  const jobsForDisplay = useMemo(() => {
+    if (activeTab !== 'general') {
+      return sortedFilteredJobs;
+    }
+
+    return sortedFilteredJobs.slice(0, 5);
+  }, [activeTab, sortedFilteredJobs]);
+
+  const showSeeMoreOpportunities = activeTab === 'general' && sortedFilteredJobs.length > jobsForDisplay.length;
+
   const savedJobList = useMemo(() => {
     if (!user || user.type !== 'student') {
       return [];
@@ -3571,6 +3591,13 @@ const SwissStartupConnect = () => {
     }
   }, []);
   const [companySort, setCompanySort] = useState('recent');
+  const companySortOptions = useMemo(
+    () => [
+      { value: 'recent', label: 'Most recent', icon: Clock },
+      { value: 'jobs_desc', label: 'Most roles', icon: Briefcase },
+    ],
+    []
+  );
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
     const stored = window.localStorage.getItem('ssc_followed_companies');
@@ -4130,18 +4157,26 @@ const SwissStartupConnect = () => {
                 </div>
                 <div className="ssc__job-toolbar">
                   <span className="ssc__pill">{filteredJobs.length} roles</span>
-                  <label htmlFor="ssc-job-sort">
-                    <span>Sort by</span>
-                    <select
-                      id="ssc-job-sort"
-                      value={jobSort}
-                      onChange={(event) => setJobSort(event.target.value)}
-                    >
-                      <option value="recent">Most recent</option>
-                      <option value="salary_desc">Highest salary</option>
-                      <option value="equity_desc">Highest equity</option>
-                    </select>
-                  </label>
+                  <div className="ssc__sort-control" role="group" aria-label="Sort opportunities">
+                    <span className="ssc__sort-label">Sort by</span>
+                    <div className="ssc__sort-options">
+                      {jobSortOptions.map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`ssc__sort-button ${jobSort === option.value ? 'is-active' : ''}`}
+                            onClick={() => setJobSort(option.value)}
+                            aria-pressed={jobSort === option.value}
+                          >
+                            <Icon size={16} />
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -4237,7 +4272,7 @@ const SwissStartupConnect = () => {
                 </div>
               ) : filteredJobs.length > 0 ? (
                 <div className="ssc__grid">
-                  {sortedFilteredJobs.map((job) => {
+                  {jobsForDisplay.map((job) => {
                     const isSaved = savedJobs.includes(job.id);
                     const hasApplied = appliedJobs.includes(job.id);
                     const timingText = buildTimingText(job);
@@ -4340,6 +4375,22 @@ const SwissStartupConnect = () => {
                       </article>
                     );
                   })}
+                  {showSeeMoreOpportunities && (
+                    <article className="ssc__job-card ssc__job-card--see-more">
+                      <div className="ssc__job-see-more-copy">
+                        <h3>See more opportunities</h3>
+                        <p>Browse all {filteredJobs.length} open roles on the Opportunities page.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="ssc__primary-btn"
+                        onClick={() => setActiveTab('jobs')}
+                      >
+                        Explore roles
+                        <ArrowRight size={18} />
+                      </button>
+                    </article>
+                  )}
                 </div>
               ) : (
                 <div className="ssc__empty-state">
@@ -4361,17 +4412,26 @@ const SwissStartupConnect = () => {
                   <p>Meet the founders building Switzerland’s next generation of companies.</p>
                 </div>
                 <div className="ssc__company-toolbar">
-                  <label htmlFor="ssc-company-sort">
-                    <span>Sort by</span>
-                    <select
-                      id="ssc-company-sort"
-                      value={companySort}
-                      onChange={(event) => setCompanySort(event.target.value)}
-                    >
-                      <option value="recent">Most recent</option>
-                      <option value="jobs_desc">Most roles</option>
-                    </select>
-                  </label>
+                  <div className="ssc__sort-control" role="group" aria-label="Sort startups">
+                    <span className="ssc__sort-label">Sort by</span>
+                    <div className="ssc__sort-options">
+                      {companySortOptions.map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`ssc__sort-button ${companySort === option.value ? 'is-active' : ''}`}
+                            onClick={() => setCompanySort(option.value)}
+                            aria-pressed={companySort === option.value}
+                          >
+                            <Icon size={16} />
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 

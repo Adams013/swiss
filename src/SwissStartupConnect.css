@@ -1089,6 +1089,32 @@
   gap: 1.15rem;
 }
 
+.ssc__job-card--see-more {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
+  background: linear-gradient(140deg, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.08));
+  border: 1px dashed rgba(37, 99, 235, 0.3);
+}
+
+.ssc__job-see-more-copy h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.ssc__job-see-more-copy p {
+  margin: 0.35rem 0 0;
+  color: var(--ssc-muted);
+}
+
+.ssc__job-card--see-more .ssc__primary-btn {
+  margin-top: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .ssc__job-header {
   display: flex;
   justify-content: space-between;
@@ -1614,26 +1640,60 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.ssc__company-toolbar label,
-.ssc__job-toolbar label {
+.ssc__sort-control {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  margin-left: auto;
+}
+
+.ssc__sort-label {
   font-weight: 600;
+  font-size: 0.85rem;
   color: var(--ssc-muted);
 }
 
-.ssc__company-toolbar select,
-.ssc__job-toolbar select {
-  border: 1px solid var(--ssc-border);
-  border-radius: 10px;
-  padding: 0.45rem 0.85rem;
-  background: #fff;
+.ssc__sort-options {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ssc__sort-button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ssc-muted);
   font-weight: 600;
-  color: var(--ssc-ink);
-  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.ssc__sort-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ssc__sort-button:hover {
+  color: var(--ssc-primary);
+}
+
+.ssc__sort-button.is-active {
+  background: #fff;
+  color: var(--ssc-primary);
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.18);
 }
 
 .ssc__follow-btn {
