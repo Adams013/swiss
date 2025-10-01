@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   BookmarkPlus,
@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
-import { useRef } from 'react';
 
 const mockJobs = [
   {
@@ -1271,6 +1270,7 @@ const SwissStartupConnect = () => {
     motivational_letter_required: false,
   });
   const [salaryCalculatorOpen, setSalaryCalculatorOpen] = useState(false);
+  const [salaryCalculatorRevealed, setSalaryCalculatorRevealed] = useState(false);
   const [salaryCalculatorCompany, setSalaryCalculatorCompany] = useState('');
   const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
 
@@ -1349,6 +1349,27 @@ const SwissStartupConnect = () => {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (salaryCalculatorRevealed || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleReveal = () => {
+      const target = filtersSectionRef.current;
+      if (!target) return;
+      const { top } = target.getBoundingClientRect();
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const revealThreshold = window.innerHeight * 0.6;
+      if (scrollY > window.innerHeight * 0.1 || top <= revealThreshold) {
+        setSalaryCalculatorRevealed(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleReveal, { passive: true });
+    handleReveal();
+    return () => window.removeEventListener('scroll', handleReveal);
+  }, [salaryCalculatorRevealed]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -4180,8 +4201,10 @@ const SwissStartupConnect = () => {
                 </div>
               </div>
 
-              {normalizedJobs.length > 0 && (
-                <div className="ssc__calculator-anchor">
+              {normalizedJobs.length > 0 && salaryCalculatorRevealed && (
+                <div
+                  className={`ssc__calculator-anchor is-revealed ${salaryCalculatorOpen ? 'is-open' : ''}`}
+                >
                   <button
                     type="button"
                     className={`ssc__calculator-toggle ${salaryCalculatorOpen ? 'is-open' : ''}`}
@@ -4198,7 +4221,10 @@ const SwissStartupConnect = () => {
                     aria-hidden={!salaryCalculatorOpen}
                   >
                     <div className="ssc__calculator-head">
-                      <h3>Salary calculator</h3>
+                      <div className="ssc__calculator-title">
+                        <span className="ssc__calculator-chip">Compensation insights</span>
+                        <h3>Salary calculator</h3>
+                      </div>
                       <button
                         type="button"
                         className="ssc__calculator-close"
