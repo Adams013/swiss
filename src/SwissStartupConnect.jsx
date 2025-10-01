@@ -107,22 +107,27 @@ const TRANSLATIONS = {
       startups: {
         label: 'Startups suisses qui recrutent',
         detail: 'Fintech, santé, climat, deep tech, grand public et bien plus encore.',
+        value: '2,3k',
       },
       offerTime: {
         label: "Délai moyen jusqu'à l'offre",
         detail: 'Du premier échange à la signature pour les profils étudiants.',
+        value: '12 jours',
       },
       founders: {
         label: 'Fondateurs étudiants accompagnés',
         detail: 'Des étudiants ayant lancé leur projet via notre réseau de partenaires.',
+        value: '780+',
       },
       'time-to-offer': {
         label: "Délai moyen jusqu'à l'offre",
         detail: 'Du premier échange à la signature pour les profils étudiants.',
+        value: '12 jours',
       },
       'student-founders': {
         label: 'Fondateurs étudiants accompagnés',
         detail: 'Des étudiants ayant lancé leur projet via notre réseau de partenaires.',
+        value: '780+',
       },
     },
     filters: {
@@ -442,6 +447,39 @@ const TRANSLATIONS = {
       viewApplicants: 'Voir les candidats',
       memberFallback: 'Membre',
     },
+    security: {
+      passwordReset: {
+        fields: {
+          newPassword: 'Nouveau mot de passe',
+          confirmPassword: 'Confirmer le mot de passe',
+        },
+        buttons: {
+          submit: 'Mettre à jour le mot de passe',
+          submitting: 'Mise à jour…',
+        },
+      },
+      modal: {
+        title: 'Confidentialité & sécurité',
+        description:
+          'Gardez votre e-mail de contact à jour et changez régulièrement votre mot de passe pour plus de sécurité.',
+        sections: {
+          email: 'Modifier l’e-mail',
+          password: 'Modifier le mot de passe',
+        },
+        fields: {
+          email: 'E-mail',
+          currentPassword: 'Mot de passe actuel',
+          newPassword: 'Nouveau mot de passe',
+          confirmNewPassword: 'Confirmer le nouveau mot de passe',
+        },
+        buttons: {
+          saveEmail: 'Enregistrer l’e-mail',
+          savingEmail: 'Enregistrement…',
+          savePassword: 'Enregistrer le mot de passe',
+          savingPassword: 'Mise à jour…',
+        },
+      },
+    },
     profileModal: {
       title: 'Mettez à jour votre profil',
       subtitle: 'Tenez les startups informées de vos derniers projets, études et documents.',
@@ -610,6 +648,11 @@ const TRANSLATIONS = {
       following: 'Suivi',
       visitWebsite: 'Voir le site',
       reviews: 'Avis',
+      verifiedBadge: 'Vérifiée',
+      jobCount: {
+        one: '1 poste ouvert',
+        other: '{{count}} postes ouverts',
+      },
       heading: 'Startups à découvrir',
       subheading: 'Rencontrez les fondateurs qui bâtissent la prochaine génération d’entreprises suisses.',
       sortAria: 'Trier les startups',
@@ -850,22 +893,27 @@ const TRANSLATIONS = {
       startups: {
         label: 'Schweizer Start-ups, die einstellen',
         detail: 'Fintech, Gesundheit, Klima, Deep Tech, Consumer und mehr.',
+        value: '2,3k',
       },
       offerTime: {
         label: 'Ø Zeit bis zum Angebot',
         detail: 'Vom ersten Gespräch bis zur Zusage bei Studierenden-Matches.',
+        value: '12 Tage',
       },
       founders: {
         label: 'Studierende Gründer:innen an Bord',
         detail: 'Studierende, die über unser Partnernetzwerk gegründet haben.',
+        value: '780+',
       },
       'time-to-offer': {
         label: 'Ø Zeit bis zum Angebot',
         detail: 'Vom ersten Gespräch bis zur Zusage bei Studierenden-Matches.',
+        value: '12 Tage',
       },
       'student-founders': {
         label: 'Studierende Gründer:innen an Bord',
         detail: 'Studierende, die über unser Partnernetzwerk gegründet haben.',
+        value: '780+',
       },
     },
     filters: {
@@ -1185,6 +1233,39 @@ const TRANSLATIONS = {
       viewApplicants: 'Bewerber ansehen',
       memberFallback: 'Mitglied',
     },
+    security: {
+      passwordReset: {
+        fields: {
+          newPassword: 'Neues Passwort',
+          confirmPassword: 'Passwort bestätigen',
+        },
+        buttons: {
+          submit: 'Passwort aktualisieren',
+          submitting: 'Aktualisieren…',
+        },
+      },
+      modal: {
+        title: 'Datenschutz & Sicherheit',
+        description:
+          'Halten Sie Ihre Kontakt-E-Mail aktuell und wechseln Sie Ihr Passwort regelmässig für zusätzliche Sicherheit.',
+        sections: {
+          email: 'E-Mail ändern',
+          password: 'Passwort ändern',
+        },
+        fields: {
+          email: 'E-Mail',
+          currentPassword: 'Aktuelles Passwort',
+          newPassword: 'Neues Passwort',
+          confirmNewPassword: 'Neues Passwort bestätigen',
+        },
+        buttons: {
+          saveEmail: 'E-Mail speichern',
+          savingEmail: 'Speichern…',
+          savePassword: 'Passwort speichern',
+          savingPassword: 'Aktualisieren…',
+        },
+      },
+    },
     profileModal: {
       title: 'Aktualisieren Sie Ihr Profil',
       subtitle: 'Halten Sie Start-ups mit Ihren aktuellen Projekten, Studien und Dokumenten auf dem Laufenden.',
@@ -1354,6 +1435,11 @@ const TRANSLATIONS = {
       following: 'Folgt',
       visitWebsite: 'Website besuchen',
       reviews: 'Bewertungen',
+      verifiedBadge: 'Verifiziert',
+      jobCount: {
+        one: '1 offene Stelle',
+        other: '{{count}} offene Stellen',
+      },
       heading: 'Ausgewählte Start-ups',
       subheading: 'Lernen Sie die Gründer:innen kennen, die die nächste Generation Schweizer Unternehmen aufbauen.',
       sortAria: 'Start-ups sortieren',
@@ -6613,7 +6699,9 @@ const SwissStartupConnect = () => {
               <div className="ssc__stats">
                 {stats.map((stat) => (
                   <article key={stat.id} className="ssc__stat-card">
-                    <span className="ssc__stat-value">{stat.value}</span>
+                    <span className="ssc__stat-value">
+                      {translate(`stats.${stat.id}.value`, stat.value)}
+                    </span>
                     <span className="ssc__stat-label">
                       {translate(`stats.${stat.id}.label`, stat.label)}
                     </span>
@@ -7226,8 +7314,14 @@ const SwissStartupConnect = () => {
                 <div className="ssc__company-grid">
                   {sortedCompanies.map((company) => {
                     const followKey = String(company.id || company.name);
-                    const jobCountLabel =
-                      company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`;
+                    const jobCountValue = Number(company.jobCount);
+                    const jobCount = Number.isFinite(jobCountValue) ? jobCountValue : 0;
+                    const jobCountKey = jobCount === 1 ? 'companies.jobCount.one' : 'companies.jobCount.other';
+                    const jobCountLabel = translate(
+                      jobCountKey,
+                      jobCount === 1 ? '1 open role' : `${jobCount} open roles`,
+                      { count: jobCount }
+                    );
                     return (
                       <article key={followKey} className="ssc__company-card">
                         <div className="ssc__company-logo">
@@ -7238,7 +7332,8 @@ const SwissStartupConnect = () => {
                             <h3 className="ssc__company-name">{company.name}</h3>
                             {company.verification_status === 'verified' && (
                               <span className="ssc__badge">
-                                <CheckCircle2 size={14} /> Verified
+                                <CheckCircle2 size={14} />{' '}
+                                {translate('companies.verifiedBadge', 'Verified')}
                               </span>
                             )}
                           </div>
@@ -9179,7 +9274,9 @@ const SwissStartupConnect = () => {
 
             <form className="ssc__form" onSubmit={handlePasswordReset}>
               <label className="ssc__field">
-                <span>New password</span>
+                <span>
+                  {translate('security.passwordReset.fields.newPassword', 'New password')}
+                </span>
                 <input
                   type="password"
                   value={newPassword}
@@ -9188,7 +9285,9 @@ const SwissStartupConnect = () => {
                 />
               </label>
               <label className="ssc__field">
-                <span>Confirm password</span>
+                <span>
+                  {translate('security.passwordReset.fields.confirmPassword', 'Confirm password')}
+                </span>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -9197,7 +9296,9 @@ const SwissStartupConnect = () => {
                 />
               </label>
               <button type="submit" className="ssc__primary-btn ssc__primary-btn--full" disabled={passwordResetSaving}>
-                {passwordResetSaving ? 'Updating…' : 'Update password'}
+                {passwordResetSaving
+                  ? translate('security.passwordReset.buttons.submitting', 'Updating…')
+                  : translate('security.passwordReset.buttons.submit', 'Update password')}
               </button>
             </form>
           </div>
@@ -9210,13 +9311,20 @@ const SwissStartupConnect = () => {
             <button type="button" className="ssc__modal-close" onClick={closeSecurityModal}>
               <X size={18} />
             </button>
-            <h2>Privacy & security</h2>
-            <p>Keep your contact email up to date and rotate your password regularly for extra safety.</p>
+            <h2>{translate('security.modal.title', 'Privacy & security')}</h2>
+            <p>
+              {translate(
+                'security.modal.description',
+                'Keep your contact email up to date and rotate your password regularly for extra safety.'
+              )}
+            </p>
 
             <form className="ssc__form" onSubmit={handleSecurityEmailChange}>
-              <h3 className="ssc__modal-subtitle">Change email</h3>
+              <h3 className="ssc__modal-subtitle">
+                {translate('security.modal.sections.email', 'Change email')}
+              </h3>
               <label className="ssc__field">
-                <span>Email</span>
+                <span>{translate('security.modal.fields.email', 'Email')}</span>
                 <input
                   type="email"
                   value={securityEmail}
@@ -9226,15 +9334,19 @@ const SwissStartupConnect = () => {
               </label>
               {securityEmailMessage && <div className="ssc__info">{securityEmailMessage}</div>}
               <button type="submit" className="ssc__primary-btn ssc__primary-btn--full" disabled={securityEmailSaving}>
-                {securityEmailSaving ? 'Saving…' : 'Save email'}
+                {securityEmailSaving
+                  ? translate('security.modal.buttons.savingEmail', 'Saving…')
+                  : translate('security.modal.buttons.saveEmail', 'Save email')}
               </button>
             </form>
 
             <form className="ssc__form" onSubmit={handleSecurityPasswordChange}>
-              <h3 className="ssc__modal-subtitle">Change password</h3>
+              <h3 className="ssc__modal-subtitle">
+                {translate('security.modal.sections.password', 'Change password')}
+              </h3>
               {securityError && <div className="ssc__alert">{securityError}</div>}
               <label className="ssc__field">
-                <span>Current password</span>
+                <span>{translate('security.modal.fields.currentPassword', 'Current password')}</span>
                 <div className="ssc__password-input">
                   <input
                     type={showOldPassword ? 'text' : 'password'}
@@ -9247,12 +9359,14 @@ const SwissStartupConnect = () => {
                     onClick={() => setShowOldPassword((prev) => !prev)}
                     className="ssc__link-button"
                   >
-                    {showOldPassword ? 'Hide' : 'Show'}
+                    {showOldPassword
+                      ? translate('authModal.actions.hide', 'Hide')
+                      : translate('authModal.actions.show', 'Show')}
                   </button>
                 </div>
               </label>
               <label className="ssc__field">
-                <span>New password</span>
+                <span>{translate('security.modal.fields.newPassword', 'New password')}</span>
                 <div className="ssc__password-input">
                   <input
                     type={showNewPassword ? 'text' : 'password'}
@@ -9265,12 +9379,14 @@ const SwissStartupConnect = () => {
                     onClick={() => setShowNewPassword((prev) => !prev)}
                     className="ssc__link-button"
                   >
-                    {showNewPassword ? 'Hide' : 'Show'}
+                    {showNewPassword
+                      ? translate('authModal.actions.hide', 'Hide')
+                      : translate('authModal.actions.show', 'Show')}
                   </button>
                 </div>
               </label>
               <label className="ssc__field">
-                <span>Confirm new password</span>
+                <span>{translate('security.modal.fields.confirmNewPassword', 'Confirm new password')}</span>
                 <div className="ssc__password-input">
                   <input
                     type={showNewConfirm ? 'text' : 'password'}
@@ -9283,12 +9399,16 @@ const SwissStartupConnect = () => {
                     onClick={() => setShowNewConfirm((prev) => !prev)}
                     className="ssc__link-button"
                   >
-                    {showNewConfirm ? 'Hide' : 'Show'}
+                    {showNewConfirm
+                      ? translate('authModal.actions.hide', 'Hide')
+                      : translate('authModal.actions.show', 'Show')}
                   </button>
                 </div>
               </label>
               <button type="submit" className="ssc__primary-btn ssc__primary-btn--full" disabled={securitySaving}>
-                {securitySaving ? 'Updating…' : 'Save password'}
+                {securitySaving
+                  ? translate('security.modal.buttons.savingPassword', 'Updating…')
+                  : translate('security.modal.buttons.savePassword', 'Save password')}
               </button>
             </form>
           </div>
