@@ -3372,7 +3372,7 @@ const SwissStartupConnect = () => {
         posted: 'Just now',
         weekly_hours_value: employmentTypeForPayload === 'Part-time' ? weeklyHoursNumeric : null,
         weekly_hours: weeklyHoursLabel,
-        internship_duration_months: employmentTypeForPayload === 'Internship' ? internshipDurationNumeric : null,
+        duration_months: employmentTypeForPayload === 'Internship' ? internshipDurationNumeric : null,
       };
 
       const { error } = await supabase.from('jobs').insert(payload);
