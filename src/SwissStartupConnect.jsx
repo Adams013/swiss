@@ -29,6 +29,754 @@ import {
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+  { value: 'de', label: 'Deutsch' },
+];
+
+const TRANSLATIONS = {
+  fr: {
+    nav: {
+      general: 'Général',
+      jobs: 'Opportunités',
+      companies: 'Startups',
+      myJobs: 'Mes offres',
+      applications: 'Candidatures',
+      saved: 'Favoris',
+      join: 'Rejoindre',
+      signIn: 'Se connecter',
+      language: 'Langue',
+    },
+    hero: {
+      badge: 'Plébiscité par les startups et universités suisses',
+      title: 'Devenez l’artisan du prochain succès start-up suisse',
+      subtitle:
+        'Découvrez des stages rémunérés, des postes à temps partiel et des opportunités pour diplômés avec des fondateurs qui vous veulent dès le premier jour.',
+      searchPlaceholder: 'Rechercher une startup, un poste ou une compétence',
+      searchButton: 'Trouver des correspondances',
+      scrollAria: 'Faire défiler vers les filtres',
+    },
+    stats: {
+      startups: {
+        label: 'Startups suisses qui recrutent',
+        detail: 'Fintech, santé, climat, deep tech, grand public et bien plus encore.',
+      },
+      offerTime: {
+        label: "Délai moyen jusqu'à l'offre",
+        detail: 'Du premier échange à la signature pour les profils étudiants.',
+      },
+      founders: {
+        label: 'Fondateurs étudiants accompagnés',
+        detail: 'Des étudiants ayant lancé leur projet via notre réseau de partenaires.',
+      },
+      'time-to-offer': {
+        label: "Délai moyen jusqu'à l'offre",
+        detail: 'Du premier échange à la signature pour les profils étudiants.',
+      },
+      'student-founders': {
+        label: 'Fondateurs étudiants accompagnés',
+        detail: 'Des étudiants ayant lancé leur projet via notre réseau de partenaires.',
+      },
+    },
+    filters: {
+      title: 'Affinez vos résultats',
+      subtitle:
+        'Choisissez les villes actives, les domaines et la rémunération qui vous correspondent.',
+      clear: 'Réinitialiser',
+      activeCities: 'Villes actives',
+      roleFocus: 'Axes de poste',
+      salaryRange: 'Fourchette salariale',
+      salaryHelper: {
+        hour: 'CHF horaire',
+        week: 'CHF hebdomadaire',
+        month: 'CHF mensuel (par défaut)',
+        year: 'CHF annuel / total',
+        fallback: 'CHF mensuel',
+      },
+      salaryCadence: {
+        hour: 'Horaire',
+        week: 'Hebdomadaire',
+        month: 'Mensuel',
+        year: 'Annuel / total',
+      },
+      salaryCadenceLabel: {
+        hour: 'horaire',
+        week: 'hebdomadaire',
+        month: 'mensuel',
+        year: 'annuel',
+      },
+      min: 'Min',
+      max: 'Max',
+      salaryAriaGroup: 'Rythme salarial',
+      salaryAriaMin: 'Salaire {{cadence}} minimum',
+      salaryAriaMax: 'Salaire {{cadence}} maximum',
+      salaryAriaMinCurrency: 'Salaire {{cadence}} minimum en francs suisses',
+      salaryAriaMaxCurrency: 'Salaire {{cadence}} maximum en francs suisses',
+      equityRange: 'Part en capital',
+      equityHelper: 'Pourcentage de participation',
+      equityAriaMin: 'Équité minimale',
+      equityAriaMax: 'Équité maximale',
+    },
+    jobs: {
+      heading: 'Offres ouvertes',
+      subheading:
+        'Des rôles triés sur le volet dans des startups suisses qui accueillent les talents étudiants et débutants.',
+      rolesCount: '{{count}} offre{{plural}}',
+      sortLabel: 'Trier par',
+      sort: {
+        recent: 'Plus récentes',
+        salary: 'Salaire le plus élevé',
+        equity: 'Équité la plus élevée',
+      },
+      applicants: '{{count}} candidat{{plural}}',
+      viewRole: 'Voir le poste',
+      apply: 'Postuler',
+      applied: 'Déjà postulé',
+      saveRemove: 'Retirer des favoris',
+      saveAdd: 'Enregistrer le poste',
+      saveTooltip: 'Connectez-vous avec un compte étudiant pour enregistrer des offres',
+      thirteenth: '13e salaire',
+      motivationalTag: 'Lettre de motivation',
+      savedHeading: 'Postes enregistrés',
+      savedSubheading: 'Gardez un œil sur les opportunités à revisiter ou à candidater plus tard.',
+      savedCount: '{{count}} favori{{plural}}',
+      savedOnlyStudents: 'Réservé aux comptes étudiants',
+      savedSwitch: 'Passez sur un compte étudiant pour enregistrer des rôles.',
+      savedSignInPrompt:
+        'Connectez-vous avec votre compte étudiant pour enregistrer des opportunités pour plus tard.',
+      savedEmptyTitle: 'Aucun favori pour le moment',
+      savedEmptyDescription: 'Touchez le cœur d’une offre pour la garder ici.',
+      noJobsTitle: 'Aucune offre publiée',
+      noJobsVerified: 'Partagez votre première opportunité pour rencontrer des candidats.',
+      noJobsUnverified:
+        'Faites vérifier votre startup pour publier des offres et attirer des talents.',
+      postFirstRole: 'Publier un premier poste',
+      applicantsTabHeading: 'Candidatures',
+      viewApplicants: 'Voir les candidats',
+      applyRestrictionStudent: 'Réservé aux candidatures étudiantes.',
+      applyRestrictionSignIn: 'Connectez-vous avec un compte étudiant pour postuler.',
+      feedbackRemoved: 'Retiré de vos favoris.',
+      feedbackAdded: 'Ajouté à vos favoris.',
+      seeMoreHeading: 'Voir plus d’opportunités',
+      seeMoreBody: 'Parcourez les {{count}} postes ouverts sur la page Opportunités.',
+      seeMoreButton: 'Explorer les rôles',
+      noMatchesTitle: 'Aucun résultat',
+      noMatchesBody: 'Retirez un filtre ou élargissez votre fourchette salariale.',
+    },
+    companies: {
+      sort: {
+        recent: 'Plus récentes',
+        roles: 'Plus d’offres',
+      },
+      followPrompt: 'Connectez-vous pour suivre des startups.',
+      postingsCount: '{{count}} offre{{plural}} active{{plural}}',
+      postVacancy: 'Publier une offre',
+      verificationRequired: 'Vérification requise',
+      verifyPrompt:
+        'Faites vérifier votre startup pour publier des offres. Ajoutez votre numéro IDE et votre logo.',
+      completeVerification: 'Compléter la vérification',
+      recentlyPosted: 'Publication récente',
+      applicantsSubheading:
+        'Suivez l’avancement, consultez les lettres de motivation et gérez votre pipeline de recrutement.',
+      follow: 'Suivre',
+      following: 'Suivi',
+      visitWebsite: 'Voir le site',
+      reviews: 'Avis',
+      heading: 'Startups à découvrir',
+      subheading: 'Rencontrez les fondateurs qui bâtissent la prochaine génération d’entreprises suisses.',
+      sortAria: 'Trier les startups',
+      sortLabel: 'Trier par',
+    },
+    applications: {
+      viewCv: 'Voir le CV',
+      noCv: 'Aucun CV fourni',
+      motivationalHeading: 'Lettre de motivation',
+      downloadLetter: 'Télécharger la lettre de motivation',
+      appliedOn: 'Candidature du {{date}}',
+      emptyTitle: 'Pas encore de candidatures',
+      emptyBody: 'Partagez votre offre ou publiez un nouveau poste pour recevoir des candidatures.',
+      statusLabel: 'Statut',
+      status: {
+        submitted: 'Reçue',
+        in_review: 'En cours d’examen',
+        interviewing: 'Entretiens',
+        offer: 'Offre',
+        hired: 'Embauché·e',
+        rejected: 'Refusé·e',
+      },
+      statusFeedback: 'Candidature marquée comme {{status}}.',
+      candidateFallback: 'Candidat·e',
+      candidateInitialFallback: 'C',
+      universityFallback: 'Université non renseignée',
+      programFallback: 'Programme non renseigné',
+      acknowledge:
+        'En postulant, vous acceptez que la startup voie vos informations de profil, votre CV, votre lettre de motivation et votre photo de profil.',
+    },
+    featured: {
+      heading: 'Startups mises en avant',
+      viewAll: 'Tout voir',
+      follow: 'Suivre',
+      following: 'Suivi',
+      singleRole: '1 poste ouvert',
+      multipleRoles: '{{count}} postes ouverts',
+      empty: 'De nouvelles startups arrivent — revenez bientôt.',
+    },
+    community: {
+      heading: 'Histoires de notre communauté',
+    },
+    testimonials: {
+      1: {
+        quote:
+          'SwissStartup Connect a rendu la découverte des startups alignées avec mes valeurs très simple. J’ai livré du code en production dès la deuxième semaine.',
+        role: 'ETH Zurich, étudiante en ingénierie logicielle',
+      },
+      2: {
+        quote:
+          'Nous avons pourvu deux postes growth en un temps record. Les candidats maîtrisaient déjà le marché suisse et étaient prêts à expérimenter.',
+        role: 'Co-fondateur, Helvetia Mobility',
+      },
+    },
+    steps: {
+      heading: 'Comment ça marche',
+      description:
+        'Six étapes pour décrocher un poste dans une startup suisse alignée avec vos ambitions.',
+      items: {
+        1: {
+          title: 'Créez un profil percutant',
+          description:
+            'Mettez en avant vos compétences, projets et vos prochaines envies d’apprentissage.',
+        },
+        2: {
+          title: 'Trouvez les startups qui vous correspondent',
+          description:
+            'Recevez des offres sélectionnées selon vos objectifs, disponibilités et envies.',
+        },
+        3: {
+          title: 'Échangez avec les fondateurs',
+          description:
+            'Accédez à des introductions ciblées et découvrez ce qu’implique la réussite dès les 90 premiers jours.',
+        },
+        4: {
+          title: 'Planifiez votre trajectoire',
+          description:
+            'Comparez salaires, équité et modalités via notre calculateur intégré.',
+        },
+        5: {
+          title: 'Lancez la collaboration',
+          description: 'Passez du premier échange à l’offre signée en moins de trois semaines.',
+        },
+        6: {
+          title: 'Célébrez la réussite',
+          description:
+            'Participez aux sessions alumni pour partager des conseils et préparer votre premier jour.',
+        },
+      },
+    },
+    tips: {
+      heading: 'Conseils carrière startup',
+      description:
+        'Boostez votre recherche avec les recommandations que les fondateurs donnent le plus souvent.',
+      items: {
+        equity: {
+          title: "L'équité compte",
+          description: "Demandez les parts proposées — elles peuvent valoir plus que le salaire !",
+        },
+        growth: {
+          title: 'Potentiel de croissance',
+          description: 'Les startups offrent une progression rapide et des missions variées.',
+        },
+        learn: {
+          title: 'Apprendre vite',
+          description: 'Plongez au cœur de toutes les fonctions et développez une vision globale.',
+        },
+      },
+    },
+    resources: {
+      heading: 'Ressources pour bien démarrer',
+      description: 'Modèles, repères et guides conçus avec des fondateurs suisses.',
+      visitSite: 'Consulter le site officiel',
+      viewDetails: 'Voir les détails',
+      items: {
+        1: {
+          title: 'Guide de rémunération des stages en Suisse',
+          description:
+            'Salaire mensuel médian et remarques sur le coût de la vie pour chaque canton.',
+        },
+        2: {
+          title: 'Modèle de CV prêt pour les fondateurs',
+          description:
+            'Trois modèles éprouvés et des conseils de rédaction plébiscités par les fondateurs.',
+        },
+        3: {
+          title: 'Liste de contrôle visa & permis',
+          description: 'Guide officiel étape par étape pour étudier et travailler en Suisse.',
+        },
+      },
+    },
+    cta: {
+      heading: 'Prêt·e à co-créer le prochain succès suisse ?',
+      description:
+        'Rejoignez une communauté sélectionnée de fondateurs, d’opérationnels et d’étudiants qui construisent partout en Suisse.',
+      primary: 'Créer mon profil',
+      secondary: 'Explorer les startups',
+    },
+    footer: {
+      madeIn: '© {{year}} SwissStartup Connect. Conçu en Suisse.',
+      privacy: 'Confidentialité',
+      terms: 'Conditions',
+      contact: 'Contact',
+    },
+    modals: {
+      compensation: {
+        title: 'Salaire médian de stage par canton',
+        subtitle:
+          'Source : baromètre des stages swissuniversities 2024 + offres publiques (janvier 2025). Montants médians pour des stages de 3 à 12 mois.',
+        table: {
+          canton: 'Canton',
+          median: 'Indemnité médiane',
+          expectation: 'À quoi vous attendre',
+        },
+        notes: {
+          'Zürich (ZH)': 'Les pôles finance, pharma et big tech offrent les gratifications les plus élevées.',
+          'Bern (BE)': 'Les offices fédéraux et les medtech assurent une rémunération stable.',
+          'Luzern (LU)': 'Clusters tourisme et santé ; le logement reste accessible.',
+          'Uri (UR)': 'Les PME industrielles incluent souvent une participation aux transports.',
+          'Schwyz (SZ)': 'La finance et l’automatisation industrielle se disputent les talents.',
+          'Obwalden (OW)': 'Les petites entreprises prévoient des indemnités repas ou logement.',
+          'Nidwalden (NW)': 'Les fournisseurs aéronautiques s’alignent sur les moyennes nationales.',
+          'Glarus (GL)': 'Les stages industriels intègrent un soutien pour le logement.',
+          'Zug (ZG)': 'Les scale-ups crypto et matières premières rehaussent les barèmes.',
+          'Fribourg (FR)': 'Marché bilingue ; stages de recherche cofinancés par les universités.',
+          'Solothurn (SO)': 'Microtech de précision avec indemnités de transport.',
+          'Basel-Stadt (BS)': 'Les sciences de la vie alignent les gratifications sur les salaires juniors.',
+          'Basel-Landschaft (BL)': 'Chimie et logistique suivent les références bâloises.',
+          'Schaffhausen (SH)': 'Les sièges industriels internationaux complètent avec cartes repas.',
+          'Appenzell Ausserrhoden (AR)': 'Les entreprises familiales ajoutent transport ou logement.',
+          'Appenzell Innerrhoden (AI)': 'Petit bassin ; le coût de vie modéré compense.',
+          'St. Gallen (SG)': 'Les labs fintech/textile recrutent auprès de la HSG et de l’OST.',
+          'Graubünden (GR)': 'Tourisme et marques outdoor offrent des avantages saisonniers.',
+          'Aargau (AG)': 'Énergie et automation proposent des gratifications compétitives.',
+          'Thurgau (TG)': 'Agroalimentaire et medtech financent les déplacements.',
+          'Ticino (TI)': 'Entreprises transfrontalières mêlent repères lombards et suisses.',
+          'Vaud (VD)': 'L’écosystème EPFL et les scale-ups medtech tirent la demande.',
+          'Valais (VS)': 'Énergie et tourisme incluent des logements saisonniers.',
+          'Neuchâtel (NE)': 'Horlogerie et microtech offrent une rémunération stable.',
+          'Geneva (GE)': 'Les organisations internationales ajoutent repas et transports.',
+          'Jura (JU)': 'L’industrie de précision investit dans des bonus de montée en compétences.',
+        },
+        footnote:
+          'Les entreprises peuvent ajouter un abonnement de transport, une indemnité repas ou un logement. Vérifiez toujours l’offre finale avant de signer.',
+      },
+      cv: {
+        title: 'Modèles de CV prêts pour les fondateurs',
+        subtitle:
+          'Commencez avec ces formats recommandés par les recruteurs suisses, puis personnalisez-les grâce aux conseils ci-dessous.',
+        tipsTitle: 'Comment rendre votre CV incontournable',
+        footnote:
+          'Astuce : exportez au format PDF nommé <code>prenom-nom-cv.pdf</code>. Gardez des versions en anglais et dans la langue locale du canton ciblé (français, allemand ou italien).',
+        templates: {
+          europass:
+            'Des sections standardisées qui facilitent la comparaison rapide des profils ; version bilingue prête pour les candidatures en français / allemand.',
+          novoresume:
+            'Mise en page épurée plébiscitée par les scale-ups suisses pour les étudiants et jeunes diplômés.',
+          google:
+            'Recommandé par le Career Center de l’ETH pour les rôles tech ; facile à copier et localiser.',
+        },
+        tips: [
+          "Commencez par trois lignes résumant votre poste ciblé, vos compétences clés et ce que vous voulez construire ensuite.",
+          'Utilisez des puces avec des verbes d’action et des résultats chiffrés (ex. « réduction du temps d’onboarding de 30 % »).',
+          'Gardez un bloc dédié aux compétences/outils — les fondateurs et CTO vérifient d’abord la stack.',
+          'Ajoutez des signaux entrepreneuriaux : projets personnels, hackathons, programmes venture ou rôles de leadership.',
+          'Limitez-vous à une page tant que vous avez moins de trois ans d’expérience ; développez en entretien.',
+        ],
+      },
+    },
+  },
+  de: {
+    nav: {
+      general: 'Überblick',
+      jobs: 'Stellen',
+      companies: 'Start-ups',
+      myJobs: 'Meine Inserate',
+      applications: 'Bewerbungen',
+      saved: 'Gemerkt',
+      join: 'Beitreten',
+      signIn: 'Anmelden',
+      language: 'Sprache',
+    },
+    hero: {
+      badge: 'Vertrauen von Schweizer Start-ups und Hochschulen',
+      title: 'Gestalten Sie die nächste Schweizer Start-up-Erfolgsgeschichte',
+      subtitle:
+        'Entdecken Sie bezahlte Praktika, Teilzeitstellen und Einstiegsjobs bei Gründer:innen, die Sie vom ersten Tag an dabeihaben wollen.',
+      searchPlaceholder: 'Start-up, Rolle oder Skill suchen',
+      searchButton: 'Passende Rollen finden',
+      scrollAria: 'Zu den Filtern scrollen',
+    },
+    stats: {
+      startups: {
+        label: 'Schweizer Start-ups, die einstellen',
+        detail: 'Fintech, Gesundheit, Klima, Deep Tech, Consumer und mehr.',
+      },
+      offerTime: {
+        label: 'Ø Zeit bis zum Angebot',
+        detail: 'Vom ersten Gespräch bis zur Zusage bei Studierenden-Matches.',
+      },
+      founders: {
+        label: 'Studierende Gründer:innen an Bord',
+        detail: 'Studierende, die über unser Partnernetzwerk gegründet haben.',
+      },
+      'time-to-offer': {
+        label: 'Ø Zeit bis zum Angebot',
+        detail: 'Vom ersten Gespräch bis zur Zusage bei Studierenden-Matches.',
+      },
+      'student-founders': {
+        label: 'Studierende Gründer:innen an Bord',
+        detail: 'Studierende, die über unser Partnernetzwerk gegründet haben.',
+      },
+    },
+    filters: {
+      title: 'Ergebnisse verfeinern',
+      subtitle:
+        'Wählen Sie aktive Städte, Fokusbereiche und das Vergütungspaket, das zu Ihnen passt.',
+      clear: 'Zurücksetzen',
+      activeCities: 'Aktive Städte',
+      roleFocus: 'Rollenfokus',
+      salaryRange: 'Gehaltsrange',
+      salaryHelper: {
+        hour: 'CHF pro Stunde',
+        week: 'CHF pro Woche',
+        month: 'CHF pro Monat (Standard)',
+        year: 'CHF pro Jahr / total',
+        fallback: 'CHF pro Monat',
+      },
+      salaryCadence: {
+        hour: 'Stündlich',
+        week: 'Wöchentlich',
+        month: 'Monatlich',
+        year: 'Jährlich / total',
+      },
+      salaryCadenceLabel: {
+        hour: 'stündlich',
+        week: 'wöchentlich',
+        month: 'monatlich',
+        year: 'jährlich',
+      },
+      min: 'Min',
+      max: 'Max',
+      salaryAriaGroup: 'Gehaltsrhythmus',
+      salaryAriaMin: 'Mindestgehalt {{cadence}}',
+      salaryAriaMax: 'Höchstgehalt {{cadence}}',
+      salaryAriaMinCurrency: 'Mindestgehalt {{cadence}} in Schweizer Franken',
+      salaryAriaMaxCurrency: 'Höchstgehalt {{cadence}} in Schweizer Franken',
+      equityRange: 'Beteiligungsanteil',
+      equityHelper: 'Prozentualer Anteil',
+      equityAriaMin: 'Minimaler Beteiligungsanteil',
+      equityAriaMax: 'Maximaler Beteiligungsanteil',
+    },
+    jobs: {
+      heading: 'Offene Stellen',
+      subheading:
+        'Kuratiere Rollen aus Schweizer Start-ups, die studentische Talente und Berufseinsteiger:innen willkommen heissen.',
+      rolesCount: '{{count}} offene Stelle{{plural}}',
+      sortLabel: 'Sortieren nach',
+      sort: {
+        recent: 'Neueste zuerst',
+        salary: 'Höchstes Gehalt',
+        equity: 'Höchste Beteiligung',
+      },
+      applicants: '{{count}} Bewerber:innen',
+      viewRole: 'Stelle ansehen',
+      apply: 'Jetzt bewerben',
+      applied: 'Bereits beworben',
+      saveRemove: 'Aus Merklisten entfernen',
+      saveAdd: 'Stelle merken',
+      saveTooltip: 'Mit Studierendenkonto anmelden, um Stellen zu merken',
+      thirteenth: '13. Monatslohn',
+      motivationalTag: 'Motivationsschreiben',
+      savedHeading: 'Gemerkte Stellen',
+      savedSubheading: 'Behalten Sie spannende Optionen im Blick oder bewerben Sie sich später.',
+      savedCount: '{{count}} gespeichert',
+      savedOnlyStudents: 'Nur für Studierendenkonten',
+      savedSwitch: 'Wechseln Sie zu einem Studierendenkonto, um Stellen zu speichern.',
+      savedSignInPrompt:
+        'Melden Sie sich mit Ihrem Studierendenkonto an, um Stellen für später zu sichern.',
+      savedEmptyTitle: 'Noch keine gemerkten Stellen',
+      savedEmptyDescription: 'Tippen Sie auf das Herz einer Stelle, um sie hier abzulegen.',
+      noJobsTitle: 'Noch keine Inserate',
+      noJobsVerified: 'Veröffentlichen Sie Ihre erste Stelle, um Kandidat:innen zu erreichen.',
+      noJobsUnverified:
+        'Lassen Sie Ihr Start-up verifizieren, um Stellen auszuschreiben und Talente zu gewinnen.',
+      postFirstRole: 'Erste Stelle veröffentlichen',
+      applicantsTabHeading: 'Bewerbungen',
+      viewApplicants: 'Bewerber:innen ansehen',
+      applyRestrictionStudent: 'Nur für Bewerbungen von Studierenden.',
+      applyRestrictionSignIn: 'Melden Sie sich mit einem Studierendenkonto an, um sich zu bewerben.',
+      feedbackRemoved: 'Aus den Merklisten entfernt.',
+      feedbackAdded: 'Zu Ihren Merklisten hinzugefügt.',
+      seeMoreHeading: 'Weitere Stellen entdecken',
+      seeMoreBody: 'Sehen Sie sich alle {{count}} offenen Rollen auf der Stellen-Seite an.',
+      seeMoreButton: 'Rollen ansehen',
+      noMatchesTitle: 'Keine Treffer',
+      noMatchesBody: 'Entfernen Sie einen Filter oder erweitern Sie Ihre Gehaltsspanne.',
+    },
+    companies: {
+      sort: {
+        recent: 'Neueste zuerst',
+        roles: 'Meiste Stellen',
+      },
+      followPrompt: 'Melden Sie sich an, um Start-ups zu folgen.',
+      postingsCount: '{{count}} aktive Stelle{{plural}}',
+      postVacancy: 'Stelle veröffentlichen',
+      verificationRequired: 'Verifizierung erforderlich',
+      verifyPrompt:
+        'Lassen Sie Ihr Start-up verifizieren, um Stellen zu veröffentlichen. Ergänzen Sie Handelsregistereintrag und Logo.',
+      completeVerification: 'Verifizierung abschliessen',
+      recentlyPosted: 'Kürzlich veröffentlicht',
+      applicantsSubheading:
+        'Verfolgen Sie den Fortschritt, prüfen Sie Motivationsschreiben und steuern Sie Ihren Recruiting-Funnel.',
+      follow: 'Folgen',
+      following: 'Folgt',
+      visitWebsite: 'Website besuchen',
+      reviews: 'Bewertungen',
+      heading: 'Ausgewählte Start-ups',
+      subheading: 'Lernen Sie die Gründer:innen kennen, die die nächste Generation Schweizer Unternehmen aufbauen.',
+      sortAria: 'Start-ups sortieren',
+      sortLabel: 'Sortieren nach',
+    },
+    applications: {
+      viewCv: 'Lebenslauf ansehen',
+      noCv: 'Kein Lebenslauf vorhanden',
+      motivationalHeading: 'Motivationsschreiben',
+      downloadLetter: 'Motivationsschreiben herunterladen',
+      appliedOn: 'Beworben am {{date}}',
+      emptyTitle: 'Noch keine Bewerbungen',
+      emptyBody: 'Teilen Sie Ihren Link oder veröffentlichen Sie eine neue Stelle, um Bewerbungen zu erhalten.',
+      statusLabel: 'Status',
+      status: {
+        submitted: 'Eingegangen',
+        in_review: 'In Prüfung',
+        interviewing: 'Im Gespräch',
+        offer: 'Angebot',
+        hired: 'Eingestellt',
+        rejected: 'Abgelehnt',
+      },
+      statusFeedback: 'Bewerbung als {{status}} markiert.',
+      candidateFallback: 'Kandidat:in',
+      candidateInitialFallback: 'K',
+      universityFallback: 'Hochschule nicht angegeben',
+      programFallback: 'Studiengang nicht angegeben',
+      acknowledge:
+        'Mit Ihrer Bewerbung stimmen Sie zu, dass das Start-up Ihre Profilinformationen, Ihren Lebenslauf, Ihr Motivationsschreiben und Ihr Profilfoto sieht.',
+    },
+    featured: {
+      heading: 'Ausgewählte Start-ups',
+      viewAll: 'Alle ansehen',
+      follow: 'Folgen',
+      following: 'Folgt',
+      singleRole: '1 offene Stelle',
+      multipleRoles: '{{count}} offene Stellen',
+      empty: 'Neue Start-ups werden kuratiert – schauen Sie bald wieder vorbei.',
+    },
+    community: {
+      heading: 'Geschichten aus unserer Community',
+    },
+    testimonials: {
+      1: {
+        quote:
+          'SwissStartup Connect hat es mir leicht gemacht, Start-ups zu finden, die zu meinen Werten passen. Schon in Woche zwei habe ich produktiven Code ausgeliefert.',
+        role: 'ETH Zürich, Studentin Software Engineering',
+      },
+      2: {
+        quote:
+          'Wir haben zwei Growth-Rollen in Rekordzeit besetzt. Die Kandidat:innen kannten den Schweizer Markt und waren bereit zu experimentieren.',
+        role: 'Mitgründer, Helvetia Mobility',
+      },
+    },
+    steps: {
+      heading: 'So funktioniert es',
+      description:
+        'Sechs Schritte, um eine Rolle bei einem Schweizer Start-up zu finden, das Ihre Ambitionen teilt.',
+      items: {
+        1: {
+          title: 'Erstellen Sie ein überzeugendes Profil',
+          description:
+            'Zeigen Sie Skills, Projekte und was Sie als Nächstes lernen möchten.',
+        },
+        2: {
+          title: 'Match mit passenden Start-ups',
+          description:
+            'Erhalten Sie kuratierte Rollen basierend auf Ihren Zielen, Verfügbarkeiten und Interessen.',
+        },
+        3: {
+          title: 'Treffen Sie Gründer:innen',
+          description:
+            'Erhalten Sie gezielte Intros und erfahren Sie, wie Erfolg in den ersten 90 Tagen aussieht.',
+        },
+        4: {
+          title: 'Planen Sie Ihren Runway',
+          description:
+            'Vergleichen Sie Gehalt, Beteiligung und Vertragsdetails mit unserem Rechner.',
+        },
+        5: {
+          title: 'Starten Sie gemeinsam',
+          description: 'Vom ersten Intro zur Zusage in durchschnittlich unter drei Wochen.',
+        },
+        6: {
+          title: 'Feiern Sie den Erfolg',
+          description:
+            'Nehmen Sie an Alumni-Sessions teil, tauschen Sie Tipps und bereiten Sie Ihren ersten Tag vor.',
+        },
+      },
+    },
+    tips: {
+      heading: 'Karriere-Tipps für Start-ups',
+      description:
+        'Verbessern Sie Ihre Suche mit den Ratschlägen, die Gründer:innen am häufigsten teilen.',
+      items: {
+        equity: {
+          title: 'Beteiligung zählt',
+          description: 'Fragen Sie nach Anteilen – sie können mehr wert sein als das Gehalt!',
+        },
+        growth: {
+          title: 'Wachstumspotenzial',
+          description:
+            'Start-ups bieten schnellen Aufstieg und Verantwortung in vielen Bereichen.',
+        },
+        learn: {
+          title: 'Schnell lernen',
+          description: 'Erhalten Sie Einblicke in alle Unternehmensbereiche und lernen Sie ganzheitlich.',
+        },
+      },
+    },
+    resources: {
+      heading: 'Ressourcen für Ihren Einstieg',
+      description: 'Vorlagen, Benchmarks und Guides gemeinsam mit Schweizer Gründer:innen.',
+      visitSite: 'Offizielle Seite öffnen',
+      viewDetails: 'Details ansehen',
+      items: {
+        1: {
+          title: 'Vergütungsleitfaden für Praktika in der Schweiz',
+          description:
+            'Medianlöhne pro Monat und Hinweise zu Lebenshaltungskosten für jeden Kanton.',
+        },
+        2: {
+          title: 'CV-Vorlage für Gründer:innen',
+          description: 'Drei bewährte Layouts plus Tipps direkt von Start-up-Hiring-Teams.',
+        },
+        3: {
+          title: 'Checkliste für Visa & Bewilligungen',
+          description: 'Offizieller Leitfaden Schritt für Schritt zum Studieren und Arbeiten in der Schweiz.',
+        },
+      },
+    },
+    cta: {
+      heading: 'Bereit für die nächste Schweizer Erfolgsgeschichte?',
+      description:
+        'Treten Sie einer kuratierten Community aus Gründer:innen, Operator:innen und Studierenden in der ganzen Schweiz bei.',
+      primary: 'Profil erstellen',
+      secondary: 'Start-ups entdecken',
+    },
+    footer: {
+      madeIn: '© {{year}} SwissStartup Connect. Entwickelt in der Schweiz.',
+      privacy: 'Datenschutz',
+      terms: 'Nutzungsbedingungen',
+      contact: 'Kontakt',
+    },
+    modals: {
+      compensation: {
+        title: 'Medianlohn für Praktika nach Kanton',
+        subtitle:
+          'Quelle: swissuniversities Praktika-Barometer 2024 + öffentliche Ausschreibungen (Januar 2025). Werte für Praktika von 3–12 Monaten.',
+        table: {
+          canton: 'Kanton',
+          median: 'Medianvergütung',
+          expectation: 'Was Sie erwarten können',
+        },
+        notes: {
+          'Zürich (ZH)': 'Finanz-, Pharma- und Big-Tech-Hubs zahlen die höchsten Vergütungen.',
+          'Bern (BE)': 'Bundesämter und Medtech-Unternehmen garantieren stabile Löhne.',
+          'Luzern (LU)': 'Tourismus- und Gesundheitscluster; Unterkunft bleibt erschwinglich.',
+          'Uri (UR)': 'Industrie-SMEs legen oft ein ÖV-Abo oben drauf.',
+          'Schwyz (SZ)': 'Finanzbranche und Industrieautomation buhlen um Talente.',
+          'Obwalden (OW)': 'Kleinere Firmen bieten Essens- oder Wohnzulagen.',
+          'Nidwalden (NW)': 'Luftfahrtzulieferer orientieren sich am Schweizer Durchschnitt.',
+          'Glarus (GL)': 'Industriepraktika kombinieren Lohn mit Wohnzuschuss.',
+          'Zug (ZG)': 'Krypto- und Rohstoff-Scale-ups heben die Messlatte an.',
+          'Fribourg (FR)': 'Zweisprachiger Markt; Forschungspraktika werden von Hochschulen mitfinanziert.',
+          'Solothurn (SO)': 'Präzisionsindustrie mit Fahrkostenzuschuss.',
+          'Basel-Stadt (BS)': 'Life Sciences halten Vergütungen nahe an Juniorlöhnen.',
+          'Basel-Landschaft (BL)': 'Chemie und Logistik folgen den Stadt-Benchmarks.',
+          'Schaffhausen (SH)': 'Internationale Produktionssitze ergänzen mit Essenskarten.',
+          'Appenzell Ausserrhoden (AR)': 'Familienunternehmen geben Zuschüsse für Transport oder Unterkunft.',
+          'Appenzell Innerrhoden (AI)': 'Kleine Kohorte; niedrigere Lebenshaltung gleicht Löhne aus.',
+          'St. Gallen (SG)': 'Fintech- und Textillabs rekrutieren von HSG und OST.',
+          'Graubünden (GR)': 'Tourismus und Outdoor-Marken bieten saisonale Benefits.',
+          'Aargau (AG)': 'Energie und Automation zahlen wettbewerbsfähige Vergütungen.',
+          'Thurgau (TG)': 'Agro-Food und Medtech unterstützen das Pendeln.',
+          'Ticino (TI)': 'Grenznahe Firmen kombinieren lombardische und Schweizer Benchmarks.',
+          'Vaud (VD)': 'EPFL-Ökosystem und Medtech-Scale-ups treiben die Nachfrage.',
+          'Valais (VS)': 'Energie & Tourismus bieten saisonale Unterkünfte.',
+          'Neuchâtel (NE)': 'Uhren- und Mikroindustrie sorgen für stabile Löhne.',
+          'Geneva (GE)': 'Internationale Organisationen ergänzen Mittag- und Fahrzuschüsse.',
+          'Jura (JU)': 'Präzisionsindustrie setzt auf Förderungen für Skill-Entwicklung.',
+        },
+        footnote:
+          'Unternehmen ergänzen oft GA, Essenszulagen oder Wohnmöglichkeiten. Bestätigen Sie das finale Paket vor der Unterschrift.',
+      },
+      cv: {
+        title: 'CV-Vorlagen für Gründer:innen',
+        subtitle:
+          'Starten Sie mit Layouts, die Schweizer Hiring-Teams empfehlen, und individualisieren Sie sie mit den Tipps unten.',
+        tipsTitle: 'So sticht Ihr CV heraus',
+        footnote:
+          'Tipp: als PDF <code>vorname-nachname-cv.pdf</code> exportieren. Bewahren Sie Versionen auf Englisch und in der Lokalsprache des Kantons (Französisch, Deutsch oder Italienisch) auf.',
+        templates: {
+          europass:
+            'Standardisierte Abschnitte, damit Recruiter Profile schnell vergleichen können; zweisprachige Version für französische/deutsche Bewerbungen verfügbar.',
+          novoresume:
+            'Aufgeräumtes Ein-Seiten-Layout, beliebt bei Schweizer Scale-ups für Studierende und Absolvent:innen.',
+          google:
+            'Empfohlen vom Career Center der ETH für Tech-Rollen; lässt sich leicht kopieren und lokalisieren.',
+        },
+        tips: [
+          'Starten Sie mit drei Zeilen zu Ihrer Zielrolle, Ihren stärksten Skills und dem, was Sie als Nächstes bauen möchten.',
+          'Nutzen Sie Bullet Points mit starken Verben und messbaren Ergebnissen (z. B. „Onboarding-Zeit um 30 % verkürzt“).',
+          'Führen Sie einen eigenen Block für Skills/Tools — Gründer:innen und CTOs prüfen zuerst den Tech-Stack.',
+          'Heben Sie Unternehmergeist hervor: Side-Projekte, Hackathons, Venture-Labs oder Führungsrollen.',
+          'Bleiben Sie bis zu drei Jahren Erfahrung bei einer Seite; Details gehören ins Gespräch.',
+        ],
+      },
+    },
+  },
+};
+
+const applyReplacements = (value, replacements) => {
+  if (!replacements) {
+    return value;
+  }
+
+  return value.replace(/\{\{(.*?)\}\}/g, (_, token) => {
+    const trimmed = token.trim();
+    return Object.prototype.hasOwnProperty.call(replacements, trimmed)
+      ? String(replacements[trimmed])
+      : '';
+  });
+};
+
+const getInitialLanguage = () => {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+
+  const stored = window.localStorage.getItem('ssc_language');
+  if (stored && LANGUAGE_OPTIONS.some((option) => option.value === stored)) {
+    return stored;
+  }
+  return 'en';
+};
+
 const mockJobs = [
   {
     id: 'mock-1',
@@ -369,16 +1117,20 @@ const cantonInternshipSalaries = [
 
 const cvTemplates = [
   {
+    id: 'europass',
     name: 'Europass Classic',
     url: 'https://europa.eu/europass/en/create-europass-cv',
-    reason: 'Standardised sections help recruiters compare profiles quickly; bilingual version ready for French/German submissions.',
+    reason:
+      'Standardised sections help recruiters compare profiles quickly; bilingual version ready for French/German submissions.',
   },
   {
+    id: 'novoresume',
     name: 'Novorésumé Basic (Free)',
     url: 'https://novoresume.com/resume-templates',
     reason: 'Clean single-page layout praised by Swiss scale-ups for student and graduate applications.',
   },
   {
+    id: 'google',
     name: 'Google Docs – Swiss Minimal',
     url: 'https://docs.google.com/document/d/1dxJ4SWI2Pa3uFY6uhAT0t5gE_zp0oGOPbsT_t-jSfo0/preview',
     reason: 'Recommended by ETH Career Center for tech roles; easy to copy and localise.',
@@ -1299,10 +2051,76 @@ const mapSupabaseUser = (supabaseUser) => {
   };
 };
 
-const acknowledgeMessage =
-  'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.';
-
 const SwissStartupConnect = () => {
+  const [language, setLanguage] = useState(getInitialLanguage);
+  const translate = useCallback(
+    (key, fallback = '', replacements) => {
+      const apply = (template) => {
+        const base = template || fallback || key;
+        return applyReplacements(base, replacements);
+      };
+
+      if (language === 'en') {
+        return apply(fallback);
+      }
+
+      const dictionary = TRANSLATIONS[language];
+      if (!dictionary) {
+        return apply(fallback);
+      }
+
+      const segments = key.split('.');
+      let current = dictionary;
+      for (const segment of segments) {
+        if (current && Object.prototype.hasOwnProperty.call(current, segment)) {
+          current = current[segment];
+        } else {
+          current = null;
+          break;
+        }
+      }
+
+      if (typeof current === 'string') {
+        return apply(current);
+      }
+
+      if (Array.isArray(current)) {
+        return current.map((item) => apply(typeof item === 'string' ? item : ''));
+      }
+
+      return apply(fallback);
+    },
+    [language]
+  );
+
+  const acknowledgeMessage = translate(
+    'applications.acknowledge',
+    'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.'
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem('ssc_language', language);
+  }, [language]);
+
+  const buildPluralSuffix = useCallback(
+    (count, overrides = {}) => {
+      const defaults = {
+        en: ['', 's'],
+        fr: ['', 's'],
+        de: ['', 'n'],
+      };
+      const mapping = { ...defaults, ...overrides };
+      const [singular, plural] = mapping[language] || mapping.en;
+      return count === 1 ? singular : plural;
+    },
+    [language]
+  );
+
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
@@ -1322,6 +2140,14 @@ const SwissStartupConnect = () => {
     max: formatEquityValue(defaultEquityBounds[1]),
   }));
 
+  const localizedCvTips = useMemo(() => {
+    const translated = translate('modals.cv.tips', '');
+    if (Array.isArray(translated) && translated.length > 0) {
+      return translated;
+    }
+    return cvWritingTips.map((tip, index) => translate(`modals.cv.tips.${index}`, tip));
+  }, [translate]);
+
   const [salaryMin, salaryMax] = salaryRange;
   const [equityMin, equityMax] = equityRange;
 
@@ -1332,11 +2158,11 @@ const SwissStartupConnect = () => {
   const [jobSort, setJobSort] = useState('recent');
   const jobSortOptions = useMemo(
     () => [
-      { value: 'recent', label: 'Most recent', icon: Clock },
-      { value: 'salary_desc', label: 'Highest salary', icon: TrendingUp },
-      { value: 'equity_desc', label: 'Highest equity', icon: Percent },
+      { value: 'recent', label: translate('jobs.sort.recent', 'Most recent'), icon: Clock },
+      { value: 'salary_desc', label: translate('jobs.sort.salary', 'Highest salary'), icon: TrendingUp },
+      { value: 'equity_desc', label: translate('jobs.sort.equity', 'Highest equity'), icon: Percent },
     ],
-    []
+    [translate]
   );
 
   const [savedJobs, setSavedJobs] = useState(() => {
@@ -2120,22 +2946,34 @@ const SwissStartupConnect = () => {
     if (!user) {
       setIsRegistering(false);
       setShowLoginModal(true);
-      setFeedback({ type: 'info', message: 'Sign in as a student to save roles.' });
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.saveTooltip', 'Sign in as a student to save roles'),
+      });
       return;
     }
 
     if (user.type !== 'student') {
-      setFeedback({ type: 'info', message: 'Switch to a student account to save roles.' });
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.savedSwitch', 'Switch to a student account to save roles.'),
+      });
       return;
     }
 
     setSavedJobs((prev) => {
       const exists = prev.includes(jobId);
       if (exists) {
-        setFeedback({ type: 'info', message: 'Removed from saved roles.' });
+        setFeedback({
+          type: 'info',
+          message: translate('jobs.feedbackRemoved', 'Removed from saved roles.'),
+        });
         return prev.filter((id) => id !== jobId);
       }
-      setFeedback({ type: 'success', message: 'Added to your saved roles.' });
+      setFeedback({
+        type: 'success',
+        message: translate('jobs.feedbackAdded', 'Added to your saved roles.'),
+      });
       return [...prev, jobId];
     });
   };
@@ -3737,7 +4575,13 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      setFeedback({ type: 'success', message: `Application marked as ${nextStatus}.` });
+      const statusLabel = translate(`applications.status.${nextStatus}`, nextStatus.replace('_', ' '));
+      setFeedback({
+        type: 'success',
+        message: translate('applications.statusFeedback', 'Application marked as {{status}}.', {
+          status: statusLabel,
+        }),
+      });
       setApplicationsVersion((prev) => prev + 1);
     } catch (error) {
       setFeedback({ type: 'error', message: error.message });
@@ -3921,7 +4765,10 @@ const SwissStartupConnect = () => {
     if (!user) {
       setIsRegistering(false);
       setShowLoginModal(true);
-      setFeedback({ type: 'info', message: 'Sign in to follow startups.' });
+      setFeedback({
+        type: 'info',
+        message: translate('companies.followPrompt', 'Sign in to follow startups.'),
+      });
       return;
     }
 
@@ -3948,11 +4795,25 @@ const SwissStartupConnect = () => {
     return baseTabs;
   }, [user?.type]);
 
+  const navLabels = useMemo(
+    () => ({
+      general: translate('nav.general', 'General'),
+      jobs: translate('nav.jobs', 'Opportunities'),
+      companies: translate('nav.companies', 'Startups'),
+      'my-jobs': translate('nav.myJobs', 'My jobs'),
+      applications: translate('nav.applications', 'Applicants'),
+      saved: translate('nav.saved', 'Saved'),
+    }),
+    [translate]
+  );
+
   const isStudent = user?.type === 'student';
   const isLoggedIn = Boolean(user);
   const canApply = isLoggedIn && isStudent;
   const canSaveJobs = isLoggedIn && isStudent;
-  const applyRestrictionMessage = isLoggedIn ? 'Student applicants only' : 'Sign in as a student to apply';
+  const applyRestrictionMessage = isLoggedIn
+    ? translate('jobs.applyRestrictionStudent', 'Student applicants only')
+    : translate('jobs.applyRestrictionSignIn', 'Sign in as a student to apply');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
@@ -3966,10 +4827,10 @@ const SwissStartupConnect = () => {
   const [companySort, setCompanySort] = useState('recent');
   const companySortOptions = useMemo(
     () => [
-      { value: 'recent', label: 'Most recent', icon: Clock },
-      { value: 'jobs_desc', label: 'Most roles', icon: Briefcase },
+      { value: 'recent', label: translate('companies.sort.recent', 'Most recent'), icon: Clock },
+      { value: 'jobs_desc', label: translate('companies.sort.roles', 'Most roles'), icon: Briefcase },
     ],
-    []
+    [translate]
   );
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -4076,8 +4937,14 @@ const SwissStartupConnect = () => {
       : SALARY_STEP;
   const salaryRangeAtDefault =
     salarySliderMinValue === normalizedSalaryMinBound && salarySliderMaxValue === normalizedSalaryMaxBound;
-  const salaryFilterHelperText = SALARY_FILTER_HELPERS[salaryFilterCadence] || 'CHF monthly';
-  const salaryFilterCadenceLabel = SALARY_CADENCE_LABELS[salaryFilterCadence] || 'monthly';
+  const salaryFilterHelperText = translate(
+    `filters.salaryHelper.${salaryFilterCadence}`,
+    SALARY_FILTER_HELPERS[salaryFilterCadence] || translate('filters.salaryHelper.fallback', 'CHF monthly')
+  );
+  const salaryFilterCadenceLabel = translate(
+    `filters.salaryCadenceLabel.${salaryFilterCadence}`,
+    SALARY_CADENCE_LABELS[salaryFilterCadence] || 'monthly'
+  );
 
   const safeEquityBoundMin = Number.isFinite(equityBounds[0]) ? equityBounds[0] : defaultEquityBounds[0];
   const safeEquityBoundMax = Number.isFinite(equityBounds[1]) ? equityBounds[1] : defaultEquityBounds[1];
@@ -4129,27 +4996,31 @@ const SwissStartupConnect = () => {
           </div>
 
           <nav className="ssc__nav">
-            {navTabs.map((tab) => {
-              const labels = {
-                general: 'General',
-                jobs: 'Opportunities',
-                companies: 'Startups',
-                'my-jobs': 'My jobs',
-                applications: 'Applicants',
-                saved: 'Saved',
-              };
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
-                >
-                  {labels[tab]}
-                </button>
-              );
-            })}
+            {navTabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
+              >
+                {navLabels[tab]}
+              </button>
+            ))}
           </nav>
+
+          <div className="ssc__language-select">
+            <select
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+              aria-label={translate('nav.language', 'Language')}
+            >
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
             {!user ? (
@@ -4163,7 +5034,7 @@ const SwissStartupConnect = () => {
                     setAuthError('');
                   }}
                 >
-                  Join us
+                  {translate('nav.join', 'Join us')}
                 </button>
                 <button
                   type="button"
@@ -4174,7 +5045,7 @@ const SwissStartupConnect = () => {
                     setAuthError('');
                   }}
                 >
-                  Sign in
+                  {translate('nav.signIn', 'Sign in')}
                 </button>
               </div>
             ) : (
@@ -4266,13 +5137,13 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__hero-badge">
                 <Sparkles size={18} />
-                <span>Trusted by Swiss startups & universities</span>
+                <span>{translate('hero.badge', 'Trusted by Swiss startups & universities')}</span>
               </div>
-              <h1 className="ssc__hero-title">Shape the next Swiss startup success story</h1>
-              <p className="ssc__hero-lede">
-                Discover paid internships, part-time roles, and graduate opportunities with
-                founders who want you in the room from day one.
-              </p>
+              <h1 className="ssc__hero-title">{translate('hero.title', 'Shape the next Swiss startup success story')}</h1>
+              <p className="ssc__hero-lede">{translate(
+                'hero.subtitle',
+                'Discover paid internships, part-time roles, and graduate opportunities with founders who want you in the room from day one.'
+              )}</p>
 
               {feedback && (
                 <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
@@ -4291,14 +5162,14 @@ const SwissStartupConnect = () => {
                   <Search size={18} />
                   <input
                     type="text"
-                    placeholder="Search startup, role, or skill"
+                    placeholder={translate('hero.searchPlaceholder', 'Search startup, role, or skill')}
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    aria-label="Search roles"
+                    aria-label={translate('hero.searchPlaceholder', 'Search startup, role, or skill')}
                   />
                 </div>
                 <button type="submit" className="ssc__search-btn">
-                  Find matches
+                  {translate('hero.searchButton', 'Find matches')}
                 </button>
               </form>
 
@@ -4306,8 +5177,10 @@ const SwissStartupConnect = () => {
                 {stats.map((stat) => (
                   <article key={stat.id} className="ssc__stat-card">
                     <span className="ssc__stat-value">{stat.value}</span>
-                    <span className="ssc__stat-label">{stat.label}</span>
-                    <p>{stat.detail}</p>
+                    <span className="ssc__stat-label">
+                      {translate(`stats.${stat.id}.label`, stat.label)}
+                    </span>
+                    <p>{translate(`stats.${stat.id}.detail`, stat.detail)}</p>
                   </article>
                 ))}
               </div>
@@ -4316,7 +5189,7 @@ const SwissStartupConnect = () => {
                 type="button"
                 className="ssc__hero-scroll-indicator"
                 onClick={scrollToFilters}
-                aria-label="Scroll to filters"
+                aria-label={translate('hero.scrollAria', 'Scroll to filters')}
               >
                 <ChevronDown size={22} />
               </button>
@@ -4329,18 +5202,23 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__filters-header">
                 <div>
-                  <h2>Tailor your results</h2>
-                  <p>Pick the active cities, role focus, and the compensation mix that fits you best.</p>
+                  <h2>{translate('filters.title', 'Tailor your results')}</h2>
+                  <p>
+                    {translate(
+                      'filters.subtitle',
+                      'Pick the active cities, role focus, and the compensation mix that fits you best.'
+                    )}
+                  </p>
                 </div>
                 {filtersActive && (
                   <button type="button" className="ssc__clear-filters" onClick={clearFilters}>
-                    Clear filters
+                    {translate('filters.clear', 'Clear filters')}
                   </button>
                 )}
               </div>
               <div className="ssc__filters-grid">
                 <div className="ssc__filter-group">
-                  <span className="ssc__filter-label">Active cities</span>
+                  <span className="ssc__filter-label">{translate('filters.activeCities', 'Active cities')}</span>
                   <div className="ssc__filter-chips">
                     {activeCityFilters.map((filter) => {
                       const isSelected = selectedFilters.includes(filter.id);
@@ -4359,7 +5237,7 @@ const SwissStartupConnect = () => {
                 </div>
                 <div className="ssc__filter-group">
                   <div className="ssc__filter-label-row">
-                    <span className="ssc__filter-label">Role focus</span>
+                    <span className="ssc__filter-label">{translate('filters.roleFocus', 'Role focus')}</span>
                   </div>
                   <div className="ssc__filter-chips">
                     {roleFocusFilters.map((filter) => {
@@ -4380,10 +5258,14 @@ const SwissStartupConnect = () => {
                 <div className="ssc__filter-group ssc__filter-group--salary">
                   <div className="ssc__filter-label-row">
                     <div className="ssc__filter-label-group">
-                      <span className="ssc__filter-label">Salary range</span>
+                      <span className="ssc__filter-label">{translate('filters.salaryRange', 'Salary range')}</span>
                       <span className="ssc__filter-helper">{salaryFilterHelperText}</span>
                     </div>
-                    <div className="ssc__cadence-toggle" role="group" aria-label="Salary cadence">
+                    <div
+                      className="ssc__cadence-toggle"
+                      role="group"
+                      aria-label={translate('filters.salaryAriaGroup', 'Salary cadence')}
+                    >
                       {SALARY_FILTER_CADENCE_OPTIONS.map((option) => (
                         <button
                           key={option.value}
@@ -4392,7 +5274,7 @@ const SwissStartupConnect = () => {
                           onClick={() => setSalaryFilterCadence(option.value)}
                           aria-pressed={salaryFilterCadence === option.value}
                         >
-                          {option.label}
+                          {translate(`filters.salaryCadence.${option.value}`, option.label)}
                         </button>
                       ))}
                     </div>
@@ -4406,7 +5288,9 @@ const SwissStartupConnect = () => {
                       value={salarySliderMinDisplay}
                       onChange={handleSalarySliderChange('min')}
                       disabled={salarySliderDisabled}
-                      aria-label={`Minimum ${salaryFilterCadenceLabel} salary`}
+                      aria-label={translate('filters.salaryAriaMin', 'Minimum {{cadence}} salary', {
+                        cadence: salaryFilterCadenceLabel,
+                      })}
                     />
                     <input
                       type="range"
@@ -4416,12 +5300,14 @@ const SwissStartupConnect = () => {
                       value={salarySliderMaxDisplay}
                       onChange={handleSalarySliderChange('max')}
                       disabled={salarySliderDisabled}
-                      aria-label={`Maximum ${salaryFilterCadenceLabel} salary`}
+                      aria-label={translate('filters.salaryAriaMax', 'Maximum {{cadence}} salary', {
+                        cadence: salaryFilterCadenceLabel,
+                      })}
                     />
                   </div>
                   <div className="ssc__salary-inputs">
                     <label className="ssc__salary-input">
-                      <span>Min</span>
+                      <span>{translate('filters.min', 'Min')}</span>
                       <div className="ssc__salary-input-wrapper">
                         <span>CHF</span>
                         <input
@@ -4429,7 +5315,11 @@ const SwissStartupConnect = () => {
                           pattern="[0-9]*[.,]?[0-9]*"
                           value={salaryInputValues.min}
                           onChange={(event) => handleSalaryInputChange('min', event.target.value)}
-                          aria-label={`Minimum ${salaryFilterCadenceLabel} salary in Swiss francs`}
+                          aria-label={translate(
+                            'filters.salaryAriaMinCurrency',
+                            'Minimum {{cadence}} salary in Swiss francs',
+                            { cadence: salaryFilterCadenceLabel }
+                          )}
                           disabled={salarySliderDisabled}
                         />
                       </div>
@@ -4438,7 +5328,7 @@ const SwissStartupConnect = () => {
                       –
                     </div>
                     <label className="ssc__salary-input">
-                      <span>Max</span>
+                      <span>{translate('filters.max', 'Max')}</span>
                       <div className="ssc__salary-input-wrapper">
                         <span>CHF</span>
                         <input
@@ -4446,7 +5336,11 @@ const SwissStartupConnect = () => {
                           pattern="[0-9]*[.,]?[0-9]*"
                           value={salaryInputValues.max}
                           onChange={(event) => handleSalaryInputChange('max', event.target.value)}
-                          aria-label={`Maximum ${salaryFilterCadenceLabel} salary in Swiss francs`}
+                          aria-label={translate(
+                            'filters.salaryAriaMaxCurrency',
+                            'Maximum {{cadence}} salary in Swiss francs',
+                            { cadence: salaryFilterCadenceLabel }
+                          )}
                           disabled={salarySliderDisabled}
                         />
                       </div>
@@ -4455,8 +5349,8 @@ const SwissStartupConnect = () => {
                 </div>
                 <div className="ssc__filter-group ssc__filter-group--equity">
                   <div className="ssc__filter-label-row">
-                    <span className="ssc__filter-label">Equity range</span>
-                    <span className="ssc__filter-helper">Percent ownership</span>
+                    <span className="ssc__filter-label">{translate('filters.equityRange', 'Equity range')}</span>
+                    <span className="ssc__filter-helper">{translate('filters.equityHelper', 'Percent ownership')}</span>
                   </div>
                   <div className="ssc__equity-slider" style={equitySliderStyle}>
                     <input
@@ -4467,7 +5361,7 @@ const SwissStartupConnect = () => {
                       value={equitySliderMinValue}
                       onChange={handleEquitySliderChange('min')}
                       disabled={equitySliderDisabled}
-                      aria-label="Minimum equity"
+                      aria-label={translate('filters.equityAriaMin', 'Minimum equity')}
                     />
                     <input
                       type="range"
@@ -4477,12 +5371,12 @@ const SwissStartupConnect = () => {
                       value={equitySliderMaxValue}
                       onChange={handleEquitySliderChange('max')}
                       disabled={equitySliderDisabled}
-                      aria-label="Maximum equity"
+                      aria-label={translate('filters.equityAriaMax', 'Maximum equity')}
                     />
                   </div>
                   <div className="ssc__equity-inputs">
                     <label className="ssc__equity-input">
-                      <span>Min</span>
+                      <span>{translate('filters.min', 'Min')}</span>
                       <div className="ssc__filter-input-wrapper">
                         <input
                           inputMode="decimal"
@@ -4491,7 +5385,7 @@ const SwissStartupConnect = () => {
                           onChange={(event) => handleEquityInputChange('min', event.target.value)}
                           onFocus={handleEquityInputFocus('min')}
                           onBlur={handleEquityInputBlur('min')}
-                          aria-label="Minimum equity percentage"
+                          aria-label={translate('filters.equityAriaMin', 'Minimum equity')}
                           disabled={equitySliderDisabled}
                         />
                         <span>%</span>
@@ -4501,7 +5395,7 @@ const SwissStartupConnect = () => {
                       –
                     </div>
                     <label className="ssc__equity-input">
-                      <span>Max</span>
+                      <span>{translate('filters.max', 'Max')}</span>
                       <div className="ssc__filter-input-wrapper">
                         <input
                           inputMode="decimal"
@@ -4510,7 +5404,7 @@ const SwissStartupConnect = () => {
                           onChange={(event) => handleEquityInputChange('max', event.target.value)}
                           onFocus={handleEquityInputFocus('max')}
                           onBlur={handleEquityInputBlur('max')}
-                          aria-label="Maximum equity percentage"
+                          aria-label={translate('filters.equityAriaMax', 'Maximum equity')}
                           disabled={equitySliderDisabled}
                         />
                         <span>%</span>
@@ -4528,16 +5422,27 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__section-header">
                 <div>
-                  <h2>Open opportunities</h2>
+                  <h2>{translate('jobs.heading', 'Open opportunities')}</h2>
                   <p>
-                    Curated roles from Swiss startups that welcome student talent and emerging
-                    professionals.
+                    {translate(
+                      'jobs.subheading',
+                      'Curated roles from Swiss startups that welcome student talent and emerging professionals.'
+                    )}
                   </p>
                 </div>
                 <div className="ssc__job-toolbar">
-                  <span className="ssc__pill">{filteredJobs.length} roles</span>
-                  <div className="ssc__sort-control" role="group" aria-label="Sort opportunities">
-                    <span className="ssc__sort-label">Sort by</span>
+                  <span className="ssc__pill">
+                    {translate('jobs.rolesCount', '{{count}} role{{plural}}', {
+                      count: filteredJobs.length,
+                      plural: buildPluralSuffix(filteredJobs.length),
+                    })}
+                  </span>
+                  <div
+                    className="ssc__sort-control"
+                    role="group"
+                    aria-label={translate('jobs.sortLabel', 'Sort opportunities')}
+                  >
+                    <span className="ssc__sort-label">{translate('jobs.sortLabel', 'Sort by')}</span>
                     <div className="ssc__sort-options">
                       {jobSortOptions.map((option) => {
                         const Icon = option.icon;
@@ -4684,9 +5589,13 @@ const SwissStartupConnect = () => {
                             type="button"
                             className={`ssc__save-btn ${isSaved ? 'is-active' : ''}`}
                             onClick={() => toggleSavedJob(job.id)}
-                            aria-label={isSaved ? 'Remove from saved jobs' : 'Save job'}
+                            aria-label={isSaved
+                              ? translate('jobs.saveRemove', 'Remove from saved jobs')
+                              : translate('jobs.saveAdd', 'Save job')}
                             aria-disabled={!canSaveJobs}
-                            title={!canSaveJobs ? 'Sign in as a student to save roles' : undefined}
+                            title={!canSaveJobs
+                              ? translate('jobs.saveTooltip', 'Sign in as a student to save roles')
+                              : undefined}
                           >
                             <Heart size={18} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? 'currentColor' : 'none'} />
                           </button>
@@ -4705,7 +5614,10 @@ const SwissStartupConnect = () => {
                           </span>
                           <span>
                             <Users size={16} />
-                            {job.applicants} applicants
+                            {translate('jobs.applicants', '{{count}} applicant{{plural}}', {
+                              count: job.applicants,
+                              plural: buildPluralSuffix(job.applicants),
+                            })}
                           </span>
                         </div>
 
@@ -4728,7 +5640,7 @@ const SwissStartupConnect = () => {
 
                         {job.includes_thirteenth_salary && (
                           <div className="ssc__thirteenth-note">
-                            <Star size={14} /> 13th salary
+                            <Star size={14} /> {translate('jobs.thirteenth', '13th salary')}
                           </div>
                         )}
 
@@ -4740,7 +5652,9 @@ const SwissStartupConnect = () => {
                           ))}
                           <span className="ssc__tag ssc__tag--soft">{job.stage || 'Seed'}</span>
                           {job.motivational_letter_required && (
-                            <span className="ssc__tag ssc__tag--required">Motivational letter</span>
+                            <span className="ssc__tag ssc__tag--required">
+                              {translate('jobs.motivationalTag', 'Motivational letter')}
+                            </span>
                           )}
                         </div>
 
@@ -4753,7 +5667,7 @@ const SwissStartupConnect = () => {
                           </div>
                           <div className="ssc__job-actions">
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                              View role
+                              {translate('jobs.viewRole', 'View role')}
                             </button>
                             {canApply ? (
                               <button
@@ -4762,7 +5676,9 @@ const SwissStartupConnect = () => {
                                 onClick={() => openApplyModal(job)}
                                 disabled={hasApplied}
                               >
-                                {hasApplied ? 'Applied' : 'Apply now'}
+                                {hasApplied
+                                  ? translate('jobs.applied', 'Applied')
+                                  : translate('jobs.apply', 'Apply now')}
                               </button>
                             ) : (
                               <span className="ssc__job-note">{applyRestrictionMessage}</span>
@@ -4775,15 +5691,19 @@ const SwissStartupConnect = () => {
                   {showSeeMoreOpportunities && (
                     <article className="ssc__job-card ssc__job-card--see-more">
                       <div className="ssc__job-see-more-copy">
-                        <h3>See more opportunities</h3>
-                        <p>Browse all {filteredJobs.length} open roles on the Opportunities page.</p>
+                        <h3>{translate('jobs.seeMoreHeading', 'See more opportunities')}</h3>
+                        <p>
+                          {translate('jobs.seeMoreBody', 'Browse all {{count}} open roles on the Opportunities page.', {
+                            count: filteredJobs.length,
+                          })}
+                        </p>
                       </div>
                       <button
                         type="button"
                         className="ssc__primary-btn"
                         onClick={() => setActiveTab('jobs')}
                       >
-                        Explore roles
+                        {translate('jobs.seeMoreButton', 'Explore roles')}
                         <ArrowRight size={18} />
                       </button>
                     </article>
@@ -4792,8 +5712,13 @@ const SwissStartupConnect = () => {
               ) : (
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
-                  <h3>No matches yet</h3>
-                  <p>Try removing a filter or widening your salary range.</p>
+                  <h3>{translate('jobs.noMatchesTitle', 'No matches yet')}</h3>
+                  <p>
+                    {translate(
+                      'jobs.noMatchesBody',
+                      'Try removing a filter or widening your salary range.'
+                    )}
+                  </p>
                 </div>
               )}
             </div>
@@ -4805,12 +5730,21 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__section-header">
                 <div>
-                  <h2>Featured startups</h2>
-                  <p>Meet the founders building Switzerland’s next generation of companies.</p>
+                  <h2>{translate('companies.heading', 'Featured startups')}</h2>
+                  <p>
+                    {translate(
+                      'companies.subheading',
+                      'Meet the founders building Switzerland’s next generation of companies.'
+                    )}
+                  </p>
                 </div>
                 <div className="ssc__company-toolbar">
-                  <div className="ssc__sort-control" role="group" aria-label="Sort startups">
-                    <span className="ssc__sort-label">Sort by</span>
+                  <div
+                    className="ssc__sort-control"
+                    role="group"
+                    aria-label={translate('companies.sortAria', 'Sort startups')}
+                  >
+                    <span className="ssc__sort-label">{translate('companies.sortLabel', 'Sort by')}</span>
                     <div className="ssc__sort-options">
                       {companySortOptions.map((option) => {
                         const Icon = option.icon;
@@ -4890,7 +5824,7 @@ const SwissStartupConnect = () => {
                                   target="_blank"
                                   rel="noreferrer"
                                 >
-                                  Visit website
+                                  {translate('companies.visitWebsite', 'Visit website')}
                                 </a>
                               )}
                               <button
@@ -4898,14 +5832,16 @@ const SwissStartupConnect = () => {
                                 className={`ssc__follow-btn ${company.isFollowed ? 'is-active' : ''}`}
                                 onClick={() => toggleFollowCompany(followKey)}
                               >
-                                {company.isFollowed ? 'Following' : 'Follow'}
+                                {company.isFollowed
+                                  ? translate('companies.following', 'Following')
+                                  : translate('companies.follow', 'Follow')}
                               </button>
                               <button
                                 type="button"
                                 className="ssc__ghost-btn"
                                 onClick={() => openReviewsModal(company)}
                               >
-                                Reviews
+                                {translate('companies.reviews', 'Reviews')}
                               </button>
                             </div>
                           </div>
@@ -4934,24 +5870,34 @@ const SwissStartupConnect = () => {
                   <p>Track live opportunities, keep them up to date, and follow applicant interest at a glance.</p>
                 </div>
                 <div className="ssc__section-header-actions">
-                  <span className="ssc__pill">
-                    {startupJobs.length} {startupJobs.length === 1 ? 'active posting' : 'active postings'}
+                <span className="ssc__pill">
+                  {translate('companies.postingsCount', '{{count}} active posting{{plural}}', {
+                    count: startupJobs.length,
+                    plural: buildPluralSuffix(startupJobs.length),
+                  })}
+                </span>
+                {isStartupVerified ? (
+                  <button type="button" className="ssc__primary-btn" onClick={openPostJobFlow}>
+                    {translate('companies.postVacancy', 'Post vacancy')}
+                  </button>
+                ) : (
+                  <span className="ssc__pill ssc__pill--muted">
+                    {translate('companies.verificationRequired', 'Verification required')}
                   </span>
-                  {isStartupVerified ? (
-                    <button type="button" className="ssc__primary-btn" onClick={openPostJobFlow}>
-                      Post vacancy
-                    </button>
-                  ) : (
-                    <span className="ssc__pill ssc__pill--muted">Verification required</span>
-                  )}
-                </div>
+                )}
               </div>
+            </div>
 
               {!isStartupVerified && (
                 <div className="ssc__notice">
-                  <span>Verify your startup to unlock job postings. Add your commercial register details and logo.</span>
+                  <span>
+                    {translate(
+                      'companies.verifyPrompt',
+                      'Verify your startup to unlock job postings. Add your commercial register details and logo.'
+                    )}
+                  </span>
                   <button type="button" onClick={() => setStartupModalOpen(true)}>
-                    Complete verification
+                    {translate('companies.completeVerification', 'Complete verification')}
                   </button>
                 </div>
               )}
@@ -4962,7 +5908,7 @@ const SwissStartupConnect = () => {
                     const postedAt = job.created_at ? new Date(job.created_at) : null;
                     const postedLabel = postedAt
                       ? postedAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-                      : job.posted || 'Recently posted';
+                      : job.posted || translate('companies.recentlyPosted', 'Recently posted');
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -4984,19 +5930,22 @@ const SwissStartupConnect = () => {
                           </span>
                           <span>
                             <Users size={16} />
-                            {job.applicants} applicants
+                            {translate('jobs.applicants', '{{count}} applicant{{plural}}', {
+                              count: job.applicants,
+                              plural: buildPluralSuffix(job.applicants),
+                            })}
                           </span>
                         </div>
                         <div className="ssc__job-actions">
                           <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                            View role
+                            {translate('jobs.viewRole', 'View role')}
                           </button>
                           <button
                             type="button"
                             className="ssc__primary-btn"
                             onClick={() => setActiveTab('applications')}
                           >
-                            View applicants
+                            {translate('jobs.viewApplicants', 'View applicants')}
                           </button>
                         </div>
                       </article>
@@ -5006,15 +5955,21 @@ const SwissStartupConnect = () => {
               ) : (
                 <div className="ssc__empty-state">
                   <Briefcase size={40} />
-                  <h3>No job posts yet</h3>
+                  <h3>{translate('jobs.noJobsTitle', 'No job posts yet')}</h3>
                   <p>
                     {isStartupVerified
-                      ? 'Share your first opportunity to start meeting candidates.'
-                      : 'Get verified to unlock job posting and start attracting talent.'}
+                      ? translate(
+                          'jobs.noJobsVerified',
+                          'Share your first opportunity to start meeting candidates.'
+                        )
+                      : translate(
+                          'jobs.noJobsUnverified',
+                          'Get verified to unlock job posting and start attracting talent.'
+                        )}
                   </p>
                   {isStartupVerified && (
                     <button type="button" className="ssc__primary-btn" onClick={openPostJobFlow}>
-                      Post your first role
+                      {translate('jobs.postFirstRole', 'Post your first role')}
                     </button>
                   )}
                 </div>
@@ -5028,10 +5983,20 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__section-header">
                 <div>
-                  <h2>Applicants</h2>
-                  <p>Track progress, review motivational letters, and manage your hiring pipeline.</p>
+                  <h2>{translate('jobs.applicantsTabHeading', 'Applicants')}</h2>
+                  <p>
+                    {translate(
+                      'companies.applicantsSubheading',
+                      'Track progress, review motivational letters, and manage your hiring pipeline.'
+                    )}
+                  </p>
                 </div>
-                <span className="ssc__pill">{applications.length} applicants</span>
+                <span className="ssc__pill">
+                  {translate('jobs.applicants', '{{count}} applicant{{plural}}', {
+                    count: applications.length,
+                    plural: buildPluralSuffix(applications.length),
+                  })}
+                </span>
               </div>
 
               {applicationsLoading ? (
@@ -5046,6 +6011,7 @@ const SwissStartupConnect = () => {
                       const candidate = application.profiles;
                       const job = application.jobs;
                       const cvLink = application.cv_override_url || candidate?.cv_url;
+                      const appliedDate = new Date(application.created_at).toLocaleDateString();
                       return (
                         <article key={application.id} className="ssc__application-card">
                         <header className="ssc__application-header">
@@ -5055,7 +6021,7 @@ const SwissStartupConnect = () => {
                           </div>
                           <div className="ssc__status-select">
                             <label>
-                              Status
+                              {translate('applications.statusLabel', 'Status')}
                               <select
                                 value={application.status}
                                 onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
@@ -5063,7 +6029,7 @@ const SwissStartupConnect = () => {
                               >
                                 {applicationStatuses.map((status) => (
                                   <option key={status} value={status}>
-                                    {status.replace('_', ' ')}
+                                    {translate(`applications.status.${status}`, status.replace('_', ' '))}
                                   </option>
                                 ))}
                               </select>
@@ -5074,33 +6040,44 @@ const SwissStartupConnect = () => {
                         <div className="ssc__candidate">
                           <div className="ssc__avatar-medium">
                             {candidate?.avatar_url ? (
-                              <img src={candidate.avatar_url} alt={candidate.full_name || 'Candidate'} />
+                              <img
+                                src={candidate.avatar_url}
+                                alt={candidate.full_name || translate('applications.candidateFallback', 'Candidate')}
+                              />
                             ) : (
-                              <span>{candidate?.full_name?.charAt(0) || 'C'}</span>
+                              <span>
+                                {candidate?.full_name?.charAt(0) || translate('applications.candidateInitialFallback', 'C')}
+                              </span>
                             )}
                           </div>
                           <div>
-                            <strong>{candidate?.full_name || 'Candidate'}</strong>
+                            <strong>{candidate?.full_name || translate('applications.candidateFallback', 'Candidate')}</strong>
                             <ul>
-                              <li>{candidate?.university || 'University not provided'}</li>
-                              <li>{candidate?.program || 'Program not provided'}</li>
+                              <li>
+                                {candidate?.university ||
+                                  translate('applications.universityFallback', 'University not provided')}
+                              </li>
+                              <li>
+                                {candidate?.program ||
+                                  translate('applications.programFallback', 'Program not provided')}
+                              </li>
                             </ul>
                             {cvLink ? (
                               <a href={cvLink} target="_blank" rel="noreferrer">
-                                View CV
+                                {translate('applications.viewCv', 'View CV')}
                               </a>
                             ) : (
-                              <span>No CV provided</span>
+                              <span>{translate('applications.noCv', 'No CV provided')}</span>
                             )}
                           </div>
                         </div>
 
                         {application.motivational_letter && (
                           <details className="ssc__letter">
-                            <summary>Motivational letter</summary>
+                            <summary>{translate('applications.motivationalHeading', 'Motivational letter')}</summary>
                             {application.motivational_letter.startsWith('http') ? (
                               <a href={application.motivational_letter} target="_blank" rel="noreferrer">
-                                Download motivational letter
+                                {translate('applications.downloadLetter', 'Download motivational letter')}
                               </a>
                             ) : (
                               <p>{application.motivational_letter}</p>
@@ -5109,7 +6086,11 @@ const SwissStartupConnect = () => {
                         )}
 
                         <footer className="ssc__application-footer">
-                          <span>Applied {new Date(application.created_at).toLocaleDateString()}</span>
+                          <span>
+                            {translate('applications.appliedOn', 'Applied {{date}}', {
+                              date: appliedDate,
+                            })}
+                          </span>
                         </footer>
                       </article>
                     );
@@ -5118,8 +6099,13 @@ const SwissStartupConnect = () => {
               ) : (
                 <div className="ssc__empty-state">
                   <Briefcase size={40} />
-                  <h3>No applicants yet</h3>
-                  <p>Share your job link or post a new role to start receiving applications.</p>
+                  <h3>{translate('applications.emptyTitle', 'No applicants yet')}</h3>
+                  <p>
+                    {translate(
+                      'applications.emptyBody',
+                      'Share your job link or post a new role to start receiving applications.'
+                    )}
+                  </p>
                 </div>
               )}
             </div>
@@ -5131,20 +6117,33 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <div className="ssc__section-header">
                 <div>
-                  <h2>Saved roles</h2>
-                  <p>Keep tabs on opportunities you want to revisit or apply to later.</p>
+                  <h2>{translate('jobs.savedHeading', 'Saved roles')}</h2>
+                  <p>
+                    {translate(
+                      'jobs.savedSubheading',
+                      'Keep tabs on opportunities you want to revisit or apply to later.'
+                    )}
+                  </p>
                 </div>
-                <span className="ssc__pill">{savedJobList.length} saved</span>
+                <span className="ssc__pill">
+                  {translate('jobs.savedCount', '{{count}} saved', {
+                    count: savedJobList.length,
+                    plural: buildPluralSuffix(savedJobList.length),
+                  })}
+                </span>
               </div>
 
               {!canSaveJobs ? (
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
-                  <h3>Student accounts only</h3>
+                  <h3>{translate('jobs.savedOnlyStudents', 'Student accounts only')}</h3>
                   <p>
                     {isLoggedIn
-                      ? 'Switch to a student account to save and track roles.'
-                      : 'Sign in with your student account to save opportunities for later.'}
+                      ? translate('jobs.savedSwitch', 'Switch to a student account to save roles.')
+                      : translate(
+                          'jobs.savedSignInPrompt',
+                          'Sign in with your student account to save opportunities for later.'
+                        )}
                   </p>
                   {!isLoggedIn && (
                     <button
@@ -5155,7 +6154,7 @@ const SwissStartupConnect = () => {
                         setShowLoginModal(true);
                       }}
                     >
-                      Sign in
+                      {translate('nav.signIn', 'Sign in')}
                     </button>
                   )}
                 </div>
@@ -5190,7 +6189,10 @@ const SwissStartupConnect = () => {
                           </span>
                           <span>
                             <Users size={16} />
-                            {job.applicants} applicants
+                            {translate('jobs.applicants', '{{count}} applicant{{plural}}', {
+                              count: job.applicants,
+                              plural: buildPluralSuffix(job.applicants),
+                            })}
                           </span>
                         </div>
                         {(job.company_team || job.company_fundraising) && (
@@ -5211,7 +6213,7 @@ const SwissStartupConnect = () => {
                         )}
                         {job.includes_thirteenth_salary && (
                           <div className="ssc__thirteenth-note">
-                            <Star size={14} /> 13th salary
+                            <Star size={14} /> {translate('jobs.thirteenth', '13th salary')}
                           </div>
                         )}
                         <div className="ssc__job-tags">
@@ -5222,7 +6224,9 @@ const SwissStartupConnect = () => {
                           ))}
                           <span className="ssc__tag ssc__tag--soft">{job.stage || 'Seed'}</span>
                           {job.motivational_letter_required && (
-                            <span className="ssc__tag ssc__tag--required">Motivational letter</span>
+                            <span className="ssc__tag ssc__tag--required">
+                              {translate('jobs.motivationalTag', 'Motivational letter')}
+                            </span>
                           )}
                         </div>
                         <div className="ssc__job-footer">
@@ -5234,7 +6238,7 @@ const SwissStartupConnect = () => {
                           </div>
                           <div className="ssc__job-actions">
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
-                              View role
+                              {translate('jobs.viewRole', 'View role')}
                             </button>
                             {canApply ? (
                               <button
@@ -5242,7 +6246,7 @@ const SwissStartupConnect = () => {
                                 className="ssc__primary-btn"
                                 onClick={() => openApplyModal(job)}
                               >
-                                Apply now
+                                {translate('jobs.apply', 'Apply now')}
                               </button>
                             ) : (
                               <span className="ssc__job-note">{applyRestrictionMessage}</span>
@@ -5256,8 +6260,8 @@ const SwissStartupConnect = () => {
               ) : (
                 <div className="ssc__empty-state">
                   <BookmarkPlus size={40} />
-                  <h3>No saved roles yet</h3>
-                  <p>Tap the heart on an opportunity to keep it here for later.</p>
+                  <h3>{translate('jobs.savedEmptyTitle', 'No saved roles yet')}</h3>
+                  <p>{translate('jobs.savedEmptyDescription', 'Tap the heart on an opportunity to keep it here for later.')}</p>
                 </div>
               )}
             </div>
@@ -5269,8 +6273,13 @@ const SwissStartupConnect = () => {
             <section className="ssc__section">
               <div className="ssc__max ssc__two-column">
                 <div className="ssc__steps">
-                  <h2>How it works</h2>
-                  <p>Six steps to land a role with a Swiss startup that shares your ambition.</p>
+                  <h2>{translate('steps.heading', 'How it works')}</h2>
+                  <p>
+                    {translate(
+                      'steps.description',
+                      'Six steps to land a role with a Swiss startup that shares your ambition.'
+                    )}
+                  </p>
                   <div className="ssc__step-grid">
                     {steps.map((step) => (
                       <article key={step.id} className="ssc__step-card">
@@ -5278,8 +6287,12 @@ const SwissStartupConnect = () => {
                           <step.icon size={18} />
                         </div>
                         <div>
-                          <h3>{step.title}</h3>
-                          <p>{step.description}</p>
+                          <h3>
+                            {translate(`steps.items.${step.id}.title`, step.title)}
+                          </h3>
+                          <p>
+                            {translate(`steps.items.${step.id}.description`, step.description)}
+                          </p>
                         </div>
                       </article>
                     ))}
@@ -5288,17 +6301,24 @@ const SwissStartupConnect = () => {
                 <div className="ssc__testimonials">
                   <aside className="ssc__featured-corner">
                     <div className="ssc__featured-header">
-                      <h3>Featured companies</h3>
+                      <h3>{translate('featured.heading', 'Featured companies')}</h3>
                       <button type="button" className="ssc__link-button" onClick={() => setActiveTab('companies')}>
-                        View all
+                        {translate('featured.viewAll', 'View all')}
                       </button>
                     </div>
                     <ul className="ssc__featured-list">
                       {featuredCompanies.length > 0 ? (
                         featuredCompanies.map((company) => {
                           const followKey = String(company.id || company.name);
-                          const jobCountLabel =
-                            company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`;
+                          const jobCountLabel = translate(
+                            company.jobCount === 1
+                              ? 'featured.singleRole'
+                              : 'featured.multipleRoles',
+                            company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`,
+                            {
+                              count: company.jobCount,
+                            }
+                          );
                           return (
                             <li key={followKey} className="ssc__featured-item">
                               <div>
@@ -5310,24 +6330,28 @@ const SwissStartupConnect = () => {
                                 className={`ssc__follow-chip ${company.isFollowed ? 'is-active' : ''}`}
                                 onClick={() => toggleFollowCompany(followKey)}
                               >
-                                {company.isFollowed ? 'Following' : 'Follow'}
+                                {company.isFollowed
+                                  ? translate('featured.following', 'Following')
+                                  : translate('featured.follow', 'Follow')}
                               </button>
                             </li>
                           );
                         })
                       ) : (
-                        <li className="ssc__featured-empty">New startups are being curated—check back soon.</li>
+                        <li className="ssc__featured-empty">
+                          {translate('featured.empty', 'New startups are being curated—check back soon.')}
+                        </li>
                       )}
                     </ul>
                   </aside>
-                  <h2>Stories from our community</h2>
+                  <h2>{translate('community.heading', 'Stories from our community')}</h2>
                   <div className="ssc__testimonial-grid">
                     {testimonials.map((testimonial) => (
                       <blockquote key={testimonial.id} className="ssc__testimonial-card">
-                        <p>“{testimonial.quote}”</p>
+                        <p>“{translate(`testimonials.${testimonial.id}.quote`, testimonial.quote)}”</p>
                         <footer>
                           <strong>{testimonial.name}</strong>
-                          <span>{testimonial.role}</span>
+                          <span>{translate(`testimonials.${testimonial.id}.role`, testimonial.role)}</span>
                         </footer>
                       </blockquote>
                     ))}
@@ -5342,9 +6366,14 @@ const SwissStartupConnect = () => {
                   <div>
                     <h2 className="ssc__career-tips-title">
                       <Lightbulb size={20} />
-                      <span>Startup Career Tips</span>
+                      <span>{translate('tips.heading', 'Startup Career Tips')}</span>
                     </h2>
-                    <p>Level up your startup search with quick advice founders share most often.</p>
+                    <p>
+                      {translate(
+                        'tips.description',
+                        'Level up your startup search with quick advice founders share most often.'
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="ssc__tips-grid">
@@ -5354,8 +6383,8 @@ const SwissStartupConnect = () => {
                         <Sparkles size={18} />
                       </div>
                       <div>
-                        <h3>{tip.title}</h3>
-                        <p>{tip.description}</p>
+                        <h3>{translate(`tips.items.${tip.id}.title`, tip.title)}</h3>
+                        <p>{translate(`tips.items.${tip.id}.description`, tip.description)}</p>
                       </div>
                     </article>
                   ))}
@@ -5367,8 +6396,13 @@ const SwissStartupConnect = () => {
               <div className="ssc__max">
                 <div className="ssc__section-header">
                   <div>
-                    <h2>Resources to get you started</h2>
-                    <p>Templates, benchmarks, and guides designed with Swiss founders.</p>
+                    <h2>{translate('resources.heading', 'Resources to get you started')}</h2>
+                    <p>
+                      {translate(
+                        'resources.description',
+                        'Templates, benchmarks, and guides designed with Swiss founders.'
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="ssc__resource-grid">
@@ -5378,11 +6412,11 @@ const SwissStartupConnect = () => {
                         <Sparkles size={18} />
                       </div>
                       <div>
-                        <h3>{resource.title}</h3>
-                        <p>{resource.description}</p>
+                        <h3>{translate(`resources.items.${resource.id}.title`, resource.title)}</h3>
+                        <p>{translate(`resources.items.${resource.id}.description`, resource.description)}</p>
                         {resource.action === 'external' ? (
                           <a href={resource.href} target="_blank" rel="noreferrer">
-                            Visit official site
+                            {translate('resources.visitSite', 'Visit official site')}
                           </a>
                         ) : (
                           <button
@@ -5390,7 +6424,7 @@ const SwissStartupConnect = () => {
                             className="ssc__link-button"
                             onClick={() => setResourceModal(resource.modalId)}
                           >
-                            View details
+                            {translate('resources.viewDetails', 'View details')}
                           </button>
                         )}
                       </div>
@@ -5403,8 +6437,13 @@ const SwissStartupConnect = () => {
             <section className="ssc__cta">
               <div className="ssc__max ssc__cta-inner">
                 <div>
-                  <h2>Ready to co-create the next Swiss success story?</h2>
-                  <p>Join a curated community of founders, operators, and students building across Switzerland.</p>
+                  <h2>{translate('cta.heading', 'Ready to co-create the next Swiss success story?')}</h2>
+                  <p>
+                    {translate(
+                      'cta.description',
+                      'Join a curated community of founders, operators, and students building across Switzerland.'
+                    )}
+                  </p>
                 </div>
                 <div className="ssc__cta-actions">
                   <button
@@ -5416,11 +6455,11 @@ const SwissStartupConnect = () => {
                       setAuthError('');
                     }}
                   >
-                    Create profile
+                    {translate('cta.primary', 'Create profile')}
                     <ArrowRight size={18} />
                   </button>
                   <button type="button" className="ssc__ghost-btn" onClick={() => setActiveTab('companies')}>
-                    Explore startups
+                    {translate('cta.secondary', 'Explore startups')}
                   </button>
                 </div>
               </div>
@@ -5431,16 +6470,20 @@ const SwissStartupConnect = () => {
 
       <footer className="ssc__footer">
         <div className="ssc__max">
-          <span>© {new Date().getFullYear()} SwissStartup Connect. Built in Switzerland.</span>
+          <span>
+            {translate('footer.madeIn', `© ${currentYear} SwissStartup Connect. Built in Switzerland.`, {
+              year: currentYear,
+            })}
+          </span>
           <div className="ssc__footer-links">
             <a href="/privacy.html" target="_blank" rel="noreferrer">
-              Privacy
+              {translate('footer.privacy', 'Privacy')}
             </a>
             <a href="/terms.html" target="_blank" rel="noreferrer">
-              Terms
+              {translate('footer.terms', 'Terms')}
             </a>
             <a href="/contact.html" target="_blank" rel="noreferrer">
-              Contact
+              {translate('footer.contact', 'Contact')}
             </a>
           </div>
         </div>
@@ -5453,10 +6496,12 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Median internship pay by canton</h2>
+              <h2>{translate('modals.compensation.title', 'Median internship pay by canton')}</h2>
               <p>
-                Source: swissuniversities internship barometer 2024 + public salary postings (January 2025).
-                Figures are midpoints for internships lasting 3–12 months.
+                {translate(
+                  'modals.compensation.subtitle',
+                  'Source: swissuniversities internship barometer 2024 + public salary postings (January 2025). Figures are midpoints for internships lasting 3–12 months.'
+                )}
               </p>
             </header>
             <div className="ssc__modal-body">
@@ -5464,9 +6509,9 @@ const SwissStartupConnect = () => {
                 <table className="ssc__table">
                   <thead>
                     <tr>
-                      <th>Canton</th>
-                      <th>Median stipend</th>
-                      <th>What to expect</th>
+                      <th>{translate('modals.compensation.table.canton', 'Canton')}</th>
+                      <th>{translate('modals.compensation.table.median', 'Median stipend')}</th>
+                      <th>{translate('modals.compensation.table.expectation', 'What to expect')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -5474,15 +6519,17 @@ const SwissStartupConnect = () => {
                       <tr key={entry.canton}>
                         <td>{entry.canton}</td>
                         <td>{entry.median}</td>
-                        <td>{entry.note}</td>
+                        <td>{translate(`modals.compensation.notes.${entry.canton}`, entry.note)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               <p className="ssc__modal-footnote">
-                Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest
-                package with the startup before signing the agreement.
+                {translate(
+                  'modals.compensation.footnote',
+                  'Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest package with the startup before signing the agreement.'
+                )}
               </p>
             </div>
           </div>
@@ -5496,8 +6543,13 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Founder-ready CV templates</h2>
-              <p>Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.</p>
+              <h2>{translate('modals.cv.title', 'Founder-ready CV templates')}</h2>
+              <p>
+                {translate(
+                  'modals.cv.subtitle',
+                  'Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.'
+                )}
+              </p>
             </header>
             <div className="ssc__modal-body">
               <ul className="ssc__link-list">
@@ -5506,20 +6558,28 @@ const SwissStartupConnect = () => {
                     <a href={template.url} target="_blank" rel="noreferrer">
                       {template.name}
                     </a>
-                    <span>{template.reason}</span>
+                    <span>{translate(`modals.cv.templates.${template.id}`, template.reason)}</span>
                   </li>
                 ))}
               </ul>
 
-              <h3 className="ssc__modal-subtitle">How to make your CV stand out</h3>
+              <h3 className="ssc__modal-subtitle">
+                {translate('modals.cv.tipsTitle', 'How to make your CV stand out')}
+              </h3>
               <ul className="ssc__bullet-list">
-                {cvWritingTips.map((tip, index) => (
+                {localizedCvTips.map((tip, index) => (
                   <li key={index}>{tip}</li>
                 ))}
               </ul>
               <p className="ssc__modal-footnote">
-                Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local
-                language of the canton you target (French, German, or Italian) to speed up interviews.
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: translate(
+                      'modals.cv.footnote',
+                      'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
+                    ),
+                  }}
+                />
               </p>
             </div>
           </div>
