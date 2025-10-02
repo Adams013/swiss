@@ -727,9 +727,20 @@ const TRANSLATIONS = {
       viewCurrentCv: 'Voir le CV actuel',
       cvVisibilityOn: 'CV visible par les startups',
       cvVisibilityOff: 'Garder le CV privé jusqu’à la candidature',
+      cvStatus: {
+        empty: 'Aucun CV enregistré pour le moment.',
+        ready: 'CV prêt — enregistrez votre profil pour le conserver.',
+        uploading: 'Téléversement en cours…',
+      },
+      cvActions: {
+        upload: 'Sélectionner un CV',
+        replace: 'Remplacer le CV',
+        remove: 'Supprimer',
+      },
       feedback: {
         avatarSuccess: 'Photo de profil téléversée. Enregistrez votre profil pour la conserver.',
         cvSuccess: 'CV téléversé. Enregistrez votre profil pour le garder à jour.',
+        cvRemoved: 'CV supprimé. Enregistrez votre profil pour mettre à jour.',
       },
       errors: {
         save: 'Impossible d’enregistrer le profil : {{message}}',
@@ -1566,9 +1577,20 @@ const TRANSLATIONS = {
       viewCurrentCv: 'Aktuellen CV ansehen',
       cvVisibilityOn: 'CV für Startups sichtbar',
       cvVisibilityOff: 'CV privat halten bis zur Bewerbung',
+      cvStatus: {
+        empty: 'Noch kein CV hinterlegt.',
+        ready: 'CV bereit – Profil speichern, um es zu behalten.',
+        uploading: 'Upload läuft…',
+      },
+      cvActions: {
+        upload: 'CV auswählen',
+        replace: 'CV ersetzen',
+        remove: 'Entfernen',
+      },
       feedback: {
         avatarSuccess: 'Profilfoto hochgeladen. Speichern Sie Ihr Profil, um es zu behalten.',
         cvSuccess: 'CV hochgeladen. Speichern Sie Ihr Profil, um es aktuell zu halten.',
+        cvRemoved: 'CV entfernt. Profil speichern, um es zu aktualisieren.',
       },
       errors: {
         save: 'Profil konnte nicht gespeichert werden: {{message}}',
@@ -2866,6 +2888,31 @@ const getFileExtension = (fileName) => {
   return parts.pop().toLowerCase();
 };
 
+const getFileNameFromUrl = (url) => {
+  if (typeof url !== 'string') {
+    return '';
+  }
+
+  try {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    const withoutQuery = trimmed.split('?')[0];
+    const segments = withoutQuery.split('/').filter(Boolean);
+    if (!segments.length) {
+      return '';
+    }
+
+    const lastSegment = segments[segments.length - 1];
+    return decodeURIComponent(lastSegment);
+  } catch (error) {
+    console.error('Failed to derive file name from URL', error);
+    return '';
+  }
+};
+
 const isAllowedDocumentFile = (file) => {
   if (!file) return false;
   const extension = getFileExtension(file.name);
@@ -3807,6 +3854,7 @@ const SwissStartupConnect = () => {
     bio: '',
     portfolio_url: '',
     cv_url: '',
+    cv_file_name: '',
     avatar_url: '',
     cv_public: false,
   });
@@ -3894,6 +3942,10 @@ const SwissStartupConnect = () => {
 
   const [applicationModal, setApplicationModal] = useState(null);
   const lastUploadedCvRef = useRef('');
+  const cvFileInputRef = useRef(null);
+  const [cvLocalName, setCvLocalName] = useState('');
+  const [cvUploadState, setCvUploadState] = useState('idle');
+  const [cvUploadError, setCvUploadError] = useState('');
   const [acknowledgeShare, setAcknowledgeShare] = useState(false);
   const [motivationalLetterUrl, setMotivationalLetterUrl] = useState('');
   const [motivationalLetterName, setMotivationalLetterName] = useState('');
@@ -4046,6 +4098,16 @@ const SwissStartupConnect = () => {
     });
     setUseExistingCv(true);
   }, [profileForm.cv_url, user?.type]);
+
+  useEffect(() => {
+    setCvLocalName(profileForm.cv_file_name || '');
+  }, [profileForm.cv_file_name]);
+
+  useEffect(() => {
+    if (!profileForm.cv_url) {
+      setCvUploadState('idle');
+    }
+  }, [profileForm.cv_url]);
 
   useEffect(() => {
     if (!salaryCalculatorOpen || typeof window === 'undefined') {
@@ -4201,11 +4263,16 @@ const SwissStartupConnect = () => {
         };
 
         let resolvedCvUrl = '';
+        let resolvedCvFileName =
+          sanitizedProfile.cv_file_name || getFileNameFromUrl(sanitizedProfile.cv_url);
 
         if (isStudentProfile) {
           const incomingCv = sanitizedProfile.cv_url;
           if (typeof incomingCv === 'string' && incomingCv.trim()) {
             resolvedCvUrl = incomingCv.trim();
+            if (!resolvedCvFileName) {
+              resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+            }
             if (lastUploadedCv && resolvedCvUrl === lastUploadedCv) {
               lastUploadedCvRef.current = '';
             }
@@ -4228,13 +4295,21 @@ const SwissStartupConnect = () => {
             if (!resolvedCvUrl) {
               if (lastUploadedCv) {
                 resolvedCvUrl = lastUploadedCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               } else if (!resolvedOptions.overwriteDraft && trimmedPreviousCv) {
                 resolvedCvUrl = trimmedPreviousCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               }
             }
             nextProfile.cv_url = resolvedCvUrl || null;
+            nextProfile.cv_file_name = resolvedCvFileName || getFileNameFromUrl(resolvedCvUrl) || '';
           } else {
             nextProfile.cv_url = null;
+            nextProfile.cv_file_name = '';
           }
 
           if (!resolvedOptions.overwriteDraft && previous) {
@@ -4255,6 +4330,9 @@ const SwissStartupConnect = () => {
             bio: sanitizedProfile.bio || '',
             portfolio_url: sanitizedProfile.portfolio_url || '',
             cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+            cv_file_name: isStudentProfile
+              ? resolvedCvFileName || getFileNameFromUrl(sanitizedProfile.cv_url)
+              : '',
             avatar_url: sanitizedProfile.avatar_url || '',
             cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
           };
@@ -4266,13 +4344,22 @@ const SwissStartupConnect = () => {
             if (!resolvedCvUrl) {
               if (lastUploadedCv) {
                 resolvedCvUrl = lastUploadedCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               } else if (!resolvedOptions.overwriteDraft && trimmedPreviousFormCv) {
                 resolvedCvUrl = trimmedPreviousFormCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               }
             }
             nextForm.cv_url = resolvedCvUrl || '';
+            nextForm.cv_file_name =
+              resolvedCvFileName || getFileNameFromUrl(resolvedCvUrl) || nextForm.cv_file_name || '';
           } else {
             nextForm.cv_url = '';
+            nextForm.cv_file_name = '';
           }
 
           if (!resolvedOptions.overwriteDraft && previous) {
@@ -6057,6 +6144,9 @@ const SwissStartupConnect = () => {
         bio: sanitizedProfile.bio || '',
         portfolio_url: sanitizedProfile.portfolio_url || '',
         cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+        cv_file_name: isStudentProfile
+          ? sanitizedProfile.cv_file_name || getFileNameFromUrl(sanitizedProfile.cv_url)
+          : '',
         avatar_url: sanitizedProfile.avatar_url || '',
         cv_public: supportsCvVisibility ? !!sanitizedProfile.cv_public : false,
       });
@@ -6352,30 +6442,52 @@ const SwissStartupConnect = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (user?.type !== 'student') {
-      setFeedback({
-        type: 'info',
-        message: translate(
-          'profileModal.errors.cvStudentOnly',
-          'Only student accounts can upload a CV.',
-        ),
-      });
+    const resetInput = () => {
       if (event.target) {
         event.target.value = '';
       }
+    };
+
+    const previousCvUrl = profileForm.cv_url || '';
+    const previousCvFileName = profileForm.cv_file_name || '';
+
+    setCvUploadError('');
+
+    if (user?.type !== 'student') {
+      const message = translate(
+        'profileModal.errors.cvStudentOnly',
+        'Only student accounts can upload a CV.',
+      );
+      setCvUploadState('error');
+      setCvLocalName(previousCvFileName);
+      setFeedback({
+        type: 'info',
+        message,
+      });
+      setCvUploadError(message);
+      resetInput();
       return;
     }
 
     if (!isAllowedDocumentFile(file)) {
+      const message = translate(
+        'profileModal.errors.cvInvalidType',
+        'Upload CV as .pdf, .doc, .docx, or .tex only.',
+      );
+      setCvUploadState('error');
+      setCvLocalName(previousCvFileName);
       setFeedback({
         type: 'error',
-        message: translate(
-          'profileModal.errors.cvInvalidType',
-          'Upload CV as .pdf, .doc, .docx, or .tex only.'
-        ),
+        message,
       });
+      setCvUploadError(message);
+      resetInput();
       return;
     }
+
+    setCvUploadState('uploading');
+    setCvLocalName(file.name || previousCvFileName);
+
     try {
       const publicUrl = await uploadFile('cvs', file, { prefix: 'profiles' });
       if (!publicUrl) {
@@ -6384,14 +6496,14 @@ const SwissStartupConnect = () => {
       const normalizedUrl = publicUrl.trim?.() || publicUrl;
       lastUploadedCvRef.current = normalizedUrl;
       const currentFormSnapshot = profileForm;
-      setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl }));
+      setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl, cv_file_name: file.name || '' }));
       setProfile((prev) => {
         if (!user?.id) {
           return prev;
         }
 
         const nextProfile = prev
-          ? { ...prev, cv_url: normalizedUrl }
+          ? { ...prev, cv_url: normalizedUrl, cv_file_name: file.name || prev.cv_file_name || '' }
           : {
               id: user.id,
               user_id: user.id,
@@ -6405,12 +6517,15 @@ const SwissStartupConnect = () => {
               avatar_url: currentFormSnapshot.avatar_url || '',
               cv_public: !!currentFormSnapshot.cv_public,
               cv_url: normalizedUrl,
+              cv_file_name: file.name || '',
             };
 
         writeCachedProfile(user.id, nextProfile);
         return nextProfile;
       });
       setUseExistingCv(true);
+      setCvUploadState('success');
+      setCvUploadError('');
       setFeedback({
         type: 'success',
         message: translate(
@@ -6427,12 +6542,71 @@ const SwissStartupConnect = () => {
         : translate('profileModal.errors.cvUpload', 'CV upload failed: {{message}}', {
             message: error?.message?.trim?.() || translate('common.errors.unknown', 'Unknown error'),
           });
+      setCvUploadState('error');
+      setCvLocalName(previousCvFileName);
+      setCvUploadError(message);
       setFeedback({ type: 'error', message });
+      setProfileForm((prev) => ({ ...prev, cv_url: previousCvUrl, cv_file_name: previousCvFileName }));
     } finally {
-      if (event.target) {
-        event.target.value = '';
-      }
+      resetInput();
     }
+  };
+
+  const handleCvRemove = () => {
+    if (cvUploadState === 'uploading') {
+      return;
+    }
+
+    const currentFormSnapshot = profileForm;
+
+    setCvUploadError('');
+    setCvUploadState('idle');
+    setCvLocalName('');
+    lastUploadedCvRef.current = '';
+    setUseExistingCv(false);
+
+    setProfileForm((prev) => ({ ...prev, cv_url: '', cv_file_name: '', cv_public: false }));
+
+    setProfile((prev) => {
+      if (!user?.id) {
+        return prev;
+      }
+
+      const baseProfile = prev
+        ? { ...prev }
+        : {
+            id: user.id,
+            user_id: user.id,
+            type: user.type,
+            full_name: currentFormSnapshot.full_name || user.name || '',
+            university: currentFormSnapshot.university || '',
+            program: currentFormSnapshot.program || '',
+            experience: currentFormSnapshot.experience || '',
+            bio: currentFormSnapshot.bio || '',
+            portfolio_url: currentFormSnapshot.portfolio_url || '',
+            avatar_url: currentFormSnapshot.avatar_url || '',
+          };
+
+      const nextProfile = {
+        ...baseProfile,
+        cv_url: null,
+        cv_file_name: '',
+        cv_public: false,
+      };
+
+      writeCachedProfile(user.id, nextProfile);
+      return nextProfile;
+    });
+
+    const removalMessage = translate(
+      'profileModal.feedback.cvRemoved',
+      'CV removed. Save your profile to update it.',
+    );
+
+    setFeedback({
+      type: 'info',
+      message: removalMessage,
+    });
   };
 
   const handleLogoUpload = async (event) => {
@@ -7843,6 +8017,7 @@ const SwissStartupConnect = () => {
     ? translate('jobs.applyRestrictionStudent', 'Student applicants only')
     : translate('jobs.applyRestrictionSignIn', 'Sign in as a student to apply');
   const cvVisibilitySupported = profileColumnPresence.cv_public !== false;
+  const isCvUploading = cvUploadState === 'uploading';
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
@@ -10328,40 +10503,99 @@ const SwissStartupConnect = () => {
                 </label>
 
                 {isStudent && (
-                  <label className="ssc__field">
+                  <div className="ssc__field ssc__field--cv">
                     <span>{translate('profileModal.fields.cv', 'Upload CV')}</span>
-                    <input type="file" accept=".pdf,.doc,.docx,.tex" onChange={handleCvUpload} />
-                    <small className="ssc__field-note">
-                      {translate('profileModal.cvAccepted', 'Accepted: PDF, Word (.doc/.docx), TeX.')}
-                    </small>
-                    {profileForm.cv_url && (
-                      <div className="ssc__cv-visibility">
-                        <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
-                          {translate('profileModal.viewCurrentCv', 'View current CV')}
-                        </a>
-                        {cvVisibilitySupported ? (
-                          <label className="ssc__switch">
-                            <input
-                              type="checkbox"
-                              checked={profileForm.cv_public}
-                              onChange={(event) =>
-                                setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
-                              }
-                            />
-                            <span>
-                              {profileForm.cv_public
-                                ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
-                                : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                    <div className={`ssc__cv-upload ${isCvUploading ? 'is-uploading' : ''}`}>
+                      <input
+                        ref={cvFileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.tex"
+                        onChange={handleCvUpload}
+                        className="ssc__cv-upload__input"
+                      />
+                      <div className="ssc__cv-upload__top">
+                        <div className="ssc__cv-upload__details">
+                          {cvLocalName ? (
+                            <>
+                              <span className="ssc__cv-upload__filename">{cvLocalName}</span>
+                              <span className="ssc__cv-upload__status">
+                                {isCvUploading
+                                  ? translate('profileModal.cvStatus.uploading', 'Uploading…')
+                                  : translate(
+                                      'profileModal.cvStatus.ready',
+                                      'Uploaded — save your profile to keep it.',
+                                    )}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="ssc__cv-upload__status">
+                              {translate('profileModal.cvStatus.empty', 'No CV on file yet.')}
                             </span>
-                          </label>
-                        ) : (
-                          <span className="ssc__cv-visibility--locked">
-                            {translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
-                          </span>
-                        )}
+                          )}
+                          {profileForm.cv_url && (
+                            <a
+                              href={profileForm.cv_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ssc__cv-upload__link"
+                            >
+                              {translate('profileModal.viewCurrentCv', 'View current CV')}
+                            </a>
+                          )}
+                        </div>
+                        <div className="ssc__cv-upload__actions">
+                          <button
+                            type="button"
+                            className="ssc__cv-upload__button"
+                            onClick={() => cvFileInputRef.current?.click()}
+                            disabled={isCvUploading}
+                          >
+                            {cvLocalName
+                              ? translate('profileModal.cvActions.replace', 'Replace CV')
+                              : translate('profileModal.cvActions.upload', 'Select CV')}
+                          </button>
+                          {profileForm.cv_url && (
+                            <button
+                              type="button"
+                              className="ssc__cv-upload__remove"
+                              onClick={handleCvRemove}
+                              disabled={isCvUploading}
+                            >
+                              {translate('profileModal.cvActions.remove', 'Remove')}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </label>
+                      {profileForm.cv_url && (
+                        <div className="ssc__cv-visibility">
+                          {cvVisibilitySupported ? (
+                            <label className="ssc__switch">
+                              <input
+                                type="checkbox"
+                                checked={profileForm.cv_public}
+                                onChange={(event) =>
+                                  setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
+                                }
+                              />
+                              <span>
+                                {profileForm.cv_public
+                                  ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
+                                  : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                              </span>
+                            </label>
+                          ) : (
+                            <span className="ssc__cv-visibility--locked">
+                              {translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {cvUploadError && <p className="ssc__form-error">{cvUploadError}</p>}
+                      <small className="ssc__field-note">
+                        {translate('profileModal.cvAccepted', 'Accepted: PDF, Word (.doc/.docx), TeX.')}
+                      </small>
+                    </div>
+                  </div>
                 )}
               </div>
 
