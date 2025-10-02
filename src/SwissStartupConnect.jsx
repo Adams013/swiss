@@ -2866,6 +2866,31 @@ const getFileExtension = (fileName) => {
   return parts.pop().toLowerCase();
 };
 
+const getFileNameFromUrl = (url) => {
+  if (typeof url !== 'string') {
+    return '';
+  }
+
+  try {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    const withoutQuery = trimmed.split('?')[0];
+    const segments = withoutQuery.split('/').filter(Boolean);
+    if (!segments.length) {
+      return '';
+    }
+
+    const lastSegment = segments[segments.length - 1];
+    return decodeURIComponent(lastSegment);
+  } catch (error) {
+    console.error('Failed to derive file name from URL', error);
+    return '';
+  }
+};
+
 const isAllowedDocumentFile = (file) => {
   if (!file) return false;
   const extension = getFileExtension(file.name);
@@ -3807,6 +3832,7 @@ const SwissStartupConnect = () => {
     bio: '',
     portfolio_url: '',
     cv_url: '',
+    cv_file_name: '',
     avatar_url: '',
     cv_public: false,
   });
@@ -4201,11 +4227,16 @@ const SwissStartupConnect = () => {
         };
 
         let resolvedCvUrl = '';
+        let resolvedCvFileName =
+          sanitizedProfile.cv_file_name || getFileNameFromUrl(sanitizedProfile.cv_url);
 
         if (isStudentProfile) {
           const incomingCv = sanitizedProfile.cv_url;
           if (typeof incomingCv === 'string' && incomingCv.trim()) {
             resolvedCvUrl = incomingCv.trim();
+            if (!resolvedCvFileName) {
+              resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+            }
             if (lastUploadedCv && resolvedCvUrl === lastUploadedCv) {
               lastUploadedCvRef.current = '';
             }
@@ -4228,13 +4259,21 @@ const SwissStartupConnect = () => {
             if (!resolvedCvUrl) {
               if (lastUploadedCv) {
                 resolvedCvUrl = lastUploadedCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               } else if (!resolvedOptions.overwriteDraft && trimmedPreviousCv) {
                 resolvedCvUrl = trimmedPreviousCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               }
             }
             nextProfile.cv_url = resolvedCvUrl || null;
+            nextProfile.cv_file_name = resolvedCvFileName || getFileNameFromUrl(resolvedCvUrl) || '';
           } else {
             nextProfile.cv_url = null;
+            nextProfile.cv_file_name = '';
           }
 
           if (!resolvedOptions.overwriteDraft && previous) {
@@ -4255,6 +4294,9 @@ const SwissStartupConnect = () => {
             bio: sanitizedProfile.bio || '',
             portfolio_url: sanitizedProfile.portfolio_url || '',
             cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+            cv_file_name: isStudentProfile
+              ? resolvedCvFileName || getFileNameFromUrl(sanitizedProfile.cv_url)
+              : '',
             avatar_url: sanitizedProfile.avatar_url || '',
             cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
           };
@@ -4266,13 +4308,22 @@ const SwissStartupConnect = () => {
             if (!resolvedCvUrl) {
               if (lastUploadedCv) {
                 resolvedCvUrl = lastUploadedCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               } else if (!resolvedOptions.overwriteDraft && trimmedPreviousFormCv) {
                 resolvedCvUrl = trimmedPreviousFormCv;
+                if (!resolvedCvFileName) {
+                  resolvedCvFileName = getFileNameFromUrl(resolvedCvUrl);
+                }
               }
             }
             nextForm.cv_url = resolvedCvUrl || '';
+            nextForm.cv_file_name =
+              resolvedCvFileName || getFileNameFromUrl(resolvedCvUrl) || nextForm.cv_file_name || '';
           } else {
             nextForm.cv_url = '';
+            nextForm.cv_file_name = '';
           }
 
           if (!resolvedOptions.overwriteDraft && previous) {
@@ -6057,6 +6108,9 @@ const SwissStartupConnect = () => {
         bio: sanitizedProfile.bio || '',
         portfolio_url: sanitizedProfile.portfolio_url || '',
         cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+        cv_file_name: isStudentProfile
+          ? sanitizedProfile.cv_file_name || getFileNameFromUrl(sanitizedProfile.cv_url)
+          : '',
         avatar_url: sanitizedProfile.avatar_url || '',
         cv_public: supportsCvVisibility ? !!sanitizedProfile.cv_public : false,
       });
@@ -6384,14 +6438,14 @@ const SwissStartupConnect = () => {
       const normalizedUrl = publicUrl.trim?.() || publicUrl;
       lastUploadedCvRef.current = normalizedUrl;
       const currentFormSnapshot = profileForm;
-      setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl }));
+      setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl, cv_file_name: file.name || '' }));
       setProfile((prev) => {
         if (!user?.id) {
           return prev;
         }
 
         const nextProfile = prev
-          ? { ...prev, cv_url: normalizedUrl }
+          ? { ...prev, cv_url: normalizedUrl, cv_file_name: file.name || prev.cv_file_name || '' }
           : {
               id: user.id,
               user_id: user.id,
@@ -6405,6 +6459,7 @@ const SwissStartupConnect = () => {
               avatar_url: currentFormSnapshot.avatar_url || '',
               cv_public: !!currentFormSnapshot.cv_public,
               cv_url: normalizedUrl,
+              cv_file_name: file.name || '',
             };
 
         writeCachedProfile(user.id, nextProfile);
@@ -10331,6 +10386,9 @@ const SwissStartupConnect = () => {
                   <label className="ssc__field">
                     <span>{translate('profileModal.fields.cv', 'Upload CV')}</span>
                     <input type="file" accept=".pdf,.doc,.docx,.tex" onChange={handleCvUpload} />
+                    {profileForm.cv_file_name && (
+                      <small className="ssc__field-note">{profileForm.cv_file_name}</small>
+                    )}
                     <small className="ssc__field-note">
                       {translate('profileModal.cvAccepted', 'Accepted: PDF, Word (.doc/.docx), TeX.')}
                     </small>
