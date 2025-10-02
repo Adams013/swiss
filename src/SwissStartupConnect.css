@@ -6,11 +6,22 @@
   --ssc-ink: #0f172a;
   --ssc-muted: #475569;
   --ssc-border: rgba(15, 23, 42, 0.08);
+  --ssc-background-start: #f8f1e8;
+  --ssc-background-mid: #fff9f2;
+  --ssc-background-end: #f2e6da;
+  --ssc-surface: #fff7eb;
+  --ssc-surface-elevated: #f3e7d9;
+  --ssc-surface-soft: rgba(255, 246, 234, 0.92);
 }
 
 .ssc {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f7ff 0%, #ffffff 56%, #eef3ff 100%);
+  background: linear-gradient(
+    180deg,
+    var(--ssc-background-start) 0%,
+    var(--ssc-background-mid) 56%,
+    var(--ssc-background-end) 100%
+  );
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--ssc-ink);
   display: flex;
@@ -112,7 +123,7 @@
   position: sticky;
   top: 0;
   z-index: 24;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--ssc-surface-soft);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--ssc-border);
   transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
@@ -176,7 +187,7 @@
   padding: 0.25rem;
   border-radius: 999px;
   border: 1px solid var(--ssc-border);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--ssc-surface-soft);
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
 }
@@ -254,7 +265,7 @@
 
 .ssc__signin {
   border: 1px solid var(--ssc-border);
-  background: #fff;
+  background: var(--ssc-surface);
   color: var(--ssc-primary);
   border-radius: 999px;
   padding: 0.55rem 1.35rem;
@@ -381,7 +392,7 @@
   top: calc(100% + 0.6rem);
   right: 0;
   width: min(240px, 80vw);
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 16px;
   border: 1px solid var(--ssc-border);
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
@@ -486,7 +497,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 246, 234, 0.88);
   color: var(--ssc-ink);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
   cursor: pointer;
@@ -540,7 +551,7 @@
 }
 
 .ssc__audience button.is-active {
-  background: #fff;
+  background: var(--ssc-surface);
   color: var(--ssc-ink);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }
@@ -590,7 +601,7 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 14px;
   padding: 0.75rem 1.1rem;
   border: 1px solid var(--ssc-border);
@@ -629,7 +640,7 @@
 }
 
 .ssc__stat-card {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 18px;
   padding: 1.6rem;
   border: 1px solid var(--ssc-border);
@@ -655,7 +666,7 @@
 }
 
 .ssc__filters {
-  background: #fff;
+  background: var(--ssc-surface);
   border-top: 1px solid var(--ssc-border);
   border-bottom: 1px solid var(--ssc-border);
   padding: 2.25rem 0;
@@ -746,7 +757,7 @@
 
 .ssc__cadence-btn {
   border: 1px solid rgba(37, 99, 235, 0.3);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 246, 234, 0.88);
   color: var(--ssc-muted);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -774,7 +785,7 @@
   border-radius: 1.35rem;
   border: 1px solid rgba(37, 99, 235, 0.18);
   padding: 1.45rem 1.55rem 1.5rem;
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, rgba(255, 246, 234, 0.95) 100%);
   box-shadow: 0 24px 48px rgba(37, 99, 235, 0.08);
   display: flex;
   flex-direction: column;
@@ -809,7 +820,7 @@
   padding: 1.1rem 1.25rem;
   border-radius: 18px;
   border: 1px solid rgba(37, 99, 235, 0.18);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, rgba(255, 246, 234, 0.96) 100%);
   box-shadow: 0 22px 44px rgba(37, 99, 235, 0.12);
 }
 
@@ -840,7 +851,7 @@
 
 .ssc__field-pill {
   border: 1px solid rgba(37, 99, 235, 0.28);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 246, 234, 0.9);
   color: var(--ssc-muted);
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -910,7 +921,7 @@
   padding: 1.05rem 1.2rem;
   border-radius: 18px;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--ssc-surface-soft);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
   color: var(--ssc-muted);
 }
@@ -919,7 +930,7 @@
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.16);
   padding: 0.65rem 0.85rem;
-  background: #fff;
+  background: var(--ssc-surface);
   color: var(--ssc-ink);
   font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1032,7 +1043,7 @@
   width: 26px;
   border-radius: 50%;
   border: 3px solid #2563eb;
-  background: #fff;
+  background: var(--ssc-surface);
   box-shadow: 0 10px 26px rgba(37, 99, 235, 0.25);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   cursor: grab;
@@ -1045,7 +1056,7 @@
   width: 26px;
   border-radius: 50%;
   border: 3px solid #2563eb;
-  background: #fff;
+  background: var(--ssc-surface);
   box-shadow: 0 10px 26px rgba(37, 99, 235, 0.25);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   cursor: grab;
@@ -1102,7 +1113,7 @@
   padding: 0.65rem 0.85rem;
   border-radius: 0.95rem;
   border: 1px solid rgba(15, 23, 42, 0.16);
-  background: #fff;
+  background: var(--ssc-surface);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1225,7 +1236,7 @@
   gap: 1rem;
   padding: 1.2rem 1.35rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--ssc-surface-soft);
   box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
   border: 1px solid rgba(37, 99, 235, 0.12);
 }
@@ -1296,7 +1307,7 @@
 }
 
 .ssc__job-card {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 20px;
   padding: 1.6rem;
   border: 1px solid var(--ssc-border);
@@ -1538,7 +1549,7 @@
 
 .ssc__ghost-btn {
   border: 1px solid var(--ssc-border);
-  background: #fff;
+  background: var(--ssc-surface);
   padding: 0.65rem 1.25rem;
   border-radius: 12px;
   font-weight: 600;
@@ -1654,7 +1665,7 @@
 .ssc__calculator-panel {
   width: 340px;
   max-width: calc(100vw - 3rem);
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.98) 0%, rgba(243, 249, 255, 0.98) 100%);
+  background: linear-gradient(170deg, rgba(255, 247, 236, 0.98) 0%, rgba(244, 236, 226, 0.98) 100%);
   border-radius: 22px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.22);
@@ -1757,7 +1768,7 @@
   padding: 0.65rem 2.75rem 0.65rem 0.85rem;
   font-size: 0.92rem;
   font-weight: 500;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  background: linear-gradient(140deg, rgba(255, 247, 236, 0.98), rgba(246, 239, 231, 0.96));
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
   color: var(--ssc-ink);
   transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
@@ -1770,7 +1781,7 @@
   border-color: rgba(37, 99, 235, 0.42);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
   outline: none;
-  background: #fff;
+  background: var(--ssc-surface);
 }
 
 .ssc__select:disabled {
@@ -1877,7 +1888,7 @@
 }
 
 .ssc__empty-state {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 20px;
   padding: 3rem 1.5rem;
   text-align: center;
@@ -1901,7 +1912,7 @@
 }
 
 .ssc__company-card {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 20px;
   padding: 1.8rem;
   border: 1px solid var(--ssc-border);
@@ -2036,7 +2047,7 @@
 }
 
 .ssc__sort-button.is-active {
-  background: #fff;
+  background: var(--ssc-surface);
   color: var(--ssc-primary);
   border-color: rgba(37, 99, 235, 0.4);
   box-shadow: 0 12px 28px rgba(37, 99, 235, 0.18);
@@ -2102,7 +2113,7 @@
 }
 
 .ssc__featured-corner {
-  background: #fff;
+  background: var(--ssc-surface);
   border: 1px solid var(--ssc-border);
   border-radius: 18px;
   padding: 1.2rem 1.4rem;
@@ -2188,7 +2199,7 @@
 }
 
 .ssc__step-card {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 16px;
   padding: 1.1rem 1.25rem;
   border: 1px solid var(--ssc-border);
@@ -2227,7 +2238,7 @@
 
 .ssc__testimonial-card {
   margin: 0;
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 18px;
   padding: 1.4rem 1.6rem;
   border: 1px solid var(--ssc-border);
@@ -2259,7 +2270,7 @@
 }
 
 .ssc__resource-card {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 18px;
   padding: 1.6rem;
   border: 1px solid var(--ssc-border);
@@ -2351,7 +2362,7 @@
 }
 
 .ssc__cta .ssc__primary-btn {
-  background: #fff;
+  background: var(--ssc-surface);
   color: var(--ssc-primary);
   box-shadow: none;
 }
@@ -2478,7 +2489,7 @@
   border: 1px solid var(--ssc-border);
   border-radius: 16px;
   padding: 1.2rem;
-  background: #fff;
+  background: var(--ssc-surface);
 }
 
 .ssc__review-heading {
@@ -2657,7 +2668,7 @@
   border: 1px solid var(--ssc-border);
   border-radius: 18px;
   padding: 1.4rem;
-  background: #fff;
+  background: var(--ssc-surface);
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
@@ -2790,7 +2801,7 @@
   border: 1px solid var(--ssc-border);
   border-radius: 14px;
   padding: 0.75rem 1rem;
-  background: #fff;
+  background: var(--ssc-surface);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -2850,7 +2861,7 @@
   padding: 0.6rem 0.75rem;
   font-size: 0.95rem;
   color: var(--ssc-ink);
-  background: #fff;
+  background: var(--ssc-surface);
 }
 
 .ssc__thread-field textarea {
@@ -2920,7 +2931,7 @@
 }
 
 .ssc__footer {
-  background: #fff;
+  background: var(--ssc-surface);
   border-top: 1px solid var(--ssc-border);
   padding: 2rem 0;
   color: var(--ssc-muted);
@@ -2952,7 +2963,7 @@
 }
 
 .ssc__modal {
-  background: #fff;
+  background: var(--ssc-surface);
   border-radius: 20px;
   padding: 2rem;
   width: min(600px, 100%);
@@ -3172,7 +3183,7 @@
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.16);
   padding: 0.65rem 0.85rem;
-  background: #fff;
+  background: var(--ssc-surface);
   color: var(--ssc-ink);
   font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -3264,7 +3275,7 @@
 
 @media (max-width: 768px) {
   .ssc__header.is-compact {
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--ssc-surface-soft);
     border-bottom-color: rgba(15, 23, 42, 0.05);
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
   }
