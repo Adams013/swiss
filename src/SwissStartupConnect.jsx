@@ -823,6 +823,9 @@ const TRANSLATIONS = {
       threadValidation: 'Ajoutez un message avant de l’enregistrer.',
       threadScheduledFor: 'Prévu le {{date}}',
       threadMessageLabel: 'Message',
+      errors: {
+        submit: 'Impossible d’envoyer la candidature. Veuillez réessayer.',
+      },
       acknowledge:
         'En postulant, vous acceptez que la startup voie vos informations de profil, votre CV, votre lettre de motivation et votre photo de profil.',
     },
@@ -1641,6 +1644,9 @@ const TRANSLATIONS = {
       threadValidation: 'Fügen Sie eine Nachricht hinzu, bevor Sie sie speichern.',
       threadScheduledFor: 'Geplant für {{date}}',
       threadMessageLabel: 'Nachricht',
+      errors: {
+        submit: 'Bewerbung konnte nicht gesendet werden. Bitte erneut versuchen.',
+      },
       acknowledge:
         'Mit Ihrer Bewerbung stimmen Sie zu, dass das Start-up Ihre Profilinformationen, Ihren Lebenslauf, Ihr Motivationsschreiben und Ihr Profilfoto sieht.',
     },
@@ -3601,6 +3607,7 @@ const SwissStartupConnect = () => {
 
   const [jobs, setJobs] = useState(mockJobs);
   const [jobColumnPresence, setJobColumnPresence] = useState(() => deriveColumnPresence(mockJobs));
+  const [applicationColumnPresence, setApplicationColumnPresence] = useState({});
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
@@ -3622,7 +3629,6 @@ const SwissStartupConnect = () => {
   const [selectedJob, setSelectedJob] = useState(null);
 
   const [feedback, setFeedback] = useState(null);
-  const [toast, setToast] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -3790,9 +3796,6 @@ const SwissStartupConnect = () => {
   const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
-  const showToast = useCallback((message) => {
-    setToast({ id: Date.now(), message });
-  }, []);
 
   useEffect(() => {
     if (!feedback) return undefined;
@@ -3802,12 +3805,6 @@ const SwissStartupConnect = () => {
     const timeout = setTimeout(clearFeedback, feedback.dismissAfter ?? 4000);
     return () => clearTimeout(timeout);
   }, [feedback, clearFeedback]);
-
-  useEffect(() => {
-    if (!toast) return undefined;
-    const timeout = setTimeout(() => setToast(null), 1000);
-    return () => clearTimeout(timeout);
-  }, [toast]);
 
   useEffect(() => {
     if (!salaryCalculatorOpen || typeof window === 'undefined') {
@@ -4222,26 +4219,63 @@ const SwissStartupConnect = () => {
 
       setApplicationsLoading(true);
       try {
-        let query = supabase
-          .from('job_applications')
-          .select(
-            `id, status, motivational_letter, created_at, cv_override_url,
-             profiles ( id, full_name, university, program, avatar_url, cv_url ),
-             jobs ( id, title, company_name, startup_id )`
-          )
-          .order('created_at', { ascending: false });
-
-        if (startupProfile?.id) {
-          query = query.eq('jobs.startup_id', startupProfile.id);
+        const baseColumns = ['id', 'status', 'motivational_letter', 'created_at'];
+        if (applicationColumnPresence.acknowledged !== false) {
+          baseColumns.push('acknowledged');
+        }
+        if (applicationColumnPresence.cv_override_url !== false) {
+          baseColumns.push('cv_override_url');
         }
 
-        const { data, error } = await query;
+        let columnsToRequest = [...baseColumns];
+        let fetchedApplications = [];
+        let fetchError = null;
 
-        if (!error && data) {
-          setApplications(data);
-        } else if (error) {
-          console.error('Applications load error', error);
+        while (columnsToRequest.length > 0) {
+          const selectColumns = `${columnsToRequest.join(', ')}, profiles ( id, full_name, university, program, avatar_url, cv_url ), jobs ( id, title, company_name, startup_id )`;
+          let query = supabase
+            .from('job_applications')
+            .select(selectColumns)
+            .order('created_at', { ascending: false });
+
+          if (startupProfile?.id) {
+            query = query.eq('jobs.startup_id', startupProfile.id);
+          }
+
+          const { data, error } = await query;
+
+          if (!error) {
+            fetchedApplications = Array.isArray(data) ? data : [];
+            fetchError = null;
+            break;
+          }
+
+          fetchError = error;
+          const missingColumn = detectMissingColumn(error.message, 'job_applications');
+          if (!missingColumn || !columnsToRequest.includes(missingColumn)) {
+            break;
+          }
+
+          columnsToRequest = columnsToRequest.filter((column) => column !== missingColumn);
+          setApplicationColumnPresence((previous) => ({ ...previous, [missingColumn]: false }));
+        }
+
+        if (fetchError) {
+          console.error('Applications load error', fetchError);
           setApplications([]);
+        } else {
+          setApplications(fetchedApplications);
+          setApplicationColumnPresence((previous) => {
+            const next = { ...previous };
+            columnsToRequest.forEach((column) => {
+              next[column] = true;
+            });
+            const derived = deriveColumnPresence(fetchedApplications);
+            Object.keys(derived).forEach((column) => {
+              next[column] = true;
+            });
+            return next;
+          });
         }
       } catch (error) {
         console.error('Applications load error', error);
@@ -5567,7 +5601,6 @@ const SwissStartupConnect = () => {
         });
       }
       const savedMessage = translate('toasts.saved', 'Saved successfully!');
-      showToast(savedMessage);
       setFeedback({ type: 'success', message: savedMessage, dismissAfter: 0 });
       setProfileModalOpen(false);
     } catch (error) {
@@ -5621,7 +5654,6 @@ const SwissStartupConnect = () => {
           'Saved successfully! Verification updates will appear here.',
         );
         const bannerMessage = translate('toasts.saved', 'Saved successfully!');
-        showToast(savedMessage);
         setFeedback({
           type: 'success',
           message: bannerMessage,
@@ -6396,7 +6428,6 @@ const SwissStartupConnect = () => {
         'jobForm.feedback.publishedFullTime',
         'Job published successfully! Posted as a full-time role because it exceeds 40 hours per week.',
       );
-      showToast(successMessage);
       setFeedback({
         type: 'success',
         message: convertedToFullTime ? fullTimeFeedbackMessage : successMessage,
@@ -6674,24 +6705,88 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const payload = {
+      const basePayload = {
         job_id: applicationModal.id,
         profile_id: profile.id,
-        motivational_letter: motivationalLetterUrl || null,
-        status: 'submitted',
-        acknowledged: true,
-        cv_override_url: useExistingCv ? null : selectedCvUrl,
       };
 
-      const { error } = await supabase.from('job_applications').insert(payload);
+      const assignOptionalField = (field, value, { skipIfNull } = {}) => {
+        if (applicationColumnPresence[field] === false) {
+          return;
+        }
+        if (skipIfNull && (value == null || value === '')) {
+          return;
+        }
+        basePayload[field] = value;
+      };
 
-      if (error) {
-        setApplicationError(error.message);
-      } else {
-        setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
-        setFeedback({ type: 'success', message: 'Application submitted! 🎉' });
-        closeApplicationModal();
+      assignOptionalField('status', 'submitted');
+      assignOptionalField('acknowledged', true);
+      if (applicationColumnPresence.motivational_letter !== false) {
+        basePayload.motivational_letter = motivationalLetterUrl || null;
       }
+      assignOptionalField('cv_override_url', !useExistingCv ? selectedCvUrl : null, { skipIfNull: true });
+
+      let attemptPayload = { ...basePayload };
+      const removedColumns = new Set();
+      let insertSucceeded = false;
+      let lastErrorMessage = '';
+
+      while (Object.keys(attemptPayload).length > 0) {
+        const { error } = await supabase.from('job_applications').insert(attemptPayload);
+
+        if (!error) {
+          insertSucceeded = true;
+          break;
+        }
+
+        lastErrorMessage = error.message;
+        const missingColumn = detectMissingColumn(error.message, 'job_applications');
+
+        if (!missingColumn) {
+          break;
+        }
+
+        if (removedColumns.has(missingColumn)) {
+          break;
+        }
+
+        removedColumns.add(missingColumn);
+        setApplicationColumnPresence((previous) => ({ ...previous, [missingColumn]: false }));
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)) {
+          break;
+        }
+
+        const { [missingColumn]: _omitted, ...rest } = attemptPayload;
+        attemptPayload = rest;
+      }
+
+      if (!insertSucceeded) {
+        setApplicationError(
+          lastErrorMessage ||
+            translate('applications.errors.submit', 'Could not submit application. Please try again.')
+        );
+        return;
+      }
+
+      const successfulColumns = Object.keys(attemptPayload).filter(
+        (key) => key !== 'job_id' && key !== 'profile_id'
+      );
+
+      if (successfulColumns.length > 0) {
+        setApplicationColumnPresence((previous) => {
+          const next = { ...previous };
+          successfulColumns.forEach((column) => {
+            next[column] = true;
+          });
+          return next;
+        });
+      }
+
+      setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
+      setFeedback({ type: 'success', message: 'Application submitted! 🎉' });
+      closeApplicationModal();
     } catch (error) {
       setApplicationError(error.message);
     } finally {
@@ -7198,12 +7293,6 @@ const SwissStartupConnect = () => {
 
   return (
     <div className="ssc">
-      {toast && (
-        <div className="ssc__toast" role="status" aria-live="polite">
-          <CheckCircle2 size={20} />
-          <span className="ssc__toast-message">{toast.message}</span>
-        </div>
-      )}
       <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__brand">
