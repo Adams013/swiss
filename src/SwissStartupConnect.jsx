@@ -5,6 +5,7 @@ import {
   Briefcase,
   Building2,
   Calculator,
+  Calendar,
   ChevronDown,
   Clock,
   ClipboardList,
@@ -18,12 +19,14 @@ import {
   Percent,
   Rocket,
   Search,
+  Send,
   Sparkles,
   TrendingUp,
   Trophy,
   Users,
   X,
   Upload,
+  MessageCircle,
   CheckCircle2,
   Star,
 } from 'lucide-react';
@@ -75,6 +78,9 @@ const JOB_LANGUAGE_ALIASES = {
   italiano: 'italian',
   italienisch: 'italian',
 };
+
+const APPLICATION_THREAD_TYPES = ['message', 'interview', 'note'];
+const APPLICATION_THREAD_STORAGE_KEY = 'ssc_applicationThreads';
 
 const TRANSLATIONS = {
   fr: {
@@ -680,6 +686,21 @@ const TRANSLATIONS = {
       candidateInitialFallback: 'C',
       universityFallback: 'Université non renseignée',
       programFallback: 'Programme non renseigné',
+      threadTitle: 'Communication et planification',
+      threadEmpty: 'Aucun message pour le moment. Lancez la conversation ci-dessous.',
+      threadPlaceholder: 'Partager une mise à jour, confirmer un entretien ou ajouter une note interne…',
+      threadSubmit: 'Ajouter au fil',
+      threadTypeLabel: 'Type d’entrée',
+      threadTypes: {
+        message: 'Message',
+        interview: 'Entretien',
+        note: 'Note interne',
+      },
+      threadScheduleLabel: 'Date et heure',
+      threadScheduleHelper: 'Indiquez un créneau proposé ou confirmé.',
+      threadValidation: 'Ajoutez un message avant de l’enregistrer.',
+      threadScheduledFor: 'Prévu le {{date}}',
+      threadMessageLabel: 'Message',
       acknowledge:
         'En postulant, vous acceptez que la startup voie vos informations de profil, votre CV, votre lettre de motivation et votre photo de profil.',
     },
@@ -1467,6 +1488,21 @@ const TRANSLATIONS = {
       candidateInitialFallback: 'K',
       universityFallback: 'Hochschule nicht angegeben',
       programFallback: 'Studiengang nicht angegeben',
+      threadTitle: 'Kommunikation & Terminplanung',
+      threadEmpty: 'Noch keine Einträge. Starten Sie das Gespräch unten.',
+      threadPlaceholder: 'Update teilen, Interview bestätigen oder interne Notiz hinzufügen…',
+      threadSubmit: 'Zum Verlauf hinzufügen',
+      threadTypeLabel: 'Eintragstyp',
+      threadTypes: {
+        message: 'Nachricht',
+        interview: 'Interview',
+        note: 'Interne Notiz',
+      },
+      threadScheduleLabel: 'Datum & Uhrzeit',
+      threadScheduleHelper: 'Schlagen Sie einen Termin vor oder bestätigen Sie ihn.',
+      threadValidation: 'Fügen Sie eine Nachricht hinzu, bevor Sie sie speichern.',
+      threadScheduledFor: 'Geplant für {{date}}',
+      threadMessageLabel: 'Nachricht',
       acknowledge:
         'Mit Ihrer Bewerbung stimmen Sie zu, dass das Start-up Ihre Profilinformationen, Ihren Lebenslauf, Ihr Motivationsschreiben und Ihr Profilfoto sieht.',
     },
@@ -3450,6 +3486,22 @@ const SwissStartupConnect = () => {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
   const [applicationsVersion, setApplicationsVersion] = useState(0);
+  const [applicationThreads, setApplicationThreads] = useState(() => {
+    if (typeof window === 'undefined') {
+      return {};
+    }
+    try {
+      const stored = window.localStorage.getItem(APPLICATION_THREAD_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('Failed to parse application threads', error);
+      return {};
+    }
+  });
+  const [applicationThreadDrafts, setApplicationThreadDrafts] = useState({});
+  const [applicationThreadTypeDrafts, setApplicationThreadTypeDrafts] = useState({});
+  const [applicationThreadScheduleDrafts, setApplicationThreadScheduleDrafts] = useState({});
+  const [applicationThreadErrors, setApplicationThreadErrors] = useState({});
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -3594,6 +3646,21 @@ const SwissStartupConnect = () => {
       setSecurityEmail(user.email);
     }
   }, [user?.email]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    try {
+      window.localStorage.setItem(
+        APPLICATION_THREAD_STORAGE_KEY,
+        JSON.stringify(applicationThreads)
+      );
+    } catch (error) {
+      console.error('Failed to persist application threads', error);
+    }
+    return undefined;
+  }, [applicationThreads]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -6104,6 +6171,86 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handleApplicationThreadDraftChange = (applicationId, value) => {
+    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: value }));
+    if (value?.trim?.()) {
+      setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+    }
+  };
+
+  const handleApplicationThreadTypeChange = (applicationId, nextType) => {
+    setApplicationThreadTypeDrafts((prev) => ({ ...prev, [applicationId]: nextType }));
+    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+    if (nextType !== 'interview') {
+      setApplicationThreadScheduleDrafts((prev) => {
+        if (!prev[applicationId]) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[applicationId];
+        return next;
+      });
+    }
+  };
+
+  const handleApplicationThreadScheduleChange = (applicationId, value) => {
+    setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: value }));
+  };
+
+  const handleApplicationThreadSubmit = (event, applicationId) => {
+    event.preventDefault();
+    const rawMessage = applicationThreadDrafts[applicationId] || '';
+    const message = rawMessage.trim();
+    if (!message) {
+      setApplicationThreadErrors((prev) => ({
+        ...prev,
+        [applicationId]: translate('applications.threadValidation', 'Add a note before saving it.'),
+      }));
+      return;
+    }
+
+    const type = applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0];
+    const scheduleAtRaw = applicationThreadScheduleDrafts[applicationId] || '';
+    const scheduleAt = type === 'interview' && scheduleAtRaw ? scheduleAtRaw : null;
+
+    const entry = {
+      id: `${applicationId}-${Date.now()}`,
+      type,
+      message,
+      createdAt: new Date().toISOString(),
+      scheduleAt,
+    };
+
+    setApplicationThreads((prev) => {
+      const thread = prev[applicationId] || [];
+      return {
+        ...prev,
+        [applicationId]: [...thread, entry],
+      };
+    });
+    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: '' }));
+    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+    if (scheduleAtRaw) {
+      setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: '' }));
+    }
+  };
+
+  const resolveApplicationThreadType = useCallback(
+    (applicationId) => applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0],
+    [applicationThreadTypeDrafts]
+  );
+
+  const formatThreadTimestamp = useCallback((value) => {
+    try {
+      return new Date(value).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+    } catch (error) {
+      return value;
+    }
+  }, []);
+
   const handlePasswordReset = async (event) => {
     event.preventDefault();
     if (newPassword.length < 8) {
@@ -7567,6 +7714,10 @@ const SwissStartupConnect = () => {
                       const jobTitle = getLocalizedJobText(job, 'title');
                       const cvLink = application.cv_override_url || candidate?.cv_url;
                       const appliedDate = new Date(application.created_at).toLocaleDateString();
+                      const threadEntries = applicationThreads[application.id] || [];
+                      const resolvedType = resolveApplicationThreadType(application.id);
+                      const scheduleDraftValue = applicationThreadScheduleDrafts[application.id] || '';
+                      const threadError = applicationThreadErrors[application.id];
                       return (
                         <article key={application.id} className="ssc__application-card">
                         <header className="ssc__application-header">
@@ -7639,6 +7790,128 @@ const SwissStartupConnect = () => {
                             )}
                           </details>
                         )}
+
+                        <section className="ssc__application-thread">
+                          <header className="ssc__thread-header">
+                            <span className="ssc__thread-icon" aria-hidden="true">
+                              <MessageCircle size={18} />
+                            </span>
+                            <h4>{translate('applications.threadTitle', 'Communication & scheduling')}</h4>
+                          </header>
+
+                          {threadEntries.length > 0 ? (
+                            <ul className="ssc__thread-list">
+                              {threadEntries.map((entry) => {
+                                const typeLabel = translate(
+                                  `applications.threadTypes.${entry.type}`,
+                                  entry.type === 'interview'
+                                    ? 'Interview'
+                                    : entry.type === 'note'
+                                      ? 'Internal note'
+                                      : 'Message'
+                                );
+                                return (
+                                  <li key={entry.id} className="ssc__thread-item">
+                                    <div className="ssc__thread-meta">
+                                      <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                      <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
+                                    </div>
+                                    <p>{entry.message}</p>
+                                    {entry.scheduleAt ? (
+                                      <div className="ssc__thread-schedule">
+                                        <Calendar size={14} aria-hidden="true" />
+                                        <span>
+                                          {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
+                                            date: formatThreadTimestamp(entry.scheduleAt),
+                                          })}
+                                        </span>
+                                      </div>
+                                    ) : null}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="ssc__thread-empty">
+                              {translate(
+                                'applications.threadEmpty',
+                                'No conversation yet. Start by adding a note below.'
+                              )}
+                            </p>
+                          )}
+
+                          <form
+                            className="ssc__thread-form"
+                            onSubmit={(event) => handleApplicationThreadSubmit(event, application.id)}
+                          >
+                            <div className="ssc__thread-form-row">
+                              <label className="ssc__thread-field">
+                                <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
+                                <div className="ssc__select-wrapper">
+                                  <select
+                                    value={resolvedType}
+                                    onChange={(event) =>
+                                      handleApplicationThreadTypeChange(application.id, event.target.value)
+                                    }
+                                  >
+                                    {APPLICATION_THREAD_TYPES.map((type) => (
+                                      <option key={type} value={type}>
+                                        {translate(
+                                          `applications.threadTypes.${type}`,
+                                          type === 'interview'
+                                            ? 'Interview'
+                                            : type === 'note'
+                                              ? 'Internal note'
+                                              : 'Message'
+                                        )}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </label>
+
+                              {resolvedType === 'interview' && (
+                                <label className="ssc__thread-field">
+                                  <span>{translate('applications.threadScheduleLabel', 'Date & time')}</span>
+                                  <input
+                                    type="datetime-local"
+                                    value={scheduleDraftValue}
+                                    onChange={(event) =>
+                                      handleApplicationThreadScheduleChange(application.id, event.target.value)
+                                    }
+                                  />
+                                  <small>
+                                    {translate(
+                                      'applications.threadScheduleHelper',
+                                      'Share a proposed or confirmed slot.'
+                                    )}
+                                  </small>
+                                </label>
+                              )}
+                            </div>
+
+                            <label className="ssc__thread-field">
+                              <span className="ssc__thread-label">
+                                {translate('applications.threadMessageLabel', 'Message')}
+                              </span>
+                              <textarea
+                                rows={3}
+                                value={applicationThreadDrafts[application.id] || ''}
+                                onChange={(event) => handleApplicationThreadDraftChange(application.id, event.target.value)}
+                                placeholder={translate(
+                                  'applications.threadPlaceholder',
+                                  'Share an update, confirm an interview, or leave an internal note…'
+                                )}
+                              />
+                            </label>
+                            {threadError && <p className="ssc__thread-error">{threadError}</p>}
+
+                            <button type="submit" className="ssc__primary-btn ssc__thread-submit">
+                              <Send size={16} />
+                              <span>{translate('applications.threadSubmit', 'Add to thread')}</span>
+                            </button>
+                          </form>
+                        </section>
 
                         <footer className="ssc__application-footer">
                           <span>
