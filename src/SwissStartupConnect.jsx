@@ -41,6 +41,81 @@ const LANGUAGE_OPTIONS = [
 
 const LANGUAGE_TAG_PREFIX = '__lang:';
 
+const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
+
+const readCachedProfile = (userId) => {
+  if (typeof window === 'undefined' || !userId) {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const cached = parsed[userId];
+    if (!cached || typeof cached !== 'object') {
+      return null;
+    }
+
+    return cached;
+  } catch (error) {
+    console.error('Failed to read cached profile', error);
+    return null;
+  }
+};
+
+const writeCachedProfile = (userId, profile) => {
+  if (typeof window === 'undefined' || !userId || !profile) {
+    return;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const next = parsed && typeof parsed === 'object' ? { ...parsed } : {};
+    next[userId] = { ...profile };
+    window.localStorage.setItem(LOCAL_PROFILE_CACHE_KEY, JSON.stringify(next));
+  } catch (error) {
+    console.error('Failed to cache profile', error);
+  }
+};
+
+const removeCachedProfile = (userId) => {
+  if (typeof window === 'undefined' || !userId) {
+    return;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed[userId]) {
+      return;
+    }
+
+    const next = { ...parsed };
+    delete next[userId];
+
+    if (Object.keys(next).length === 0) {
+      window.localStorage.removeItem(LOCAL_PROFILE_CACHE_KEY);
+    } else {
+      window.localStorage.setItem(LOCAL_PROFILE_CACHE_KEY, JSON.stringify(next));
+    }
+  } catch (error) {
+    console.error('Failed to remove cached profile', error);
+  }
+};
+
 const LANGUAGE_VALUE_TO_CANONICAL = {
   en: 'english',
   fr: 'french',
@@ -3859,6 +3934,53 @@ const SwissStartupConnect = () => {
         return;
       }
 
+      const applyProfileState = (profileRecord, options = {}) => {
+        if (!profileRecord) {
+          return;
+        }
+
+        const isStudentProfile = supabaseUser.type === 'student';
+        const normalized = isStudentProfile
+          ? profileRecord
+          : { ...profileRecord, cv_url: null, cv_public: false };
+
+        const profileId =
+          normalized.id ||
+          profileRecord.id ||
+          normalized.user_id ||
+          profileRecord.user_id ||
+          supabaseUser.id;
+
+        const sanitizedProfile = {
+          ...normalized,
+          id: profileId,
+          user_id: supabaseUser.id,
+          type: supabaseUser.type,
+        };
+
+        if (options.updatePresence !== false) {
+          setProfileColumnPresence((previous) => ({
+            ...previous,
+            ...deriveColumnPresence([sanitizedProfile]),
+          }));
+        }
+
+        writeCachedProfile(supabaseUser.id, sanitizedProfile);
+
+        setProfile(sanitizedProfile);
+        setProfileForm({
+          full_name: sanitizedProfile.full_name || supabaseUser.name,
+          university: sanitizedProfile.university || '',
+          program: sanitizedProfile.program || '',
+          experience: sanitizedProfile.experience || '',
+          bio: sanitizedProfile.bio || '',
+          portfolio_url: sanitizedProfile.portfolio_url || '',
+          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+          avatar_url: sanitizedProfile.avatar_url || '',
+          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
+        });
+      };
+
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -3867,7 +3989,20 @@ const SwissStartupConnect = () => {
           .single();
 
         if (error && error.code !== 'PGRST116') {
+          const message = error.message?.toLowerCase?.() || '';
+          if (message.includes('row-level security')) {
+            const cachedProfile = readCachedProfile(supabaseUser.id);
+            if (cachedProfile) {
+              applyProfileState(cachedProfile, { updatePresence: false });
+              return;
+            }
+          }
+
           console.error('Profile fetch error', error);
+          const cachedProfile = readCachedProfile(supabaseUser.id);
+          if (cachedProfile) {
+            applyProfileState(cachedProfile, { updatePresence: false });
+          }
           return;
         }
 
@@ -3887,37 +4022,36 @@ const SwissStartupConnect = () => {
             .single();
 
           if (insertError) {
+            const message = insertError.message?.toLowerCase?.() || '';
+            if (message.includes('row-level security')) {
+              const cachedProfile = readCachedProfile(supabaseUser.id);
+              if (cachedProfile) {
+                applyProfileState(cachedProfile, { updatePresence: false });
+                return;
+              }
+
+              applyProfileState({ ...baseProfile, id: supabaseUser.id }, { updatePresence: false });
+              return;
+            }
+
             console.error('Profile insert error', insertError);
+            const cachedProfile = readCachedProfile(supabaseUser.id);
+            if (cachedProfile) {
+              applyProfileState(cachedProfile, { updatePresence: false });
+            }
             return;
           }
 
           profileRecord = inserted;
         }
 
-        const isStudentProfile = supabaseUser.type === 'student';
-        const sanitizedProfile = isStudentProfile
-          ? profileRecord
-          : { ...profileRecord, cv_url: null, cv_public: false };
-
-        setProfileColumnPresence((previous) => ({
-          ...previous,
-          ...deriveColumnPresence([profileRecord]),
-        }));
-
-        setProfile(sanitizedProfile);
-        setProfileForm({
-          full_name: sanitizedProfile.full_name || supabaseUser.name,
-          university: sanitizedProfile.university || '',
-          program: sanitizedProfile.program || '',
-          experience: sanitizedProfile.experience || '',
-          bio: sanitizedProfile.bio || '',
-          portfolio_url: sanitizedProfile.portfolio_url || '',
-          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
-          avatar_url: sanitizedProfile.avatar_url || '',
-          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
-        });
+        applyProfileState(profileRecord);
       } catch (error) {
         console.error('Profile load error', error);
+        const cachedProfile = readCachedProfile(supabaseUser.id);
+        if (cachedProfile) {
+          applyProfileState(cachedProfile, { updatePresence: false });
+        }
       }
     },
     []
@@ -5333,6 +5467,7 @@ const SwissStartupConnect = () => {
       }
 
       let upsertedProfile = null;
+      let cachedFallbackProfile = null;
 
       while (true) {
         const { data, error } = await supabase
@@ -5355,6 +5490,18 @@ const SwissStartupConnect = () => {
 
         const missingColumn = detectMissingColumn(error.message, 'profiles');
         if (!missingColumn) {
+          const message = error.message?.toLowerCase?.() || '';
+          if (message.includes('row-level security')) {
+            cachedFallbackProfile = {
+              ...(profile ?? {}),
+              ...attemptPayload,
+              user_id: user.id,
+            };
+            if (!cachedFallbackProfile.id) {
+              cachedFallbackProfile.id = profile?.id || profile?.user_id || user.id;
+            }
+            break;
+          }
           throw error;
         }
 
@@ -5385,7 +5532,15 @@ const SwissStartupConnect = () => {
 
       const mergedProfile = upsertedProfile
         ? { ...(profile ?? {}), ...upsertedProfile }
-        : { ...(profile ?? {}), ...attemptPayload };
+        : cachedFallbackProfile
+          ? { ...cachedFallbackProfile }
+          : { ...(profile ?? {}), ...attemptPayload };
+
+      if (!mergedProfile.id) {
+        mergedProfile.id = profile?.id || profile?.user_id || user.id;
+      }
+      mergedProfile.user_id = user.id;
+      mergedProfile.type = user.type;
 
       const sanitizedProfile = isStudentProfile
         ? mergedProfile
@@ -5403,11 +5558,14 @@ const SwissStartupConnect = () => {
         avatar_url: sanitizedProfile.avatar_url || '',
         cv_public: supportsCvVisibility ? !!sanitizedProfile.cv_public : false,
       });
-      await loadProfile({
-        id: user.id,
-        name: user.name,
-        type: user.type,
-      });
+      writeCachedProfile(user.id, sanitizedProfile);
+      if (!cachedFallbackProfile) {
+        await loadProfile({
+          id: user.id,
+          name: user.name,
+          type: user.type,
+        });
+      }
       const savedMessage = translate('toasts.saved', 'Saved successfully!');
       showToast(savedMessage);
       setFeedback({ type: 'success', message: savedMessage, dismissAfter: 0 });
@@ -6477,8 +6635,13 @@ const SwissStartupConnect = () => {
   };
 
   const handleLogout = async () => {
+    const previousUserId = user?.id;
     await supabase.auth.signOut();
+    if (previousUserId) {
+      removeCachedProfile(previousUserId);
+    }
     setUser(null);
+    setProfile(null);
     setFeedback({ type: 'info', message: 'Signed out. Your saved roles stay here for you.' });
   };
 
