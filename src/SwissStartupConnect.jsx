@@ -3893,6 +3893,7 @@ const SwissStartupConnect = () => {
   const [canReview, setCanReview] = useState(false);
 
   const [applicationModal, setApplicationModal] = useState(null);
+  const lastUploadedCvRef = useRef('');
   const [acknowledgeShare, setAcknowledgeShare] = useState(false);
   const [motivationalLetterUrl, setMotivationalLetterUrl] = useState('');
   const [motivationalLetterName, setMotivationalLetterName] = useState('');
@@ -4142,6 +4143,7 @@ const SwissStartupConnect = () => {
     async (supabaseUser, options = {}) => {
       if (!supabaseUser) {
         setProfile(null);
+        lastUploadedCvRef.current = '';
         return;
       }
 
@@ -4155,6 +4157,8 @@ const SwissStartupConnect = () => {
         const normalized = isStudentProfile
           ? profileRecord
           : { ...profileRecord, cv_url: null, cv_public: false };
+
+        const lastUploadedCv = lastUploadedCvRef.current?.trim?.() || '';
 
         const profileId =
           normalized.id ||
@@ -4170,6 +4174,18 @@ const SwissStartupConnect = () => {
           type: supabaseUser.type,
         };
 
+        let resolvedCvUrl = '';
+
+        if (isStudentProfile) {
+          const incomingCv = sanitizedProfile.cv_url;
+          if (typeof incomingCv === 'string' && incomingCv.trim()) {
+            resolvedCvUrl = incomingCv.trim();
+            if (lastUploadedCv && resolvedCvUrl === lastUploadedCv) {
+              lastUploadedCvRef.current = '';
+            }
+          }
+        }
+
         if (resolvedOptions.updatePresence !== false) {
           setProfileColumnPresence((previous) => ({
             ...previous,
@@ -4177,18 +4193,30 @@ const SwissStartupConnect = () => {
           }));
         }
 
-        writeCachedProfile(supabaseUser.id, sanitizedProfile);
-
         setProfile((previous) => {
           const nextProfile = { ...sanitizedProfile };
-          if (!resolvedOptions.overwriteDraft && previous) {
-            if (!nextProfile.cv_url && previous.cv_url) {
-              nextProfile.cv_url = previous.cv_url;
+          if (isStudentProfile) {
+            const previousCv = previous?.cv_url;
+            const trimmedPreviousCv =
+              typeof previousCv === 'string' ? previousCv.trim() : previousCv ?? '';
+            if (!resolvedCvUrl) {
+              if (lastUploadedCv) {
+                resolvedCvUrl = lastUploadedCv;
+              } else if (!resolvedOptions.overwriteDraft && trimmedPreviousCv) {
+                resolvedCvUrl = trimmedPreviousCv;
+              }
             }
+            nextProfile.cv_url = resolvedCvUrl || null;
+          } else {
+            nextProfile.cv_url = null;
+          }
+
+          if (!resolvedOptions.overwriteDraft && previous) {
             if (!nextProfile.avatar_url && previous.avatar_url) {
               nextProfile.avatar_url = previous.avatar_url;
             }
           }
+          writeCachedProfile(supabaseUser.id, nextProfile);
           return nextProfile;
         });
 
@@ -4205,10 +4233,23 @@ const SwissStartupConnect = () => {
             cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
           };
 
-          if (!resolvedOptions.overwriteDraft && previous) {
-            if (!nextForm.cv_url && previous.cv_url) {
-              nextForm.cv_url = previous.cv_url;
+          if (isStudentProfile) {
+            const previousFormCv = previous?.cv_url;
+            const trimmedPreviousFormCv =
+              typeof previousFormCv === 'string' ? previousFormCv.trim() : previousFormCv ?? '';
+            if (!resolvedCvUrl) {
+              if (lastUploadedCv) {
+                resolvedCvUrl = lastUploadedCv;
+              } else if (!resolvedOptions.overwriteDraft && trimmedPreviousFormCv) {
+                resolvedCvUrl = trimmedPreviousFormCv;
+              }
             }
+            nextForm.cv_url = resolvedCvUrl || '';
+          } else {
+            nextForm.cv_url = '';
+          }
+
+          if (!resolvedOptions.overwriteDraft && previous) {
             if (!nextForm.avatar_url && previous.avatar_url) {
               nextForm.avatar_url = previous.avatar_url;
             }
@@ -6314,8 +6355,10 @@ const SwissStartupConnect = () => {
       if (!publicUrl) {
         throw new Error(translate('profileModal.errors.cvNoUrl', 'CV upload did not return a URL.'));
       }
-      setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
-      setProfile((prev) => (prev ? { ...prev, cv_url: publicUrl } : prev));
+      const normalizedUrl = publicUrl.trim?.() || publicUrl;
+      lastUploadedCvRef.current = normalizedUrl;
+      setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl }));
+      setProfile((prev) => (prev ? { ...prev, cv_url: normalizedUrl } : prev));
       setUseExistingCv(true);
       setFeedback({
         type: 'success',
