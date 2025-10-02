@@ -2496,6 +2496,10 @@ const SALARY_MAX_FIELDS = [
   'pay_max',
 ];
 
+const INTERNSHIP_DURATION_FIELDS = ['internship_duration_months', 'duration_months'];
+const WEEKLY_HOURS_VALUE_FIELDS = ['weekly_hours_value', 'hours_per_week', 'hoursWeekly'];
+const WEEKLY_HOURS_LABEL_FIELDS = ['weekly_hours', 'weekly_hours_label', 'hours_week', 'work_hours', 'weeklyHours'];
+
 const EQUITY_MIN_FIELDS = [
   'equity_min',
   'equity_min_percentage',
@@ -3188,6 +3192,42 @@ const computeSalaryRange = (job) => {
   return [Math.round(min), Math.round(max)];
 };
 
+const detectMissingColumn = (message) => {
+  if (typeof message !== 'string') {
+    return null;
+  }
+
+  const patterns = [
+    /column "([^"]+)" of relation "jobs" does not exist/i,
+    /could not find the '([^']+)' column of 'jobs'/i,
+    /missing column "?([^\s"']+)"?/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+};
+
+const deriveColumnPresence = (records) => {
+  if (!Array.isArray(records)) {
+    return {};
+  }
+
+  return records.reduce((accumulator, record) => {
+    if (record && typeof record === 'object' && !Array.isArray(record)) {
+      Object.keys(record).forEach((key) => {
+        accumulator[key] = true;
+      });
+    }
+    return accumulator;
+  }, {});
+};
+
 const deriveSalaryBoundsFromJobs = (jobs) => {
   let min = Infinity;
   let max = 0;
@@ -3473,6 +3513,7 @@ const SwissStartupConnect = () => {
   const [equityMin, equityMax] = equityRange;
 
   const [jobs, setJobs] = useState(mockJobs);
+  const [jobColumnPresence, setJobColumnPresence] = useState(() => deriveColumnPresence(mockJobs));
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
@@ -3945,6 +3986,7 @@ const SwissStartupConnect = () => {
         if (error) {
           console.info('Falling back to mock jobs', error.message);
           setJobs(mockJobs);
+          setJobColumnPresence(deriveColumnPresence(mockJobs));
         } else if (data && data.length > 0) {
           const mapped = data.map((job) => ({
             ...job,
@@ -3956,12 +3998,15 @@ const SwissStartupConnect = () => {
             motivational_letter_required: job.motivational_letter_required ?? false,
           }));
           setJobs(mapped);
+          setJobColumnPresence(deriveColumnPresence(data));
         } else {
           setJobs(mockJobs);
+          setJobColumnPresence(deriveColumnPresence(mockJobs));
         }
       } catch (error) {
         console.error('Job load error', error);
         setJobs(mockJobs);
+        setJobColumnPresence(deriveColumnPresence(mockJobs));
       } finally {
         setJobsLoading(false);
       }
@@ -5965,15 +6010,13 @@ const SwissStartupConnect = () => {
       const languageTags = canonicalLanguageSelection.map((key) => `${LANGUAGE_TAG_PREFIX}${key}`);
       const tagsWithLanguages = Array.from(new Set([...manualTags, ...languageTags]));
 
-      const payload = {
+      const basePayload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
         location: locationValue,
         employment_type: employmentTypeForPayload,
         salary: salaryDisplay,
-        salary_min_value: Math.round(monthlyMin),
-        salary_max_value: Math.round(monthlyMax),
         equity: equityNumericValue != null ? equityDisplay : null,
         description: jobForm.description.trim(),
         requirements: jobForm.requirements
@@ -5985,21 +6028,128 @@ const SwissStartupConnect = () => {
         tags: tagsWithLanguages,
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
-        weekly_hours_value:
-          employmentTypeForPayload === 'Part-time' && Number.isFinite(weeklyHoursNumeric)
-            ? weeklyHoursNumeric
-            : null,
-        weekly_hours: weeklyHoursLabel,
+        salary_is_bracket: jobForm.salary_is_bracket,
       };
 
+      const dynamicAssignments = [];
+      const registerAssignment = (keys, value) => {
+        if (value == null || (typeof value === 'number' && !Number.isFinite(value))) {
+          return;
+        }
+
+        const normalizedKeys = keys.filter(Boolean);
+        if (normalizedKeys.length === 0) {
+          return;
+        }
+
+        let selectedIndex = normalizedKeys.findIndex((key) => jobColumnPresence[key] === true);
+        if (selectedIndex === -1) {
+          selectedIndex = normalizedKeys.findIndex((key) => jobColumnPresence[key] !== false);
+        }
+
+        if (selectedIndex === -1) {
+          return;
+        }
+
+        const currentKey = normalizedKeys[selectedIndex];
+        basePayload[currentKey] = value;
+        dynamicAssignments.push({
+          keys: normalizedKeys,
+          value,
+          selectedIndex,
+          currentKey,
+        });
+      };
+
+      registerAssignment(SALARY_MIN_FIELDS, Math.round(monthlyMin));
+      registerAssignment(SALARY_MAX_FIELDS, Math.round(monthlyMax));
+      registerAssignment(SALARY_PERIOD_FIELDS, cadenceSelection);
+
       if (employmentTypeForPayload === 'Internship' && Number.isFinite(internshipDurationNumeric)) {
-        payload.internship_duration_months = internshipDurationNumeric;
+        registerAssignment(INTERNSHIP_DURATION_FIELDS, internshipDurationNumeric);
       }
 
-      const { error } = await supabase.from('jobs').insert(payload);
-      if (error) {
-        setPostJobError(error.message);
-        return;
+      if (employmentTypeForPayload === 'Part-time' && Number.isFinite(weeklyHoursNumeric)) {
+        registerAssignment(WEEKLY_HOURS_VALUE_FIELDS, weeklyHoursNumeric);
+      }
+
+      if (weeklyHoursLabel) {
+        registerAssignment(WEEKLY_HOURS_LABEL_FIELDS, weeklyHoursLabel);
+      }
+
+      let attemptPayload = { ...basePayload };
+      const removedColumns = new Set();
+
+      const markColumnMissing = (column) => {
+        removedColumns.add(column);
+        setJobColumnPresence((previous) => ({ ...previous, [column]: false }));
+      };
+
+      const handleMissingColumn = (column) => {
+        if (Object.prototype.hasOwnProperty.call(attemptPayload, column)) {
+          const { [column]: _omitted, ...rest } = attemptPayload;
+          attemptPayload = rest;
+        }
+
+        const assignment = dynamicAssignments.find((entry) => entry.keys.includes(column));
+        markColumnMissing(column);
+
+        if (!assignment || assignment.currentKey !== column) {
+          return;
+        }
+
+        for (let nextIndex = assignment.selectedIndex + 1; nextIndex < assignment.keys.length; nextIndex += 1) {
+          const nextKey = assignment.keys[nextIndex];
+          if (removedColumns.has(nextKey)) {
+            continue;
+          }
+
+          if (jobColumnPresence[nextKey] === false) {
+            continue;
+          }
+
+          attemptPayload[nextKey] = assignment.value;
+          assignment.selectedIndex = nextIndex;
+          assignment.currentKey = nextKey;
+          return;
+        }
+
+        assignment.exhausted = true;
+      };
+
+      while (true) {
+        const { error } = await supabase.from('jobs').insert(attemptPayload);
+        if (!error) {
+          setJobColumnPresence((previous) => {
+            const next = { ...previous };
+            Object.keys(attemptPayload).forEach((key) => {
+              next[key] = true;
+            });
+            return next;
+          });
+          break;
+        }
+
+        const missingColumn = detectMissingColumn(error.message);
+        if (!missingColumn) {
+          setPostJobError(error.message);
+          setPostingJob(false);
+          return;
+        }
+
+        if (removedColumns.has(missingColumn) && !Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)) {
+          setPostJobError(error.message);
+          setPostingJob(false);
+          return;
+        }
+
+        handleMissingColumn(missingColumn);
+
+        if (Object.keys(attemptPayload).length === 0) {
+          setPostJobError(error.message);
+          setPostingJob(false);
+          return;
+        }
       }
 
       const successMessage = translate('jobForm.toast.published', 'Job published successfully!');
