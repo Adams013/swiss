@@ -834,6 +834,10 @@
   justify-content: flex-end;
 }
 
+.ssc__field-pill-group--start {
+  justify-content: flex-start;
+}
+
 .ssc__field-pill {
   border: 1px solid rgba(37, 99, 235, 0.28);
   background: rgba(255, 255, 255, 0.85);

@@ -305,6 +305,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Heures hebdomadaires',
         internshipLength: 'Durée du stage (mois)',
         salaryCadence: 'Rythme salarial',
+        languages: 'Langues requises',
         equity: 'Équité (%)',
         salaryRange: 'Fourchette salariale',
         salary: 'Salaire',
@@ -331,6 +332,12 @@ const TRANSLATIONS = {
           month: 'Mensuel',
           year: 'Annuel / total',
         },
+        languages: {
+          english: 'Anglais',
+          french: 'Français',
+          german: 'Allemand',
+          italian: 'Italien',
+        },
       },
       placeholders: {
         location: 'Sélectionnez une localisation en Suisse',
@@ -346,6 +353,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Utilisé pour convertir les salaires mensuels et annuels. Maximum 40 h/semaine.',
         internshipLength: 'Les stages doivent durer entre 1 et 12 mois.',
         equityRange: 'Plage autorisée : 0,1 – 100. Laissez vide si aucun.',
+        languages: 'Sélectionnez chaque langue que les candidat·e·s doivent maîtriser.',
       },
       salary: {
         toggle: 'Afficher une fourchette salariale',
@@ -390,6 +398,7 @@ const TRANSLATIONS = {
         internshipDurationTooLong: 'Les stages peuvent durer au maximum 12 mois.',
         salaryConversionFailed: 'Impossible de convertir le salaire en CHF avec ce rythme.',
         equityRange: 'L’équité doit être un nombre entre 0,1 et 100.',
+        languagesMissing: 'Sélectionnez au moins une langue demandée pour le poste.',
       },
       info: {
         partTimeAutoFullTime: 'Les postes à temps partiel dépassant 40 h/semaine passent automatiquement à temps plein.',
@@ -534,6 +543,7 @@ const TRANSLATIONS = {
         cvRowLevelSecurity:
           'Échec du téléversement du CV : votre compte n’est pas autorisé à stocker des documents dans ce dossier. Réessayez ou mettez à jour le CV de votre profil.',
         cvUpload: 'Échec du téléversement du CV : {{message}}',
+        cvStudentOnly: 'Seuls les comptes étudiants peuvent téléverser un CV.',
         logoNoUrl: 'Le téléversement du logo n’a renvoyé aucune URL.',
         logoUpload: 'Échec du téléversement du logo : {{message}}',
       },
@@ -1111,6 +1121,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Wochenstunden',
         internshipLength: 'Praktikumsdauer (Monate)',
         salaryCadence: 'Gehaltsrhythmus',
+        languages: 'Erforderliche Sprachen',
         equity: 'Beteiligung (%)',
         salaryRange: 'Gehaltsband',
         salary: 'Gehalt',
@@ -1137,6 +1148,12 @@ const TRANSLATIONS = {
           month: 'Monatlich',
           year: 'Jährlich / total',
         },
+        languages: {
+          english: 'Englisch',
+          french: 'Französisch',
+          german: 'Deutsch',
+          italian: 'Italienisch',
+        },
       },
       placeholders: {
         location: 'Wählen Sie einen Standort in der Schweiz',
@@ -1152,6 +1169,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Wird genutzt, um Monats- und Jahresgehälter zu berechnen. Maximal 40 Std./Woche.',
         internshipLength: 'Praktika müssen zwischen 1 und 12 Monaten dauern.',
         equityRange: 'Erlaubter Bereich: 0.1 – 100. Leer lassen, falls nicht vorhanden.',
+        languages: 'Wählen Sie alle Sprachen aus, die Bewerber:innen beherrschen sollen.',
       },
       salary: {
         toggle: 'Gehaltsband anzeigen',
@@ -1196,6 +1214,7 @@ const TRANSLATIONS = {
         internshipDurationTooLong: 'Praktika dürfen höchstens 12 Monate dauern.',
         salaryConversionFailed: 'Das Gehalt konnte mit diesem Rhythmus nicht in CHF umgerechnet werden.',
         equityRange: 'Der Beteiligungsanteil muss eine Zahl zwischen 0.1 und 100 sein.',
+        languagesMissing: 'Wählen Sie mindestens eine Sprache aus, die Bewerber:innen beherrschen sollen.',
       },
       info: {
         partTimeAutoFullTime: 'Teilzeitstellen über 40 Std./Woche werden automatisch auf Vollzeit gesetzt.',
@@ -1341,6 +1360,7 @@ const TRANSLATIONS = {
         cvRowLevelSecurity:
           'CV-Upload fehlgeschlagen: Ihr Konto darf in diesem Ordner keine Dokumente speichern. Bitte erneut versuchen oder den Profil-CV aktualisieren.',
         cvUpload: 'CV-Upload fehlgeschlagen: {{message}}',
+        cvStudentOnly: 'Nur Studierendenkonten können einen CV hochladen.',
         logoNoUrl: 'Der Logo-Upload hat keine URL zurückgegeben.',
         logoUpload: 'Logo-Upload fehlgeschlagen: {{message}}',
       },
@@ -3579,6 +3599,7 @@ const SwissStartupConnect = () => {
     salary_max: '',
     salary_cadence: '',
     salary_is_bracket: false,
+    language_requirements: [],
     equity: '',
     description: '',
     requirements: '',
@@ -3776,17 +3797,22 @@ const SwissStartupConnect = () => {
           profileRecord = inserted;
         }
 
-        setProfile(profileRecord);
+        const isStudentProfile = supabaseUser.type === 'student';
+        const sanitizedProfile = isStudentProfile
+          ? profileRecord
+          : { ...profileRecord, cv_url: null, cv_public: false };
+
+        setProfile(sanitizedProfile);
         setProfileForm({
-          full_name: profileRecord.full_name || supabaseUser.name,
-          university: profileRecord.university || '',
-          program: profileRecord.program || '',
-          experience: profileRecord.experience || '',
-          bio: profileRecord.bio || '',
-          portfolio_url: profileRecord.portfolio_url || '',
-          cv_url: profileRecord.cv_url || '',
-          avatar_url: profileRecord.avatar_url || '',
-          cv_public: !!profileRecord.cv_public,
+          full_name: sanitizedProfile.full_name || supabaseUser.name,
+          university: sanitizedProfile.university || '',
+          program: sanitizedProfile.program || '',
+          experience: sanitizedProfile.experience || '',
+          bio: sanitizedProfile.bio || '',
+          portfolio_url: sanitizedProfile.portfolio_url || '',
+          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+          avatar_url: sanitizedProfile.avatar_url || '',
+          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
         });
       } catch (error) {
         console.error('Profile load error', error);
@@ -5146,6 +5172,8 @@ const SwissStartupConnect = () => {
 
     setProfileSaving(true);
     try {
+      const isStudentProfile = user.type === 'student';
+
       const updates = {
         user_id: user.id,
         full_name: profileForm.full_name,
@@ -5154,11 +5182,17 @@ const SwissStartupConnect = () => {
         experience: profileForm.experience,
         bio: profileForm.bio,
         portfolio_url: profileForm.portfolio_url,
-        cv_url: profileForm.cv_url,
         avatar_url: profileForm.avatar_url,
         type: user.type,
-        cv_public: profileForm.cv_public,
       };
+
+      if (isStudentProfile) {
+        updates.cv_url = profileForm.cv_url;
+        updates.cv_public = profileForm.cv_public;
+      } else {
+        updates.cv_url = null;
+        updates.cv_public = false;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
@@ -5180,17 +5214,21 @@ const SwissStartupConnect = () => {
           ? { ...(profile ?? {}), ...data }
           : { ...(profile ?? {}), ...updates };
 
-        setProfile(mergedProfile);
+        const sanitizedProfile = isStudentProfile
+          ? mergedProfile
+          : { ...mergedProfile, cv_url: null, cv_public: false };
+
+        setProfile(sanitizedProfile);
         setProfileForm({
-          full_name: mergedProfile.full_name || '',
-          university: mergedProfile.university || '',
-          program: mergedProfile.program || '',
-          experience: mergedProfile.experience || '',
-          bio: mergedProfile.bio || '',
-          portfolio_url: mergedProfile.portfolio_url || '',
-          cv_url: mergedProfile.cv_url || '',
-          avatar_url: mergedProfile.avatar_url || '',
-          cv_public: !!mergedProfile.cv_public,
+          full_name: sanitizedProfile.full_name || '',
+          university: sanitizedProfile.university || '',
+          program: sanitizedProfile.program || '',
+          experience: sanitizedProfile.experience || '',
+          bio: sanitizedProfile.bio || '',
+          portfolio_url: sanitizedProfile.portfolio_url || '',
+          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+          avatar_url: sanitizedProfile.avatar_url || '',
+          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
         });
         await loadProfile({
           id: user.id,
@@ -5312,6 +5350,20 @@ const SwissStartupConnect = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (user?.type !== 'student') {
+      setFeedback({
+        type: 'info',
+        message: translate(
+          'profileModal.errors.cvStudentOnly',
+          'Only student accounts can upload a CV.',
+        ),
+      });
+      if (event.target) {
+        event.target.value = '';
+      }
+      return;
+    }
+
     if (!isAllowedDocumentFile(file)) {
       setFeedback({
         type: 'error',
@@ -5388,6 +5440,9 @@ const SwissStartupConnect = () => {
 
   const jobSalaryCadence = normalizeSalaryCadence(jobForm.salary_cadence);
   const jobSalaryIsBracket = Boolean(jobForm.salary_is_bracket);
+  const jobLanguageSelection = Array.isArray(jobForm.language_requirements)
+    ? jobForm.language_requirements
+    : [];
   const jobSalaryLabel = jobSalaryIsBracket
     ? translate('jobForm.labels.salaryRange', 'Salary range')
     : translate('jobForm.labels.salary', 'Salary');
@@ -5498,6 +5553,27 @@ const SwissStartupConnect = () => {
     jobForm.employment_type,
     jobForm.weekly_hours,
   ]);
+
+  const handleJobSalaryCadenceChange = useCallback((nextValue) => {
+    setJobForm((prev) => ({
+      ...prev,
+      salary_cadence: nextValue,
+      salary_min: '',
+      salary_max: '',
+    }));
+  }, []);
+
+  const handleJobLanguageToggle = useCallback((languageValue) => {
+    setJobForm((prev) => {
+      const current = Array.isArray(prev.language_requirements) ? prev.language_requirements : [];
+      const exists = current.includes(languageValue);
+      const next = exists
+        ? current.filter((value) => value !== languageValue)
+        : [...current, languageValue];
+      const ordered = LANGUAGE_OPTIONS.map((option) => option.value).filter((value) => next.includes(value));
+      return { ...prev, language_requirements: ordered };
+    });
+  }, []);
 
   const handleJobSalaryBracketChange = useCallback((nextValue) => {
     setJobForm((prev) => ({
@@ -5649,6 +5725,21 @@ const SwissStartupConnect = () => {
       );
       const locationValue = locationOption ? locationOption.value : locationSelection;
 
+      const languageSelection = Array.isArray(jobForm.language_requirements)
+        ? jobForm.language_requirements.filter(Boolean)
+        : [];
+
+      if (languageSelection.length === 0) {
+        setPostJobError(
+          translate(
+            'jobForm.errors.languagesMissing',
+            'Select at least one language applicants must be comfortable using.',
+          ),
+        );
+        setPostingJob(false);
+        return;
+      }
+
       const cadenceSelection = normalizeSalaryCadence(jobForm.salary_cadence) || null;
       if (!cadenceSelection) {
         setPostJobError(
@@ -5793,6 +5884,10 @@ const SwissStartupConnect = () => {
         cadence: cadenceSelection,
       });
 
+      const languageRequirementsDisplay = languageSelection.map(
+        (code) => JOB_LANGUAGE_LABELS.en[code] || code,
+      );
+
       const equityRaw = sanitizeDecimalInput(jobForm.equity?.trim() ?? '');
       let equityDisplay = '';
       let equityNumericValue = null;
@@ -5824,11 +5919,11 @@ const SwissStartupConnect = () => {
         location: locationValue,
         employment_type: employmentTypeForPayload,
         salary: salaryDisplay,
-        salary_cadence: cadenceSelection,
         salary_min_value: Math.round(monthlyMin),
         salary_max_value: Math.round(monthlyMax),
         equity: equityNumericValue != null ? equityDisplay : null,
         description: jobForm.description.trim(),
+        language_requirements: languageRequirementsDisplay,
         requirements: jobForm.requirements
           ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
           : [],
@@ -5878,6 +5973,7 @@ const SwissStartupConnect = () => {
         salary_max: '',
         salary_cadence: '',
         salary_is_bracket: false,
+        language_requirements: [],
         equity: '',
         description: '',
         requirements: '',
@@ -6818,6 +6914,14 @@ const SwissStartupConnect = () => {
           </div>
         )}
 
+        {feedback && (
+          <div className="ssc__max">
+            <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
+              {feedback.message}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'general' && (
           <section className="ssc__hero">
             <div className="ssc__max">
@@ -6830,12 +6934,6 @@ const SwissStartupConnect = () => {
                 'hero.subtitle',
                 'Discover paid internships, part-time roles, and graduate opportunities with founders who want you in the room from day one.'
               )}</p>
-
-              {feedback && (
-                <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
-                  {feedback.message}
-                </div>
-              )}
 
               <form
                 className="ssc__search"
@@ -9181,20 +9279,37 @@ const SwissStartupConnect = () => {
                     </small>
                   </label>
                 )}
+                <div className="ssc__field">
+                  <span>{translate('jobForm.labels.languages', 'Languages required')}</span>
+                  <div className="ssc__field-pill-group ssc__field-pill-group--start">
+                    {LANGUAGE_OPTIONS.map((option) => {
+                      const isSelected = jobLanguageSelection.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`ssc__field-pill ${isSelected ? 'is-active' : ''}`}
+                          onClick={() => handleJobLanguageToggle(option.value)}
+                        >
+                          {translate(`jobForm.options.languages.${option.value}`, option.label)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <small className="ssc__field-note">
+                    {translate(
+                      'jobForm.notes.languages',
+                      'Choose each language applicants must be comfortable using.',
+                    )}
+                  </small>
+                </div>
                 <label className="ssc__field">
                   <span>{translate('jobForm.labels.salaryCadence', 'Salary cadence')}</span>
                   <div className="ssc__select-wrapper">
                     <select
                       className="ssc__select"
                       value={jobForm.salary_cadence}
-                      onChange={(event) =>
-                        setJobForm((prev) => ({
-                          ...prev,
-                          salary_cadence: event.target.value,
-                          salary_min: '',
-                          salary_max: '',
-                        }))
-                      }
+                      onChange={(event) => handleJobSalaryCadenceChange(event.target.value)}
                       required
                     >
                       <option value="">
