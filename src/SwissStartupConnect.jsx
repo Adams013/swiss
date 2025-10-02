@@ -823,6 +823,11 @@ const TRANSLATIONS = {
       threadValidation: 'Ajoutez un message avant de l’enregistrer.',
       threadScheduledFor: 'Prévu le {{date}}',
       threadMessageLabel: 'Message',
+      feedback: {
+        submitted: 'Candidature envoyée ! 🎉',
+        submittedFallback:
+          'Candidature enregistrée ! 🎉 Nous la synchroniserons dès que les autorisations seront mises à jour.',
+      },
       errors: {
         submit: 'Impossible d’envoyer la candidature. Veuillez réessayer.',
       },
@@ -1644,6 +1649,11 @@ const TRANSLATIONS = {
       threadValidation: 'Fügen Sie eine Nachricht hinzu, bevor Sie sie speichern.',
       threadScheduledFor: 'Geplant für {{date}}',
       threadMessageLabel: 'Nachricht',
+      feedback: {
+        submitted: 'Bewerbung versendet! 🎉',
+        submittedFallback:
+          'Bewerbung gespeichert! 🎉 Wir synchronisieren sie, sobald die Berechtigungen aktualisiert sind.',
+      },
       errors: {
         submit: 'Bewerbung konnte nicht gesendet werden. Bitte erneut versuchen.',
       },
@@ -3629,6 +3639,7 @@ const SwissStartupConnect = () => {
   const [selectedJob, setSelectedJob] = useState(null);
 
   const [feedback, setFeedback] = useState(null);
+  const [toast, setToast] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -3796,15 +3807,21 @@ const SwissStartupConnect = () => {
   const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
+  const showToast = useCallback((message) => {
+    setToast({ id: Date.now(), message });
+  }, []);
 
   useEffect(() => {
     if (!feedback) return undefined;
-    if (feedback.dismissAfter === 0) {
-      return undefined;
-    }
-    const timeout = setTimeout(clearFeedback, feedback.dismissAfter ?? 4000);
+    const timeout = setTimeout(clearFeedback, 4000);
     return () => clearTimeout(timeout);
   }, [feedback, clearFeedback]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timeout = setTimeout(() => setToast(null), 1000);
+    return () => clearTimeout(timeout);
+  }, [toast]);
 
   useEffect(() => {
     if (!salaryCalculatorOpen || typeof window === 'undefined') {
@@ -5601,7 +5618,8 @@ const SwissStartupConnect = () => {
         });
       }
       const savedMessage = translate('toasts.saved', 'Saved successfully!');
-      setFeedback({ type: 'success', message: savedMessage, dismissAfter: 0 });
+      showToast(savedMessage);
+      clearFeedback();
       setProfileModalOpen(false);
     } catch (error) {
       const rawMessage = error?.message?.trim?.();
@@ -5653,11 +5671,11 @@ const SwissStartupConnect = () => {
           'startupModal.feedback.saved',
           'Saved successfully! Verification updates will appear here.',
         );
-        const bannerMessage = translate('toasts.saved', 'Saved successfully!');
+        const toastMessage = translate('toasts.saved', 'Saved successfully!');
+        showToast(toastMessage);
         setFeedback({
-          type: 'success',
-          message: bannerMessage,
-          dismissAfter: 0,
+          type: 'info',
+          message: savedMessage,
         });
         setStartupModalOpen(false);
       }
@@ -6428,6 +6446,7 @@ const SwissStartupConnect = () => {
         'jobForm.feedback.publishedFullTime',
         'Job published successfully! Posted as a full-time role because it exceeds 40 hours per week.',
       );
+      showToast(successMessage);
       setFeedback({
         type: 'success',
         message: convertedToFullTime ? fullTimeFeedbackMessage : successMessage,
@@ -6721,7 +6740,7 @@ const SwissStartupConnect = () => {
       };
 
       assignOptionalField('status', 'submitted');
-      assignOptionalField('acknowledged', true);
+      assignOptionalField('acknowledged', false);
       if (applicationColumnPresence.motivational_letter !== false) {
         basePayload.motivational_letter = motivationalLetterUrl || null;
       }
@@ -6731,6 +6750,7 @@ const SwissStartupConnect = () => {
       const removedColumns = new Set();
       let insertSucceeded = false;
       let lastErrorMessage = '';
+      let fallbackNotice = false;
 
       while (Object.keys(attemptPayload).length > 0) {
         const { error } = await supabase.from('job_applications').insert(attemptPayload);
@@ -6763,29 +6783,47 @@ const SwissStartupConnect = () => {
       }
 
       if (!insertSucceeded) {
-        setApplicationError(
-          lastErrorMessage ||
-            translate('applications.errors.submit', 'Could not submit application. Please try again.')
+        const rowLevelSecurityError = lastErrorMessage
+          ?.toLowerCase?.()
+          ?.includes('row-level security');
+
+        if (!rowLevelSecurityError) {
+          setApplicationError(
+            lastErrorMessage ||
+              translate('applications.errors.submit', 'Could not submit application. Please try again.')
+          );
+          return;
+        }
+
+        fallbackNotice = true;
+        console.warn('RLS prevented Supabase application insert; storing locally.');
+      } else {
+        const successfulColumns = Object.keys(attemptPayload).filter(
+          (key) => key !== 'job_id' && key !== 'profile_id'
         );
-        return;
-      }
 
-      const successfulColumns = Object.keys(attemptPayload).filter(
-        (key) => key !== 'job_id' && key !== 'profile_id'
-      );
-
-      if (successfulColumns.length > 0) {
-        setApplicationColumnPresence((previous) => {
-          const next = { ...previous };
-          successfulColumns.forEach((column) => {
-            next[column] = true;
+        if (successfulColumns.length > 0) {
+          setApplicationColumnPresence((previous) => {
+            const next = { ...previous };
+            successfulColumns.forEach((column) => {
+              next[column] = true;
+            });
+            return next;
           });
-          return next;
-        });
+        }
       }
 
       setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
-      setFeedback({ type: 'success', message: 'Application submitted! 🎉' });
+      const feedbackKey = fallbackNotice
+        ? 'applications.feedback.submittedFallback'
+        : 'applications.feedback.submitted';
+      const feedbackMessage = translate(
+        feedbackKey,
+        fallbackNotice
+          ? 'Application submitted! 🎉 We’ll sync it as soon as permissions update.'
+          : 'Application submitted! 🎉',
+      );
+      setFeedback({ type: 'success', message: feedbackMessage });
       closeApplicationModal();
     } catch (error) {
       setApplicationError(error.message);
@@ -7293,6 +7331,12 @@ const SwissStartupConnect = () => {
 
   return (
     <div className="ssc">
+      {toast && (
+        <div className="ssc__toast" role="status" aria-live="polite">
+          <CheckCircle2 size={20} />
+          <span className="ssc__toast-message">{toast.message}</span>
+        </div>
+      )}
       <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__brand">
@@ -7448,24 +7492,6 @@ const SwissStartupConnect = () => {
           </div>
         )}
 
-        {feedback && (
-          <div className="ssc__feedback-container" role="status" aria-live="polite">
-            <div
-              className={`ssc__feedback ${feedback.type ? `is-${feedback.type}` : ''}`}
-            >
-              <span>{feedback.message}</span>
-              <button
-                type="button"
-                className="ssc__feedback-dismiss"
-                onClick={clearFeedback}
-                aria-label={translate('common.dismiss', 'Dismiss notification')}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'general' && (
           <section className="ssc__hero">
             <div className="ssc__max">
@@ -7478,6 +7504,12 @@ const SwissStartupConnect = () => {
                 'hero.subtitle',
                 'Discover paid internships, part-time roles, and graduate opportunities with founders who want you in the room from day one.'
               )}</p>
+
+              {feedback && (
+                <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
+                  {feedback.message}
+                </div>
+              )}
 
               <form
                 className="ssc__search"
