@@ -4022,6 +4022,32 @@ const SwissStartupConnect = () => {
   }, [toast]);
 
   useEffect(() => {
+    if (user?.type !== 'student') {
+      return;
+    }
+
+    const pendingCv = lastUploadedCvRef.current?.trim?.();
+    if (!pendingCv) {
+      return;
+    }
+
+    const currentFormCv = profileForm.cv_url?.trim?.();
+    if (currentFormCv) {
+      return;
+    }
+
+    setProfileForm((previous) => {
+      const previousCv = previous.cv_url?.trim?.();
+      if (previousCv) {
+        return previous;
+      }
+
+      return { ...previous, cv_url: pendingCv };
+    });
+    setUseExistingCv(true);
+  }, [profileForm.cv_url, user?.type]);
+
+  useEffect(() => {
     if (!salaryCalculatorOpen || typeof window === 'undefined') {
       return undefined;
     }
@@ -6357,8 +6383,33 @@ const SwissStartupConnect = () => {
       }
       const normalizedUrl = publicUrl.trim?.() || publicUrl;
       lastUploadedCvRef.current = normalizedUrl;
+      const currentFormSnapshot = profileForm;
       setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl }));
-      setProfile((prev) => (prev ? { ...prev, cv_url: normalizedUrl } : prev));
+      setProfile((prev) => {
+        if (!user?.id) {
+          return prev;
+        }
+
+        const nextProfile = prev
+          ? { ...prev, cv_url: normalizedUrl }
+          : {
+              id: user.id,
+              user_id: user.id,
+              type: user.type,
+              full_name: currentFormSnapshot.full_name || user.name || '',
+              university: currentFormSnapshot.university || '',
+              program: currentFormSnapshot.program || '',
+              experience: currentFormSnapshot.experience || '',
+              bio: currentFormSnapshot.bio || '',
+              portfolio_url: currentFormSnapshot.portfolio_url || '',
+              avatar_url: currentFormSnapshot.avatar_url || '',
+              cv_public: !!currentFormSnapshot.cv_public,
+              cv_url: normalizedUrl,
+            };
+
+        writeCachedProfile(user.id, nextProfile);
+        return nextProfile;
+      });
       setUseExistingCv(true);
       setFeedback({
         type: 'success',
