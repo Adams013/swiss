@@ -877,6 +877,7 @@ const TRANSLATIONS = {
       moreInfo: 'Plus d’infos',
       reviews: 'Avis',
       verifiedBadge: 'Vérifiée',
+      defaultName: 'Startup vérifiée',
       jobCount: {
         one: '1 poste ouvert',
         other: '{{count}} postes ouverts',
@@ -1715,6 +1716,7 @@ const TRANSLATIONS = {
       moreInfo: 'Mehr über uns',
       reviews: 'Bewertungen',
       verifiedBadge: 'Verifiziert',
+      defaultName: 'Verifiziertes Start-up',
       jobCount: {
         one: '1 offene Stelle',
         other: '{{count}} offene Stellen',
@@ -5315,13 +5317,113 @@ const SwissStartupConnect = () => {
   const companyJobCounts = useMemo(() => {
     const map = {};
     normalizedJobs.forEach((job) => {
-      const key = String(job.startup_id || job.company_name || '');
-      if (!key) return;
-      if (!map[key]) map[key] = 0;
-      map[key] += 1;
+      const idKey = job.startup_id != null ? String(job.startup_id) : '';
+      const name = job.company_name?.trim();
+      const nameKey = name ? name.toLowerCase() : '';
+
+      if (idKey) {
+        map[idKey] = (map[idKey] || 0) + 1;
+      }
+
+      if (nameKey) {
+        map[nameKey] = (map[nameKey] || 0) + 1;
+      }
     });
     return map;
   }, [normalizedJobs]);
+
+  const augmentedCompanies = useMemo(() => {
+    if (normalizedJobs.length === 0) {
+      return companies;
+    }
+
+    const seenIds = new Set();
+    const seenNames = new Set();
+
+    companies.forEach((company) => {
+      const idKey = company?.id != null ? String(company.id) : '';
+      if (idKey) {
+        seenIds.add(idKey);
+      }
+
+      const nameKey =
+        typeof company?.name === 'string' ? company.name.trim().toLowerCase() : '';
+      if (nameKey) {
+        seenNames.add(nameKey);
+      }
+    });
+
+    const derived = new Map();
+
+    normalizedJobs.forEach((job) => {
+      const idKey = job.startup_id != null ? String(job.startup_id) : '';
+      const name = job.company_name?.trim();
+      const nameKey = name ? name.toLowerCase() : '';
+
+      if ((idKey && seenIds.has(idKey)) || (nameKey && seenNames.has(nameKey))) {
+        return;
+      }
+
+      if (!idKey && !nameKey) {
+        return;
+      }
+
+      const derivedKey = idKey || nameKey;
+      const previous = derived.get(derivedKey) || {
+        id: idKey || undefined,
+        name: name || translate('companies.defaultName', 'Verified startup'),
+        tagline: '',
+        location: '',
+        industry: '',
+        team: '',
+        fundraising: '',
+        culture: '',
+        website: '',
+        info_link: '',
+        verification_status: 'unverified',
+        created_at: job.created_at,
+      };
+
+      derived.set(derivedKey, {
+        ...previous,
+        tagline: previous.tagline || job.title || job.description || '',
+        location: previous.location || job.location || '',
+        industry: previous.industry || job.industry || job.sector || '',
+        team:
+          previous.team ||
+          job.company_team ||
+          job.team ||
+          job.team_size ||
+          job.employees ||
+          '',
+        fundraising:
+          previous.fundraising ||
+          job.company_fundraising ||
+          job.fundraising ||
+          job.total_funding ||
+          job.total_raised ||
+          job.funding ||
+          '',
+        culture: previous.culture || job.company_culture || job.culture || '',
+        website: previous.website || job.company_website || job.website || '',
+        info_link:
+          previous.info_link ||
+          job.company_info_link ||
+          job.info_link ||
+          job.profile_link ||
+          job.external_profile ||
+          job.external_profile_url ||
+          '',
+        created_at: previous.created_at || job.created_at,
+      });
+    });
+
+    if (derived.size === 0) {
+      return companies;
+    }
+
+    return [...companies, ...derived.values()];
+  }, [companies, normalizedJobs, translate]);
 
   const isStartupVerified = startupProfile?.verification_status === 'verified';
   const startupId = startupProfile?.id ? String(startupProfile.id) : null;
@@ -7604,10 +7706,14 @@ const SwissStartupConnect = () => {
   }, [followedCompanies]);
 
   const sortedCompanies = useMemo(() => {
-    const enriched = companies.map((company) => {
+    const enriched = augmentedCompanies.map((company) => {
       const idKey = company.id ? String(company.id) : null;
       const nameKey = company.name ? String(company.name) : null;
-      const jobCount = (idKey && companyJobCounts[idKey]) || (nameKey && companyJobCounts[nameKey]) || 0;
+      const normalizedNameKey = nameKey ? nameKey.trim().toLowerCase() : '';
+      const jobCount =
+        (idKey && companyJobCounts[idKey]) ||
+        (normalizedNameKey && companyJobCounts[normalizedNameKey]) ||
+        0;
       return {
         ...company,
         jobCount,
@@ -7624,7 +7730,7 @@ const SwissStartupConnect = () => {
       const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
       return bTime - aTime;
     });
-  }, [companies, companyJobCounts, companySort, followedCompanies]);
+  }, [augmentedCompanies, companyJobCounts, companySort, followedCompanies]);
 
   const featuredCompanies = useMemo(() => {
     return [...sortedCompanies]
