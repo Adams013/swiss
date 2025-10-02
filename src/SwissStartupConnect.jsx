@@ -1228,6 +1228,180 @@ const mapSupabaseUser = (supabaseUser) => {
 const acknowledgeMessage =
   'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.';
 
+const THREAD_LANGUAGES = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+  { value: 'de', label: 'Deutsch' },
+];
+
+const THREAD_LOCALE_MAP = {
+  en: 'en-GB',
+  fr: 'fr-CH',
+  de: 'de-CH',
+};
+
+const THREAD_COPY = {
+  en: {
+    heading: 'Communication & scheduling',
+    languageSwitcherLabel: 'Language',
+    languageAriaLabel: 'Select language',
+    modeLabels: {
+      message: 'Message',
+      interview: 'Interview invite',
+    },
+    messagePlaceholder: 'Share an update, next steps, or attach a link.',
+    scheduleDateLabel: 'Interview date',
+    scheduleTimeLabel: 'Time',
+    scheduleLocationLabel: 'Location or video link',
+    scheduleLocationPlaceholder: 'e.g. Impact Hub Zurich or Google Meet link',
+    scheduleNotesLabel: 'Notes for the candidate (optional)',
+    scheduleNotesPlaceholder: 'Share agenda, preparation tips, or interviewer names.',
+    sendMessage: 'Send message',
+    sendInvite: 'Send invite',
+    timelineEmpty: 'No messages yet. Start the conversation above.',
+    timelineMessageLabel: 'You',
+    timelineInterviewTitle: 'Interview scheduled for {{value}}',
+    timelineInterviewLocation: 'Location',
+    timelineInterviewNotes: 'Notes',
+    timelineTimestampLabel: 'Sent at {{value}}',
+    validationMessageRequired: 'Add a message before sending.',
+    validationInterviewRequired: 'Select a date and time for the interview.',
+    toastMessageSent: 'Message sent to candidate.',
+    toastInterviewScheduled: 'Interview invite saved.',
+    statusTabs: {
+      all: 'All',
+      submitted: 'Submitted',
+      in_review: 'In review',
+      interviewing: 'Interviewing',
+      offer: 'Offer',
+      hired: 'Hired',
+      rejected: 'Rejected',
+    },
+    emptyFilteredTitle: 'No applicants in this stage',
+    emptyFilteredMessage: 'Switch to another status or invite more candidates to apply.',
+  },
+  fr: {
+    heading: 'Communication et planification',
+    languageSwitcherLabel: 'Langue',
+    languageAriaLabel: 'Choisir la langue',
+    modeLabels: {
+      message: 'Message',
+      interview: 'Invitation à un entretien',
+    },
+    messagePlaceholder: 'Partagez une mise à jour, les prochaines étapes ou un lien.',
+    scheduleDateLabel: "Date de l'entretien",
+    scheduleTimeLabel: 'Heure',
+    scheduleLocationLabel: 'Lieu ou lien vidéo',
+    scheduleLocationPlaceholder: 'ex. Impact Hub Zurich ou lien Google Meet',
+    scheduleNotesLabel: 'Notes pour le·la candidat·e (optionnel)',
+    scheduleNotesPlaceholder:
+      'Ajoutez l’ordre du jour, des conseils de préparation ou les noms des intervenant·e·s.',
+    sendMessage: 'Envoyer le message',
+    sendInvite: 'Envoyer l’invitation',
+    timelineEmpty: 'Aucun message pour le moment. Lancez la conversation ci-dessus.',
+    timelineMessageLabel: 'Vous',
+    timelineInterviewTitle: 'Entretien planifié le {{value}}',
+    timelineInterviewLocation: 'Lieu',
+    timelineInterviewNotes: 'Notes',
+    timelineTimestampLabel: 'Envoyé le {{value}}',
+    validationMessageRequired: 'Ajoutez un message avant de l’envoyer.',
+    validationInterviewRequired: 'Sélectionnez une date et une heure pour l’entretien.',
+    toastMessageSent: 'Message envoyé au candidat.',
+    toastInterviewScheduled: 'Invitation enregistrée.',
+    statusTabs: {
+      all: 'Tous',
+      submitted: 'Envoyées',
+      in_review: 'En revue',
+      interviewing: 'Entretiens',
+      offer: 'Offre',
+      hired: 'Embauché·e',
+      rejected: 'Refusé·e',
+    },
+    emptyFilteredTitle: 'Aucun candidat dans cette étape',
+    emptyFilteredMessage: 'Changez de statut ou invitez d’autres talents à postuler.',
+  },
+  de: {
+    heading: 'Kommunikation & Terminplanung',
+    languageSwitcherLabel: 'Sprache',
+    languageAriaLabel: 'Sprache auswählen',
+    modeLabels: {
+      message: 'Nachricht',
+      interview: 'Interview-Einladung',
+    },
+    messagePlaceholder: 'Teilen Sie ein Update, nächste Schritte oder einen Link.',
+    scheduleDateLabel: 'Interviewdatum',
+    scheduleTimeLabel: 'Uhrzeit',
+    scheduleLocationLabel: 'Ort oder Videolink',
+    scheduleLocationPlaceholder: 'z. B. Impact Hub Zürich oder Google-Meet-Link',
+    scheduleNotesLabel: 'Hinweise für die Kandidat·in (optional)',
+    scheduleNotesPlaceholder:
+      'Teilen Sie Agenda, Vorbereitungstipps oder die Namen der Gesprächspartner·innen.',
+    sendMessage: 'Nachricht senden',
+    sendInvite: 'Einladung senden',
+    timelineEmpty: 'Noch keine Nachrichten. Starten Sie oben die Unterhaltung.',
+    timelineMessageLabel: 'Sie',
+    timelineInterviewTitle: 'Interview geplant am {{value}}',
+    timelineInterviewLocation: 'Ort',
+    timelineInterviewNotes: 'Notizen',
+    timelineTimestampLabel: 'Gesendet am {{value}}',
+    validationMessageRequired: 'Fügen Sie vor dem Senden eine Nachricht hinzu.',
+    validationInterviewRequired: 'Bitte wählen Sie Datum und Uhrzeit für das Interview.',
+    toastMessageSent: 'Nachricht an Kandidat·in gesendet.',
+    toastInterviewScheduled: 'Intervieweinladung gespeichert.',
+    statusTabs: {
+      all: 'Alle',
+      submitted: 'Eingegangen',
+      in_review: 'In Prüfung',
+      interviewing: 'Interviews',
+      offer: 'Angebot',
+      hired: 'Eingestellt',
+      rejected: 'Abgelehnt',
+    },
+    emptyFilteredTitle: 'Keine Bewerber in dieser Phase',
+    emptyFilteredMessage: 'Wechseln Sie den Status oder laden Sie weitere Talente ein.',
+  },
+};
+
+const createEmptyThreadDraft = () => ({
+  mode: 'message',
+  message: '',
+  date: '',
+  time: '',
+  location: '',
+  notes: '',
+});
+
+const formatThreadDate = (language, date, time) => {
+  if (!date) return '';
+  const locale = THREAD_LOCALE_MAP[language] || THREAD_LOCALE_MAP.en;
+  try {
+    const isoString = `${date}T${time || '00:00'}`;
+    const formatter = new Intl.DateTimeFormat(locale, {
+      dateStyle: 'long',
+      timeStyle: time ? 'short' : undefined,
+    });
+    return formatter.format(new Date(isoString));
+  } catch (error) {
+    if (time) {
+      return `${date} ${time}`;
+    }
+    return date;
+  }
+};
+
+const formatThreadTimestamp = (language, isoString) => {
+  if (!isoString) return '';
+  const locale = THREAD_LOCALE_MAP[language] || THREAD_LOCALE_MAP.en;
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(isoString));
+  } catch (error) {
+    return new Date(isoString).toLocaleString();
+  }
+};
+
 const SwissStartupConnect = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1315,6 +1489,38 @@ const SwissStartupConnect = () => {
     verification_note: '',
   });
   const [startupSaving, setStartupSaving] = useState(false);
+
+  const [threadLanguage, setThreadLanguage] = useState(() => {
+    if (typeof window === 'undefined') return 'en';
+    const stored = window.localStorage.getItem('ssc_thread_language');
+    if (stored && THREAD_LANGUAGES.some((option) => option.value === stored)) {
+      return stored;
+    }
+    if (typeof navigator !== 'undefined') {
+      const candidate = navigator.language?.slice(0, 2)?.toLowerCase();
+      if (candidate && THREAD_LANGUAGES.some((option) => option.value === candidate)) {
+        return candidate;
+      }
+    }
+    return 'en';
+  });
+  const [applicationThreads, setApplicationThreads] = useState(() => {
+    if (typeof window === 'undefined') return {};
+    const stored = window.localStorage.getItem('ssc_application_threads');
+    if (!stored) return {};
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Thread storage parse error', error);
+    }
+    return {};
+  });
+  const [threadDrafts, setThreadDrafts] = useState({});
+  const [threadErrors, setThreadErrors] = useState({});
+  const [applicationStatusFilter, setApplicationStatusFilter] = useState('all');
 
   const [resourceModal, setResourceModal] = useState(null);
   const [reviewsModal, setReviewsModal] = useState(null);
@@ -1506,6 +1712,16 @@ const SwissStartupConnect = () => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(appliedJobs));
   }, [appliedJobs]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('ssc_thread_language', threadLanguage);
+  }, [threadLanguage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('ssc_application_threads', JSON.stringify(applicationThreads));
+  }, [applicationThreads]);
 
   const loadProfile = useCallback(
     async (supabaseUser) => {
@@ -3878,6 +4094,108 @@ const SwissStartupConnect = () => {
     return baseTabs;
   }, [user?.type]);
 
+  const threadCopy = useMemo(() => THREAD_COPY[threadLanguage] || THREAD_COPY.en, [threadLanguage]);
+  const applicationStatusTabs = useMemo(() => ['all', ...applicationStatuses], []);
+  const applicationCounts = useMemo(() => {
+    const counts = { all: applications.length };
+    applicationStatuses.forEach((status) => {
+      counts[status] = applications.filter((application) => application.status === status).length;
+    });
+    return counts;
+  }, [applications]);
+  const filteredApplications = useMemo(() => {
+    if (applicationStatusFilter === 'all') {
+      return applications;
+    }
+    return applications.filter((application) => application.status === applicationStatusFilter);
+  }, [applications, applicationStatusFilter]);
+
+  const clearThreadError = useCallback((applicationId) => {
+    setThreadErrors((prev) => {
+      if (!prev[applicationId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[applicationId];
+      return next;
+    });
+  }, []);
+
+  const updateThreadDraft = useCallback((applicationId, patch) => {
+    setThreadDrafts((prev) => {
+      const nextDraft = { ...createEmptyThreadDraft(), ...(prev[applicationId] || {}), ...patch };
+      return { ...prev, [applicationId]: nextDraft };
+    });
+  }, []);
+
+  const handleThreadModeChange = useCallback((applicationId, mode) => {
+    updateThreadDraft(applicationId, { mode });
+    clearThreadError(applicationId);
+  }, [updateThreadDraft, clearThreadError]);
+
+  const resetThreadDraft = useCallback((applicationId, mode) => {
+    setThreadDrafts((prev) => ({
+      ...prev,
+      [applicationId]: { ...createEmptyThreadDraft(), mode: mode || prev[applicationId]?.mode || 'message' },
+    }));
+  }, []);
+
+  const handleThreadSubmit = useCallback(
+    (applicationId) => {
+      const draft = { ...createEmptyThreadDraft(), ...(threadDrafts[applicationId] || {}) };
+      const copy = THREAD_COPY[threadLanguage] || THREAD_COPY.en;
+
+      if (draft.mode === 'message') {
+        if (!draft.message.trim()) {
+          setThreadErrors((prev) => ({ ...prev, [applicationId]: copy.validationMessageRequired }));
+          return;
+        }
+
+        const entry = {
+          id: Date.now(),
+          type: 'message',
+          createdAt: new Date().toISOString(),
+          body: draft.message.trim(),
+        };
+
+        setApplicationThreads((prev) => {
+          const prevEntries = prev[applicationId] || [];
+          return { ...prev, [applicationId]: [...prevEntries, entry] };
+        });
+
+        resetThreadDraft(applicationId, draft.mode);
+        clearThreadError(applicationId);
+        setFeedback({ type: 'success', message: copy.toastMessageSent });
+        return;
+      }
+
+      if (!draft.date || !draft.time) {
+        setThreadErrors((prev) => ({ ...prev, [applicationId]: copy.validationInterviewRequired }));
+        return;
+      }
+
+      const entry = {
+        id: Date.now(),
+        type: 'interview',
+        createdAt: new Date().toISOString(),
+        date: draft.date,
+        time: draft.time,
+        location: draft.location.trim(),
+        notes: draft.notes.trim(),
+      };
+
+      setApplicationThreads((prev) => {
+        const prevEntries = prev[applicationId] || [];
+        return { ...prev, [applicationId]: [...prevEntries, entry] };
+      });
+
+      resetThreadDraft(applicationId, draft.mode);
+      clearThreadError(applicationId);
+      setFeedback({ type: 'success', message: copy.toastInterviewScheduled });
+    },
+    [threadDrafts, threadLanguage, clearThreadError, resetThreadDraft]
+  );
+
   const isStudent = user?.type === 'student';
   const isLoggedIn = Boolean(user);
   const canApply = isLoggedIn && isStudent;
@@ -4961,7 +5279,48 @@ const SwissStartupConnect = () => {
                   <h2>Applicants</h2>
                   <p>Track progress, review motivational letters, and manage your hiring pipeline.</p>
                 </div>
-                <span className="ssc__pill">{applications.length} applicants</span>
+                <span className="ssc__pill">{applicationCounts[applicationStatusFilter] || 0} applicants</span>
+              </div>
+
+              <div className="ssc__applications-toolbar">
+                <div className="ssc__applications-filters" role="tablist" aria-label="Filter applicants by status">
+                  {applicationStatusTabs.map((status) => {
+                    const isActive = applicationStatusFilter === status;
+                    const count = applicationCounts[status] ?? 0;
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        className={`ssc__applications-filter ${isActive ? 'is-active' : ''}`}
+                        onClick={() => setApplicationStatusFilter(status)}
+                        aria-pressed={isActive}
+                      >
+                        <span>{threadCopy.statusTabs[status] || status.replace('_', ' ')}</span>
+                        <span className="ssc__applications-count">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="ssc__thread-language">
+                  <label htmlFor="ssc-thread-language-select">{threadCopy.languageSwitcherLabel}</label>
+                  <select
+                    id="ssc-thread-language-select"
+                    value={threadLanguage}
+                    onChange={(event) => {
+                      const nextLanguage = event.target.value;
+                      if (THREAD_LANGUAGES.some((option) => option.value === nextLanguage)) {
+                        setThreadLanguage(nextLanguage);
+                      }
+                    }}
+                    aria-label={threadCopy.languageAriaLabel}
+                  >
+                    {THREAD_LANGUAGES.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {applicationsLoading ? (
@@ -4971,80 +5330,252 @@ const SwissStartupConnect = () => {
                   ))}
                 </div>
               ) : applications.length > 0 ? (
-                <div className="ssc__applications-grid">
-                    {applications.map((application) => {
+                filteredApplications.length > 0 ? (
+                  <div className="ssc__applications-grid">
+                    {filteredApplications.map((application) => {
                       const candidate = application.profiles;
                       const job = application.jobs;
                       const cvLink = application.cv_override_url || candidate?.cv_url;
+                      const threadEntries = applicationThreads[application.id] || [];
+                      const orderedEntries = [...threadEntries].sort((a, b) => {
+                        const aTime = new Date(a.createdAt || 0).getTime();
+                        const bTime = new Date(b.createdAt || 0).getTime();
+                        return aTime - bTime;
+                      });
+                      const draft = { ...createEmptyThreadDraft(), ...(threadDrafts[application.id] || {}) };
+                      const threadError = threadErrors[application.id];
+
                       return (
                         <article key={application.id} className="ssc__application-card">
-                        <header className="ssc__application-header">
-                          <div>
-                            <h3>{job?.title}</h3>
-                            <p>{job?.company_name}</p>
-                          </div>
-                          <div className="ssc__status-select">
-                            <label>
-                              Status
-                              <select
-                                value={application.status}
-                                onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
-                                disabled={applicationStatusUpdating === application.id}
-                              >
-                                {applicationStatuses.map((status) => (
-                                  <option key={status} value={status}>
-                                    {status.replace('_', ' ')}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          </div>
-                        </header>
+                          <header className="ssc__application-header">
+                            <div>
+                              <h3>{job?.title}</h3>
+                              <p>{job?.company_name}</p>
+                            </div>
+                            <div className="ssc__status-select">
+                              <label>
+                                Status
+                                <select
+                                  value={application.status}
+                                  onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
+                                  disabled={applicationStatusUpdating === application.id}
+                                >
+                                  {applicationStatuses.map((status) => (
+                                    <option key={status} value={status}>
+                                      {threadCopy.statusTabs[status] || status.replace('_', ' ')}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </div>
+                          </header>
 
-                        <div className="ssc__candidate">
-                          <div className="ssc__avatar-medium">
-                            {candidate?.avatar_url ? (
-                              <img src={candidate.avatar_url} alt={candidate.full_name || 'Candidate'} />
-                            ) : (
-                              <span>{candidate?.full_name?.charAt(0) || 'C'}</span>
-                            )}
+                          <div className="ssc__candidate">
+                            <div className="ssc__avatar-medium">
+                              {candidate?.avatar_url ? (
+                                <img src={candidate.avatar_url} alt={candidate.full_name || 'Candidate'} />
+                              ) : (
+                                <span>{candidate?.full_name?.charAt(0) || 'C'}</span>
+                              )}
+                            </div>
+                            <div>
+                              <strong>{candidate?.full_name || 'Candidate'}</strong>
+                              <ul>
+                                <li>{candidate?.university || 'University not provided'}</li>
+                                <li>{candidate?.program || 'Program not provided'}</li>
+                              </ul>
+                              {cvLink ? (
+                                <a href={cvLink} target="_blank" rel="noreferrer">
+                                  View CV
+                                </a>
+                              ) : (
+                                <span>No CV provided</span>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <strong>{candidate?.full_name || 'Candidate'}</strong>
-                            <ul>
-                              <li>{candidate?.university || 'University not provided'}</li>
-                              <li>{candidate?.program || 'Program not provided'}</li>
-                            </ul>
-                            {cvLink ? (
-                              <a href={cvLink} target="_blank" rel="noreferrer">
-                                View CV
-                              </a>
+
+                          {application.motivational_letter && (
+                            <details className="ssc__letter">
+                              <summary>Motivational letter</summary>
+                              {application.motivational_letter.startsWith('http') ? (
+                                <a href={application.motivational_letter} target="_blank" rel="noreferrer">
+                                  Download motivational letter
+                                </a>
+                              ) : (
+                                <p>{application.motivational_letter}</p>
+                              )}
+                            </details>
+                          )}
+
+                          <div className="ssc__application-thread">
+                            <div className="ssc__thread-header">
+                              <h4>{threadCopy.heading}</h4>
+                            </div>
+                            {orderedEntries.length > 0 ? (
+                              <ol className="ssc__thread-timeline">
+                                {orderedEntries.map((entry) => {
+                                  const timestamp = formatThreadTimestamp(threadLanguage, entry.createdAt);
+                                  const timestampLabel = (threadCopy.timelineTimestampLabel || '').replace(
+                                    '{{value}}',
+                                    timestamp
+                                  );
+
+                                  if (entry.type === 'interview') {
+                                    const interviewLabel = formatThreadDate(threadLanguage, entry.date, entry.time);
+                                    const interviewTitle = interviewLabel
+                                      ? (threadCopy.timelineInterviewTitle || '').replace('{{value}}', interviewLabel)
+                                      : threadCopy.modeLabels.interview;
+                                    return (
+                                      <li key={entry.id} className="ssc__thread-entry">
+                                        <div className="ssc__thread-entry-header">
+                                          <span className="ssc__thread-entry-label">{interviewTitle}</span>
+                                          <time dateTime={entry.createdAt} aria-label={timestampLabel}>
+                                            {timestamp}
+                                          </time>
+                                        </div>
+                                        {entry.location && (
+                                          <p className="ssc__thread-entry-detail">
+                                            <strong>{threadCopy.timelineInterviewLocation}:</strong> {entry.location}
+                                          </p>
+                                        )}
+                                        {entry.notes && (
+                                          <p className="ssc__thread-entry-detail">
+                                            <strong>{threadCopy.timelineInterviewNotes}:</strong> {entry.notes}
+                                          </p>
+                                        )}
+                                      </li>
+                                    );
+                                  }
+
+                                  return (
+                                    <li key={entry.id} className="ssc__thread-entry">
+                                      <div className="ssc__thread-entry-header">
+                                        <span className="ssc__thread-entry-label">{threadCopy.timelineMessageLabel}</span>
+                                        <time dateTime={entry.createdAt} aria-label={timestampLabel}>
+                                          {timestamp}
+                                        </time>
+                                      </div>
+                                      <p>{entry.body}</p>
+                                    </li>
+                                  );
+                                })}
+                              </ol>
                             ) : (
-                              <span>No CV provided</span>
+                              <p className="ssc__thread-empty">{threadCopy.timelineEmpty}</p>
                             )}
+
+                            <div className="ssc__thread-form">
+                              <div className="ssc__thread-toggle" role="tablist" aria-label={threadCopy.heading}>
+                                {['message', 'interview'].map((mode) => {
+                                  const isActive = draft.mode === mode;
+                                  return (
+                                    <button
+                                      key={mode}
+                                      type="button"
+                                      className={`ssc__thread-toggle-btn ${isActive ? 'is-active' : ''}`}
+                                      onClick={() => handleThreadModeChange(application.id, mode)}
+                                      aria-pressed={isActive}
+                                    >
+                                      {threadCopy.modeLabels[mode]}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {threadError && <p className="ssc__thread-error">{threadError}</p>}
+
+                              {draft.mode === 'message' ? (
+                                <textarea
+                                  className="ssc__thread-textarea"
+                                  rows={4}
+                                  value={draft.message}
+                                  onChange={(event) => {
+                                    clearThreadError(application.id);
+                                    updateThreadDraft(application.id, { message: event.target.value });
+                                  }}
+                                  placeholder={threadCopy.messagePlaceholder}
+                                />
+                              ) : (
+                                <>
+                                  <div className="ssc__thread-form-grid">
+                                    <label className="ssc__thread-field">
+                                      <span>{threadCopy.scheduleDateLabel}</span>
+                                      <input
+                                        type="date"
+                                        className="ssc__thread-input"
+                                        value={draft.date}
+                                        onChange={(event) => {
+                                          clearThreadError(application.id);
+                                          updateThreadDraft(application.id, { date: event.target.value });
+                                        }}
+                                      />
+                                    </label>
+                                    <label className="ssc__thread-field">
+                                      <span>{threadCopy.scheduleTimeLabel}</span>
+                                      <input
+                                        type="time"
+                                        className="ssc__thread-input"
+                                        value={draft.time}
+                                        onChange={(event) => {
+                                          clearThreadError(application.id);
+                                          updateThreadDraft(application.id, { time: event.target.value });
+                                        }}
+                                      />
+                                    </label>
+                                  </div>
+                                  <label className="ssc__thread-field">
+                                    <span>{threadCopy.scheduleLocationLabel}</span>
+                                    <input
+                                      type="text"
+                                      className="ssc__thread-input"
+                                      value={draft.location}
+                                      onChange={(event) =>
+                                        updateThreadDraft(application.id, { location: event.target.value })
+                                      }
+                                      placeholder={threadCopy.scheduleLocationPlaceholder}
+                                    />
+                                  </label>
+                                  <label className="ssc__thread-field">
+                                    <span>{threadCopy.scheduleNotesLabel}</span>
+                                    <textarea
+                                      className="ssc__thread-textarea"
+                                      rows={3}
+                                      value={draft.notes}
+                                      onChange={(event) =>
+                                        updateThreadDraft(application.id, { notes: event.target.value })
+                                      }
+                                      placeholder={threadCopy.scheduleNotesPlaceholder}
+                                    />
+                                  </label>
+                                </>
+                              )}
+
+                              <div className="ssc__thread-actions">
+                                <button
+                                  type="button"
+                                  className="ssc__primary-btn"
+                                  onClick={() => handleThreadSubmit(application.id)}
+                                >
+                                  {draft.mode === 'message' ? threadCopy.sendMessage : threadCopy.sendInvite}
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
 
-                        {application.motivational_letter && (
-                          <details className="ssc__letter">
-                            <summary>Motivational letter</summary>
-                            {application.motivational_letter.startsWith('http') ? (
-                              <a href={application.motivational_letter} target="_blank" rel="noreferrer">
-                                Download motivational letter
-                              </a>
-                            ) : (
-                              <p>{application.motivational_letter}</p>
-                            )}
-                          </details>
-                        )}
-
-                        <footer className="ssc__application-footer">
-                          <span>Applied {new Date(application.created_at).toLocaleDateString()}</span>
-                        </footer>
-                      </article>
-                    );
-                  })}
-                </div>
+                          <footer className="ssc__application-footer">
+                            <span>Applied {new Date(application.created_at).toLocaleDateString()}</span>
+                          </footer>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="ssc__empty-state">
+                    <ClipboardList size={40} />
+                    <h3>{threadCopy.emptyFilteredTitle}</h3>
+                    <p>{threadCopy.emptyFilteredMessage}</p>
+                  </div>
+                )
               ) : (
                 <div className="ssc__empty-state">
                   <Briefcase size={40} />
