@@ -5,6 +5,7 @@ import {
   Briefcase,
   Building2,
   Calculator,
+  Calendar,
   ChevronDown,
   Clock,
   ClipboardList,
@@ -18,12 +19,14 @@ import {
   Percent,
   Rocket,
   Search,
+  Send,
   Sparkles,
   TrendingUp,
   Trophy,
   Users,
   X,
   Upload,
+  MessageCircle,
   CheckCircle2,
   Star,
 } from 'lucide-react';
@@ -35,6 +38,157 @@ const LANGUAGE_OPTIONS = [
   { value: 'fr', label: 'Français', shortLabel: 'FR' },
   { value: 'de', label: 'Deutsch', shortLabel: 'DE' },
 ];
+
+const LANGUAGE_TAG_PREFIX = '__lang:';
+
+const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
+
+const readCachedProfile = (userId) => {
+  if (typeof window === 'undefined' || !userId) {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const cached = parsed[userId];
+    if (!cached || typeof cached !== 'object') {
+      return null;
+    }
+
+    return cached;
+  } catch (error) {
+    console.error('Failed to read cached profile', error);
+    return null;
+  }
+};
+
+const writeCachedProfile = (userId, profile) => {
+  if (typeof window === 'undefined' || !userId || !profile) {
+    return;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const next = parsed && typeof parsed === 'object' ? { ...parsed } : {};
+    next[userId] = { ...profile };
+    window.localStorage.setItem(LOCAL_PROFILE_CACHE_KEY, JSON.stringify(next));
+  } catch (error) {
+    console.error('Failed to cache profile', error);
+  }
+};
+
+const removeCachedProfile = (userId) => {
+  if (typeof window === 'undefined' || !userId) {
+    return;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed[userId]) {
+      return;
+    }
+
+    const next = { ...parsed };
+    delete next[userId];
+
+    if (Object.keys(next).length === 0) {
+      window.localStorage.removeItem(LOCAL_PROFILE_CACHE_KEY);
+    } else {
+      window.localStorage.setItem(LOCAL_PROFILE_CACHE_KEY, JSON.stringify(next));
+    }
+  } catch (error) {
+    console.error('Failed to remove cached profile', error);
+  }
+};
+
+const LANGUAGE_VALUE_TO_CANONICAL = {
+  en: 'english',
+  fr: 'french',
+  de: 'german',
+};
+
+const STARTUP_TEAM_FIELDS = ['team', 'team_size', 'employees', 'headcount'];
+const STARTUP_FUNDRAISING_FIELDS = ['fundraising', 'total_funding', 'total_raised', 'funding'];
+const STARTUP_INFO_FIELDS = ['info_link', 'profile_link', 'external_profile', 'external_profile_url'];
+
+const getJobIdKey = (value) => {
+  if (value == null) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(value) : '';
+  }
+
+  return String(value);
+};
+
+const sanitizeIdArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const unique = new Set();
+  value.forEach((entry) => {
+    const key = getJobIdKey(entry);
+    if (key) {
+      unique.add(key);
+    }
+  });
+
+  return Array.from(unique);
+};
+
+const firstNonEmpty = (...candidates) => {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+  return '';
+};
+
+const mapLanguageValueToCanonical = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return LANGUAGE_VALUE_TO_CANONICAL[normalized] || normalized;
+};
+
+const filterLanguageTags = (tags) => {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+
+  return tags.filter((tag) => {
+    if (typeof tag !== 'string') {
+      return false;
+    }
+
+    return !tag.toLowerCase().startsWith(LANGUAGE_TAG_PREFIX);
+  });
+};
 
 const JOB_LANGUAGE_LABELS = {
   en: {
@@ -76,12 +230,59 @@ const JOB_LANGUAGE_ALIASES = {
   italienisch: 'italian',
 };
 
+const APPLICATION_THREAD_TYPES = ['message', 'interview', 'note'];
+const APPLICATION_THREAD_STORAGE_KEY = 'ssc_applicationThreads';
+
+const mapStartupToCompany = (startup) => {
+  if (!startup || typeof startup !== 'object') {
+    return null;
+  }
+
+  const name = firstNonEmpty(startup.name, startup.company_name, '');
+  const teamLabel = firstNonEmpty(
+    startup.team,
+    startup.team_size,
+    startup.employees,
+    startup.headcount,
+    startup.team_label
+  );
+  const fundraisingLabel = firstNonEmpty(
+    startup.fundraising,
+    startup.total_funding,
+    startup.total_raised,
+    startup.funding
+  );
+  const cultureLabel = firstNonEmpty(startup.culture, startup.values, startup.mission);
+  const infoLink = firstNonEmpty(
+    startup.info_link,
+    startup.profile_link,
+    startup.external_profile,
+    startup.external_profile_url
+  );
+
+  return {
+    id: startup.id,
+    name: name || 'Verified startup',
+    tagline: firstNonEmpty(startup.tagline, startup.short_description, startup.description),
+    location: firstNonEmpty(startup.location, startup.city, startup.region),
+    industry: firstNonEmpty(startup.industry, startup.vertical, startup.sector),
+    team: teamLabel,
+    fundraising: fundraisingLabel,
+    culture: cultureLabel,
+    website: firstNonEmpty(startup.website, startup.site_url, startup.url),
+    info_link: infoLink,
+    verification_status: startup.verification_status || 'unverified',
+    created_at: startup.created_at,
+  };
+};
+
 const TRANSLATIONS = {
   fr: {
     common: {
       errors: {
         unknown: 'Erreur inconnue',
       },
+      dismiss: 'Fermer la notification',
     },
     nav: {
       general: 'Général',
@@ -262,6 +463,8 @@ const TRANSLATIONS = {
       saveForLater: 'Enregistrer pour plus tard',
       savedLabel: 'Enregistré',
       applyNow: 'Postuler maintenant',
+      alreadyApplied: 'Vous avez déjà postulé pour ce poste.',
+      companyInfoLink: "Voir l’équipe et les fonds levés",
       savedHeading: 'Postes enregistrés',
       savedSubheading: 'Gardez un œil sur les opportunités à revisiter ou à candidater plus tard.',
       savedCount: '{{count}} favori{{plural}}',
@@ -299,6 +502,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Heures hebdomadaires',
         internshipLength: 'Durée du stage (mois)',
         salaryCadence: 'Rythme salarial',
+        languages: 'Langues requises',
         equity: 'Équité (%)',
         salaryRange: 'Fourchette salariale',
         salary: 'Salaire',
@@ -325,6 +529,12 @@ const TRANSLATIONS = {
           month: 'Mensuel',
           year: 'Annuel / total',
         },
+        languages: {
+          english: 'Anglais',
+          french: 'Français',
+          german: 'Allemand',
+          italian: 'Italien',
+        },
       },
       placeholders: {
         location: 'Sélectionnez une localisation en Suisse',
@@ -340,6 +550,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Utilisé pour convertir les salaires mensuels et annuels. Maximum 40 h/semaine.',
         internshipLength: 'Les stages doivent durer entre 1 et 12 mois.',
         equityRange: 'Plage autorisée : 0,1 – 100. Laissez vide si aucun.',
+        languages: 'Sélectionnez chaque langue que les candidat·e·s doivent maîtriser.',
       },
       salary: {
         toggle: 'Afficher une fourchette salariale',
@@ -384,6 +595,7 @@ const TRANSLATIONS = {
         internshipDurationTooLong: 'Les stages peuvent durer au maximum 12 mois.',
         salaryConversionFailed: 'Impossible de convertir le salaire en CHF avec ce rythme.',
         equityRange: 'L’équité doit être un nombre entre 0,1 et 100.',
+        languagesMissing: 'Sélectionnez au moins une langue demandée pour le poste.',
       },
       info: {
         partTimeAutoFullTime: 'Les postes à temps partiel dépassant 40 h/semaine passent automatiquement à temps plein.',
@@ -396,6 +608,10 @@ const TRANSLATIONS = {
       },
       toast: {
         published: 'Offre publiée avec succès !',
+      },
+      feedback: {
+        publishedFullTime:
+          'Offre publiée avec succès ! Publiée en temps plein car elle dépasse 40 heures par semaine.',
       },
       modal: {
         title: 'Publier une nouvelle offre',
@@ -524,6 +740,7 @@ const TRANSLATIONS = {
         cvRowLevelSecurity:
           'Échec du téléversement du CV : votre compte n’est pas autorisé à stocker des documents dans ce dossier. Réessayez ou mettez à jour le CV de votre profil.',
         cvUpload: 'Échec du téléversement du CV : {{message}}',
+        cvStudentOnly: 'Seuls les comptes étudiants peuvent téléverser un CV.',
         logoNoUrl: 'Le téléversement du logo n’a renvoyé aucune URL.',
         logoUpload: 'Échec du téléversement du logo : {{message}}',
       },
@@ -542,12 +759,21 @@ const TRANSLATIONS = {
         website: 'Site web',
         description: 'Description',
         logo: 'Télécharger le logo',
+        teamSize: "Taille de l’équipe",
+        fundraising: 'Montant levé',
+        infoLink: 'Lien vers plus d’infos',
       },
       placeholders: {
         registryId: 'CHE-123.456.789',
         website: 'https://',
         description:
           'Expliquez votre produit, votre traction, vos priorités de recrutement et ce que les talents apprendront.',
+        teamSize: 'ex. 12 personnes',
+        fundraising: 'CHF 2M pré-amorçage, CHF 5M série A…',
+        infoLink: 'https://linkedin.com/company/votrestartup',
+      },
+      notes: {
+        infoLink: 'Partagez une page publique avec des infos sur l’équipe ou le financement (LinkedIn, Crunchbase…).',
       },
       verification: {
         label: 'Statut de vérification :',
@@ -564,6 +790,7 @@ const TRANSLATIONS = {
         submitting: 'Envoi…',
       },
       feedback: {
+        saved: 'Enregistré avec succès ! Les mises à jour de vérification apparaîtront ici.',
         submitted: 'Profil startup envoyé. Les mises à jour de vérification apparaîtront ici.',
       },
       errors: {
@@ -647,8 +874,10 @@ const TRANSLATIONS = {
       follow: 'Suivre',
       following: 'Suivi',
       visitWebsite: 'Voir le site',
+      moreInfo: 'Plus d’infos',
       reviews: 'Avis',
       verifiedBadge: 'Vérifiée',
+      defaultName: 'Startup vérifiée',
       jobCount: {
         one: '1 poste ouvert',
         other: '{{count}} postes ouverts',
@@ -680,6 +909,29 @@ const TRANSLATIONS = {
       candidateInitialFallback: 'C',
       universityFallback: 'Université non renseignée',
       programFallback: 'Programme non renseigné',
+      threadTitle: 'Communication et planification',
+      threadEmpty: 'Aucun message pour le moment. Lancez la conversation ci-dessous.',
+      threadPlaceholder: 'Partager une mise à jour, confirmer un entretien ou ajouter une note interne…',
+      threadSubmit: 'Ajouter au fil',
+      threadTypeLabel: 'Type d’entrée',
+      threadTypes: {
+        message: 'Message',
+        interview: 'Entretien',
+        note: 'Note interne',
+      },
+      threadScheduleLabel: 'Date et heure',
+      threadScheduleHelper: 'Indiquez un créneau proposé ou confirmé.',
+      threadValidation: 'Ajoutez un message avant de l’enregistrer.',
+      threadScheduledFor: 'Prévu le {{date}}',
+      threadMessageLabel: 'Message',
+      feedback: {
+        submitted: 'Candidature envoyée ! 🎉',
+        submittedFallback:
+          'Candidature enregistrée ! 🎉 Nous la synchroniserons dès que les autorisations seront mises à jour.',
+      },
+      errors: {
+        submit: 'Impossible d’envoyer la candidature. Veuillez réessayer.',
+      },
       acknowledge:
         'En postulant, vous acceptez que la startup voie vos informations de profil, votre CV, votre lettre de motivation et votre photo de profil.',
     },
@@ -868,6 +1120,7 @@ const TRANSLATIONS = {
       errors: {
         unknown: 'Unbekannter Fehler',
       },
+      dismiss: 'Benachrichtigung schliessen',
     },
     nav: {
       general: 'Überblick',
@@ -1048,6 +1301,8 @@ const TRANSLATIONS = {
       saveForLater: 'Für später speichern',
       savedLabel: 'Gespeichert',
       applyNow: 'Jetzt bewerben',
+      alreadyApplied: 'Sie haben sich bereits auf diese Stelle beworben.',
+      companyInfoLink: 'Team- & Finanzierungsinfos ansehen',
       savedHeading: 'Gemerkte Stellen',
       savedSubheading: 'Behalten Sie spannende Optionen im Blick oder bewerben Sie sich später.',
       savedCount: '{{count}} gespeichert',
@@ -1085,6 +1340,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Wochenstunden',
         internshipLength: 'Praktikumsdauer (Monate)',
         salaryCadence: 'Gehaltsrhythmus',
+        languages: 'Erforderliche Sprachen',
         equity: 'Beteiligung (%)',
         salaryRange: 'Gehaltsband',
         salary: 'Gehalt',
@@ -1111,6 +1367,12 @@ const TRANSLATIONS = {
           month: 'Monatlich',
           year: 'Jährlich / total',
         },
+        languages: {
+          english: 'Englisch',
+          french: 'Französisch',
+          german: 'Deutsch',
+          italian: 'Italienisch',
+        },
       },
       placeholders: {
         location: 'Wählen Sie einen Standort in der Schweiz',
@@ -1126,6 +1388,7 @@ const TRANSLATIONS = {
         weeklyHours: 'Wird genutzt, um Monats- und Jahresgehälter zu berechnen. Maximal 40 Std./Woche.',
         internshipLength: 'Praktika müssen zwischen 1 und 12 Monaten dauern.',
         equityRange: 'Erlaubter Bereich: 0.1 – 100. Leer lassen, falls nicht vorhanden.',
+        languages: 'Wählen Sie alle Sprachen aus, die Bewerber:innen beherrschen sollen.',
       },
       salary: {
         toggle: 'Gehaltsband anzeigen',
@@ -1170,6 +1433,7 @@ const TRANSLATIONS = {
         internshipDurationTooLong: 'Praktika dürfen höchstens 12 Monate dauern.',
         salaryConversionFailed: 'Das Gehalt konnte mit diesem Rhythmus nicht in CHF umgerechnet werden.',
         equityRange: 'Der Beteiligungsanteil muss eine Zahl zwischen 0.1 und 100 sein.',
+        languagesMissing: 'Wählen Sie mindestens eine Sprache aus, die Bewerber:innen beherrschen sollen.',
       },
       info: {
         partTimeAutoFullTime: 'Teilzeitstellen über 40 Std./Woche werden automatisch auf Vollzeit gesetzt.',
@@ -1182,6 +1446,10 @@ const TRANSLATIONS = {
       },
       toast: {
         published: 'Stelle erfolgreich veröffentlicht!',
+      },
+      feedback: {
+        publishedFullTime:
+          'Stelle erfolgreich veröffentlicht! Als Vollzeitstelle veröffentlicht, da sie mehr als 40 Stunden pro Woche umfasst.',
       },
       modal: {
         title: 'Neue Stelle veröffentlichen',
@@ -1311,6 +1579,7 @@ const TRANSLATIONS = {
         cvRowLevelSecurity:
           'CV-Upload fehlgeschlagen: Ihr Konto darf in diesem Ordner keine Dokumente speichern. Bitte erneut versuchen oder den Profil-CV aktualisieren.',
         cvUpload: 'CV-Upload fehlgeschlagen: {{message}}',
+        cvStudentOnly: 'Nur Studierendenkonten können einen CV hochladen.',
         logoNoUrl: 'Der Logo-Upload hat keine URL zurückgegeben.',
         logoUpload: 'Logo-Upload fehlgeschlagen: {{message}}',
       },
@@ -1329,12 +1598,21 @@ const TRANSLATIONS = {
         website: 'Website',
         description: 'Beschreibung',
         logo: 'Logo hochladen',
+        teamSize: 'Teamgrösse',
+        fundraising: 'Bisherige Finanzierung',
+        infoLink: 'Link zu weiteren Infos',
       },
       placeholders: {
         registryId: 'CHE-123.456.789',
         website: 'https://',
         description:
           'Beschreiben Sie Produkt, Traction, Hiring-Fokus und was Praktikant:innen lernen werden.',
+        teamSize: 'z. B. 12 Personen',
+        fundraising: 'CHF 2 Mio. Seed, CHF 5 Mio. Serie A…',
+        infoLink: 'https://linkedin.com/company/deinstartup',
+      },
+      notes: {
+        infoLink: 'Teilen Sie eine öffentliche Seite mit Team- oder Finanzierungsinfos (LinkedIn, Crunchbase…).',
       },
       verification: {
         label: 'Verifizierungsstatus:',
@@ -1351,6 +1629,7 @@ const TRANSLATIONS = {
         submitting: 'Wird gesendet…',
       },
       feedback: {
+        saved: 'Erfolgreich gespeichert! Aktualisierungen zur Verifizierung erscheinen hier.',
         submitted: 'Startup-Profil übermittelt. Updates zur Verifizierung erscheinen hier.',
       },
       errors: {
@@ -1434,8 +1713,10 @@ const TRANSLATIONS = {
       follow: 'Folgen',
       following: 'Folgt',
       visitWebsite: 'Website besuchen',
+      moreInfo: 'Mehr über uns',
       reviews: 'Bewertungen',
       verifiedBadge: 'Verifiziert',
+      defaultName: 'Verifiziertes Start-up',
       jobCount: {
         one: '1 offene Stelle',
         other: '{{count}} offene Stellen',
@@ -1467,6 +1748,29 @@ const TRANSLATIONS = {
       candidateInitialFallback: 'K',
       universityFallback: 'Hochschule nicht angegeben',
       programFallback: 'Studiengang nicht angegeben',
+      threadTitle: 'Kommunikation & Terminplanung',
+      threadEmpty: 'Noch keine Einträge. Starten Sie das Gespräch unten.',
+      threadPlaceholder: 'Update teilen, Interview bestätigen oder interne Notiz hinzufügen…',
+      threadSubmit: 'Zum Verlauf hinzufügen',
+      threadTypeLabel: 'Eintragstyp',
+      threadTypes: {
+        message: 'Nachricht',
+        interview: 'Interview',
+        note: 'Interne Notiz',
+      },
+      threadScheduleLabel: 'Datum & Uhrzeit',
+      threadScheduleHelper: 'Schlagen Sie einen Termin vor oder bestätigen Sie ihn.',
+      threadValidation: 'Fügen Sie eine Nachricht hinzu, bevor Sie sie speichern.',
+      threadScheduledFor: 'Geplant für {{date}}',
+      threadMessageLabel: 'Nachricht',
+      feedback: {
+        submitted: 'Bewerbung versendet! 🎉',
+        submittedFallback:
+          'Bewerbung gespeichert! 🎉 Wir synchronisieren sie, sobald die Berechtigungen aktualisiert sind.',
+      },
+      errors: {
+        submit: 'Bewerbung konnte nicht gesendet werden. Bitte erneut versuchen.',
+      },
       acknowledge:
         'Mit Ihrer Bewerbung stimmen Sie zu, dass das Start-up Ihre Profilinformationen, Ihren Lebenslauf, Ihr Motivationsschreiben und Ihr Profilfoto sieht.',
     },
@@ -1999,6 +2303,23 @@ const resolveJobLanguageLabels = (job) => {
 
   candidates.forEach((value) => collectLanguageKeys(value, keys));
 
+  if (Array.isArray(job?.tags)) {
+    job.tags.forEach((tag) => {
+      if (typeof tag !== 'string') {
+        return;
+      }
+
+      if (!tag.toLowerCase().startsWith(LANGUAGE_TAG_PREFIX)) {
+        return;
+      }
+
+      const canonical = tag.slice(LANGUAGE_TAG_PREFIX.length).trim().toLowerCase();
+      if (canonical && !keys.includes(canonical)) {
+        keys.push(canonical);
+      }
+    });
+  }
+
   if (keys.length === 0 && job?.translations) {
     Object.values(job.translations).forEach((translation) => {
       if (translation && typeof translation === 'object') {
@@ -2381,6 +2702,10 @@ const SALARY_MAX_FIELDS = [
   'compensation_max',
   'pay_max',
 ];
+
+const INTERNSHIP_DURATION_FIELDS = ['internship_duration_months', 'duration_months'];
+const WEEKLY_HOURS_VALUE_FIELDS = ['weekly_hours_value', 'hours_per_week', 'hoursWeekly'];
+const WEEKLY_HOURS_LABEL_FIELDS = ['weekly_hours', 'weekly_hours_label', 'hours_week', 'work_hours', 'weeklyHours'];
 
 const EQUITY_MIN_FIELDS = [
   'equity_min',
@@ -3074,6 +3399,52 @@ const computeSalaryRange = (job) => {
   return [Math.round(min), Math.round(max)];
 };
 
+const detectMissingColumn = (message, tableName = '') => {
+  if (typeof message !== 'string') {
+    return null;
+  }
+
+  const normalizedTable = tableName ? tableName.replace(/["'`]/g, '') : '';
+
+  const tableSpecificPatterns = normalizedTable
+    ? [
+        new RegExp(`column "([^"\\s]+)" of relation "${normalizedTable}" does not exist`, 'i'),
+        new RegExp(`could not find the '([^']+)' column of '${normalizedTable}'`, 'i'),
+        new RegExp(`'([^']+)' column of '${normalizedTable}'`, 'i'),
+        new RegExp(`column "([^"\\s]+)" of table "${normalizedTable}" does not exist`, 'i'),
+      ]
+    : [];
+
+  const genericPatterns = [
+    /missing column "?([^\s"']+)"?/i,
+    /unknown column "?([^\s"']+)"?/i,
+  ];
+
+  for (const pattern of [...tableSpecificPatterns, ...genericPatterns]) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+};
+
+const deriveColumnPresence = (records) => {
+  if (!Array.isArray(records)) {
+    return {};
+  }
+
+  return records.reduce((accumulator, record) => {
+    if (record && typeof record === 'object' && !Array.isArray(record)) {
+      Object.keys(record).forEach((key) => {
+        accumulator[key] = true;
+      });
+    }
+    return accumulator;
+  }, {});
+};
+
 const deriveSalaryBoundsFromJobs = (jobs) => {
   let min = Infinity;
   let max = 0;
@@ -3359,9 +3730,43 @@ const SwissStartupConnect = () => {
   const [equityMin, equityMax] = equityRange;
 
   const [jobs, setJobs] = useState(mockJobs);
+  const [jobColumnPresence, setJobColumnPresence] = useState(() => deriveColumnPresence(mockJobs));
+  const [applicationColumnPresence, setApplicationColumnPresence] = useState({});
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const upsertCompanyFromStartup = useCallback(
+    (startupRecord) => {
+      const mapped = mapStartupToCompany(startupRecord);
+      if (!mapped || !mapped.name) {
+        return;
+      }
+
+      const idKey = mapped.id != null ? String(mapped.id) : '';
+      const nameKey = mapped.name ? mapped.name.trim().toLowerCase() : '';
+
+      setCompanies((previous) => {
+        let replaced = false;
+        const next = previous.map((company) => {
+          const companyIdKey = company?.id != null ? String(company.id) : '';
+          const companyNameKey =
+            typeof company?.name === 'string' ? company.name.trim().toLowerCase() : '';
+          if ((idKey && companyIdKey === idKey) || (nameKey && companyNameKey === nameKey)) {
+            replaced = true;
+            return { ...company, ...mapped };
+          }
+          return company;
+        });
+
+        if (!replaced) {
+          next.push(mapped);
+        }
+
+        return next;
+      });
+    },
+    [setCompanies]
+  );
   const [jobSort, setJobSort] = useState('recent');
   const jobSortOptions = useMemo(
     () => [
@@ -3396,9 +3801,24 @@ const SwissStartupConnect = () => {
   const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
-    const stored = window.localStorage.getItem('ssc_applied_jobs');
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = window.localStorage.getItem('ssc_applied_jobs');
+      return sanitizeIdArray(stored ? JSON.parse(stored) : []);
+    } catch (error) {
+      console.error('Failed to parse applied jobs', error);
+      return [];
+    }
   });
+  const appliedJobSet = useMemo(() => {
+    const entries = new Set();
+    appliedJobs.forEach((id) => {
+      const key = getJobIdKey(id);
+      if (key) {
+        entries.add(key);
+      }
+    });
+    return entries;
+  }, [appliedJobs]);
   const [authLoading, setAuthLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(true);
 
@@ -3415,6 +3835,7 @@ const SwissStartupConnect = () => {
     avatar_url: '',
     cv_public: false,
   });
+  const [profileColumnPresence, setProfileColumnPresence] = useState({});
   const [profileSaving, setProfileSaving] = useState(false);
 
   const [startupProfile, setStartupProfile] = useState(null);
@@ -3427,7 +3848,11 @@ const SwissStartupConnect = () => {
     logo_url: '',
     verification_status: 'unverified',
     verification_note: '',
+    team_size: '',
+    fundraising: '',
+    info_link: '',
   });
+  const [startupColumnPresence, setStartupColumnPresence] = useState({});
   const [startupSaving, setStartupSaving] = useState(false);
 
   const [resourceModal, setResourceModal] = useState(null);
@@ -3450,6 +3875,22 @@ const SwissStartupConnect = () => {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
   const [applicationsVersion, setApplicationsVersion] = useState(0);
+  const [applicationThreads, setApplicationThreads] = useState(() => {
+    if (typeof window === 'undefined') {
+      return {};
+    }
+    try {
+      const stored = window.localStorage.getItem(APPLICATION_THREAD_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('Failed to parse application threads', error);
+      return {};
+    }
+  });
+  const [applicationThreadDrafts, setApplicationThreadDrafts] = useState({});
+  const [applicationThreadTypeDrafts, setApplicationThreadTypeDrafts] = useState({});
+  const [applicationThreadScheduleDrafts, setApplicationThreadScheduleDrafts] = useState({});
+  const [applicationThreadErrors, setApplicationThreadErrors] = useState({});
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -3471,6 +3912,8 @@ const SwissStartupConnect = () => {
       localizedLanguages: getJobLanguages(selectedJob),
     };
   }, [selectedJob, getJobLanguages, getLocalizedJobList, getLocalizedJobText]);
+  const selectedJobIdKey = getJobIdKey(selectedJob?.id);
+  const selectedJobApplied = selectedJobIdKey ? appliedJobSet.has(selectedJobIdKey) : false;
 
   const localizedApplicationModal = useMemo(() => {
     if (!applicationModal) {
@@ -3517,6 +3960,7 @@ const SwissStartupConnect = () => {
     salary_max: '',
     salary_cadence: '',
     salary_is_bracket: false,
+    language_requirements: [],
     equity: '',
     description: '',
     requirements: '',
@@ -3596,6 +4040,21 @@ const SwissStartupConnect = () => {
   }, [user?.email]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    try {
+      window.localStorage.setItem(
+        APPLICATION_THREAD_STORAGE_KEY,
+        JSON.stringify(applicationThreads)
+      );
+    } catch (error) {
+      console.error('Failed to persist application threads', error);
+    }
+    return undefined;
+  }, [applicationThreads]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (actionsRef.current && !actionsRef.current.contains(event.target)) {
         setShowUserMenu(false);
@@ -3646,7 +4105,7 @@ const SwissStartupConnect = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(appliedJobs));
+    window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(sanitizeIdArray(appliedJobs)));
   }, [appliedJobs]);
 
   const loadProfile = useCallback(
@@ -3656,6 +4115,53 @@ const SwissStartupConnect = () => {
         return;
       }
 
+      const applyProfileState = (profileRecord, options = {}) => {
+        if (!profileRecord) {
+          return;
+        }
+
+        const isStudentProfile = supabaseUser.type === 'student';
+        const normalized = isStudentProfile
+          ? profileRecord
+          : { ...profileRecord, cv_url: null, cv_public: false };
+
+        const profileId =
+          normalized.id ||
+          profileRecord.id ||
+          normalized.user_id ||
+          profileRecord.user_id ||
+          supabaseUser.id;
+
+        const sanitizedProfile = {
+          ...normalized,
+          id: profileId,
+          user_id: supabaseUser.id,
+          type: supabaseUser.type,
+        };
+
+        if (options.updatePresence !== false) {
+          setProfileColumnPresence((previous) => ({
+            ...previous,
+            ...deriveColumnPresence([sanitizedProfile]),
+          }));
+        }
+
+        writeCachedProfile(supabaseUser.id, sanitizedProfile);
+
+        setProfile(sanitizedProfile);
+        setProfileForm({
+          full_name: sanitizedProfile.full_name || supabaseUser.name,
+          university: sanitizedProfile.university || '',
+          program: sanitizedProfile.program || '',
+          experience: sanitizedProfile.experience || '',
+          bio: sanitizedProfile.bio || '',
+          portfolio_url: sanitizedProfile.portfolio_url || '',
+          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+          avatar_url: sanitizedProfile.avatar_url || '',
+          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
+        });
+      };
+
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -3664,7 +4170,20 @@ const SwissStartupConnect = () => {
           .single();
 
         if (error && error.code !== 'PGRST116') {
+          const message = error.message?.toLowerCase?.() || '';
+          if (message.includes('row-level security')) {
+            const cachedProfile = readCachedProfile(supabaseUser.id);
+            if (cachedProfile) {
+              applyProfileState(cachedProfile, { updatePresence: false });
+              return;
+            }
+          }
+
           console.error('Profile fetch error', error);
+          const cachedProfile = readCachedProfile(supabaseUser.id);
+          if (cachedProfile) {
+            applyProfileState(cachedProfile, { updatePresence: false });
+          }
           return;
         }
 
@@ -3673,16 +4192,8 @@ const SwissStartupConnect = () => {
         if (!profileRecord) {
           const baseProfile = {
             user_id: supabaseUser.id,
-            full_name: supabaseUser.name,
+            full_name: supabaseUser.name || '',
             type: supabaseUser.type,
-            university: '',
-            program: '',
-            experience: '',
-            bio: '',
-            portfolio_url: '',
-            cv_url: '',
-            avatar_url: '',
-            cv_public: false,
           };
 
           const { data: inserted, error: insertError } = await supabase
@@ -3692,92 +4203,136 @@ const SwissStartupConnect = () => {
             .single();
 
           if (insertError) {
+            const message = insertError.message?.toLowerCase?.() || '';
+            if (message.includes('row-level security')) {
+              const cachedProfile = readCachedProfile(supabaseUser.id);
+              if (cachedProfile) {
+                applyProfileState(cachedProfile, { updatePresence: false });
+                return;
+              }
+
+              applyProfileState({ ...baseProfile, id: supabaseUser.id }, { updatePresence: false });
+              return;
+            }
+
             console.error('Profile insert error', insertError);
+            const cachedProfile = readCachedProfile(supabaseUser.id);
+            if (cachedProfile) {
+              applyProfileState(cachedProfile, { updatePresence: false });
+            }
             return;
           }
 
           profileRecord = inserted;
         }
 
-        setProfile(profileRecord);
-        setProfileForm({
-          full_name: profileRecord.full_name || supabaseUser.name,
-          university: profileRecord.university || '',
-          program: profileRecord.program || '',
-          experience: profileRecord.experience || '',
-          bio: profileRecord.bio || '',
-          portfolio_url: profileRecord.portfolio_url || '',
-          cv_url: profileRecord.cv_url || '',
-          avatar_url: profileRecord.avatar_url || '',
-          cv_public: !!profileRecord.cv_public,
-        });
+        applyProfileState(profileRecord);
       } catch (error) {
         console.error('Profile load error', error);
+        const cachedProfile = readCachedProfile(supabaseUser.id);
+        if (cachedProfile) {
+          applyProfileState(cachedProfile, { updatePresence: false });
+        }
       }
     },
     []
   );
 
-  const loadStartupProfile = useCallback(async (supabaseUser) => {
-    if (!supabaseUser || supabaseUser.type !== 'startup') {
-      setStartupProfile(null);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('startups')
-        .select('*')
-        .eq('owner_id', supabaseUser.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Startup fetch error', error);
+  const loadStartupProfile = useCallback(
+    async (supabaseUser) => {
+      if (!supabaseUser || supabaseUser.type !== 'startup') {
+        setStartupProfile(null);
+        setStartupColumnPresence({});
         return;
       }
 
-      let startupRecord = data;
-
-      if (!startupRecord) {
-        const baseStartup = {
-          owner_id: supabaseUser.id,
-          name: supabaseUser.name,
-          registry_number: '',
-          description: '',
-          website: '',
-          logo_url: '',
-          verification_status: 'unverified',
-          verification_note: '',
-        };
-
-        const { data: inserted, error: insertError } = await supabase
+      try {
+        const { data, error } = await supabase
           .from('startups')
-          .insert(baseStartup)
           .select('*')
+          .eq('owner_id', supabaseUser.id)
           .single();
 
-        if (insertError) {
-          console.error('Startup insert error', insertError);
+        if (error && error.code !== 'PGRST116') {
+          console.error('Startup fetch error', error);
           return;
         }
 
-        startupRecord = inserted;
-      }
+        let startupRecord = data;
 
-      setStartupProfile(startupRecord);
-      setStartupForm({
-        name: startupRecord.name || supabaseUser.name,
-        registry_number: startupRecord.registry_number || '',
-        description: startupRecord.description || '',
-        website: startupRecord.website || '',
-        logo_url: startupRecord.logo_url || '',
-        verification_status: startupRecord.verification_status || 'unverified',
-        verification_note: startupRecord.verification_note || '',
-      });
-    } catch (error) {
-      console.error('Startup load error', error);
-    }
-  }, []);
+        if (!startupRecord) {
+          const baseStartup = {
+            owner_id: supabaseUser.id,
+            name: supabaseUser.name,
+            registry_number: '',
+            description: '',
+            website: '',
+            logo_url: '',
+            verification_status: 'unverified',
+            verification_note: '',
+          };
+
+          const { data: inserted, error: insertError } = await supabase
+            .from('startups')
+            .insert(baseStartup)
+            .select('*')
+            .single();
+
+          if (insertError) {
+            console.error('Startup insert error', insertError);
+            return;
+          }
+
+          startupRecord = inserted;
+        }
+
+        if (startupRecord) {
+          setStartupColumnPresence((previous) => ({
+            ...previous,
+            ...deriveColumnPresence([startupRecord]),
+          }));
+        }
+
+        setStartupProfile(startupRecord);
+        upsertCompanyFromStartup(startupRecord);
+
+        const teamSizeValue = firstNonEmpty(
+          startupRecord.team,
+          startupRecord.team_size,
+          startupRecord.employees,
+          startupRecord.headcount
+        );
+        const fundraisingValue = firstNonEmpty(
+          startupRecord.fundraising,
+          startupRecord.total_funding,
+          startupRecord.total_raised,
+          startupRecord.funding
+        );
+        const infoLinkValue = firstNonEmpty(
+          startupRecord.info_link,
+          startupRecord.profile_link,
+          startupRecord.external_profile,
+          startupRecord.external_profile_url
+        );
+
+        setStartupForm({
+          name: startupRecord.name || supabaseUser.name,
+          registry_number: startupRecord.registry_number || '',
+          description: startupRecord.description || '',
+          website: startupRecord.website || '',
+          logo_url: startupRecord.logo_url || '',
+          verification_status: startupRecord.verification_status || 'unverified',
+          verification_note: startupRecord.verification_note || '',
+          team_size: teamSizeValue || '',
+          fundraising: fundraisingValue || '',
+          info_link: infoLinkValue || '',
+        });
+      } catch (error) {
+        console.error('Startup load error', error);
+      }
+    },
+    [upsertCompanyFromStartup]
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -3794,6 +4349,7 @@ const SwissStartupConnect = () => {
         if (error) {
           console.info('Falling back to mock jobs', error.message);
           setJobs(mockJobs);
+          setJobColumnPresence(deriveColumnPresence(mockJobs));
         } else if (data && data.length > 0) {
           const mapped = data.map((job) => ({
             ...job,
@@ -3804,13 +4360,18 @@ const SwissStartupConnect = () => {
             posted: job.posted || 'Recently posted',
             motivational_letter_required: job.motivational_letter_required ?? false,
           }));
-          setJobs(mapped);
+          const supabaseIds = new Set(mapped.map((job) => job.id));
+          const mergedJobs = [...mapped, ...mockJobs.filter((job) => !supabaseIds.has(job.id))];
+          setJobs(mergedJobs);
+          setJobColumnPresence(deriveColumnPresence(data));
         } else {
           setJobs(mockJobs);
+          setJobColumnPresence(deriveColumnPresence(mockJobs));
         }
       } catch (error) {
         console.error('Job load error', error);
         setJobs(mockJobs);
+        setJobColumnPresence(deriveColumnPresence(mockJobs));
       } finally {
         setJobsLoading(false);
       }
@@ -3829,31 +4390,20 @@ const SwissStartupConnect = () => {
           console.info('Falling back to mock companies', error.message);
           setCompanies(mockCompanies);
         } else if (data && data.length > 0) {
-          setCompanies(
-            data.map((company) => ({
-              id: company.id,
-              name: company.name,
-              tagline: company.tagline,
-              location: company.location,
-              industry: company.industry,
-              team:
-                company.team ||
-                company.team_size ||
-                company.employees ||
-                company.headcount ||
-                '',
-              fundraising:
-                company.fundraising ||
-                company.total_funding ||
-                company.total_raised ||
-                company.funding ||
-                '',
-              culture: company.culture,
-              website: company.website,
-              verification_status: company.verification_status || 'unverified',
-              created_at: company.created_at,
-            }))
+          const mapped = data.map((company) => mapStartupToCompany(company)).filter(Boolean);
+          const supabaseIds = new Set(
+            mapped
+              .map((company) => (company.id != null ? String(company.id) : ''))
+              .filter(Boolean)
           );
+          const merged = [
+            ...mapped,
+            ...mockCompanies.filter((company) => {
+              const idKey = company.id != null ? String(company.id) : '';
+              return idKey ? !supabaseIds.has(idKey) : true;
+            }),
+          ];
+          setCompanies(merged);
         } else {
           setCompanies(mockCompanies);
         }
@@ -3877,26 +4427,63 @@ const SwissStartupConnect = () => {
 
       setApplicationsLoading(true);
       try {
-        let query = supabase
-          .from('job_applications')
-          .select(
-            `id, status, motivational_letter, created_at, cv_override_url,
-             profiles ( id, full_name, university, program, avatar_url, cv_url ),
-             jobs ( id, title, company_name, startup_id )`
-          )
-          .order('created_at', { ascending: false });
-
-        if (startupProfile?.id) {
-          query = query.eq('jobs.startup_id', startupProfile.id);
+        const baseColumns = ['id', 'status', 'motivational_letter', 'created_at'];
+        if (applicationColumnPresence.acknowledged !== false) {
+          baseColumns.push('acknowledged');
+        }
+        if (applicationColumnPresence.cv_override_url !== false) {
+          baseColumns.push('cv_override_url');
         }
 
-        const { data, error } = await query;
+        let columnsToRequest = [...baseColumns];
+        let fetchedApplications = [];
+        let fetchError = null;
 
-        if (!error && data) {
-          setApplications(data);
-        } else if (error) {
-          console.error('Applications load error', error);
+        while (columnsToRequest.length > 0) {
+          const selectColumns = `${columnsToRequest.join(', ')}, profiles ( id, full_name, university, program, avatar_url, cv_url ), jobs ( id, title, company_name, startup_id )`;
+          let query = supabase
+            .from('job_applications')
+            .select(selectColumns)
+            .order('created_at', { ascending: false });
+
+          if (startupProfile?.id) {
+            query = query.eq('jobs.startup_id', startupProfile.id);
+          }
+
+          const { data, error } = await query;
+
+          if (!error) {
+            fetchedApplications = Array.isArray(data) ? data : [];
+            fetchError = null;
+            break;
+          }
+
+          fetchError = error;
+          const missingColumn = detectMissingColumn(error.message, 'job_applications');
+          if (!missingColumn || !columnsToRequest.includes(missingColumn)) {
+            break;
+          }
+
+          columnsToRequest = columnsToRequest.filter((column) => column !== missingColumn);
+          setApplicationColumnPresence((previous) => ({ ...previous, [missingColumn]: false }));
+        }
+
+        if (fetchError) {
+          console.error('Applications load error', fetchError);
           setApplications([]);
+        } else {
+          setApplications(fetchedApplications);
+          setApplicationColumnPresence((previous) => {
+            const next = { ...previous };
+            columnsToRequest.forEach((column) => {
+              next[column] = true;
+            });
+            const derived = deriveColumnPresence(fetchedApplications);
+            Object.keys(derived).forEach((column) => {
+              next[column] = true;
+            });
+            return next;
+          });
         }
       } catch (error) {
         console.error('Applications load error', error);
@@ -4245,9 +4832,16 @@ const SwissStartupConnect = () => {
         company.total_raised ||
         company.funding ||
         '';
+      const infoLinkLabel =
+        company.info_link ||
+        company.profile_link ||
+        company.external_profile ||
+        company.external_profile_url ||
+        '';
       const meta = {
         team: teamLabel ? String(teamLabel) : '',
         fundraising: fundraisingLabel ? String(fundraisingLabel) : '',
+        infoLink: infoLinkLabel ? String(infoLinkLabel) : '',
       };
 
       if (company.id != null) {
@@ -4360,6 +4954,14 @@ const SwissStartupConnect = () => {
           job.total_raised ||
           job.funding ||
           companyMeta.fundraising ||
+          '',
+        company_info_link:
+          job.company_info_link ||
+          job.info_link ||
+          job.profile_link ||
+          job.external_profile ||
+          job.external_profile_url ||
+          companyMeta.infoLink ||
           '',
       };
     });
@@ -4715,13 +5317,113 @@ const SwissStartupConnect = () => {
   const companyJobCounts = useMemo(() => {
     const map = {};
     normalizedJobs.forEach((job) => {
-      const key = String(job.startup_id || job.company_name || '');
-      if (!key) return;
-      if (!map[key]) map[key] = 0;
-      map[key] += 1;
+      const idKey = job.startup_id != null ? String(job.startup_id) : '';
+      const name = job.company_name?.trim();
+      const nameKey = name ? name.toLowerCase() : '';
+
+      if (idKey) {
+        map[idKey] = (map[idKey] || 0) + 1;
+      }
+
+      if (nameKey) {
+        map[nameKey] = (map[nameKey] || 0) + 1;
+      }
     });
     return map;
   }, [normalizedJobs]);
+
+  const augmentedCompanies = useMemo(() => {
+    if (normalizedJobs.length === 0) {
+      return companies;
+    }
+
+    const seenIds = new Set();
+    const seenNames = new Set();
+
+    companies.forEach((company) => {
+      const idKey = company?.id != null ? String(company.id) : '';
+      if (idKey) {
+        seenIds.add(idKey);
+      }
+
+      const nameKey =
+        typeof company?.name === 'string' ? company.name.trim().toLowerCase() : '';
+      if (nameKey) {
+        seenNames.add(nameKey);
+      }
+    });
+
+    const derived = new Map();
+
+    normalizedJobs.forEach((job) => {
+      const idKey = job.startup_id != null ? String(job.startup_id) : '';
+      const name = job.company_name?.trim();
+      const nameKey = name ? name.toLowerCase() : '';
+
+      if ((idKey && seenIds.has(idKey)) || (nameKey && seenNames.has(nameKey))) {
+        return;
+      }
+
+      if (!idKey && !nameKey) {
+        return;
+      }
+
+      const derivedKey = idKey || nameKey;
+      const previous = derived.get(derivedKey) || {
+        id: idKey || undefined,
+        name: name || translate('companies.defaultName', 'Verified startup'),
+        tagline: '',
+        location: '',
+        industry: '',
+        team: '',
+        fundraising: '',
+        culture: '',
+        website: '',
+        info_link: '',
+        verification_status: 'unverified',
+        created_at: job.created_at,
+      };
+
+      derived.set(derivedKey, {
+        ...previous,
+        tagline: previous.tagline || job.title || job.description || '',
+        location: previous.location || job.location || '',
+        industry: previous.industry || job.industry || job.sector || '',
+        team:
+          previous.team ||
+          job.company_team ||
+          job.team ||
+          job.team_size ||
+          job.employees ||
+          '',
+        fundraising:
+          previous.fundraising ||
+          job.company_fundraising ||
+          job.fundraising ||
+          job.total_funding ||
+          job.total_raised ||
+          job.funding ||
+          '',
+        culture: previous.culture || job.company_culture || job.culture || '',
+        website: previous.website || job.company_website || job.website || '',
+        info_link:
+          previous.info_link ||
+          job.company_info_link ||
+          job.info_link ||
+          job.profile_link ||
+          job.external_profile ||
+          job.external_profile_url ||
+          '',
+        created_at: previous.created_at || job.created_at,
+      });
+    });
+
+    if (derived.size === 0) {
+      return companies;
+    }
+
+    return [...companies, ...derived.values()];
+  }, [companies, normalizedJobs, translate]);
 
   const isStartupVerified = startupProfile?.verification_status === 'verified';
   const startupId = startupProfile?.id ? String(startupProfile.id) : null;
@@ -4942,6 +5644,15 @@ const SwissStartupConnect = () => {
       return;
     }
 
+    const jobIdKey = getJobIdKey(job.id);
+    if (jobIdKey && appliedJobSet.has(jobIdKey)) {
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.alreadyApplied', 'You already applied to this role.'),
+      });
+      return;
+    }
+
     setApplicationModal(job);
     setAcknowledgeShare(false);
     setMotivationalLetterUrl('');
@@ -5069,61 +5780,162 @@ const SwissStartupConnect = () => {
 
     setProfileSaving(true);
     try {
-      const updates = {
+      const isStudentProfile = user.type === 'student';
+      const trimmedFullName = profileForm.full_name?.trim?.() ?? '';
+      const trimmedUniversity = profileForm.university?.trim?.() ?? '';
+      const trimmedProgram = profileForm.program?.trim?.() ?? '';
+      const trimmedExperience = profileForm.experience?.trim?.() ?? '';
+      const trimmedBio = profileForm.bio?.trim?.() ?? '';
+      const trimmedPortfolio = profileForm.portfolio_url?.trim?.() ?? '';
+
+      const plannedUpdates = {
         user_id: user.id,
-        full_name: profileForm.full_name,
-        university: profileForm.university,
-        program: profileForm.program,
-        experience: profileForm.experience,
-        bio: profileForm.bio,
-        portfolio_url: profileForm.portfolio_url,
-        cv_url: profileForm.cv_url,
-        avatar_url: profileForm.avatar_url,
         type: user.type,
-        cv_public: profileForm.cv_public,
+        full_name: trimmedFullName,
+        university: trimmedUniversity,
+        program: trimmedProgram,
+        experience: trimmedExperience,
+        bio: trimmedBio,
+        portfolio_url: trimmedPortfolio,
+        avatar_url: profileForm.avatar_url || null,
       };
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(updates, { onConflict: 'user_id' })
-        .select('*')
-        .single();
-
-      if (error) {
-        const rawMessage = error?.message?.trim?.();
-        const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
-        setFeedback({
-          type: 'error',
-          message: translate('profileModal.errors.save', 'Could not save profile: {{message}}', {
-            message,
-          }),
-        });
+      if (isStudentProfile) {
+        plannedUpdates.cv_url = profileForm.cv_url || null;
+        if (profileColumnPresence.cv_public !== false) {
+          plannedUpdates.cv_public = profileForm.cv_public;
+        }
       } else {
-        const mergedProfile = data
-          ? { ...(profile ?? {}), ...data }
-          : { ...(profile ?? {}), ...updates };
+        if (profileColumnPresence.cv_url !== false) {
+          plannedUpdates.cv_url = null;
+        }
+        if (profileColumnPresence.cv_public !== false) {
+          plannedUpdates.cv_public = false;
+        }
+      }
 
-        setProfile(mergedProfile);
-        setProfileForm({
-          full_name: mergedProfile.full_name || '',
-          university: mergedProfile.university || '',
-          program: mergedProfile.program || '',
-          experience: mergedProfile.experience || '',
-          bio: mergedProfile.bio || '',
-          portfolio_url: mergedProfile.portfolio_url || '',
-          cv_url: mergedProfile.cv_url || '',
-          avatar_url: mergedProfile.avatar_url || '',
-          cv_public: !!mergedProfile.cv_public,
-        });
+      const filterUnsupportedColumns = (payload) =>
+        Object.entries(payload).reduce((accumulator, [key, value]) => {
+          if (profileColumnPresence[key] === false) {
+            return accumulator;
+          }
+          if (value === undefined) {
+            return accumulator;
+          }
+          accumulator[key] = value;
+          return accumulator;
+        }, {});
+
+      let attemptPayload = filterUnsupportedColumns(plannedUpdates);
+
+      if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'user_id')) {
+        attemptPayload.user_id = user.id;
+      }
+
+      let upsertedProfile = null;
+      let cachedFallbackProfile = null;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert(attemptPayload, { onConflict: 'user_id' })
+          .select('*')
+          .single();
+
+        if (!error) {
+          upsertedProfile = data;
+          setProfileColumnPresence((previous) => {
+            const next = { ...previous };
+            Object.keys(attemptPayload).forEach((key) => {
+              next[key] = true;
+            });
+            return next;
+          });
+          break;
+        }
+
+        const missingColumn = detectMissingColumn(error.message, 'profiles');
+        if (!missingColumn) {
+          const message = error.message?.toLowerCase?.() || '';
+          if (message.includes('row-level security')) {
+            cachedFallbackProfile = {
+              ...(profile ?? {}),
+              ...attemptPayload,
+              user_id: user.id,
+            };
+            if (!cachedFallbackProfile.id) {
+              cachedFallbackProfile.id = profile?.id || profile?.user_id || user.id;
+            }
+            break;
+          }
+          throw error;
+        }
+
+        setProfileColumnPresence((previous) => ({ ...previous, [missingColumn]: false }));
+
+        if (missingColumn === 'cv_public') {
+          setProfileForm((prev) => ({ ...prev, cv_public: false }));
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)) {
+          throw error;
+        }
+
+        const { [missingColumn]: _omitted, ...rest } = attemptPayload;
+        attemptPayload = rest;
+
+        if (!Object.keys(attemptPayload).length) {
+          throw error;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'user_id')) {
+          attemptPayload.user_id = user.id;
+        }
+      }
+
+      const supportsCvVisibility =
+        isStudentProfile && Object.prototype.hasOwnProperty.call(attemptPayload, 'cv_public');
+
+      const mergedProfile = upsertedProfile
+        ? { ...(profile ?? {}), ...upsertedProfile }
+        : cachedFallbackProfile
+          ? { ...cachedFallbackProfile }
+          : { ...(profile ?? {}), ...attemptPayload };
+
+      if (!mergedProfile.id) {
+        mergedProfile.id = profile?.id || profile?.user_id || user.id;
+      }
+      mergedProfile.user_id = user.id;
+      mergedProfile.type = user.type;
+
+      const sanitizedProfile = isStudentProfile
+        ? mergedProfile
+        : { ...mergedProfile, cv_url: null, cv_public: false };
+
+      setProfile(sanitizedProfile);
+      setProfileForm({
+        full_name: sanitizedProfile.full_name || '',
+        university: sanitizedProfile.university || '',
+        program: sanitizedProfile.program || '',
+        experience: sanitizedProfile.experience || '',
+        bio: sanitizedProfile.bio || '',
+        portfolio_url: sanitizedProfile.portfolio_url || '',
+        cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+        avatar_url: sanitizedProfile.avatar_url || '',
+        cv_public: supportsCvVisibility ? !!sanitizedProfile.cv_public : false,
+      });
+      writeCachedProfile(user.id, sanitizedProfile);
+      if (!cachedFallbackProfile) {
         await loadProfile({
           id: user.id,
           name: user.name,
           type: user.type,
         });
-        showToast(translate('toasts.saved', 'Saved successfully!'));
-        clearFeedback();
-        setProfileModalOpen(false);
       }
+      const savedMessage = translate('toasts.saved', 'Saved successfully!');
+      showToast(savedMessage);
+      clearFeedback();
+      setProfileModalOpen(false);
     } catch (error) {
       const rawMessage = error?.message?.trim?.();
       const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
@@ -5144,42 +5956,210 @@ const SwissStartupConnect = () => {
 
     setStartupSaving(true);
     try {
-      const updates = {
-        owner_id: user.id,
-        name: startupForm.name,
-        registry_number: startupForm.registry_number,
-        description: startupForm.description,
-        website: startupForm.website,
-        logo_url: startupForm.logo_url,
+      const trimmedName = startupForm.name?.trim?.() || user.name || '';
+      const trimmedRegistry = startupForm.registry_number?.trim?.() ?? '';
+      const trimmedDescription = startupForm.description?.trim?.() ?? '';
+      const trimmedWebsite = startupForm.website?.trim?.() ?? '';
+      const trimmedLogo = startupForm.logo_url?.trim?.() ?? '';
+      const trimmedTeam = startupForm.team_size?.trim?.() ?? '';
+      const trimmedFundraising = startupForm.fundraising?.trim?.() ?? '';
+      const trimmedInfoLink = startupForm.info_link?.trim?.() ?? '';
+
+      const basePayload = { owner_id: user.id };
+      const assignBaseField = (key, value) => {
+        if (value === undefined) {
+          return;
+        }
+        if (key !== 'owner_id' && startupColumnPresence[key] === false) {
+          return;
+        }
+        basePayload[key] = value;
       };
 
-      const { data, error } = await supabase
-        .from('startups')
-        .upsert(updates, { onConflict: 'owner_id' })
-        .select('*')
-        .single();
+      assignBaseField('name', trimmedName);
+      assignBaseField('registry_number', trimmedRegistry || null);
+      assignBaseField('description', trimmedDescription || null);
+      assignBaseField('website', trimmedWebsite || null);
+      assignBaseField('logo_url', trimmedLogo || null);
 
-      if (error) {
-        const rawMessage = error?.message?.trim?.();
-        const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
-        setFeedback({
-          type: 'error',
-          message: translate('startupModal.errors.save', 'Could not save startup profile: {{message}}', {
-            message,
-          }),
-        });
-      } else {
-        setStartupProfile(data);
-        showToast(translate('toasts.saved', 'Saved successfully!'));
-        setFeedback({
-          type: 'info',
-          message: translate(
-            'startupModal.feedback.submitted',
-            'Startup profile submitted. Verification updates will appear here.'
-          ),
-        });
-        setStartupModalOpen(false);
+      const dynamicAssignments = [];
+      const registerDynamicField = (keys, rawValue) => {
+        if (!Array.isArray(keys) || keys.length === 0) {
+          return;
+        }
+        const normalizedKeys = keys.filter(Boolean);
+        if (normalizedKeys.length === 0) {
+          return;
+        }
+
+        const trimmedValue = rawValue?.trim?.() ?? '';
+        const value = trimmedValue || null;
+
+        let selectedIndex = normalizedKeys.findIndex((key) => startupColumnPresence[key] === true);
+        if (selectedIndex === -1) {
+          selectedIndex = normalizedKeys.findIndex((key) => startupColumnPresence[key] !== false);
+        }
+
+        if (selectedIndex === -1) {
+          return;
+        }
+
+        const currentKey = normalizedKeys[selectedIndex];
+        basePayload[currentKey] = value;
+        dynamicAssignments.push({ keys: normalizedKeys, selectedIndex, currentKey, value });
+      };
+
+      registerDynamicField(STARTUP_TEAM_FIELDS, trimmedTeam);
+      registerDynamicField(STARTUP_FUNDRAISING_FIELDS, trimmedFundraising);
+      registerDynamicField(STARTUP_INFO_FIELDS, trimmedInfoLink);
+
+      let attemptPayload = { ...basePayload };
+      if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'owner_id')) {
+        attemptPayload.owner_id = user.id;
       }
+      const removedColumns = new Set();
+      let finalPayload = attemptPayload;
+      let upsertedStartup = null;
+
+      const markColumnMissing = (column) => {
+        removedColumns.add(column);
+        setStartupColumnPresence((previous) => ({ ...previous, [column]: false }));
+      };
+
+      const handleMissingColumn = (column) => {
+        if (!column) {
+          return;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(attemptPayload, column)) {
+          const { [column]: _omitted, ...rest } = attemptPayload;
+          attemptPayload = rest;
+        }
+
+        const assignment = dynamicAssignments.find((entry) => entry.keys.includes(column));
+        markColumnMissing(column);
+
+        if (!assignment || assignment.currentKey !== column) {
+          return;
+        }
+
+        for (let index = assignment.selectedIndex + 1; index < assignment.keys.length; index += 1) {
+          const nextKey = assignment.keys[index];
+          if (removedColumns.has(nextKey)) {
+            continue;
+          }
+          if (startupColumnPresence[nextKey] === false) {
+            continue;
+          }
+          attemptPayload[nextKey] = assignment.value;
+          assignment.selectedIndex = index;
+          assignment.currentKey = nextKey;
+          return;
+        }
+
+        assignment.exhausted = true;
+      };
+
+      while (Object.keys(attemptPayload).length > 0) {
+        const { data, error } = await supabase
+          .from('startups')
+          .upsert(attemptPayload, { onConflict: 'owner_id' })
+          .select('*')
+          .single();
+
+        if (!error) {
+          upsertedStartup = data;
+          finalPayload = attemptPayload;
+          break;
+        }
+
+        const missingColumn = detectMissingColumn(error.message, 'startups');
+        if (!missingColumn) {
+          throw error;
+        }
+
+        if (
+          removedColumns.has(missingColumn) &&
+          !Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)
+        ) {
+          throw error;
+        }
+
+        handleMissingColumn(missingColumn);
+
+        if (Object.keys(attemptPayload).length === 0) {
+          throw error;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'owner_id')) {
+          attemptPayload.owner_id = user.id;
+        }
+      }
+
+      if (!upsertedStartup) {
+        throw new Error(translate('common.errors.unknown', 'Unknown error'));
+      }
+
+      setStartupColumnPresence((previous) => {
+        const next = { ...previous };
+        Object.keys(finalPayload || {}).forEach((column) => {
+          next[column] = true;
+        });
+        dynamicAssignments.forEach((assignment) => {
+          if (assignment.currentKey) {
+            next[assignment.currentKey] = true;
+          }
+        });
+        return next;
+      });
+
+      const savedRecord = { ...(startupProfile ?? {}), ...upsertedStartup };
+      setStartupProfile(savedRecord);
+      upsertCompanyFromStartup(savedRecord);
+
+      const nextTeam = firstNonEmpty(
+        savedRecord.team,
+        savedRecord.team_size,
+        savedRecord.employees,
+        savedRecord.headcount
+      );
+      const nextFundraising = firstNonEmpty(
+        savedRecord.fundraising,
+        savedRecord.total_funding,
+        savedRecord.total_raised,
+        savedRecord.funding
+      );
+      const nextInfoLink = firstNonEmpty(
+        savedRecord.info_link,
+        savedRecord.profile_link,
+        savedRecord.external_profile,
+        savedRecord.external_profile_url
+      );
+
+      setStartupForm({
+        name: savedRecord.name || trimmedName,
+        registry_number: savedRecord.registry_number || '',
+        description: savedRecord.description || '',
+        website: savedRecord.website || '',
+        logo_url: savedRecord.logo_url || '',
+        verification_status: savedRecord.verification_status || 'unverified',
+        verification_note: savedRecord.verification_note || '',
+        team_size: nextTeam || '',
+        fundraising: nextFundraising || '',
+        info_link: nextInfoLink || '',
+      });
+
+      const savedMessage = translate(
+        'startupModal.feedback.saved',
+        'Saved successfully! Verification updates will appear here.',
+      );
+      const toastMessage = translate('toasts.saved', 'Saved successfully!');
+      showToast(toastMessage);
+      setFeedback({
+        type: 'info',
+        message: savedMessage,
+      });
+      setStartupModalOpen(false);
     } catch (error) {
       const rawMessage = error?.message?.trim?.();
       const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
@@ -5232,6 +6212,20 @@ const SwissStartupConnect = () => {
   const handleCvUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (user?.type !== 'student') {
+      setFeedback({
+        type: 'info',
+        message: translate(
+          'profileModal.errors.cvStudentOnly',
+          'Only student accounts can upload a CV.',
+        ),
+      });
+      if (event.target) {
+        event.target.value = '';
+      }
+      return;
+    }
 
     if (!isAllowedDocumentFile(file)) {
       setFeedback({
@@ -5309,6 +6303,9 @@ const SwissStartupConnect = () => {
 
   const jobSalaryCadence = normalizeSalaryCadence(jobForm.salary_cadence);
   const jobSalaryIsBracket = Boolean(jobForm.salary_is_bracket);
+  const jobLanguageSelection = Array.isArray(jobForm.language_requirements)
+    ? jobForm.language_requirements
+    : [];
   const jobSalaryLabel = jobSalaryIsBracket
     ? translate('jobForm.labels.salaryRange', 'Salary range')
     : translate('jobForm.labels.salary', 'Salary');
@@ -5419,6 +6416,27 @@ const SwissStartupConnect = () => {
     jobForm.employment_type,
     jobForm.weekly_hours,
   ]);
+
+  const handleJobSalaryCadenceChange = useCallback((nextValue) => {
+    setJobForm((prev) => ({
+      ...prev,
+      salary_cadence: nextValue,
+      salary_min: '',
+      salary_max: '',
+    }));
+  }, []);
+
+  const handleJobLanguageToggle = useCallback((languageValue) => {
+    setJobForm((prev) => {
+      const current = Array.isArray(prev.language_requirements) ? prev.language_requirements : [];
+      const exists = current.includes(languageValue);
+      const next = exists
+        ? current.filter((value) => value !== languageValue)
+        : [...current, languageValue];
+      const ordered = LANGUAGE_OPTIONS.map((option) => option.value).filter((value) => next.includes(value));
+      return { ...prev, language_requirements: ordered };
+    });
+  }, []);
 
   const handleJobSalaryBracketChange = useCallback((nextValue) => {
     setJobForm((prev) => ({
@@ -5569,6 +6587,24 @@ const SwissStartupConnect = () => {
         (option) => normalizeLocationValue(option.value) === normalizeLocationValue(locationSelection),
       );
       const locationValue = locationOption ? locationOption.value : locationSelection;
+
+      const languageSelection = Array.isArray(jobForm.language_requirements)
+        ? jobForm.language_requirements.filter(Boolean)
+        : [];
+      const canonicalLanguageSelection = Array.from(
+        new Set(languageSelection.map(mapLanguageValueToCanonical).filter(Boolean)),
+      );
+
+      if (canonicalLanguageSelection.length === 0) {
+        setPostJobError(
+          translate(
+            'jobForm.errors.languagesMissing',
+            'Select at least one language applicants must be comfortable using.',
+          ),
+        );
+        setPostingJob(false);
+        return;
+      }
 
       const cadenceSelection = normalizeSalaryCadence(jobForm.salary_cadence) || null;
       if (!cadenceSelection) {
@@ -5738,16 +6774,19 @@ const SwissStartupConnect = () => {
           ? formatWeeklyHoursLabel(weeklyHoursNumeric)
           : null;
 
-      const payload = {
+      const manualTags = jobForm.tags
+        ? jobForm.tags.split(',').map((item) => item.trim()).filter(Boolean)
+        : [];
+      const languageTags = canonicalLanguageSelection.map((key) => `${LANGUAGE_TAG_PREFIX}${key}`);
+      const tagsWithLanguages = Array.from(new Set([...manualTags, ...languageTags]));
+
+      const basePayload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
         location: locationValue,
         employment_type: employmentTypeForPayload,
         salary: salaryDisplay,
-        salary_cadence: cadenceSelection,
-        salary_min_value: Math.round(monthlyMin),
-        salary_max_value: Math.round(monthlyMax),
         equity: equityNumericValue != null ? equityDisplay : null,
         description: jobForm.description.trim(),
         requirements: jobForm.requirements
@@ -5756,34 +6795,143 @@ const SwissStartupConnect = () => {
         benefits: jobForm.benefits
           ? jobForm.benefits.split('\n').map((item) => item.trim()).filter(Boolean)
           : [],
-        tags: jobForm.tags
-          ? jobForm.tags.split(',').map((item) => item.trim()).filter(Boolean)
-          : [],
+        tags: tagsWithLanguages,
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
-        weekly_hours_value: employmentTypeForPayload === 'Part-time' ? weeklyHoursNumeric : null,
-        weekly_hours: weeklyHoursLabel,
-        duration_months: employmentTypeForPayload === 'Internship' ? internshipDurationNumeric : null,
+        salary_is_bracket: jobForm.salary_is_bracket,
       };
 
-      const { error } = await supabase.from('jobs').insert(payload);
-      if (error) {
-        setPostJobError(error.message);
-        return;
+      const dynamicAssignments = [];
+      const registerAssignment = (keys, value) => {
+        if (value == null || (typeof value === 'number' && !Number.isFinite(value))) {
+          return;
+        }
+
+        const normalizedKeys = keys.filter(Boolean);
+        if (normalizedKeys.length === 0) {
+          return;
+        }
+
+        let selectedIndex = normalizedKeys.findIndex((key) => jobColumnPresence[key] === true);
+        if (selectedIndex === -1) {
+          selectedIndex = normalizedKeys.findIndex((key) => jobColumnPresence[key] !== false);
+        }
+
+        if (selectedIndex === -1) {
+          return;
+        }
+
+        const currentKey = normalizedKeys[selectedIndex];
+        basePayload[currentKey] = value;
+        dynamicAssignments.push({
+          keys: normalizedKeys,
+          value,
+          selectedIndex,
+          currentKey,
+        });
+      };
+
+      registerAssignment(SALARY_MIN_FIELDS, Math.round(monthlyMin));
+      registerAssignment(SALARY_MAX_FIELDS, Math.round(monthlyMax));
+      registerAssignment(SALARY_PERIOD_FIELDS, cadenceSelection);
+
+      if (employmentTypeForPayload === 'Internship' && Number.isFinite(internshipDurationNumeric)) {
+        registerAssignment(INTERNSHIP_DURATION_FIELDS, internshipDurationNumeric);
       }
 
-      showToast(translate('jobForm.toast.published', 'Job published successfully!'));
-      if (convertedToFullTime) {
-        setFeedback({
-          type: 'info',
-          message: translate(
-            'jobForm.info.postedAsFullTime',
-            'Job posted as a full-time role because it exceeds 40 hours per week.',
-          ),
-        });
-      } else {
-        clearFeedback();
+      if (employmentTypeForPayload === 'Part-time' && Number.isFinite(weeklyHoursNumeric)) {
+        registerAssignment(WEEKLY_HOURS_VALUE_FIELDS, weeklyHoursNumeric);
       }
+
+      if (weeklyHoursLabel) {
+        registerAssignment(WEEKLY_HOURS_LABEL_FIELDS, weeklyHoursLabel);
+      }
+
+      let attemptPayload = { ...basePayload };
+      const removedColumns = new Set();
+
+      const markColumnMissing = (column) => {
+        removedColumns.add(column);
+        setJobColumnPresence((previous) => ({ ...previous, [column]: false }));
+      };
+
+      const handleMissingColumn = (column) => {
+        if (Object.prototype.hasOwnProperty.call(attemptPayload, column)) {
+          const { [column]: _omitted, ...rest } = attemptPayload;
+          attemptPayload = rest;
+        }
+
+        const assignment = dynamicAssignments.find((entry) => entry.keys.includes(column));
+        markColumnMissing(column);
+
+        if (!assignment || assignment.currentKey !== column) {
+          return;
+        }
+
+        for (let nextIndex = assignment.selectedIndex + 1; nextIndex < assignment.keys.length; nextIndex += 1) {
+          const nextKey = assignment.keys[nextIndex];
+          if (removedColumns.has(nextKey)) {
+            continue;
+          }
+
+          if (jobColumnPresence[nextKey] === false) {
+            continue;
+          }
+
+          attemptPayload[nextKey] = assignment.value;
+          assignment.selectedIndex = nextIndex;
+          assignment.currentKey = nextKey;
+          return;
+        }
+
+        assignment.exhausted = true;
+      };
+
+      while (true) {
+        const { error } = await supabase.from('jobs').insert(attemptPayload);
+        if (!error) {
+          setJobColumnPresence((previous) => {
+            const next = { ...previous };
+            Object.keys(attemptPayload).forEach((key) => {
+              next[key] = true;
+            });
+            return next;
+          });
+          break;
+        }
+
+        const missingColumn = detectMissingColumn(error.message, 'jobs');
+        if (!missingColumn) {
+          setPostJobError(error.message);
+          setPostingJob(false);
+          return;
+        }
+
+        if (removedColumns.has(missingColumn) && !Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)) {
+          setPostJobError(error.message);
+          setPostingJob(false);
+          return;
+        }
+
+        handleMissingColumn(missingColumn);
+
+        if (Object.keys(attemptPayload).length === 0) {
+          setPostJobError(error.message);
+          setPostingJob(false);
+          return;
+        }
+      }
+
+      const successMessage = translate('jobForm.toast.published', 'Job published successfully!');
+      const fullTimeFeedbackMessage = translate(
+        'jobForm.feedback.publishedFullTime',
+        'Job published successfully! Posted as a full-time role because it exceeds 40 hours per week.',
+      );
+      showToast(successMessage);
+      setFeedback({
+        type: 'success',
+        message: convertedToFullTime ? fullTimeFeedbackMessage : successMessage,
+      });
       setPostJobModalOpen(false);
       setJobForm({
         title: '',
@@ -5795,6 +6943,7 @@ const SwissStartupConnect = () => {
         salary_max: '',
         salary_cadence: '',
         salary_is_bracket: false,
+        language_requirements: [],
         equity: '',
         description: '',
         requirements: '',
@@ -6017,8 +7166,13 @@ const SwissStartupConnect = () => {
   };
 
   const handleLogout = async () => {
+    const previousUserId = user?.id;
     await supabase.auth.signOut();
+    if (previousUserId) {
+      removeCachedProfile(previousUserId);
+    }
     setUser(null);
+    setProfile(null);
     setFeedback({ type: 'info', message: 'Signed out. Your saved roles stay here for you.' });
   };
 
@@ -6051,24 +7205,137 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const payload = {
+      const basePayload = {
         job_id: applicationModal.id,
         profile_id: profile.id,
-        motivational_letter: motivationalLetterUrl || null,
-        status: 'submitted',
-        acknowledged: true,
-        cv_override_url: useExistingCv ? null : selectedCvUrl,
       };
 
-      const { error } = await supabase.from('job_applications').insert(payload);
+      const assignOptionalField = (field, value, { skipIfNull } = {}) => {
+        if (applicationColumnPresence[field] === false) {
+          return;
+        }
+        if (skipIfNull && (value == null || value === '')) {
+          return;
+        }
+        basePayload[field] = value;
+      };
 
-      if (error) {
-        setApplicationError(error.message);
-      } else {
-        setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
-        setFeedback({ type: 'success', message: 'Application submitted! 🎉' });
-        closeApplicationModal();
+      assignOptionalField('status', 'submitted');
+      assignOptionalField('acknowledged', false);
+      if (applicationColumnPresence.motivational_letter !== false) {
+        basePayload.motivational_letter = motivationalLetterUrl || null;
       }
+      assignOptionalField('cv_override_url', !useExistingCv ? selectedCvUrl : null, { skipIfNull: true });
+
+      let attemptPayload = { ...basePayload };
+      const removedColumns = new Set();
+      let insertSucceeded = false;
+      let lastErrorMessage = '';
+      let fallbackNotice = false;
+
+      while (Object.keys(attemptPayload).length > 0) {
+        const { error } = await supabase.from('job_applications').insert(attemptPayload);
+
+        if (!error) {
+          insertSucceeded = true;
+          break;
+        }
+
+        lastErrorMessage = error.message;
+        const missingColumn = detectMissingColumn(error.message, 'job_applications');
+
+        if (!missingColumn) {
+          break;
+        }
+
+        if (removedColumns.has(missingColumn)) {
+          break;
+        }
+
+        removedColumns.add(missingColumn);
+        setApplicationColumnPresence((previous) => ({ ...previous, [missingColumn]: false }));
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)) {
+          break;
+        }
+
+        const { [missingColumn]: _omitted, ...rest } = attemptPayload;
+        attemptPayload = rest;
+      }
+
+      if (!insertSucceeded) {
+        const rowLevelSecurityError = lastErrorMessage
+          ?.toLowerCase?.()
+          ?.includes('row-level security');
+
+        if (!rowLevelSecurityError) {
+          setApplicationError(
+            lastErrorMessage ||
+              translate('applications.errors.submit', 'Could not submit application. Please try again.')
+          );
+          return;
+        }
+
+        fallbackNotice = true;
+        console.warn('RLS prevented Supabase application insert; storing locally.');
+      } else {
+        const successfulColumns = Object.keys(attemptPayload).filter(
+          (key) => key !== 'job_id' && key !== 'profile_id'
+        );
+
+        if (successfulColumns.length > 0) {
+          setApplicationColumnPresence((previous) => {
+            const next = { ...previous };
+            successfulColumns.forEach((column) => {
+              next[column] = true;
+            });
+            return next;
+          });
+        }
+      }
+
+      const appliedJobKey = getJobIdKey(applicationModal.id);
+      if (appliedJobKey) {
+        setAppliedJobs((prev) => (prev.includes(appliedJobKey) ? prev : [...prev, appliedJobKey]));
+        setJobs((previousJobs) =>
+          previousJobs.map((job) => {
+            const jobKey = getJobIdKey(job.id);
+            if (!jobKey || jobKey !== appliedJobKey) {
+              return job;
+            }
+            const currentCountRaw = Number.isFinite(job.applicants)
+              ? job.applicants
+              : Number.parseInt(job.applicants, 10);
+            const nextCount = Number.isFinite(currentCountRaw) ? currentCountRaw + 1 : 1;
+            return { ...job, applicants: nextCount };
+          })
+        );
+        setSelectedJob((previousSelected) => {
+          if (!previousSelected) {
+            return previousSelected;
+          }
+          const selectedKey = getJobIdKey(previousSelected.id);
+          if (!selectedKey || selectedKey !== appliedJobKey) {
+            return previousSelected;
+          }
+          const currentCountRaw = Number.isFinite(previousSelected.applicants)
+            ? previousSelected.applicants
+            : Number.parseInt(previousSelected.applicants, 10);
+          const nextCount = Number.isFinite(currentCountRaw) ? currentCountRaw + 1 : 1;
+          return { ...previousSelected, applicants: nextCount };
+        });
+      }
+      const feedbackKey = fallbackNotice
+        ? 'applications.feedback.submittedFallback'
+        : 'applications.feedback.submitted';
+      const feedbackMessage = translate(
+        feedbackKey,
+        fallbackNotice
+          ? 'Application submitted! 🎉 We’ll sync it as soon as permissions update.'
+          : 'Application submitted! 🎉',
+      );
+      setFeedback({ type: 'success', message: feedbackMessage });
+      closeApplicationModal();
     } catch (error) {
       setApplicationError(error.message);
     } finally {
@@ -6103,6 +7370,86 @@ const SwissStartupConnect = () => {
       setApplicationStatusUpdating(null);
     }
   };
+
+  const handleApplicationThreadDraftChange = (applicationId, value) => {
+    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: value }));
+    if (value?.trim?.()) {
+      setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+    }
+  };
+
+  const handleApplicationThreadTypeChange = (applicationId, nextType) => {
+    setApplicationThreadTypeDrafts((prev) => ({ ...prev, [applicationId]: nextType }));
+    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+    if (nextType !== 'interview') {
+      setApplicationThreadScheduleDrafts((prev) => {
+        if (!prev[applicationId]) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[applicationId];
+        return next;
+      });
+    }
+  };
+
+  const handleApplicationThreadScheduleChange = (applicationId, value) => {
+    setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: value }));
+  };
+
+  const handleApplicationThreadSubmit = (event, applicationId) => {
+    event.preventDefault();
+    const rawMessage = applicationThreadDrafts[applicationId] || '';
+    const message = rawMessage.trim();
+    if (!message) {
+      setApplicationThreadErrors((prev) => ({
+        ...prev,
+        [applicationId]: translate('applications.threadValidation', 'Add a note before saving it.'),
+      }));
+      return;
+    }
+
+    const type = applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0];
+    const scheduleAtRaw = applicationThreadScheduleDrafts[applicationId] || '';
+    const scheduleAt = type === 'interview' && scheduleAtRaw ? scheduleAtRaw : null;
+
+    const entry = {
+      id: `${applicationId}-${Date.now()}`,
+      type,
+      message,
+      createdAt: new Date().toISOString(),
+      scheduleAt,
+    };
+
+    setApplicationThreads((prev) => {
+      const thread = prev[applicationId] || [];
+      return {
+        ...prev,
+        [applicationId]: [...thread, entry],
+      };
+    });
+    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: '' }));
+    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+    if (scheduleAtRaw) {
+      setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: '' }));
+    }
+  };
+
+  const resolveApplicationThreadType = useCallback(
+    (applicationId) => applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0],
+    [applicationThreadTypeDrafts]
+  );
+
+  const formatThreadTimestamp = useCallback((value) => {
+    try {
+      return new Date(value).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+    } catch (error) {
+      return value;
+    }
+  }, []);
 
   const handlePasswordReset = async (event) => {
     event.preventDefault();
@@ -6328,6 +7675,7 @@ const SwissStartupConnect = () => {
   const applyRestrictionMessage = isLoggedIn
     ? translate('jobs.applyRestrictionStudent', 'Student applicants only')
     : translate('jobs.applyRestrictionSignIn', 'Sign in as a student to apply');
+  const cvVisibilitySupported = profileColumnPresence.cv_public !== false;
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
@@ -6358,10 +7706,14 @@ const SwissStartupConnect = () => {
   }, [followedCompanies]);
 
   const sortedCompanies = useMemo(() => {
-    const enriched = companies.map((company) => {
+    const enriched = augmentedCompanies.map((company) => {
       const idKey = company.id ? String(company.id) : null;
       const nameKey = company.name ? String(company.name) : null;
-      const jobCount = (idKey && companyJobCounts[idKey]) || (nameKey && companyJobCounts[nameKey]) || 0;
+      const normalizedNameKey = nameKey ? nameKey.trim().toLowerCase() : '';
+      const jobCount =
+        (idKey && companyJobCounts[idKey]) ||
+        (normalizedNameKey && companyJobCounts[normalizedNameKey]) ||
+        0;
       return {
         ...company,
         jobCount,
@@ -6378,7 +7730,7 @@ const SwissStartupConnect = () => {
       const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
       return bTime - aTime;
     });
-  }, [companies, companyJobCounts, companySort, followedCompanies]);
+  }, [augmentedCompanies, companyJobCounts, companySort, followedCompanies]);
 
   const featuredCompanies = useMemo(() => {
     return [...sortedCompanies]
@@ -7105,7 +8457,8 @@ const SwissStartupConnect = () => {
                 <div className="ssc__grid">
                   {jobsForDisplay.map((job) => {
                     const isSaved = savedJobs.includes(job.id);
-                    const hasApplied = appliedJobs.includes(job.id);
+                    const jobIdKey = getJobIdKey(job.id);
+                    const hasApplied = jobIdKey ? appliedJobSet.has(jobIdKey) : false;
                     const timingText = buildTimingText(job);
                     const jobTitle = getLocalizedJobText(job, 'title');
                     const jobDescription = getLocalizedJobText(job, 'description');
@@ -7183,7 +8536,7 @@ const SwissStartupConnect = () => {
                         )}
 
                         <div className="ssc__job-tags">
-                          {job.tags?.map((tag) => (
+                          {filterLanguageTags(job.tags).map((tag) => (
                             <span key={tag} className="ssc__tag">
                               {tag}
                             </span>
@@ -7370,6 +8723,16 @@ const SwissStartupConnect = () => {
                                   rel="noreferrer"
                                 >
                                   {translate('companies.visitWebsite', 'Visit website')}
+                                </a>
+                              )}
+                              {company.info_link && (
+                                <a
+                                  className="ssc__outline-btn"
+                                  href={company.info_link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {translate('companies.moreInfo', 'More about us')}
                                 </a>
                               )}
                               <button
@@ -7567,6 +8930,10 @@ const SwissStartupConnect = () => {
                       const jobTitle = getLocalizedJobText(job, 'title');
                       const cvLink = application.cv_override_url || candidate?.cv_url;
                       const appliedDate = new Date(application.created_at).toLocaleDateString();
+                      const threadEntries = applicationThreads[application.id] || [];
+                      const resolvedType = resolveApplicationThreadType(application.id);
+                      const scheduleDraftValue = applicationThreadScheduleDrafts[application.id] || '';
+                      const threadError = applicationThreadErrors[application.id];
                       return (
                         <article key={application.id} className="ssc__application-card">
                         <header className="ssc__application-header">
@@ -7639,6 +9006,128 @@ const SwissStartupConnect = () => {
                             )}
                           </details>
                         )}
+
+                        <section className="ssc__application-thread">
+                          <header className="ssc__thread-header">
+                            <span className="ssc__thread-icon" aria-hidden="true">
+                              <MessageCircle size={18} />
+                            </span>
+                            <h4>{translate('applications.threadTitle', 'Communication & scheduling')}</h4>
+                          </header>
+
+                          {threadEntries.length > 0 ? (
+                            <ul className="ssc__thread-list">
+                              {threadEntries.map((entry) => {
+                                const typeLabel = translate(
+                                  `applications.threadTypes.${entry.type}`,
+                                  entry.type === 'interview'
+                                    ? 'Interview'
+                                    : entry.type === 'note'
+                                      ? 'Internal note'
+                                      : 'Message'
+                                );
+                                return (
+                                  <li key={entry.id} className="ssc__thread-item">
+                                    <div className="ssc__thread-meta">
+                                      <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                      <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
+                                    </div>
+                                    <p>{entry.message}</p>
+                                    {entry.scheduleAt ? (
+                                      <div className="ssc__thread-schedule">
+                                        <Calendar size={14} aria-hidden="true" />
+                                        <span>
+                                          {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
+                                            date: formatThreadTimestamp(entry.scheduleAt),
+                                          })}
+                                        </span>
+                                      </div>
+                                    ) : null}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="ssc__thread-empty">
+                              {translate(
+                                'applications.threadEmpty',
+                                'No conversation yet. Start by adding a note below.'
+                              )}
+                            </p>
+                          )}
+
+                          <form
+                            className="ssc__thread-form"
+                            onSubmit={(event) => handleApplicationThreadSubmit(event, application.id)}
+                          >
+                            <div className="ssc__thread-form-row">
+                              <label className="ssc__thread-field">
+                                <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
+                                <div className="ssc__select-wrapper">
+                                  <select
+                                    value={resolvedType}
+                                    onChange={(event) =>
+                                      handleApplicationThreadTypeChange(application.id, event.target.value)
+                                    }
+                                  >
+                                    {APPLICATION_THREAD_TYPES.map((type) => (
+                                      <option key={type} value={type}>
+                                        {translate(
+                                          `applications.threadTypes.${type}`,
+                                          type === 'interview'
+                                            ? 'Interview'
+                                            : type === 'note'
+                                              ? 'Internal note'
+                                              : 'Message'
+                                        )}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </label>
+
+                              {resolvedType === 'interview' && (
+                                <label className="ssc__thread-field">
+                                  <span>{translate('applications.threadScheduleLabel', 'Date & time')}</span>
+                                  <input
+                                    type="datetime-local"
+                                    value={scheduleDraftValue}
+                                    onChange={(event) =>
+                                      handleApplicationThreadScheduleChange(application.id, event.target.value)
+                                    }
+                                  />
+                                  <small>
+                                    {translate(
+                                      'applications.threadScheduleHelper',
+                                      'Share a proposed or confirmed slot.'
+                                    )}
+                                  </small>
+                                </label>
+                              )}
+                            </div>
+
+                            <label className="ssc__thread-field">
+                              <span className="ssc__thread-label">
+                                {translate('applications.threadMessageLabel', 'Message')}
+                              </span>
+                              <textarea
+                                rows={3}
+                                value={applicationThreadDrafts[application.id] || ''}
+                                onChange={(event) => handleApplicationThreadDraftChange(application.id, event.target.value)}
+                                placeholder={translate(
+                                  'applications.threadPlaceholder',
+                                  'Share an update, confirm an interview, or leave an internal note…'
+                                )}
+                              />
+                            </label>
+                            {threadError && <p className="ssc__thread-error">{threadError}</p>}
+
+                            <button type="submit" className="ssc__primary-btn ssc__thread-submit">
+                              <Send size={16} />
+                              <span>{translate('applications.threadSubmit', 'Add to thread')}</span>
+                            </button>
+                          </form>
+                        </section>
 
                         <footer className="ssc__application-footer">
                           <span>
@@ -7720,6 +9209,8 @@ const SwissStartupConnect = () => {
                     const jobTitle = getLocalizedJobText(job, 'title');
                     const jobDescription = getLocalizedJobText(job, 'description');
                     const jobLanguages = getJobLanguages(job);
+                    const jobIdKey = getJobIdKey(job.id);
+                    const hasApplied = jobIdKey ? appliedJobSet.has(jobIdKey) : false;
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -7781,7 +9272,7 @@ const SwissStartupConnect = () => {
                           </div>
                         )}
                         <div className="ssc__job-tags">
-                          {job.tags?.map((tag) => (
+                          {filterLanguageTags(job.tags).map((tag) => (
                             <span key={tag} className="ssc__tag">
                               {tag}
                             </span>
@@ -7805,13 +9296,16 @@ const SwissStartupConnect = () => {
                               {translate('jobs.viewRole', 'View role')}
                             </button>
                             {canApply ? (
-                              <button
-                                type="button"
-                                className="ssc__primary-btn"
-                                onClick={() => openApplyModal(job)}
-                              >
-                                {translate('jobs.apply', 'Apply now')}
-                              </button>
+                            <button
+                              type="button"
+                              className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
+                              onClick={() => openApplyModal(job)}
+                              disabled={hasApplied}
+                            >
+                              {hasApplied
+                                ? translate('jobs.applied', 'Applied')
+                                : translate('jobs.apply', 'Apply now')}
+                            </button>
                             ) : (
                               <span className="ssc__job-note">{applyRestrictionMessage}</span>
                             )}
@@ -8281,7 +9775,9 @@ const SwissStartupConnect = () => {
                   </span>
                 )}
               </div>
-              {(localizedSelectedJob.company_team || localizedSelectedJob.company_fundraising) && (
+              {(localizedSelectedJob.company_team ||
+                localizedSelectedJob.company_fundraising ||
+                localizedSelectedJob.company_info_link) && (
                 <div className="ssc__modal-company-insights">
                   {localizedSelectedJob.company_team && (
                     <span className="ssc__company-pill ssc__company-pill--team">
@@ -8294,6 +9790,17 @@ const SwissStartupConnect = () => {
                       <Sparkles size={14} />
                       {localizedSelectedJob.company_fundraising}
                     </span>
+                  )}
+                  {localizedSelectedJob.company_info_link && (
+                    <a
+                      className="ssc__company-pill ssc__company-pill--link"
+                      href={localizedSelectedJob.company_info_link}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ArrowRight size={14} />
+                      {translate('jobs.companyInfoLink', 'See team & funding details')}
+                    </a>
                   )}
                 </div>
               )}
@@ -8340,8 +9847,15 @@ const SwissStartupConnect = () => {
                   : translate('jobs.saveForLater', 'Save for later')}
               </button>
               {canApply ? (
-                <button type="button" className="ssc__primary-btn" onClick={() => openApplyModal(selectedJob)}>
-                  {translate('jobs.applyNow', 'Apply now')}
+                <button
+                  type="button"
+                  className={`ssc__primary-btn ${selectedJobApplied ? 'is-disabled' : ''}`}
+                  onClick={() => openApplyModal(selectedJob)}
+                  disabled={selectedJobApplied}
+                >
+                  {selectedJobApplied
+                    ? translate('jobs.applied', 'Applied')
+                    : translate('jobs.applyNow', 'Apply now')}
                 </button>
               ) : (
                 <span className="ssc__job-note">{applyRestrictionMessage}</span>
@@ -8529,6 +10043,7 @@ const SwissStartupConnect = () => {
                           'profileModal.placeholders.school',
                           'ETH Zürich, EPFL, HSG, ZHAW…'
                         )}
+                        required
                       />
                     </label>
                     <label className="ssc__field">
@@ -8642,20 +10157,26 @@ const SwissStartupConnect = () => {
                         <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
                           {translate('profileModal.viewCurrentCv', 'View current CV')}
                         </a>
-                        <label className="ssc__switch">
-                          <input
-                            type="checkbox"
-                            checked={profileForm.cv_public}
-                            onChange={(event) =>
-                              setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
-                            }
-                          />
-                          <span>
-                            {profileForm.cv_public
-                              ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
-                              : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                        {cvVisibilitySupported ? (
+                          <label className="ssc__switch">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.cv_public}
+                              onChange={(event) =>
+                                setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
+                              }
+                            />
+                            <span>
+                              {profileForm.cv_public
+                                ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
+                                : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                            </span>
+                          </label>
+                        ) : (
+                          <span className="ssc__cv-visibility--locked">
+                            {translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
                           </span>
-                        </label>
+                        )}
                       </div>
                     )}
                   </label>
@@ -8732,6 +10253,45 @@ const SwissStartupConnect = () => {
                       'Explain your product, traction, hiring focus, and what interns will learn.'
                     )}
                   />
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('startupModal.fields.teamSize', 'Team size')}</span>
+                  <input
+                    type="text"
+                    value={startupForm.team_size}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, team_size: event.target.value }))}
+                    placeholder={translate('startupModal.placeholders.teamSize', 'e.g. 12 people')}
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('startupModal.fields.fundraising', 'Funding raised')}</span>
+                  <input
+                    type="text"
+                    value={startupForm.fundraising}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, fundraising: event.target.value }))}
+                    placeholder={translate(
+                      'startupModal.placeholders.fundraising',
+                      'CHF 2M seed, CHF 5M Series A…'
+                    )}
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('startupModal.fields.infoLink', 'More info link')}</span>
+                  <input
+                    type="url"
+                    value={startupForm.info_link}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, info_link: event.target.value }))}
+                    placeholder={translate(
+                      'startupModal.placeholders.infoLink',
+                      'https://linkedin.com/company/yourstartup'
+                    )}
+                  />
+                  <small className="ssc__field-note">
+                    {translate(
+                      'startupModal.notes.infoLink',
+                      'Share a public link with team or funding details (LinkedIn, Crunchbase, GoFundMe…).'
+                    )}
+                  </small>
                 </label>
                 <label className="ssc__field">
                   <span>{translate('startupModal.fields.logo', 'Upload logo')}</span>
@@ -8892,20 +10452,37 @@ const SwissStartupConnect = () => {
                     </small>
                   </label>
                 )}
+                <div className="ssc__field">
+                  <span>{translate('jobForm.labels.languages', 'Languages required')}</span>
+                  <div className="ssc__field-pill-group ssc__field-pill-group--start">
+                    {LANGUAGE_OPTIONS.map((option) => {
+                      const isSelected = jobLanguageSelection.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`ssc__field-pill ${isSelected ? 'is-active' : ''}`}
+                          onClick={() => handleJobLanguageToggle(option.value)}
+                        >
+                          {translate(`jobForm.options.languages.${option.value}`, option.label)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <small className="ssc__field-note">
+                    {translate(
+                      'jobForm.notes.languages',
+                      'Choose each language applicants must be comfortable using.',
+                    )}
+                  </small>
+                </div>
                 <label className="ssc__field">
                   <span>{translate('jobForm.labels.salaryCadence', 'Salary cadence')}</span>
                   <div className="ssc__select-wrapper">
                     <select
                       className="ssc__select"
                       value={jobForm.salary_cadence}
-                      onChange={(event) =>
-                        setJobForm((prev) => ({
-                          ...prev,
-                          salary_cadence: event.target.value,
-                          salary_min: '',
-                          salary_max: '',
-                        }))
-                      }
+                      onChange={(event) => handleJobSalaryCadenceChange(event.target.value)}
                       required
                     >
                       <option value="">
