@@ -122,6 +122,51 @@ const LANGUAGE_VALUE_TO_CANONICAL = {
   de: 'german',
 };
 
+const STARTUP_TEAM_FIELDS = ['team', 'team_size', 'employees', 'headcount'];
+const STARTUP_FUNDRAISING_FIELDS = ['fundraising', 'total_funding', 'total_raised', 'funding'];
+const STARTUP_INFO_FIELDS = ['info_link', 'profile_link', 'external_profile', 'external_profile_url'];
+
+const getJobIdKey = (value) => {
+  if (value == null) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(value) : '';
+  }
+
+  return String(value);
+};
+
+const sanitizeIdArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const unique = new Set();
+  value.forEach((entry) => {
+    const key = getJobIdKey(entry);
+    if (key) {
+      unique.add(key);
+    }
+  });
+
+  return Array.from(unique);
+};
+
+const firstNonEmpty = (...candidates) => {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+  return '';
+};
+
 const mapLanguageValueToCanonical = (value) => {
   if (!value || typeof value !== 'string') {
     return '';
@@ -187,6 +232,49 @@ const JOB_LANGUAGE_ALIASES = {
 
 const APPLICATION_THREAD_TYPES = ['message', 'interview', 'note'];
 const APPLICATION_THREAD_STORAGE_KEY = 'ssc_applicationThreads';
+
+const mapStartupToCompany = (startup) => {
+  if (!startup || typeof startup !== 'object') {
+    return null;
+  }
+
+  const name = firstNonEmpty(startup.name, startup.company_name, '');
+  const teamLabel = firstNonEmpty(
+    startup.team,
+    startup.team_size,
+    startup.employees,
+    startup.headcount,
+    startup.team_label
+  );
+  const fundraisingLabel = firstNonEmpty(
+    startup.fundraising,
+    startup.total_funding,
+    startup.total_raised,
+    startup.funding
+  );
+  const cultureLabel = firstNonEmpty(startup.culture, startup.values, startup.mission);
+  const infoLink = firstNonEmpty(
+    startup.info_link,
+    startup.profile_link,
+    startup.external_profile,
+    startup.external_profile_url
+  );
+
+  return {
+    id: startup.id,
+    name: name || 'Verified startup',
+    tagline: firstNonEmpty(startup.tagline, startup.short_description, startup.description),
+    location: firstNonEmpty(startup.location, startup.city, startup.region),
+    industry: firstNonEmpty(startup.industry, startup.vertical, startup.sector),
+    team: teamLabel,
+    fundraising: fundraisingLabel,
+    culture: cultureLabel,
+    website: firstNonEmpty(startup.website, startup.site_url, startup.url),
+    info_link: infoLink,
+    verification_status: startup.verification_status || 'unverified',
+    created_at: startup.created_at,
+  };
+};
 
 const TRANSLATIONS = {
   fr: {
@@ -375,6 +463,8 @@ const TRANSLATIONS = {
       saveForLater: 'Enregistrer pour plus tard',
       savedLabel: 'Enregistré',
       applyNow: 'Postuler maintenant',
+      alreadyApplied: 'Vous avez déjà postulé pour ce poste.',
+      companyInfoLink: "Voir l’équipe et les fonds levés",
       savedHeading: 'Postes enregistrés',
       savedSubheading: 'Gardez un œil sur les opportunités à revisiter ou à candidater plus tard.',
       savedCount: '{{count}} favori{{plural}}',
@@ -669,12 +759,21 @@ const TRANSLATIONS = {
         website: 'Site web',
         description: 'Description',
         logo: 'Télécharger le logo',
+        teamSize: "Taille de l’équipe",
+        fundraising: 'Montant levé',
+        infoLink: 'Lien vers plus d’infos',
       },
       placeholders: {
         registryId: 'CHE-123.456.789',
         website: 'https://',
         description:
           'Expliquez votre produit, votre traction, vos priorités de recrutement et ce que les talents apprendront.',
+        teamSize: 'ex. 12 personnes',
+        fundraising: 'CHF 2M pré-amorçage, CHF 5M série A…',
+        infoLink: 'https://linkedin.com/company/votrestartup',
+      },
+      notes: {
+        infoLink: 'Partagez une page publique avec des infos sur l’équipe ou le financement (LinkedIn, Crunchbase…).',
       },
       verification: {
         label: 'Statut de vérification :',
@@ -775,6 +874,7 @@ const TRANSLATIONS = {
       follow: 'Suivre',
       following: 'Suivi',
       visitWebsite: 'Voir le site',
+      moreInfo: 'Plus d’infos',
       reviews: 'Avis',
       verifiedBadge: 'Vérifiée',
       jobCount: {
@@ -1200,6 +1300,8 @@ const TRANSLATIONS = {
       saveForLater: 'Für später speichern',
       savedLabel: 'Gespeichert',
       applyNow: 'Jetzt bewerben',
+      alreadyApplied: 'Sie haben sich bereits auf diese Stelle beworben.',
+      companyInfoLink: 'Team- & Finanzierungsinfos ansehen',
       savedHeading: 'Gemerkte Stellen',
       savedSubheading: 'Behalten Sie spannende Optionen im Blick oder bewerben Sie sich später.',
       savedCount: '{{count}} gespeichert',
@@ -1495,12 +1597,21 @@ const TRANSLATIONS = {
         website: 'Website',
         description: 'Beschreibung',
         logo: 'Logo hochladen',
+        teamSize: 'Teamgrösse',
+        fundraising: 'Bisherige Finanzierung',
+        infoLink: 'Link zu weiteren Infos',
       },
       placeholders: {
         registryId: 'CHE-123.456.789',
         website: 'https://',
         description:
           'Beschreiben Sie Produkt, Traction, Hiring-Fokus und was Praktikant:innen lernen werden.',
+        teamSize: 'z. B. 12 Personen',
+        fundraising: 'CHF 2 Mio. Seed, CHF 5 Mio. Serie A…',
+        infoLink: 'https://linkedin.com/company/deinstartup',
+      },
+      notes: {
+        infoLink: 'Teilen Sie eine öffentliche Seite mit Team- oder Finanzierungsinfos (LinkedIn, Crunchbase…).',
       },
       verification: {
         label: 'Verifizierungsstatus:',
@@ -1601,6 +1712,7 @@ const TRANSLATIONS = {
       follow: 'Folgen',
       following: 'Folgt',
       visitWebsite: 'Website besuchen',
+      moreInfo: 'Mehr über uns',
       reviews: 'Bewertungen',
       verifiedBadge: 'Verifiziert',
       jobCount: {
@@ -3621,6 +3733,38 @@ const SwissStartupConnect = () => {
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const upsertCompanyFromStartup = useCallback(
+    (startupRecord) => {
+      const mapped = mapStartupToCompany(startupRecord);
+      if (!mapped || !mapped.name) {
+        return;
+      }
+
+      const idKey = mapped.id != null ? String(mapped.id) : '';
+      const nameKey = mapped.name ? mapped.name.trim().toLowerCase() : '';
+
+      setCompanies((previous) => {
+        let replaced = false;
+        const next = previous.map((company) => {
+          const companyIdKey = company?.id != null ? String(company.id) : '';
+          const companyNameKey =
+            typeof company?.name === 'string' ? company.name.trim().toLowerCase() : '';
+          if ((idKey && companyIdKey === idKey) || (nameKey && companyNameKey === nameKey)) {
+            replaced = true;
+            return { ...company, ...mapped };
+          }
+          return company;
+        });
+
+        if (!replaced) {
+          next.push(mapped);
+        }
+
+        return next;
+      });
+    },
+    [setCompanies]
+  );
   const [jobSort, setJobSort] = useState('recent');
   const jobSortOptions = useMemo(
     () => [
@@ -3655,9 +3799,24 @@ const SwissStartupConnect = () => {
   const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
-    const stored = window.localStorage.getItem('ssc_applied_jobs');
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = window.localStorage.getItem('ssc_applied_jobs');
+      return sanitizeIdArray(stored ? JSON.parse(stored) : []);
+    } catch (error) {
+      console.error('Failed to parse applied jobs', error);
+      return [];
+    }
   });
+  const appliedJobSet = useMemo(() => {
+    const entries = new Set();
+    appliedJobs.forEach((id) => {
+      const key = getJobIdKey(id);
+      if (key) {
+        entries.add(key);
+      }
+    });
+    return entries;
+  }, [appliedJobs]);
   const [authLoading, setAuthLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(true);
 
@@ -3687,7 +3846,11 @@ const SwissStartupConnect = () => {
     logo_url: '',
     verification_status: 'unverified',
     verification_note: '',
+    team_size: '',
+    fundraising: '',
+    info_link: '',
   });
+  const [startupColumnPresence, setStartupColumnPresence] = useState({});
   const [startupSaving, setStartupSaving] = useState(false);
 
   const [resourceModal, setResourceModal] = useState(null);
@@ -3747,6 +3910,8 @@ const SwissStartupConnect = () => {
       localizedLanguages: getJobLanguages(selectedJob),
     };
   }, [selectedJob, getJobLanguages, getLocalizedJobList, getLocalizedJobText]);
+  const selectedJobIdKey = getJobIdKey(selectedJob?.id);
+  const selectedJobApplied = selectedJobIdKey ? appliedJobSet.has(selectedJobIdKey) : false;
 
   const localizedApplicationModal = useMemo(() => {
     if (!applicationModal) {
@@ -3938,7 +4103,7 @@ const SwissStartupConnect = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(appliedJobs));
+    window.localStorage.setItem('ssc_applied_jobs', JSON.stringify(sanitizeIdArray(appliedJobs)));
   }, [appliedJobs]);
 
   const loadProfile = useCallback(
@@ -4071,66 +4236,101 @@ const SwissStartupConnect = () => {
     []
   );
 
-  const loadStartupProfile = useCallback(async (supabaseUser) => {
-    if (!supabaseUser || supabaseUser.type !== 'startup') {
-      setStartupProfile(null);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('startups')
-        .select('*')
-        .eq('owner_id', supabaseUser.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Startup fetch error', error);
+  const loadStartupProfile = useCallback(
+    async (supabaseUser) => {
+      if (!supabaseUser || supabaseUser.type !== 'startup') {
+        setStartupProfile(null);
+        setStartupColumnPresence({});
         return;
       }
 
-      let startupRecord = data;
-
-      if (!startupRecord) {
-        const baseStartup = {
-          owner_id: supabaseUser.id,
-          name: supabaseUser.name,
-          registry_number: '',
-          description: '',
-          website: '',
-          logo_url: '',
-          verification_status: 'unverified',
-          verification_note: '',
-        };
-
-        const { data: inserted, error: insertError } = await supabase
+      try {
+        const { data, error } = await supabase
           .from('startups')
-          .insert(baseStartup)
           .select('*')
+          .eq('owner_id', supabaseUser.id)
           .single();
 
-        if (insertError) {
-          console.error('Startup insert error', insertError);
+        if (error && error.code !== 'PGRST116') {
+          console.error('Startup fetch error', error);
           return;
         }
 
-        startupRecord = inserted;
-      }
+        let startupRecord = data;
 
-      setStartupProfile(startupRecord);
-      setStartupForm({
-        name: startupRecord.name || supabaseUser.name,
-        registry_number: startupRecord.registry_number || '',
-        description: startupRecord.description || '',
-        website: startupRecord.website || '',
-        logo_url: startupRecord.logo_url || '',
-        verification_status: startupRecord.verification_status || 'unverified',
-        verification_note: startupRecord.verification_note || '',
-      });
-    } catch (error) {
-      console.error('Startup load error', error);
-    }
-  }, []);
+        if (!startupRecord) {
+          const baseStartup = {
+            owner_id: supabaseUser.id,
+            name: supabaseUser.name,
+            registry_number: '',
+            description: '',
+            website: '',
+            logo_url: '',
+            verification_status: 'unverified',
+            verification_note: '',
+          };
+
+          const { data: inserted, error: insertError } = await supabase
+            .from('startups')
+            .insert(baseStartup)
+            .select('*')
+            .single();
+
+          if (insertError) {
+            console.error('Startup insert error', insertError);
+            return;
+          }
+
+          startupRecord = inserted;
+        }
+
+        if (startupRecord) {
+          setStartupColumnPresence((previous) => ({
+            ...previous,
+            ...deriveColumnPresence([startupRecord]),
+          }));
+        }
+
+        setStartupProfile(startupRecord);
+        upsertCompanyFromStartup(startupRecord);
+
+        const teamSizeValue = firstNonEmpty(
+          startupRecord.team,
+          startupRecord.team_size,
+          startupRecord.employees,
+          startupRecord.headcount
+        );
+        const fundraisingValue = firstNonEmpty(
+          startupRecord.fundraising,
+          startupRecord.total_funding,
+          startupRecord.total_raised,
+          startupRecord.funding
+        );
+        const infoLinkValue = firstNonEmpty(
+          startupRecord.info_link,
+          startupRecord.profile_link,
+          startupRecord.external_profile,
+          startupRecord.external_profile_url
+        );
+
+        setStartupForm({
+          name: startupRecord.name || supabaseUser.name,
+          registry_number: startupRecord.registry_number || '',
+          description: startupRecord.description || '',
+          website: startupRecord.website || '',
+          logo_url: startupRecord.logo_url || '',
+          verification_status: startupRecord.verification_status || 'unverified',
+          verification_note: startupRecord.verification_note || '',
+          team_size: teamSizeValue || '',
+          fundraising: fundraisingValue || '',
+          info_link: infoLinkValue || '',
+        });
+      } catch (error) {
+        console.error('Startup load error', error);
+      }
+    },
+    [upsertCompanyFromStartup]
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -4188,31 +4388,20 @@ const SwissStartupConnect = () => {
           console.info('Falling back to mock companies', error.message);
           setCompanies(mockCompanies);
         } else if (data && data.length > 0) {
-          setCompanies(
-            data.map((company) => ({
-              id: company.id,
-              name: company.name,
-              tagline: company.tagline,
-              location: company.location,
-              industry: company.industry,
-              team:
-                company.team ||
-                company.team_size ||
-                company.employees ||
-                company.headcount ||
-                '',
-              fundraising:
-                company.fundraising ||
-                company.total_funding ||
-                company.total_raised ||
-                company.funding ||
-                '',
-              culture: company.culture,
-              website: company.website,
-              verification_status: company.verification_status || 'unverified',
-              created_at: company.created_at,
-            }))
+          const mapped = data.map((company) => mapStartupToCompany(company)).filter(Boolean);
+          const supabaseIds = new Set(
+            mapped
+              .map((company) => (company.id != null ? String(company.id) : ''))
+              .filter(Boolean)
           );
+          const merged = [
+            ...mapped,
+            ...mockCompanies.filter((company) => {
+              const idKey = company.id != null ? String(company.id) : '';
+              return idKey ? !supabaseIds.has(idKey) : true;
+            }),
+          ];
+          setCompanies(merged);
         } else {
           setCompanies(mockCompanies);
         }
@@ -4641,9 +4830,16 @@ const SwissStartupConnect = () => {
         company.total_raised ||
         company.funding ||
         '';
+      const infoLinkLabel =
+        company.info_link ||
+        company.profile_link ||
+        company.external_profile ||
+        company.external_profile_url ||
+        '';
       const meta = {
         team: teamLabel ? String(teamLabel) : '',
         fundraising: fundraisingLabel ? String(fundraisingLabel) : '',
+        infoLink: infoLinkLabel ? String(infoLinkLabel) : '',
       };
 
       if (company.id != null) {
@@ -4756,6 +4952,14 @@ const SwissStartupConnect = () => {
           job.total_raised ||
           job.funding ||
           companyMeta.fundraising ||
+          '',
+        company_info_link:
+          job.company_info_link ||
+          job.info_link ||
+          job.profile_link ||
+          job.external_profile ||
+          job.external_profile_url ||
+          companyMeta.infoLink ||
           '',
       };
     });
@@ -5338,6 +5542,15 @@ const SwissStartupConnect = () => {
       return;
     }
 
+    const jobIdKey = getJobIdKey(job.id);
+    if (jobIdKey && appliedJobSet.has(jobIdKey)) {
+      setFeedback({
+        type: 'info',
+        message: translate('jobs.alreadyApplied', 'You already applied to this role.'),
+      });
+      return;
+    }
+
     setApplicationModal(job);
     setAcknowledgeShare(false);
     setMotivationalLetterUrl('');
@@ -5641,44 +5854,210 @@ const SwissStartupConnect = () => {
 
     setStartupSaving(true);
     try {
-      const updates = {
-        owner_id: user.id,
-        name: startupForm.name,
-        registry_number: startupForm.registry_number,
-        description: startupForm.description,
-        website: startupForm.website,
-        logo_url: startupForm.logo_url,
+      const trimmedName = startupForm.name?.trim?.() || user.name || '';
+      const trimmedRegistry = startupForm.registry_number?.trim?.() ?? '';
+      const trimmedDescription = startupForm.description?.trim?.() ?? '';
+      const trimmedWebsite = startupForm.website?.trim?.() ?? '';
+      const trimmedLogo = startupForm.logo_url?.trim?.() ?? '';
+      const trimmedTeam = startupForm.team_size?.trim?.() ?? '';
+      const trimmedFundraising = startupForm.fundraising?.trim?.() ?? '';
+      const trimmedInfoLink = startupForm.info_link?.trim?.() ?? '';
+
+      const basePayload = { owner_id: user.id };
+      const assignBaseField = (key, value) => {
+        if (value === undefined) {
+          return;
+        }
+        if (key !== 'owner_id' && startupColumnPresence[key] === false) {
+          return;
+        }
+        basePayload[key] = value;
       };
 
-      const { data, error } = await supabase
-        .from('startups')
-        .upsert(updates, { onConflict: 'owner_id' })
-        .select('*')
-        .single();
+      assignBaseField('name', trimmedName);
+      assignBaseField('registry_number', trimmedRegistry || null);
+      assignBaseField('description', trimmedDescription || null);
+      assignBaseField('website', trimmedWebsite || null);
+      assignBaseField('logo_url', trimmedLogo || null);
 
-      if (error) {
-        const rawMessage = error?.message?.trim?.();
-        const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
-        setFeedback({
-          type: 'error',
-          message: translate('startupModal.errors.save', 'Could not save startup profile: {{message}}', {
-            message,
-          }),
-        });
-      } else {
-        setStartupProfile(data);
-        const savedMessage = translate(
-          'startupModal.feedback.saved',
-          'Saved successfully! Verification updates will appear here.',
-        );
-        const toastMessage = translate('toasts.saved', 'Saved successfully!');
-        showToast(toastMessage);
-        setFeedback({
-          type: 'info',
-          message: savedMessage,
-        });
-        setStartupModalOpen(false);
+      const dynamicAssignments = [];
+      const registerDynamicField = (keys, rawValue) => {
+        if (!Array.isArray(keys) || keys.length === 0) {
+          return;
+        }
+        const normalizedKeys = keys.filter(Boolean);
+        if (normalizedKeys.length === 0) {
+          return;
+        }
+
+        const trimmedValue = rawValue?.trim?.() ?? '';
+        const value = trimmedValue || null;
+
+        let selectedIndex = normalizedKeys.findIndex((key) => startupColumnPresence[key] === true);
+        if (selectedIndex === -1) {
+          selectedIndex = normalizedKeys.findIndex((key) => startupColumnPresence[key] !== false);
+        }
+
+        if (selectedIndex === -1) {
+          return;
+        }
+
+        const currentKey = normalizedKeys[selectedIndex];
+        basePayload[currentKey] = value;
+        dynamicAssignments.push({ keys: normalizedKeys, selectedIndex, currentKey, value });
+      };
+
+      registerDynamicField(STARTUP_TEAM_FIELDS, trimmedTeam);
+      registerDynamicField(STARTUP_FUNDRAISING_FIELDS, trimmedFundraising);
+      registerDynamicField(STARTUP_INFO_FIELDS, trimmedInfoLink);
+
+      let attemptPayload = { ...basePayload };
+      if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'owner_id')) {
+        attemptPayload.owner_id = user.id;
       }
+      const removedColumns = new Set();
+      let finalPayload = attemptPayload;
+      let upsertedStartup = null;
+
+      const markColumnMissing = (column) => {
+        removedColumns.add(column);
+        setStartupColumnPresence((previous) => ({ ...previous, [column]: false }));
+      };
+
+      const handleMissingColumn = (column) => {
+        if (!column) {
+          return;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(attemptPayload, column)) {
+          const { [column]: _omitted, ...rest } = attemptPayload;
+          attemptPayload = rest;
+        }
+
+        const assignment = dynamicAssignments.find((entry) => entry.keys.includes(column));
+        markColumnMissing(column);
+
+        if (!assignment || assignment.currentKey !== column) {
+          return;
+        }
+
+        for (let index = assignment.selectedIndex + 1; index < assignment.keys.length; index += 1) {
+          const nextKey = assignment.keys[index];
+          if (removedColumns.has(nextKey)) {
+            continue;
+          }
+          if (startupColumnPresence[nextKey] === false) {
+            continue;
+          }
+          attemptPayload[nextKey] = assignment.value;
+          assignment.selectedIndex = index;
+          assignment.currentKey = nextKey;
+          return;
+        }
+
+        assignment.exhausted = true;
+      };
+
+      while (Object.keys(attemptPayload).length > 0) {
+        const { data, error } = await supabase
+          .from('startups')
+          .upsert(attemptPayload, { onConflict: 'owner_id' })
+          .select('*')
+          .single();
+
+        if (!error) {
+          upsertedStartup = data;
+          finalPayload = attemptPayload;
+          break;
+        }
+
+        const missingColumn = detectMissingColumn(error.message, 'startups');
+        if (!missingColumn) {
+          throw error;
+        }
+
+        if (
+          removedColumns.has(missingColumn) &&
+          !Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)
+        ) {
+          throw error;
+        }
+
+        handleMissingColumn(missingColumn);
+
+        if (Object.keys(attemptPayload).length === 0) {
+          throw error;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'owner_id')) {
+          attemptPayload.owner_id = user.id;
+        }
+      }
+
+      if (!upsertedStartup) {
+        throw new Error(translate('common.errors.unknown', 'Unknown error'));
+      }
+
+      setStartupColumnPresence((previous) => {
+        const next = { ...previous };
+        Object.keys(finalPayload || {}).forEach((column) => {
+          next[column] = true;
+        });
+        dynamicAssignments.forEach((assignment) => {
+          if (assignment.currentKey) {
+            next[assignment.currentKey] = true;
+          }
+        });
+        return next;
+      });
+
+      const savedRecord = { ...(startupProfile ?? {}), ...upsertedStartup };
+      setStartupProfile(savedRecord);
+      upsertCompanyFromStartup(savedRecord);
+
+      const nextTeam = firstNonEmpty(
+        savedRecord.team,
+        savedRecord.team_size,
+        savedRecord.employees,
+        savedRecord.headcount
+      );
+      const nextFundraising = firstNonEmpty(
+        savedRecord.fundraising,
+        savedRecord.total_funding,
+        savedRecord.total_raised,
+        savedRecord.funding
+      );
+      const nextInfoLink = firstNonEmpty(
+        savedRecord.info_link,
+        savedRecord.profile_link,
+        savedRecord.external_profile,
+        savedRecord.external_profile_url
+      );
+
+      setStartupForm({
+        name: savedRecord.name || trimmedName,
+        registry_number: savedRecord.registry_number || '',
+        description: savedRecord.description || '',
+        website: savedRecord.website || '',
+        logo_url: savedRecord.logo_url || '',
+        verification_status: savedRecord.verification_status || 'unverified',
+        verification_note: savedRecord.verification_note || '',
+        team_size: nextTeam || '',
+        fundraising: nextFundraising || '',
+        info_link: nextInfoLink || '',
+      });
+
+      const savedMessage = translate(
+        'startupModal.feedback.saved',
+        'Saved successfully! Verification updates will appear here.',
+      );
+      const toastMessage = translate('toasts.saved', 'Saved successfully!');
+      showToast(toastMessage);
+      setFeedback({
+        type: 'info',
+        message: savedMessage,
+      });
+      setStartupModalOpen(false);
     } catch (error) {
       const rawMessage = error?.message?.trim?.();
       const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
@@ -6813,7 +7192,37 @@ const SwissStartupConnect = () => {
         }
       }
 
-      setAppliedJobs((prev) => (prev.includes(applicationModal.id) ? prev : [...prev, applicationModal.id]));
+      const appliedJobKey = getJobIdKey(applicationModal.id);
+      if (appliedJobKey) {
+        setAppliedJobs((prev) => (prev.includes(appliedJobKey) ? prev : [...prev, appliedJobKey]));
+        setJobs((previousJobs) =>
+          previousJobs.map((job) => {
+            const jobKey = getJobIdKey(job.id);
+            if (!jobKey || jobKey !== appliedJobKey) {
+              return job;
+            }
+            const currentCountRaw = Number.isFinite(job.applicants)
+              ? job.applicants
+              : Number.parseInt(job.applicants, 10);
+            const nextCount = Number.isFinite(currentCountRaw) ? currentCountRaw + 1 : 1;
+            return { ...job, applicants: nextCount };
+          })
+        );
+        setSelectedJob((previousSelected) => {
+          if (!previousSelected) {
+            return previousSelected;
+          }
+          const selectedKey = getJobIdKey(previousSelected.id);
+          if (!selectedKey || selectedKey !== appliedJobKey) {
+            return previousSelected;
+          }
+          const currentCountRaw = Number.isFinite(previousSelected.applicants)
+            ? previousSelected.applicants
+            : Number.parseInt(previousSelected.applicants, 10);
+          const nextCount = Number.isFinite(currentCountRaw) ? currentCountRaw + 1 : 1;
+          return { ...previousSelected, applicants: nextCount };
+        });
+      }
       const feedbackKey = fallbackNotice
         ? 'applications.feedback.submittedFallback'
         : 'applications.feedback.submitted';
@@ -7942,7 +8351,8 @@ const SwissStartupConnect = () => {
                 <div className="ssc__grid">
                   {jobsForDisplay.map((job) => {
                     const isSaved = savedJobs.includes(job.id);
-                    const hasApplied = appliedJobs.includes(job.id);
+                    const jobIdKey = getJobIdKey(job.id);
+                    const hasApplied = jobIdKey ? appliedJobSet.has(jobIdKey) : false;
                     const timingText = buildTimingText(job);
                     const jobTitle = getLocalizedJobText(job, 'title');
                     const jobDescription = getLocalizedJobText(job, 'description');
@@ -8207,6 +8617,16 @@ const SwissStartupConnect = () => {
                                   rel="noreferrer"
                                 >
                                   {translate('companies.visitWebsite', 'Visit website')}
+                                </a>
+                              )}
+                              {company.info_link && (
+                                <a
+                                  className="ssc__outline-btn"
+                                  href={company.info_link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {translate('companies.moreInfo', 'More about us')}
                                 </a>
                               )}
                               <button
@@ -8683,6 +9103,8 @@ const SwissStartupConnect = () => {
                     const jobTitle = getLocalizedJobText(job, 'title');
                     const jobDescription = getLocalizedJobText(job, 'description');
                     const jobLanguages = getJobLanguages(job);
+                    const jobIdKey = getJobIdKey(job.id);
+                    const hasApplied = jobIdKey ? appliedJobSet.has(jobIdKey) : false;
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -8768,13 +9190,16 @@ const SwissStartupConnect = () => {
                               {translate('jobs.viewRole', 'View role')}
                             </button>
                             {canApply ? (
-                              <button
-                                type="button"
-                                className="ssc__primary-btn"
-                                onClick={() => openApplyModal(job)}
-                              >
-                                {translate('jobs.apply', 'Apply now')}
-                              </button>
+                            <button
+                              type="button"
+                              className={`ssc__primary-btn ${hasApplied ? 'is-disabled' : ''}`}
+                              onClick={() => openApplyModal(job)}
+                              disabled={hasApplied}
+                            >
+                              {hasApplied
+                                ? translate('jobs.applied', 'Applied')
+                                : translate('jobs.apply', 'Apply now')}
+                            </button>
                             ) : (
                               <span className="ssc__job-note">{applyRestrictionMessage}</span>
                             )}
@@ -9244,7 +9669,9 @@ const SwissStartupConnect = () => {
                   </span>
                 )}
               </div>
-              {(localizedSelectedJob.company_team || localizedSelectedJob.company_fundraising) && (
+              {(localizedSelectedJob.company_team ||
+                localizedSelectedJob.company_fundraising ||
+                localizedSelectedJob.company_info_link) && (
                 <div className="ssc__modal-company-insights">
                   {localizedSelectedJob.company_team && (
                     <span className="ssc__company-pill ssc__company-pill--team">
@@ -9257,6 +9684,17 @@ const SwissStartupConnect = () => {
                       <Sparkles size={14} />
                       {localizedSelectedJob.company_fundraising}
                     </span>
+                  )}
+                  {localizedSelectedJob.company_info_link && (
+                    <a
+                      className="ssc__company-pill ssc__company-pill--link"
+                      href={localizedSelectedJob.company_info_link}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ArrowRight size={14} />
+                      {translate('jobs.companyInfoLink', 'See team & funding details')}
+                    </a>
                   )}
                 </div>
               )}
@@ -9303,8 +9741,15 @@ const SwissStartupConnect = () => {
                   : translate('jobs.saveForLater', 'Save for later')}
               </button>
               {canApply ? (
-                <button type="button" className="ssc__primary-btn" onClick={() => openApplyModal(selectedJob)}>
-                  {translate('jobs.applyNow', 'Apply now')}
+                <button
+                  type="button"
+                  className={`ssc__primary-btn ${selectedJobApplied ? 'is-disabled' : ''}`}
+                  onClick={() => openApplyModal(selectedJob)}
+                  disabled={selectedJobApplied}
+                >
+                  {selectedJobApplied
+                    ? translate('jobs.applied', 'Applied')
+                    : translate('jobs.applyNow', 'Apply now')}
                 </button>
               ) : (
                 <span className="ssc__job-note">{applyRestrictionMessage}</span>
@@ -9702,6 +10147,45 @@ const SwissStartupConnect = () => {
                       'Explain your product, traction, hiring focus, and what interns will learn.'
                     )}
                   />
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('startupModal.fields.teamSize', 'Team size')}</span>
+                  <input
+                    type="text"
+                    value={startupForm.team_size}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, team_size: event.target.value }))}
+                    placeholder={translate('startupModal.placeholders.teamSize', 'e.g. 12 people')}
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('startupModal.fields.fundraising', 'Funding raised')}</span>
+                  <input
+                    type="text"
+                    value={startupForm.fundraising}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, fundraising: event.target.value }))}
+                    placeholder={translate(
+                      'startupModal.placeholders.fundraising',
+                      'CHF 2M seed, CHF 5M Series A…'
+                    )}
+                  />
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('startupModal.fields.infoLink', 'More info link')}</span>
+                  <input
+                    type="url"
+                    value={startupForm.info_link}
+                    onChange={(event) => setStartupForm((prev) => ({ ...prev, info_link: event.target.value }))}
+                    placeholder={translate(
+                      'startupModal.placeholders.infoLink',
+                      'https://linkedin.com/company/yourstartup'
+                    )}
+                  />
+                  <small className="ssc__field-note">
+                    {translate(
+                      'startupModal.notes.infoLink',
+                      'Share a public link with team or funding details (LinkedIn, Crunchbase, GoFundMe…).'
+                    )}
+                  </small>
                 </label>
                 <label className="ssc__field">
                   <span>{translate('startupModal.fields.logo', 'Upload logo')}</span>

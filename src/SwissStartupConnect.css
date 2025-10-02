@@ -1438,6 +1438,16 @@
   color: #16a34a;
 }
 
+.ssc__company-pill--link {
+  color: var(--ssc-primary);
+  text-decoration: none;
+}
+
+.ssc__company-pill--link:hover,
+.ssc__company-pill--link:focus {
+  text-decoration: underline;
+}
+
 .ssc__job-tags {
   display: flex;
   flex-wrap: wrap;
