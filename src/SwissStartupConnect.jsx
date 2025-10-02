@@ -3552,6 +3552,13 @@ const defaultEquityBounds = deriveEquityBoundsFromJobs(mockJobs);
 
 const mapSupabaseUser = (supabaseUser) => {
   if (!supabaseUser) return null;
+
+  const rawType = supabaseUser.user_metadata?.type;
+  const normalizedType =
+    typeof rawType === 'string' && rawType.trim()
+      ? rawType.trim().toLowerCase()
+      : '';
+
   return {
     id: supabaseUser.id,
     email: supabaseUser.email ?? '',
@@ -3559,7 +3566,8 @@ const mapSupabaseUser = (supabaseUser) => {
       supabaseUser.user_metadata?.name ||
       supabaseUser.email?.split('@')[0] ||
       'Member',
-    type: supabaseUser.user_metadata?.type || 'student',
+    type: normalizedType === 'startup' ? 'startup' : 'student',
+    avatar_url: supabaseUser.user_metadata?.avatar_url || '',
   };
 };
 
@@ -3789,14 +3797,50 @@ const SwissStartupConnect = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [profile, setProfile] = useState(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    university: '',
+    program: '',
+    experience: '',
+    bio: '',
+    portfolio_url: '',
+    cv_url: '',
+    avatar_url: '',
+    cv_public: false,
+  });
   const [user, setUser] = useState(null);
   const userDisplayName = useMemo(() => {
-    if (!user) {
-      return '';
+    const profileName = profileForm.full_name?.trim?.();
+    if (profileName) {
+      return profileName;
     }
-    return user.name?.trim() || translate('accountMenu.memberFallback', 'Member');
-  }, [user, translate]);
+
+    const storedProfileName = profile?.full_name?.trim?.();
+    if (storedProfileName) {
+      return storedProfileName;
+    }
+
+    if (user?.name?.trim?.()) {
+      return user.name.trim();
+    }
+
+    return user ? translate('accountMenu.memberFallback', 'Member') : '';
+  }, [profileForm.full_name, profile?.full_name, user, translate]);
   const userInitial = useMemo(() => (userDisplayName ? userDisplayName.charAt(0).toUpperCase() : ''), [userDisplayName]);
+  const userAvatarUrl = useMemo(() => {
+    if (profileForm.avatar_url?.trim?.()) {
+      return profileForm.avatar_url.trim();
+    }
+    if (profile?.avatar_url?.trim?.()) {
+      return profile.avatar_url.trim();
+    }
+    if (user?.avatar_url?.trim?.()) {
+      return user.avatar_url.trim();
+    }
+    return '';
+  }, [profileForm.avatar_url, profile?.avatar_url, user?.avatar_url]);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
@@ -3821,20 +3865,6 @@ const SwissStartupConnect = () => {
   }, [appliedJobs]);
   const [authLoading, setAuthLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(true);
-
-  const [profile, setProfile] = useState(null);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    full_name: '',
-    university: '',
-    program: '',
-    experience: '',
-    bio: '',
-    portfolio_url: '',
-    cv_url: '',
-    avatar_url: '',
-    cv_public: false,
-  });
   const [profileColumnPresence, setProfileColumnPresence] = useState({});
   const [profileSaving, setProfileSaving] = useState(false);
 
@@ -5730,8 +5760,13 @@ const SwissStartupConnect = () => {
       const baseName = nameWithoutExtension || 'document';
 
       const attemptUpload = async (prefix) => {
-        const normalizedPrefix = prefix ? `${prefix.replace(/\/+$/, '')}/` : '';
-        const filePath = `${user.id}/${normalizedPrefix}${Date.now()}-${baseName}.${extension}`;
+        const normalizedPrefix = prefix ? prefix.replace(/\/+$/, '') : '';
+        const pathSegments = [];
+        if (normalizedPrefix) {
+          pathSegments.push(normalizedPrefix);
+        }
+        pathSegments.push(user.id);
+        const filePath = `${pathSegments.join('/')}/${Date.now()}-${baseName}.${extension}`;
         const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -5759,8 +5794,13 @@ const SwissStartupConnect = () => {
         return uploadedUrl;
       } catch (error) {
         const message = error?.message?.toLowerCase?.() ?? '';
-        if (message.includes('row-level security') && sanitizedPrefix && !sanitizedPrefix.startsWith('profiles')) {
-          const fallbackUrl = await attemptUpload(`profiles/${sanitizedPrefix}`);
+        if (message.includes('row-level security')) {
+          const fallbackPrefix = sanitizedPrefix
+            ? sanitizedPrefix.startsWith('profiles')
+              ? sanitizedPrefix
+              : `profiles/${sanitizedPrefix}`
+            : 'profiles';
+          const fallbackUrl = await attemptUpload(fallbackPrefix);
           if (!fallbackUrl) {
             throw new Error(
               translate('uploads.errors.noPublicUrl', 'Upload did not return a public URL.')
@@ -5771,7 +5811,7 @@ const SwissStartupConnect = () => {
         throw error;
       }
     },
-    [user?.id]
+    [translate, user?.id]
   );
 
   const handleProfileSubmit = async (event) => {
@@ -6244,6 +6284,7 @@ const SwissStartupConnect = () => {
       }
       setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
       setProfile((prev) => (prev ? { ...prev, cv_url: publicUrl } : prev));
+      setUseExistingCv(true);
       setFeedback({
         type: 'success',
         message: translate(
@@ -7926,7 +7967,13 @@ const SwissStartupConnect = () => {
                   className="ssc__user-menu-toggle"
                   onClick={() => setShowUserMenu((prev) => !prev)}
                 >
-                  <div className="ssc__avatar-small">{userInitial}</div>
+                  <div className="ssc__avatar-small">
+                    {userAvatarUrl ? (
+                      <img src={userAvatarUrl} alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')} />
+                    ) : (
+                      <span>{userInitial}</span>
+                    )}
+                  </div>
                   <div className="ssc__user-meta">
                     <span className="ssc__user-name">{userDisplayName}</span>
                     <span className="ssc__user-role">{user.type}</span>
@@ -7936,7 +7983,16 @@ const SwissStartupConnect = () => {
                 {showUserMenu && (
                   <div className="ssc__user-menu">
                     <header className="ssc__user-menu-header">
-                      <div className="ssc__avatar-medium">{userInitial}</div>
+                      <div className="ssc__avatar-medium">
+                        {userAvatarUrl ? (
+                          <img
+                            src={userAvatarUrl}
+                            alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')}
+                          />
+                        ) : (
+                          <span>{userInitial}</span>
+                        )}
+                      </div>
                       <div>
                         <strong>{userDisplayName}</strong>
                         <span className="ssc__user-menu-role">{user.type}</span>
