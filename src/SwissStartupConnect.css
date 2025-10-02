@@ -2376,6 +2376,13 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  overflow: hidden;
+}
+
+.ssc__avatar-small img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .ssc__profile-grid {

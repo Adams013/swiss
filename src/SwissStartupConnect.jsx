@@ -3552,6 +3552,13 @@ const defaultEquityBounds = deriveEquityBoundsFromJobs(mockJobs);
 
 const mapSupabaseUser = (supabaseUser) => {
   if (!supabaseUser) return null;
+
+  const rawType = supabaseUser.user_metadata?.type;
+  const normalizedType =
+    typeof rawType === 'string' && rawType.trim()
+      ? rawType.trim().toLowerCase()
+      : '';
+
   return {
     id: supabaseUser.id,
     email: supabaseUser.email ?? '',
@@ -3559,7 +3566,8 @@ const mapSupabaseUser = (supabaseUser) => {
       supabaseUser.user_metadata?.name ||
       supabaseUser.email?.split('@')[0] ||
       'Member',
-    type: supabaseUser.user_metadata?.type || 'student',
+    type: normalizedType === 'startup' ? 'startup' : 'student',
+    avatar_url: supabaseUser.user_metadata?.avatar_url || '',
   };
 };
 
@@ -3789,14 +3797,50 @@ const SwissStartupConnect = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [profile, setProfile] = useState(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    university: '',
+    program: '',
+    experience: '',
+    bio: '',
+    portfolio_url: '',
+    cv_url: '',
+    avatar_url: '',
+    cv_public: false,
+  });
   const [user, setUser] = useState(null);
   const userDisplayName = useMemo(() => {
-    if (!user) {
-      return '';
+    const profileName = profileForm.full_name?.trim?.();
+    if (profileName) {
+      return profileName;
     }
-    return user.name?.trim() || translate('accountMenu.memberFallback', 'Member');
-  }, [user, translate]);
+
+    const storedProfileName = profile?.full_name?.trim?.();
+    if (storedProfileName) {
+      return storedProfileName;
+    }
+
+    if (user?.name?.trim?.()) {
+      return user.name.trim();
+    }
+
+    return user ? translate('accountMenu.memberFallback', 'Member') : '';
+  }, [profileForm.full_name, profile?.full_name, user, translate]);
   const userInitial = useMemo(() => (userDisplayName ? userDisplayName.charAt(0).toUpperCase() : ''), [userDisplayName]);
+  const userAvatarUrl = useMemo(() => {
+    if (profileForm.avatar_url?.trim?.()) {
+      return profileForm.avatar_url.trim();
+    }
+    if (profile?.avatar_url?.trim?.()) {
+      return profile.avatar_url.trim();
+    }
+    if (user?.avatar_url?.trim?.()) {
+      return user.avatar_url.trim();
+    }
+    return '';
+  }, [profileForm.avatar_url, profile?.avatar_url, user?.avatar_url]);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '', type: 'student' });
   const [appliedJobs, setAppliedJobs] = useState(() => {
@@ -3821,20 +3865,6 @@ const SwissStartupConnect = () => {
   }, [appliedJobs]);
   const [authLoading, setAuthLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(true);
-
-  const [profile, setProfile] = useState(null);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    full_name: '',
-    university: '',
-    program: '',
-    experience: '',
-    bio: '',
-    portfolio_url: '',
-    cv_url: '',
-    avatar_url: '',
-    cv_public: false,
-  });
   const [profileColumnPresence, setProfileColumnPresence] = useState({});
   const [profileSaving, setProfileSaving] = useState(false);
 
@@ -3863,6 +3893,7 @@ const SwissStartupConnect = () => {
   const [canReview, setCanReview] = useState(false);
 
   const [applicationModal, setApplicationModal] = useState(null);
+  const lastUploadedCvRef = useRef('');
   const [acknowledgeShare, setAcknowledgeShare] = useState(false);
   const [motivationalLetterUrl, setMotivationalLetterUrl] = useState('');
   const [motivationalLetterName, setMotivationalLetterName] = useState('');
@@ -3991,6 +4022,32 @@ const SwissStartupConnect = () => {
   }, [toast]);
 
   useEffect(() => {
+    if (user?.type !== 'student') {
+      return;
+    }
+
+    const pendingCv = lastUploadedCvRef.current?.trim?.();
+    if (!pendingCv) {
+      return;
+    }
+
+    const currentFormCv = profileForm.cv_url?.trim?.();
+    if (currentFormCv) {
+      return;
+    }
+
+    setProfileForm((previous) => {
+      const previousCv = previous.cv_url?.trim?.();
+      if (previousCv) {
+        return previous;
+      }
+
+      return { ...previous, cv_url: pendingCv };
+    });
+    setUseExistingCv(true);
+  }, [profileForm.cv_url, user?.type]);
+
+  useEffect(() => {
     if (!salaryCalculatorOpen || typeof window === 'undefined') {
       return undefined;
     }
@@ -4109,21 +4166,25 @@ const SwissStartupConnect = () => {
   }, [appliedJobs]);
 
   const loadProfile = useCallback(
-    async (supabaseUser) => {
+    async (supabaseUser, options = {}) => {
       if (!supabaseUser) {
         setProfile(null);
+        lastUploadedCvRef.current = '';
         return;
       }
 
-      const applyProfileState = (profileRecord, options = {}) => {
+      const applyProfileState = (profileRecord, applyOptions = {}) => {
         if (!profileRecord) {
           return;
         }
 
+        const resolvedOptions = { ...options, ...applyOptions };
         const isStudentProfile = supabaseUser.type === 'student';
         const normalized = isStudentProfile
           ? profileRecord
           : { ...profileRecord, cv_url: null, cv_public: false };
+
+        const lastUploadedCv = lastUploadedCvRef.current?.trim?.() || '';
 
         const profileId =
           normalized.id ||
@@ -4139,26 +4200,88 @@ const SwissStartupConnect = () => {
           type: supabaseUser.type,
         };
 
-        if (options.updatePresence !== false) {
+        let resolvedCvUrl = '';
+
+        if (isStudentProfile) {
+          const incomingCv = sanitizedProfile.cv_url;
+          if (typeof incomingCv === 'string' && incomingCv.trim()) {
+            resolvedCvUrl = incomingCv.trim();
+            if (lastUploadedCv && resolvedCvUrl === lastUploadedCv) {
+              lastUploadedCvRef.current = '';
+            }
+          }
+        }
+
+        if (resolvedOptions.updatePresence !== false) {
           setProfileColumnPresence((previous) => ({
             ...previous,
             ...deriveColumnPresence([sanitizedProfile]),
           }));
         }
 
-        writeCachedProfile(supabaseUser.id, sanitizedProfile);
+        setProfile((previous) => {
+          const nextProfile = { ...sanitizedProfile };
+          if (isStudentProfile) {
+            const previousCv = previous?.cv_url;
+            const trimmedPreviousCv =
+              typeof previousCv === 'string' ? previousCv.trim() : previousCv ?? '';
+            if (!resolvedCvUrl) {
+              if (lastUploadedCv) {
+                resolvedCvUrl = lastUploadedCv;
+              } else if (!resolvedOptions.overwriteDraft && trimmedPreviousCv) {
+                resolvedCvUrl = trimmedPreviousCv;
+              }
+            }
+            nextProfile.cv_url = resolvedCvUrl || null;
+          } else {
+            nextProfile.cv_url = null;
+          }
 
-        setProfile(sanitizedProfile);
-        setProfileForm({
-          full_name: sanitizedProfile.full_name || supabaseUser.name,
-          university: sanitizedProfile.university || '',
-          program: sanitizedProfile.program || '',
-          experience: sanitizedProfile.experience || '',
-          bio: sanitizedProfile.bio || '',
-          portfolio_url: sanitizedProfile.portfolio_url || '',
-          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
-          avatar_url: sanitizedProfile.avatar_url || '',
-          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
+          if (!resolvedOptions.overwriteDraft && previous) {
+            if (!nextProfile.avatar_url && previous.avatar_url) {
+              nextProfile.avatar_url = previous.avatar_url;
+            }
+          }
+          writeCachedProfile(supabaseUser.id, nextProfile);
+          return nextProfile;
+        });
+
+        setProfileForm((previous) => {
+          const nextForm = {
+            full_name: sanitizedProfile.full_name || supabaseUser.name,
+            university: sanitizedProfile.university || '',
+            program: sanitizedProfile.program || '',
+            experience: sanitizedProfile.experience || '',
+            bio: sanitizedProfile.bio || '',
+            portfolio_url: sanitizedProfile.portfolio_url || '',
+            cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+            avatar_url: sanitizedProfile.avatar_url || '',
+            cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
+          };
+
+          if (isStudentProfile) {
+            const previousFormCv = previous?.cv_url;
+            const trimmedPreviousFormCv =
+              typeof previousFormCv === 'string' ? previousFormCv.trim() : previousFormCv ?? '';
+            if (!resolvedCvUrl) {
+              if (lastUploadedCv) {
+                resolvedCvUrl = lastUploadedCv;
+              } else if (!resolvedOptions.overwriteDraft && trimmedPreviousFormCv) {
+                resolvedCvUrl = trimmedPreviousFormCv;
+              }
+            }
+            nextForm.cv_url = resolvedCvUrl || '';
+          } else {
+            nextForm.cv_url = '';
+          }
+
+          if (!resolvedOptions.overwriteDraft && previous) {
+            if (!nextForm.avatar_url && previous.avatar_url) {
+              nextForm.avatar_url = previous.avatar_url;
+            }
+          }
+
+          return nextForm;
         });
       };
 
@@ -4211,7 +4334,10 @@ const SwissStartupConnect = () => {
                 return;
               }
 
-              applyProfileState({ ...baseProfile, id: supabaseUser.id }, { updatePresence: false });
+              applyProfileState(
+                { ...baseProfile, id: supabaseUser.id },
+                { updatePresence: false }
+              );
               return;
             }
 
@@ -5730,8 +5856,13 @@ const SwissStartupConnect = () => {
       const baseName = nameWithoutExtension || 'document';
 
       const attemptUpload = async (prefix) => {
-        const normalizedPrefix = prefix ? `${prefix.replace(/\/+$/, '')}/` : '';
-        const filePath = `${user.id}/${normalizedPrefix}${Date.now()}-${baseName}.${extension}`;
+        const normalizedPrefix = prefix ? prefix.replace(/\/+$/, '') : '';
+        const pathSegments = [];
+        if (normalizedPrefix) {
+          pathSegments.push(normalizedPrefix);
+        }
+        pathSegments.push(user.id);
+        const filePath = `${pathSegments.join('/')}/${Date.now()}-${baseName}.${extension}`;
         const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -5759,8 +5890,13 @@ const SwissStartupConnect = () => {
         return uploadedUrl;
       } catch (error) {
         const message = error?.message?.toLowerCase?.() ?? '';
-        if (message.includes('row-level security') && sanitizedPrefix && !sanitizedPrefix.startsWith('profiles')) {
-          const fallbackUrl = await attemptUpload(`profiles/${sanitizedPrefix}`);
+        if (message.includes('row-level security')) {
+          const fallbackPrefix = sanitizedPrefix
+            ? sanitizedPrefix.startsWith('profiles')
+              ? sanitizedPrefix
+              : `profiles/${sanitizedPrefix}`
+            : 'profiles';
+          const fallbackUrl = await attemptUpload(fallbackPrefix);
           if (!fallbackUrl) {
             throw new Error(
               translate('uploads.errors.noPublicUrl', 'Upload did not return a public URL.')
@@ -5771,7 +5907,7 @@ const SwissStartupConnect = () => {
         throw error;
       }
     },
-    [user?.id]
+    [translate, user?.id]
   );
 
   const handleProfileSubmit = async (event) => {
@@ -5926,11 +6062,14 @@ const SwissStartupConnect = () => {
       });
       writeCachedProfile(user.id, sanitizedProfile);
       if (!cachedFallbackProfile) {
-        await loadProfile({
-          id: user.id,
-          name: user.name,
-          type: user.type,
-        });
+        await loadProfile(
+          {
+            id: user.id,
+            name: user.name,
+            type: user.type,
+          },
+          { overwriteDraft: true }
+        );
       }
       const savedMessage = translate('toasts.saved', 'Saved successfully!');
       showToast(savedMessage);
@@ -6242,8 +6381,36 @@ const SwissStartupConnect = () => {
       if (!publicUrl) {
         throw new Error(translate('profileModal.errors.cvNoUrl', 'CV upload did not return a URL.'));
       }
-      setProfileForm((prev) => ({ ...prev, cv_url: publicUrl }));
-      setProfile((prev) => (prev ? { ...prev, cv_url: publicUrl } : prev));
+      const normalizedUrl = publicUrl.trim?.() || publicUrl;
+      lastUploadedCvRef.current = normalizedUrl;
+      const currentFormSnapshot = profileForm;
+      setProfileForm((prev) => ({ ...prev, cv_url: normalizedUrl }));
+      setProfile((prev) => {
+        if (!user?.id) {
+          return prev;
+        }
+
+        const nextProfile = prev
+          ? { ...prev, cv_url: normalizedUrl }
+          : {
+              id: user.id,
+              user_id: user.id,
+              type: user.type,
+              full_name: currentFormSnapshot.full_name || user.name || '',
+              university: currentFormSnapshot.university || '',
+              program: currentFormSnapshot.program || '',
+              experience: currentFormSnapshot.experience || '',
+              bio: currentFormSnapshot.bio || '',
+              portfolio_url: currentFormSnapshot.portfolio_url || '',
+              avatar_url: currentFormSnapshot.avatar_url || '',
+              cv_public: !!currentFormSnapshot.cv_public,
+              cv_url: normalizedUrl,
+            };
+
+        writeCachedProfile(user.id, nextProfile);
+        return nextProfile;
+      });
+      setUseExistingCv(true);
       setFeedback({
         type: 'success',
         message: translate(
@@ -7926,7 +8093,13 @@ const SwissStartupConnect = () => {
                   className="ssc__user-menu-toggle"
                   onClick={() => setShowUserMenu((prev) => !prev)}
                 >
-                  <div className="ssc__avatar-small">{userInitial}</div>
+                  <div className="ssc__avatar-small">
+                    {userAvatarUrl ? (
+                      <img src={userAvatarUrl} alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')} />
+                    ) : (
+                      <span>{userInitial}</span>
+                    )}
+                  </div>
                   <div className="ssc__user-meta">
                     <span className="ssc__user-name">{userDisplayName}</span>
                     <span className="ssc__user-role">{user.type}</span>
@@ -7936,7 +8109,16 @@ const SwissStartupConnect = () => {
                 {showUserMenu && (
                   <div className="ssc__user-menu">
                     <header className="ssc__user-menu-header">
-                      <div className="ssc__avatar-medium">{userInitial}</div>
+                      <div className="ssc__avatar-medium">
+                        {userAvatarUrl ? (
+                          <img
+                            src={userAvatarUrl}
+                            alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')}
+                          />
+                        ) : (
+                          <span>{userInitial}</span>
+                        )}
+                      </div>
                       <div>
                         <strong>{userDisplayName}</strong>
                         <span className="ssc__user-menu-role">{user.type}</span>
