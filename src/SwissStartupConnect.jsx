@@ -119,6 +119,7 @@ const TRANSLATIONS = {
       errors: {
         unknown: 'Erreur inconnue',
       },
+      dismiss: 'Fermer la notification',
     },
     nav: {
       general: 'Général',
@@ -935,6 +936,7 @@ const TRANSLATIONS = {
       errors: {
         unknown: 'Unbekannter Fehler',
       },
+      dismiss: 'Benachrichtigung schliessen',
     },
     nav: {
       general: 'Überblick',
@@ -3192,18 +3194,28 @@ const computeSalaryRange = (job) => {
   return [Math.round(min), Math.round(max)];
 };
 
-const detectMissingColumn = (message) => {
+const detectMissingColumn = (message, tableName = '') => {
   if (typeof message !== 'string') {
     return null;
   }
 
-  const patterns = [
-    /column "([^"]+)" of relation "jobs" does not exist/i,
-    /could not find the '([^']+)' column of 'jobs'/i,
+  const normalizedTable = tableName ? tableName.replace(/["'`]/g, '') : '';
+
+  const tableSpecificPatterns = normalizedTable
+    ? [
+        new RegExp(`column "([^"\\s]+)" of relation "${normalizedTable}" does not exist`, 'i'),
+        new RegExp(`could not find the '([^']+)' column of '${normalizedTable}'`, 'i'),
+        new RegExp(`'([^']+)' column of '${normalizedTable}'`, 'i'),
+        new RegExp(`column "([^"\\s]+)" of table "${normalizedTable}" does not exist`, 'i'),
+      ]
+    : [];
+
+  const genericPatterns = [
     /missing column "?([^\s"']+)"?/i,
+    /unknown column "?([^\s"']+)"?/i,
   ];
 
-  for (const pattern of patterns) {
+  for (const pattern of [...tableSpecificPatterns, ...genericPatterns]) {
     const match = message.match(pattern);
     if (match && match[1]) {
       return match[1];
@@ -3570,6 +3582,7 @@ const SwissStartupConnect = () => {
     avatar_url: '',
     cv_public: false,
   });
+  const [profileColumnPresence, setProfileColumnPresence] = useState({});
   const [profileSaving, setProfileSaving] = useState(false);
 
   const [startupProfile, setStartupProfile] = useState(null);
@@ -3708,7 +3721,10 @@ const SwissStartupConnect = () => {
 
   useEffect(() => {
     if (!feedback) return undefined;
-    const timeout = setTimeout(clearFeedback, 4000);
+    if (feedback.dismissAfter === 0) {
+      return undefined;
+    }
+    const timeout = setTimeout(clearFeedback, feedback.dismissAfter ?? 4000);
     return () => clearTimeout(timeout);
   }, [feedback, clearFeedback]);
 
@@ -3860,16 +3876,8 @@ const SwissStartupConnect = () => {
         if (!profileRecord) {
           const baseProfile = {
             user_id: supabaseUser.id,
-            full_name: supabaseUser.name,
+            full_name: supabaseUser.name || '',
             type: supabaseUser.type,
-            university: '',
-            program: '',
-            experience: '',
-            bio: '',
-            portfolio_url: '',
-            cv_url: '',
-            avatar_url: '',
-            cv_public: false,
           };
 
           const { data: inserted, error: insertError } = await supabase
@@ -3890,6 +3898,11 @@ const SwissStartupConnect = () => {
         const sanitizedProfile = isStudentProfile
           ? profileRecord
           : { ...profileRecord, cv_url: null, cv_public: false };
+
+        setProfileColumnPresence((previous) => ({
+          ...previous,
+          ...deriveColumnPresence([profileRecord]),
+        }));
 
         setProfile(sanitizedProfile);
         setProfileForm({
@@ -3997,7 +4010,9 @@ const SwissStartupConnect = () => {
             posted: job.posted || 'Recently posted',
             motivational_letter_required: job.motivational_letter_required ?? false,
           }));
-          setJobs(mapped);
+          const supabaseIds = new Set(mapped.map((job) => job.id));
+          const mergedJobs = [...mapped, ...mockJobs.filter((job) => !supabaseIds.has(job.id))];
+          setJobs(mergedJobs);
           setJobColumnPresence(deriveColumnPresence(data));
         } else {
           setJobs(mockJobs);
@@ -5266,73 +5281,137 @@ const SwissStartupConnect = () => {
     setProfileSaving(true);
     try {
       const isStudentProfile = user.type === 'student';
+      const trimmedFullName = profileForm.full_name?.trim?.() ?? '';
+      const trimmedUniversity = profileForm.university?.trim?.() ?? '';
+      const trimmedProgram = profileForm.program?.trim?.() ?? '';
+      const trimmedExperience = profileForm.experience?.trim?.() ?? '';
+      const trimmedBio = profileForm.bio?.trim?.() ?? '';
+      const trimmedPortfolio = profileForm.portfolio_url?.trim?.() ?? '';
 
-      const updates = {
+      const plannedUpdates = {
         user_id: user.id,
-        full_name: profileForm.full_name,
-        university: profileForm.university,
-        program: profileForm.program,
-        experience: profileForm.experience,
-        bio: profileForm.bio,
-        portfolio_url: profileForm.portfolio_url,
-        avatar_url: profileForm.avatar_url,
         type: user.type,
+        full_name: trimmedFullName,
+        university: trimmedUniversity,
+        program: trimmedProgram,
+        experience: trimmedExperience,
+        bio: trimmedBio,
+        portfolio_url: trimmedPortfolio,
+        avatar_url: profileForm.avatar_url || null,
       };
 
       if (isStudentProfile) {
-        updates.cv_url = profileForm.cv_url;
-        updates.cv_public = profileForm.cv_public;
+        plannedUpdates.cv_url = profileForm.cv_url || null;
+        if (profileColumnPresence.cv_public !== false) {
+          plannedUpdates.cv_public = profileForm.cv_public;
+        }
       } else {
-        updates.cv_url = null;
-        updates.cv_public = false;
+        if (profileColumnPresence.cv_url !== false) {
+          plannedUpdates.cv_url = null;
+        }
+        if (profileColumnPresence.cv_public !== false) {
+          plannedUpdates.cv_public = false;
+        }
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(updates, { onConflict: 'user_id' })
-        .select('*')
-        .single();
+      const filterUnsupportedColumns = (payload) =>
+        Object.entries(payload).reduce((accumulator, [key, value]) => {
+          if (profileColumnPresence[key] === false) {
+            return accumulator;
+          }
+          if (value === undefined) {
+            return accumulator;
+          }
+          accumulator[key] = value;
+          return accumulator;
+        }, {});
 
-      if (error) {
-        const rawMessage = error?.message?.trim?.();
-        const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
-        setFeedback({
-          type: 'error',
-          message: translate('profileModal.errors.save', 'Could not save profile: {{message}}', {
-            message,
-          }),
-        });
-      } else {
-        const mergedProfile = data
-          ? { ...(profile ?? {}), ...data }
-          : { ...(profile ?? {}), ...updates };
+      let attemptPayload = filterUnsupportedColumns(plannedUpdates);
 
-        const sanitizedProfile = isStudentProfile
-          ? mergedProfile
-          : { ...mergedProfile, cv_url: null, cv_public: false };
-
-        setProfile(sanitizedProfile);
-        setProfileForm({
-          full_name: sanitizedProfile.full_name || '',
-          university: sanitizedProfile.university || '',
-          program: sanitizedProfile.program || '',
-          experience: sanitizedProfile.experience || '',
-          bio: sanitizedProfile.bio || '',
-          portfolio_url: sanitizedProfile.portfolio_url || '',
-          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
-          avatar_url: sanitizedProfile.avatar_url || '',
-          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
-        });
-        await loadProfile({
-          id: user.id,
-          name: user.name,
-          type: user.type,
-        });
-        const savedMessage = translate('toasts.saved', 'Saved successfully!');
-        showToast(savedMessage);
-        setFeedback({ type: 'success', message: savedMessage });
-        setProfileModalOpen(false);
+      if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'user_id')) {
+        attemptPayload.user_id = user.id;
       }
+
+      let upsertedProfile = null;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert(attemptPayload, { onConflict: 'user_id' })
+          .select('*')
+          .single();
+
+        if (!error) {
+          upsertedProfile = data;
+          setProfileColumnPresence((previous) => {
+            const next = { ...previous };
+            Object.keys(attemptPayload).forEach((key) => {
+              next[key] = true;
+            });
+            return next;
+          });
+          break;
+        }
+
+        const missingColumn = detectMissingColumn(error.message, 'profiles');
+        if (!missingColumn) {
+          throw error;
+        }
+
+        setProfileColumnPresence((previous) => ({ ...previous, [missingColumn]: false }));
+
+        if (missingColumn === 'cv_public') {
+          setProfileForm((prev) => ({ ...prev, cv_public: false }));
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, missingColumn)) {
+          throw error;
+        }
+
+        const { [missingColumn]: _omitted, ...rest } = attemptPayload;
+        attemptPayload = rest;
+
+        if (!Object.keys(attemptPayload).length) {
+          throw error;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(attemptPayload, 'user_id')) {
+          attemptPayload.user_id = user.id;
+        }
+      }
+
+      const supportsCvVisibility =
+        isStudentProfile && Object.prototype.hasOwnProperty.call(attemptPayload, 'cv_public');
+
+      const mergedProfile = upsertedProfile
+        ? { ...(profile ?? {}), ...upsertedProfile }
+        : { ...(profile ?? {}), ...attemptPayload };
+
+      const sanitizedProfile = isStudentProfile
+        ? mergedProfile
+        : { ...mergedProfile, cv_url: null, cv_public: false };
+
+      setProfile(sanitizedProfile);
+      setProfileForm({
+        full_name: sanitizedProfile.full_name || '',
+        university: sanitizedProfile.university || '',
+        program: sanitizedProfile.program || '',
+        experience: sanitizedProfile.experience || '',
+        bio: sanitizedProfile.bio || '',
+        portfolio_url: sanitizedProfile.portfolio_url || '',
+        cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+        avatar_url: sanitizedProfile.avatar_url || '',
+        cv_public: supportsCvVisibility ? !!sanitizedProfile.cv_public : false,
+      });
+      await loadProfile({
+        id: user.id,
+        name: user.name,
+        type: user.type,
+      });
+      const savedMessage = translate('toasts.saved', 'Saved successfully!');
+      showToast(savedMessage);
+      setFeedback({ type: 'success', message: savedMessage, dismissAfter: 0 });
+      setProfileModalOpen(false);
     } catch (error) {
       const rawMessage = error?.message?.trim?.();
       const message = rawMessage || translate('common.errors.unknown', 'Unknown error');
@@ -5383,10 +5462,12 @@ const SwissStartupConnect = () => {
           'startupModal.feedback.saved',
           'Saved successfully! Verification updates will appear here.',
         );
+        const bannerMessage = translate('toasts.saved', 'Saved successfully!');
         showToast(savedMessage);
         setFeedback({
           type: 'success',
-          message: savedMessage,
+          message: bannerMessage,
+          dismissAfter: 0,
         });
         setStartupModalOpen(false);
       }
@@ -6130,7 +6211,7 @@ const SwissStartupConnect = () => {
           break;
         }
 
-        const missingColumn = detectMissingColumn(error.message);
+        const missingColumn = detectMissingColumn(error.message, 'jobs');
         if (!missingColumn) {
           setPostJobError(error.message);
           setPostingJob(false);
@@ -6787,6 +6868,7 @@ const SwissStartupConnect = () => {
   const applyRestrictionMessage = isLoggedIn
     ? translate('jobs.applyRestrictionStudent', 'Student applicants only')
     : translate('jobs.applyRestrictionSignIn', 'Sign in as a student to apply');
+  const cvVisibilitySupported = profileColumnPresence.cv_public !== false;
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
   const actionsRef = useRef(null);
@@ -7115,9 +7197,19 @@ const SwissStartupConnect = () => {
         )}
 
         {feedback && (
-          <div className="ssc__max">
-            <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
-              {feedback.message}
+          <div className="ssc__feedback-container" role="status" aria-live="polite">
+            <div
+              className={`ssc__feedback ${feedback.type ? `is-${feedback.type}` : ''}`}
+            >
+              <span>{feedback.message}</span>
+              <button
+                type="button"
+                className="ssc__feedback-dismiss"
+                onClick={clearFeedback}
+                aria-label={translate('common.dismiss', 'Dismiss notification')}
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
         )}
@@ -9116,6 +9208,7 @@ const SwissStartupConnect = () => {
                           'profileModal.placeholders.school',
                           'ETH Zürich, EPFL, HSG, ZHAW…'
                         )}
+                        required
                       />
                     </label>
                     <label className="ssc__field">
@@ -9229,20 +9322,26 @@ const SwissStartupConnect = () => {
                         <a href={profileForm.cv_url} target="_blank" rel="noreferrer">
                           {translate('profileModal.viewCurrentCv', 'View current CV')}
                         </a>
-                        <label className="ssc__switch">
-                          <input
-                            type="checkbox"
-                            checked={profileForm.cv_public}
-                            onChange={(event) =>
-                              setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
-                            }
-                          />
-                          <span>
-                            {profileForm.cv_public
-                              ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
-                              : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                        {cvVisibilitySupported ? (
+                          <label className="ssc__switch">
+                            <input
+                              type="checkbox"
+                              checked={profileForm.cv_public}
+                              onChange={(event) =>
+                                setProfileForm((prev) => ({ ...prev, cv_public: event.target.checked }))
+                              }
+                            />
+                            <span>
+                              {profileForm.cv_public
+                                ? translate('profileModal.cvVisibilityOn', 'CV visible to startups')
+                                : translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
+                            </span>
+                          </label>
+                        ) : (
+                          <span className="ssc__cv-visibility--locked">
+                            {translate('profileModal.cvVisibilityOff', 'Keep CV private until you apply')}
                           </span>
-                        </label>
+                        )}
                       </div>
                     )}
                   </label>
