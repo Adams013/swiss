@@ -39,6 +39,37 @@ const LANGUAGE_OPTIONS = [
   { value: 'de', label: 'Deutsch', shortLabel: 'DE' },
 ];
 
+const LANGUAGE_TAG_PREFIX = '__lang:';
+
+const LANGUAGE_VALUE_TO_CANONICAL = {
+  en: 'english',
+  fr: 'french',
+  de: 'german',
+};
+
+const mapLanguageValueToCanonical = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return LANGUAGE_VALUE_TO_CANONICAL[normalized] || normalized;
+};
+
+const filterLanguageTags = (tags) => {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+
+  return tags.filter((tag) => {
+    if (typeof tag !== 'string') {
+      return false;
+    }
+
+    return !tag.toLowerCase().startsWith(LANGUAGE_TAG_PREFIX);
+  });
+};
+
 const JOB_LANGUAGE_LABELS = {
   en: {
     english: 'English',
@@ -2064,6 +2095,23 @@ const resolveJobLanguageLabels = (job) => {
   ];
 
   candidates.forEach((value) => collectLanguageKeys(value, keys));
+
+  if (Array.isArray(job?.tags)) {
+    job.tags.forEach((tag) => {
+      if (typeof tag !== 'string') {
+        return;
+      }
+
+      if (!tag.toLowerCase().startsWith(LANGUAGE_TAG_PREFIX)) {
+        return;
+      }
+
+      const canonical = tag.slice(LANGUAGE_TAG_PREFIX.length).trim().toLowerCase();
+      if (canonical && !keys.includes(canonical)) {
+        keys.push(canonical);
+      }
+    });
+  }
 
   if (keys.length === 0 && job?.translations) {
     Object.values(job.translations).forEach((translation) => {
@@ -5728,8 +5776,11 @@ const SwissStartupConnect = () => {
       const languageSelection = Array.isArray(jobForm.language_requirements)
         ? jobForm.language_requirements.filter(Boolean)
         : [];
+      const canonicalLanguageSelection = Array.from(
+        new Set(languageSelection.map(mapLanguageValueToCanonical).filter(Boolean)),
+      );
 
-      if (languageSelection.length === 0) {
+      if (canonicalLanguageSelection.length === 0) {
         setPostJobError(
           translate(
             'jobForm.errors.languagesMissing',
@@ -5884,10 +5935,6 @@ const SwissStartupConnect = () => {
         cadence: cadenceSelection,
       });
 
-      const languageRequirementsDisplay = languageSelection.map(
-        (code) => JOB_LANGUAGE_LABELS.en[code] || code,
-      );
-
       const equityRaw = sanitizeDecimalInput(jobForm.equity?.trim() ?? '');
       let equityDisplay = '';
       let equityNumericValue = null;
@@ -5912,6 +5959,12 @@ const SwissStartupConnect = () => {
           ? formatWeeklyHoursLabel(weeklyHoursNumeric)
           : null;
 
+      const manualTags = jobForm.tags
+        ? jobForm.tags.split(',').map((item) => item.trim()).filter(Boolean)
+        : [];
+      const languageTags = canonicalLanguageSelection.map((key) => `${LANGUAGE_TAG_PREFIX}${key}`);
+      const tagsWithLanguages = Array.from(new Set([...manualTags, ...languageTags]));
+
       const payload = {
         startup_id: startupProfile.id,
         title: jobForm.title.trim(),
@@ -5923,16 +5976,13 @@ const SwissStartupConnect = () => {
         salary_max_value: Math.round(monthlyMax),
         equity: equityNumericValue != null ? equityDisplay : null,
         description: jobForm.description.trim(),
-        language_requirements: languageRequirementsDisplay,
         requirements: jobForm.requirements
           ? jobForm.requirements.split('\n').map((item) => item.trim()).filter(Boolean)
           : [],
         benefits: jobForm.benefits
           ? jobForm.benefits.split('\n').map((item) => item.trim()).filter(Boolean)
           : [],
-        tags: jobForm.tags
-          ? jobForm.tags.split(',').map((item) => item.trim()).filter(Boolean)
-          : [],
+        tags: tagsWithLanguages,
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
         weekly_hours_value:
@@ -7444,7 +7494,7 @@ const SwissStartupConnect = () => {
                         )}
 
                         <div className="ssc__job-tags">
-                          {job.tags?.map((tag) => (
+                          {filterLanguageTags(job.tags).map((tag) => (
                             <span key={tag} className="ssc__tag">
                               {tag}
                             </span>
@@ -8168,7 +8218,7 @@ const SwissStartupConnect = () => {
                           </div>
                         )}
                         <div className="ssc__job-tags">
-                          {job.tags?.map((tag) => (
+                          {filterLanguageTags(job.tags).map((tag) => (
                             <span key={tag} className="ssc__tag">
                               {tag}
                             </span>
