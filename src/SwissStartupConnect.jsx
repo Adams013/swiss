@@ -403,6 +403,10 @@ const TRANSLATIONS = {
       toast: {
         published: 'Offre publiée avec succès !',
       },
+      feedback: {
+        publishedFullTime:
+          'Offre publiée avec succès ! Publiée en temps plein car elle dépasse 40 heures par semaine.',
+      },
       modal: {
         title: 'Publier une nouvelle offre',
         subtitle: 'Partagez les informations clés pour que les étudiant·e·s comprennent l’opportunité.',
@@ -570,6 +574,7 @@ const TRANSLATIONS = {
         submitting: 'Envoi…',
       },
       feedback: {
+        saved: 'Enregistré avec succès ! Les mises à jour de vérification apparaîtront ici.',
         submitted: 'Profil startup envoyé. Les mises à jour de vérification apparaîtront ici.',
       },
       errors: {
@@ -1204,6 +1209,10 @@ const TRANSLATIONS = {
       toast: {
         published: 'Stelle erfolgreich veröffentlicht!',
       },
+      feedback: {
+        publishedFullTime:
+          'Stelle erfolgreich veröffentlicht! Als Vollzeitstelle veröffentlicht, da sie mehr als 40 Stunden pro Woche umfasst.',
+      },
       modal: {
         title: 'Neue Stelle veröffentlichen',
         subtitle: 'Teilen Sie die wichtigsten Fakten, damit Studierende die Chance verstehen.',
@@ -1372,6 +1381,7 @@ const TRANSLATIONS = {
         submitting: 'Wird gesendet…',
       },
       feedback: {
+        saved: 'Erfolgreich gespeichert! Aktualisierungen zur Verifizierung erscheinen hier.',
         submitted: 'Startup-Profil übermittelt. Updates zur Verifizierung erscheinen hier.',
       },
       errors: {
@@ -5187,8 +5197,9 @@ const SwissStartupConnect = () => {
           name: user.name,
           type: user.type,
         });
-        showToast(translate('toasts.saved', 'Saved successfully!'));
-        clearFeedback();
+        const savedMessage = translate('toasts.saved', 'Saved successfully!');
+        showToast(savedMessage);
+        setFeedback({ type: 'success', message: savedMessage });
         setProfileModalOpen(false);
       }
     } catch (error) {
@@ -5237,13 +5248,14 @@ const SwissStartupConnect = () => {
         });
       } else {
         setStartupProfile(data);
-        showToast(translate('toasts.saved', 'Saved successfully!'));
+        const savedMessage = translate(
+          'startupModal.feedback.saved',
+          'Saved successfully! Verification updates will appear here.',
+        );
+        showToast(savedMessage);
         setFeedback({
-          type: 'info',
-          message: translate(
-            'startupModal.feedback.submitted',
-            'Startup profile submitted. Verification updates will appear here.'
-          ),
+          type: 'success',
+          message: savedMessage,
         });
         setStartupModalOpen(false);
       }
@@ -5828,10 +5840,16 @@ const SwissStartupConnect = () => {
           : [],
         motivational_letter_required: jobForm.motivational_letter_required,
         posted: 'Just now',
-        weekly_hours_value: employmentTypeForPayload === 'Part-time' ? weeklyHoursNumeric : null,
+        weekly_hours_value:
+          employmentTypeForPayload === 'Part-time' && Number.isFinite(weeklyHoursNumeric)
+            ? weeklyHoursNumeric
+            : null,
         weekly_hours: weeklyHoursLabel,
-        duration_months: employmentTypeForPayload === 'Internship' ? internshipDurationNumeric : null,
       };
+
+      if (employmentTypeForPayload === 'Internship' && Number.isFinite(internshipDurationNumeric)) {
+        payload.internship_duration_months = internshipDurationNumeric;
+      }
 
       const { error } = await supabase.from('jobs').insert(payload);
       if (error) {
@@ -5839,18 +5857,16 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      showToast(translate('jobForm.toast.published', 'Job published successfully!'));
-      if (convertedToFullTime) {
-        setFeedback({
-          type: 'info',
-          message: translate(
-            'jobForm.info.postedAsFullTime',
-            'Job posted as a full-time role because it exceeds 40 hours per week.',
-          ),
-        });
-      } else {
-        clearFeedback();
-      }
+      const successMessage = translate('jobForm.toast.published', 'Job published successfully!');
+      const fullTimeFeedbackMessage = translate(
+        'jobForm.feedback.publishedFullTime',
+        'Job published successfully! Posted as a full-time role because it exceeds 40 hours per week.',
+      );
+      showToast(successMessage);
+      setFeedback({
+        type: 'success',
+        message: convertedToFullTime ? fullTimeFeedbackMessage : successMessage,
+      });
       setPostJobModalOpen(false);
       setJobForm({
         title: '',
