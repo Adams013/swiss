@@ -4139,17 +4139,18 @@ const SwissStartupConnect = () => {
   }, [appliedJobs]);
 
   const loadProfile = useCallback(
-    async (supabaseUser) => {
+    async (supabaseUser, options = {}) => {
       if (!supabaseUser) {
         setProfile(null);
         return;
       }
 
-      const applyProfileState = (profileRecord, options = {}) => {
+      const applyProfileState = (profileRecord, applyOptions = {}) => {
         if (!profileRecord) {
           return;
         }
 
+        const resolvedOptions = { ...options, ...applyOptions };
         const isStudentProfile = supabaseUser.type === 'student';
         const normalized = isStudentProfile
           ? profileRecord
@@ -4169,7 +4170,7 @@ const SwissStartupConnect = () => {
           type: supabaseUser.type,
         };
 
-        if (options.updatePresence !== false) {
+        if (resolvedOptions.updatePresence !== false) {
           setProfileColumnPresence((previous) => ({
             ...previous,
             ...deriveColumnPresence([sanitizedProfile]),
@@ -4178,17 +4179,42 @@ const SwissStartupConnect = () => {
 
         writeCachedProfile(supabaseUser.id, sanitizedProfile);
 
-        setProfile(sanitizedProfile);
-        setProfileForm({
-          full_name: sanitizedProfile.full_name || supabaseUser.name,
-          university: sanitizedProfile.university || '',
-          program: sanitizedProfile.program || '',
-          experience: sanitizedProfile.experience || '',
-          bio: sanitizedProfile.bio || '',
-          portfolio_url: sanitizedProfile.portfolio_url || '',
-          cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
-          avatar_url: sanitizedProfile.avatar_url || '',
-          cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
+        setProfile((previous) => {
+          const nextProfile = { ...sanitizedProfile };
+          if (!resolvedOptions.overwriteDraft && previous) {
+            if (!nextProfile.cv_url && previous.cv_url) {
+              nextProfile.cv_url = previous.cv_url;
+            }
+            if (!nextProfile.avatar_url && previous.avatar_url) {
+              nextProfile.avatar_url = previous.avatar_url;
+            }
+          }
+          return nextProfile;
+        });
+
+        setProfileForm((previous) => {
+          const nextForm = {
+            full_name: sanitizedProfile.full_name || supabaseUser.name,
+            university: sanitizedProfile.university || '',
+            program: sanitizedProfile.program || '',
+            experience: sanitizedProfile.experience || '',
+            bio: sanitizedProfile.bio || '',
+            portfolio_url: sanitizedProfile.portfolio_url || '',
+            cv_url: isStudentProfile ? sanitizedProfile.cv_url || '' : '',
+            avatar_url: sanitizedProfile.avatar_url || '',
+            cv_public: isStudentProfile ? !!sanitizedProfile.cv_public : false,
+          };
+
+          if (!resolvedOptions.overwriteDraft && previous) {
+            if (!nextForm.cv_url && previous.cv_url) {
+              nextForm.cv_url = previous.cv_url;
+            }
+            if (!nextForm.avatar_url && previous.avatar_url) {
+              nextForm.avatar_url = previous.avatar_url;
+            }
+          }
+
+          return nextForm;
         });
       };
 
@@ -4241,7 +4267,10 @@ const SwissStartupConnect = () => {
                 return;
               }
 
-              applyProfileState({ ...baseProfile, id: supabaseUser.id }, { updatePresence: false });
+              applyProfileState(
+                { ...baseProfile, id: supabaseUser.id },
+                { updatePresence: false }
+              );
               return;
             }
 
@@ -5966,11 +5995,14 @@ const SwissStartupConnect = () => {
       });
       writeCachedProfile(user.id, sanitizedProfile);
       if (!cachedFallbackProfile) {
-        await loadProfile({
-          id: user.id,
-          name: user.name,
-          type: user.type,
-        });
+        await loadProfile(
+          {
+            id: user.id,
+            name: user.name,
+            type: user.type,
+          },
+          { overwriteDraft: true }
+        );
       }
       const savedMessage = translate('toasts.saved', 'Saved successfully!');
       showToast(savedMessage);
