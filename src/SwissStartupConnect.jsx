@@ -457,6 +457,11 @@ const TRANSLATIONS = {
       saveTooltip: 'Connectez-vous avec un compte étudiant pour enregistrer des offres',
       thirteenth: '13e salaire',
       motivationalTag: 'Lettre de motivation',
+      arrangements: {
+        onSite: 'Sur site',
+        hybrid: 'Hybride',
+        remote: 'Télétravail',
+      },
       languagesLabel: 'Langues requises',
       requirementsHeading: 'Pré-requis',
       benefitsHeading: 'Avantages',
@@ -498,6 +503,7 @@ const TRANSLATIONS = {
       labels: {
         title: 'Intitulé du poste',
         location: 'Ville ou canton',
+        workArrangement: 'Mode de travail',
         employmentType: 'Type de contrat',
         weeklyHours: 'Heures hebdomadaires',
         internshipLength: 'Durée du stage (mois)',
@@ -521,6 +527,12 @@ const TRANSLATIONS = {
           partTime: 'Temps partiel',
           internship: 'Stage',
           contract: 'Contrat',
+        },
+        workArrangement: {
+          select: 'Sélectionner un mode',
+          onSite: 'Sur site',
+          hybrid: 'Hybride',
+          remote: 'Télétravail',
         },
         salaryCadence: {
           select: 'Sélectionner un rythme',
@@ -585,6 +597,7 @@ const TRANSLATIONS = {
         verificationRequired: 'Seules les startups vérifiées peuvent publier des offres.',
         locationInvalid: 'Choisissez une ville, un canton ou une option télétravail en Suisse dans la liste.',
         salaryCadenceMissing: 'Sélectionnez si le salaire est horaire, hebdomadaire, mensuel ou annuel.',
+        workArrangementMissing: 'Choisissez si le poste est sur site, hybride ou en télétravail.',
         salaryMinMissing: 'Indiquez le salaire minimum avant de publier l’offre.',
         salaryMinBelowMinimum: 'Le salaire {{cadence}} doit être au minimum de {{minimum}} CHF.',
         salaryMaxMissing: 'Indiquez le salaire maximum de la fourchette.',
@@ -1306,6 +1319,11 @@ const TRANSLATIONS = {
       saveTooltip: 'Mit Studierendenkonto anmelden, um Stellen zu merken',
       thirteenth: '13. Monatslohn',
       motivationalTag: 'Motivationsschreiben',
+      arrangements: {
+        onSite: 'Vor Ort',
+        hybrid: 'Hybrid',
+        remote: 'Remote',
+      },
       languagesLabel: 'Erforderliche Sprachen',
       requirementsHeading: 'Anforderungen',
       benefitsHeading: 'Leistungen',
@@ -1347,6 +1365,7 @@ const TRANSLATIONS = {
       labels: {
         title: 'Stellentitel',
         location: 'Ort oder Kanton',
+        workArrangement: 'Arbeitsmodell',
         employmentType: 'Anstellungsart',
         weeklyHours: 'Wochenstunden',
         internshipLength: 'Praktikumsdauer (Monate)',
@@ -1370,6 +1389,12 @@ const TRANSLATIONS = {
           partTime: 'Teilzeit',
           internship: 'Praktikum',
           contract: 'Vertrag',
+        },
+        workArrangement: {
+          select: 'Modus wählen',
+          onSite: 'Vor Ort',
+          hybrid: 'Hybrid',
+          remote: 'Remote',
         },
         salaryCadence: {
           select: 'Rhythmus wählen',
@@ -1434,6 +1459,7 @@ const TRANSLATIONS = {
         verificationRequired: 'Nur verifizierte Start-ups können Stellen veröffentlichen.',
         locationInvalid: 'Wählen Sie eine Schweizer Stadt, einen Kanton oder eine Remote-Option aus der Liste.',
         salaryCadenceMissing: 'Wählen Sie, ob das Gehalt stündlich, wöchentlich, monatlich oder jährlich ist.',
+        workArrangementMissing: 'Wählen Sie, ob die Rolle vor Ort, hybrid oder remote ist.',
         salaryMinMissing: 'Geben Sie das Mindestgehalt an, bevor Sie veröffentlichen.',
         salaryMinBelowMinimum: 'Das {{cadence}}e Gehalt muss mindestens {{minimum}} CHF betragen.',
         salaryMaxMissing: 'Geben Sie das maximale Gehalt für das Band an.',
@@ -2010,6 +2036,7 @@ const mockJobs = [
     company_name: 'TechFlow AG',
     startup_id: 'mock-company-1',
     location: 'Zurich, Switzerland',
+    work_arrangement: 'on_site',
     employment_type: 'Full-time',
     salary: '80k – 110k CHF',
     equity: '0.2% – 0.4%',
@@ -2062,6 +2089,7 @@ const mockJobs = [
     company_name: 'Alpine Health',
     startup_id: 'mock-company-2',
     location: 'Geneva, Switzerland',
+    work_arrangement: 'on_site',
     employment_type: 'Full-time',
     salary: '95k – 125k CHF',
     equity: '0.3% – 0.5%',
@@ -2114,6 +2142,7 @@ const mockJobs = [
     company_name: 'Alpine Health',
     startup_id: 'mock-company-2',
     location: 'Remote within Switzerland',
+    work_arrangement: 'remote',
     employment_type: 'Part-time',
     weekly_hours_value: 24,
     salary: '28 – 34 CHF / hour',
@@ -2167,6 +2196,7 @@ const mockJobs = [
     company_name: 'Cognivia Labs',
     startup_id: 'mock-company-3',
     location: 'Lausanne, Switzerland (Hybrid)',
+    work_arrangement: 'hybrid',
     employment_type: 'Internship',
     internship_duration_months: 6,
     salary: '3.5k CHF / month',
@@ -2467,6 +2497,19 @@ const SWISS_LOCATION_OPTIONS = [
   ['Across Switzerland', 'Across Switzerland', 'filters.locations.acrossSwitzerland'],
 ].map(([value, label, translationKey]) => ({ value, label, translationKey }));
 
+const WORK_ARRANGEMENT_OPTIONS = [
+  { value: 'on_site', label: 'On-site', translationKey: 'onSite' },
+  { value: 'hybrid', label: 'Hybrid', translationKey: 'hybrid' },
+  { value: 'remote', label: 'Remote', translationKey: 'remote' },
+];
+
+const WORK_ARRANGEMENT_VALUES = new Set(WORK_ARRANGEMENT_OPTIONS.map((option) => option.value));
+
+const WORK_ARRANGEMENT_LABEL_MAP = WORK_ARRANGEMENT_OPTIONS.reduce((accumulator, option) => {
+  accumulator[option.value] = option;
+  return accumulator;
+}, {});
+
 const ALLOWED_SWISS_LOCATIONS = new Set(
   SWISS_LOCATION_OPTIONS.map((option) =>
     option.value
@@ -2476,6 +2519,20 @@ const ALLOWED_SWISS_LOCATIONS = new Set(
       .toLowerCase(),
   ),
 );
+
+const buildWorkArrangementLabel = (translate, arrangement) => {
+  if (!arrangement || typeof arrangement !== 'string') {
+    return '';
+  }
+
+  const normalized = arrangement.trim();
+  const option = WORK_ARRANGEMENT_LABEL_MAP[normalized];
+  if (!option) {
+    return '';
+  }
+
+  return translate(`jobs.arrangements.${option.translationKey}`, option.label);
+};
 
 const steps = [
   {
@@ -4064,6 +4121,7 @@ const SwissStartupConnect = () => {
   }, [selectedJob, getJobLanguages, getLocalizedJobList, getLocalizedJobText]);
   const selectedJobIdKey = getJobIdKey(selectedJob?.id);
   const selectedJobApplied = selectedJobIdKey ? appliedJobSet.has(selectedJobIdKey) : false;
+  const selectedJobArrangementLabel = buildWorkArrangementLabel(translate, selectedJob?.work_arrangement);
 
   const localizedApplicationModal = useMemo(() => {
     if (!applicationModal) {
@@ -4103,6 +4161,7 @@ const SwissStartupConnect = () => {
   const [jobForm, setJobForm] = useState({
     title: '',
     location: '',
+    work_arrangement: '',
     employment_type: 'Full-time',
     weekly_hours: '',
     internship_duration_months: '',
@@ -6996,6 +7055,18 @@ const SwissStartupConnect = () => {
       );
       const locationValue = locationOption ? locationOption.value : locationSelection;
 
+      const arrangementSelection = jobForm.work_arrangement?.trim() ?? '';
+      if (!WORK_ARRANGEMENT_VALUES.has(arrangementSelection)) {
+        setPostJobError(
+          translate(
+            'jobForm.errors.workArrangementMissing',
+            'Select whether the role is on-site, hybrid, or remote.',
+          ),
+        );
+        setPostingJob(false);
+        return;
+      }
+
       const languageSelection = Array.isArray(jobForm.language_requirements)
         ? jobForm.language_requirements.filter(Boolean)
         : [];
@@ -7193,6 +7264,7 @@ const SwissStartupConnect = () => {
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
         location: locationValue,
+        work_arrangement: arrangementSelection,
         employment_type: employmentTypeForPayload,
         salary: salaryDisplay,
         equity: equityNumericValue != null ? equityDisplay : null,
@@ -7344,6 +7416,7 @@ const SwissStartupConnect = () => {
       setJobForm({
         title: '',
         location: '',
+        work_arrangement: '',
         employment_type: 'Full-time',
         weekly_hours: '',
         internship_duration_months: '',
@@ -8887,6 +8960,7 @@ const SwissStartupConnect = () => {
                     const jobTitle = getLocalizedJobText(job, 'title');
                     const jobDescription = getLocalizedJobText(job, 'description');
                     const jobLanguages = getJobLanguages(job);
+                    const jobArrangementLabel = buildWorkArrangementLabel(translate, job.work_arrangement);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -8917,6 +8991,12 @@ const SwissStartupConnect = () => {
                             <MapPin size={16} />
                             {job.location}
                           </span>
+                          {jobArrangementLabel && (
+                            <span>
+                              <Building2 size={16} />
+                              {jobArrangementLabel}
+                            </span>
+                          )}
                           <span>
                             <Clock size={16} />
                             {timingText}
@@ -9640,6 +9720,7 @@ const SwissStartupConnect = () => {
                     const jobLanguages = getJobLanguages(job);
                     const jobIdKey = getJobIdKey(job.id);
                     const hasApplied = jobIdKey ? appliedJobSet.has(jobIdKey) : false;
+                    const jobArrangementLabel = buildWorkArrangementLabel(translate, job.work_arrangement);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -9661,6 +9742,12 @@ const SwissStartupConnect = () => {
                             <MapPin size={16} />
                             {job.location}
                           </span>
+                          {jobArrangementLabel && (
+                            <span>
+                              <Building2 size={16} />
+                              {jobArrangementLabel}
+                            </span>
+                          )}
                           <span>
                             <Clock size={16} />
                             {timingText}
@@ -10186,6 +10273,12 @@ const SwissStartupConnect = () => {
                   <MapPin size={16} />
                   {localizedSelectedJob.location}
                 </span>
+                {selectedJobArrangementLabel && (
+                  <span>
+                    <Building2 size={16} />
+                    {selectedJobArrangementLabel}
+                  </span>
+                )}
                 <span>
                   <Clock size={16} />
                   {buildTimingText(localizedSelectedJob)}
@@ -10858,6 +10951,32 @@ const SwissStartupConnect = () => {
                       {SWISS_LOCATION_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {translate(option.translationKey, option.label)}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="ssc__select-caret" size={16} />
+                  </div>
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('jobForm.labels.workArrangement', 'Work arrangement')}</span>
+                  <div className="ssc__select-wrapper">
+                    <select
+                      className="ssc__select"
+                      value={jobForm.work_arrangement}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({ ...prev, work_arrangement: event.target.value }))
+                      }
+                      required
+                    >
+                      <option value="">
+                        {translate('jobForm.options.workArrangement.select', 'Select arrangement')}
+                      </option>
+                      {WORK_ARRANGEMENT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {translate(
+                            `jobForm.options.workArrangement.${option.translationKey}`,
+                            option.label,
+                          )}
                         </option>
                       ))}
                     </select>
