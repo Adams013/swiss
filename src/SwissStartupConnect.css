@@ -6,9 +6,9 @@
   --ssc-accent: #d27b4b;
   --ssc-accent-rgb: 210, 123, 75;
   --ssc-accent-alt: #4fa3a5;
-  --ssc-ink: #102232;
-  --ssc-ink-rgb: 16, 34, 50;
-  --ssc-muted: #4f5b66;
+  --ssc-ink: #0b1724;
+  --ssc-ink-rgb: 11, 23, 36;
+  --ssc-muted: #3f4c58;
   --ssc-border: rgba(31, 59, 77, 0.16);
   --ssc-background-start: #f8f4eb;
   --ssc-background-mid: #f5eddf;
@@ -1646,7 +1646,7 @@
 .ssc__primary-btn.is-disabled,
 .ssc__primary-btn:disabled {
   background: linear-gradient(135deg, rgba(var(--ssc-primary-rgb), 0.12), rgba(var(--ssc-ivory-rgb), 0.9));
-  color: rgba(var(--ssc-primary-rgb), 0.55);
+  color: rgba(var(--ssc-ink-rgb), 0.62);
   box-shadow: none;
   cursor: not-allowed;
   transform: none;
@@ -1850,7 +1850,7 @@
 
 .ssc__select:disabled {
   cursor: not-allowed;
-  color: rgba(100, 116, 139, 0.85);
+  color: rgba(var(--ssc-ink-rgb), 0.65);
   background: rgba(241, 245, 249, 0.75);
   box-shadow: none;
 }
@@ -1861,7 +1861,7 @@
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: rgba(100, 116, 139, 0.75);
+  color: rgba(var(--ssc-ink-rgb), 0.5);
   transition: color 0.2s ease;
 }
 
@@ -1870,7 +1870,7 @@
 }
 
 .ssc__select:disabled + .ssc__select-caret {
-  color: rgba(148, 163, 184, 0.65);
+  color: rgba(var(--ssc-ink-rgb), 0.4);
 }
 
 
