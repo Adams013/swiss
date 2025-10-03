@@ -2229,6 +2229,22 @@ const mockCompanies = [
     website: 'https://techflow.example',
     verification_status: 'verified',
     created_at: '2024-01-12T10:00:00Z',
+    translations: {
+      fr: {
+        tagline: 'Intelligence de liquidité pour les PME suisses',
+        industry: 'Fintech',
+        team: '65 personnes',
+        fundraising: 'CHF 28M levés',
+        culture: 'Axé produit, hybride par défaut, opérations neutres en carbone.',
+      },
+      de: {
+        tagline: 'Liquiditätsintelligenz für Schweizer KMU',
+        industry: 'Fintech',
+        team: '65 Personen',
+        fundraising: 'CHF 28 Mio. aufgenommen',
+        culture: 'Produktgetrieben, hybrid-first, CO₂-neutrale Abläufe.',
+      },
+    },
   },
   {
     id: 'mock-company-2',
@@ -2242,6 +2258,22 @@ const mockCompanies = [
     website: 'https://alpinehealth.example',
     verification_status: 'pending',
     created_at: '2024-01-08T09:30:00Z',
+    translations: {
+      fr: {
+        tagline: 'Parcours de soins numériques pour cliniques et télésanté',
+        industry: 'Healthtech',
+        team: '32 personnes',
+        fundraising: 'CHF 12M levés',
+        culture: 'Humain, informé par la clinique, confiance dans les données.',
+      },
+      de: {
+        tagline: 'Digitale Versorgungspfade für Kliniken und Telemedizin',
+        industry: 'Healthtech',
+        team: '32 Personen',
+        fundraising: 'CHF 12 Mio. aufgenommen',
+        culture: 'Menschenzentriert, klinisch fundiert, datenbasiertes Vertrauen.',
+      },
+    },
   },
   {
     id: 'mock-company-3',
@@ -2255,6 +2287,22 @@ const mockCompanies = [
     website: 'https://cognivia.example',
     verification_status: 'verified',
     created_at: '2024-01-18T14:45:00Z',
+    translations: {
+      fr: {
+        tagline: 'Outils ML pour des percées scientifiques',
+        industry: 'Deep Tech',
+        team: '48 personnes',
+        fundraising: 'CHF 35M levés',
+        culture: 'Ancrée dans la recherche, expert·e·s humbles, expérimentation rapide.',
+      },
+      de: {
+        tagline: 'ML-Tools für wissenschaftliche Durchbrüche',
+        industry: 'Deep Tech',
+        team: '48 Personen',
+        fundraising: 'CHF 35 Mio. aufgenommen',
+        culture: 'Forschungsbasiert, bodenständige Expert:innen, schnelle Experimente.',
+      },
+    },
   },
 ];
 
@@ -3700,6 +3748,25 @@ const SwissStartupConnect = () => {
         return [original];
       }
       return [];
+    },
+    [language]
+  );
+
+  const getLocalizedCompanyText = useCallback(
+    (company, field) => {
+      if (!company) {
+        return '';
+      }
+
+      if (language !== 'en') {
+        const localized = company?.translations?.[language]?.[field];
+        if (typeof localized === 'string' && localized.trim()) {
+          return localized;
+        }
+      }
+
+      const original = company?.[field];
+      return typeof original === 'string' ? original : '';
     },
     [language]
   );
@@ -9032,6 +9099,11 @@ const SwissStartupConnect = () => {
                       jobCount === 1 ? '1 open role' : `${jobCount} open roles`,
                       { count: jobCount }
                     );
+                    const tagline = getLocalizedCompanyText(company, 'tagline');
+                    const industry = getLocalizedCompanyText(company, 'industry');
+                    const team = getLocalizedCompanyText(company, 'team');
+                    const fundraising = getLocalizedCompanyText(company, 'fundraising');
+                    const culture = getLocalizedCompanyText(company, 'culture');
                     return (
                       <article key={followKey} className="ssc__company-card">
                         <div className="ssc__company-logo">
@@ -9047,28 +9119,28 @@ const SwissStartupConnect = () => {
                               </span>
                             )}
                           </div>
-                          <p className="ssc__company-tagline">{company.tagline}</p>
+                          <p className="ssc__company-tagline">{tagline}</p>
                           <div className="ssc__company-meta">
                             {company.location && <span>{company.location}</span>}
-                            {company.industry && <span>{company.industry}</span>}
+                            {industry && <span>{industry}</span>}
                           </div>
-                          {(company.team || company.fundraising) && (
+                          {(team || fundraising) && (
                             <div className="ssc__company-insights">
-                              {company.team && (
+                              {team && (
                                 <span className="ssc__company-pill ssc__company-pill--team">
                                   <Users size={14} />
-                                  {company.team}
+                                  {team}
                                 </span>
                               )}
-                              {company.fundraising && (
+                              {fundraising && (
                                 <span className="ssc__company-pill ssc__company-pill--funding">
                                   <Sparkles size={14} />
-                                  {company.fundraising}
+                                  {fundraising}
                                 </span>
                               )}
                             </div>
                           )}
-                          <p className="ssc__company-stats">{company.culture}</p>
+                          <p className="ssc__company-stats">{culture}</p>
                           <div className="ssc__company-foot">
                             <span className="ssc__company-jobs">{jobCountLabel}</span>
                             <div className="ssc__company-actions">
