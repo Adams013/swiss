@@ -2879,18 +2879,12 @@
   gap: 0.35rem;
 }
 
-.ssc__status-select select {
-  padding: 0.4rem 0.6rem;
-  border-radius: 10px;
-  border: 1px solid var(--ssc-border);
-  font-size: 0.9rem;
-  color: var(--ssc-ink);
+.ssc__status-select .ssc__select-wrapper {
+  min-width: 170px;
 }
 
-.ssc__status-select select:focus {
-  outline: none;
-  border-color: var(--ssc-primary);
-  box-shadow: 0 0 0 3px rgba(var(--ssc-primary-rgb), 0.15);
+.ssc__status-select .ssc__select {
+  text-transform: capitalize;
 }
 
 .ssc__candidate {
@@ -3043,7 +3037,7 @@
 
 .ssc__thread-field textarea,
 .ssc__thread-field input,
-.ssc__thread-field select {
+.ssc__thread-field select:not(.ssc__select) {
   border-radius: 12px;
   border: 1px solid var(--ssc-border);
   padding: 0.6rem 0.75rem;
@@ -3059,10 +3053,14 @@
 
 .ssc__thread-field textarea:focus,
 .ssc__thread-field input:focus,
-.ssc__thread-field select:focus {
+.ssc__thread-field select:not(.ssc__select):focus {
   outline: none;
   border-color: var(--ssc-primary);
   box-shadow: 0 0 0 3px rgba(var(--ssc-primary-rgb), 0.15);
+}
+
+.ssc__thread-field .ssc__select {
+  text-transform: capitalize;
 }
 
 .ssc__thread-field small {

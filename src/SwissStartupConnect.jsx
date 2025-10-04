@@ -2833,6 +2833,18 @@ const cvWritingTips = [
 
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
 
+const formatStatusKeyLabel = (statusKey) => {
+  if (!statusKey || typeof statusKey !== 'string') {
+    return '';
+  }
+
+  return statusKey
+    .split('_')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+};
+
 const activeCityFilters = [
   {
     id: 'city-zurich',
@@ -8029,7 +8041,10 @@ const SwissStartupConnect = () => {
     setApplicationStatusUpdating(applicationId);
     const targetApplication = applications.find((application) => application.id === applicationId);
     if (targetApplication?.isLocal) {
-      const statusLabel = translate(`applications.status.${nextStatus}`, nextStatus.replace('_', ' '));
+      const statusLabel = translate(
+        `applications.status.${nextStatus}`,
+        formatStatusKeyLabel(nextStatus)
+      );
       setApplications((previous) =>
         previous.map((application) =>
           application.id === applicationId ? { ...application, status: nextStatus } : application
@@ -8056,7 +8071,10 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const statusLabel = translate(`applications.status.${nextStatus}`, nextStatus.replace('_', ' '));
+      const statusLabel = translate(
+        `applications.status.${nextStatus}`,
+        formatStatusKeyLabel(nextStatus)
+      );
       setFeedback({
         type: 'success',
         message: translate('applications.statusFeedback', 'Application marked as {{status}}.', {
@@ -9672,17 +9690,21 @@ const SwissStartupConnect = () => {
                           <div className="ssc__status-select">
                             <label>
                               {translate('applications.statusLabel', 'Status')}
-                              <select
-                                value={application.status}
-                                onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
-                                disabled={applicationStatusUpdating === application.id}
-                              >
-                                {applicationStatuses.map((status) => (
-                                  <option key={status} value={status}>
-                                    {translate(`applications.status.${status}`, status.replace('_', ' '))}
-                                  </option>
-                                ))}
-                              </select>
+                              <div className="ssc__select-wrapper">
+                                <select
+                                  className="ssc__select"
+                                  value={application.status}
+                                  onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
+                                  disabled={applicationStatusUpdating === application.id}
+                                >
+                                  {applicationStatuses.map((status) => (
+                                    <option key={status} value={status}>
+                                      {translate(`applications.status.${status}`, formatStatusKeyLabel(status))}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
+                              </div>
                             </label>
                           </div>
                         </header>
@@ -9793,6 +9815,7 @@ const SwissStartupConnect = () => {
                                 <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
                                 <div className="ssc__select-wrapper">
                                   <select
+                                    className="ssc__select"
                                     value={resolvedType}
                                     onChange={(event) =>
                                       handleApplicationThreadTypeChange(application.id, event.target.value)
@@ -9811,6 +9834,7 @@ const SwissStartupConnect = () => {
                                       </option>
                                     ))}
                                   </select>
+                                  <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
                                 </div>
                               </label>
 
