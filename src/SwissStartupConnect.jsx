@@ -192,6 +192,70 @@ const normalizeApplicationKey = (jobId, profileId) => {
   return `${jobKey}::${profileKey}`;
 };
 
+const normalizeThreadStateValue = (value) => {
+  if (Array.isArray(value)) {
+    return { entries: value, meta: null };
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Array.isArray(value.entries) ? value.entries : [];
+    const meta = value.meta && typeof value.meta === 'object' ? value.meta : null;
+    return { entries, meta };
+  }
+
+  return { entries: [], meta: null };
+};
+
+const pickThreadValue = (store, primaryKey, fallbackKey) => {
+  if (!store || typeof store !== 'object') {
+    return undefined;
+  }
+
+  if (primaryKey && Object.prototype.hasOwnProperty.call(store, primaryKey)) {
+    return store[primaryKey];
+  }
+
+  if (fallbackKey && Object.prototype.hasOwnProperty.call(store, fallbackKey)) {
+    return store[fallbackKey];
+  }
+
+  return undefined;
+};
+
+const removeThreadKeys = (store, keys = []) => {
+  if (!store || typeof store !== 'object' || !Array.isArray(keys) || keys.length === 0) {
+    return store;
+  }
+
+  let next = store;
+  let mutated = false;
+
+  keys.forEach((key) => {
+    if (!key) {
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(next, key)) {
+      if (!mutated) {
+        next = { ...next };
+        mutated = true;
+      }
+      delete next[key];
+    }
+  });
+
+  return mutated ? next : store;
+};
+
+const parseThreadKey = (key) => {
+  if (typeof key !== 'string') {
+    return { jobId: '', profileId: '' };
+  }
+
+  const [jobId = '', profileId = ''] = key.split('::');
+  return { jobId: jobId || '', profileId: profileId || '' };
+};
+
 const upsertLocalApplication = (entry) => {
   if (!entry) {
     return null;
@@ -409,6 +473,7 @@ const TRANSLATIONS = {
       companies: 'Startups',
       myJobs: 'Mes offres',
       applications: 'Candidatures',
+      messages: 'Messages',
       saved: 'Favoris',
       join: 'Rejoindre',
       signIn: 'Se connecter',
@@ -1067,6 +1132,24 @@ const TRANSLATIONS = {
       threadValidation: 'Ajoutez un message avant de l’enregistrer.',
       threadScheduledFor: 'Prévu le {{date}}',
       threadMessageLabel: 'Message',
+      threadAuthor: {
+        you: 'Vous',
+        student: 'Candidat·e',
+        startup: 'Équipe startup',
+      },
+      studentInboxTitle: 'Messages',
+      studentInboxSubtitle:
+        'Les startups vous écriront ici après avoir consulté votre candidature.',
+      studentInboxEmptyTitle: 'Pas encore de messages',
+      studentInboxEmptyDescription:
+        'Postulez à des rôles et surveillez cette rubrique pour les réponses des startups.',
+      studentInboxCount: '{{count}} conversation{{plural}}',
+      studentInboxJobFallback: 'Opportunité',
+      studentInboxCompanyFallback: 'Startup',
+      studentReplyPlaceholder: 'Écrivez votre réponse…',
+      studentReplyCta: 'Envoyer la réponse',
+      studentReplyLocked:
+        'Les startups enverront le premier message. Vous pourrez répondre dès qu’elles vous contactent.',
       feedback: {
         submitted: 'Candidature envoyée ! 🎉',
         submittedFallback:
@@ -1271,6 +1354,7 @@ const TRANSLATIONS = {
       companies: 'Start-ups',
       myJobs: 'Meine Inserate',
       applications: 'Bewerbungen',
+      messages: 'Nachrichten',
       saved: 'Gemerkt',
       join: 'Beitreten',
       signIn: 'Anmelden',
@@ -1930,6 +2014,24 @@ const TRANSLATIONS = {
       threadValidation: 'Fügen Sie eine Nachricht hinzu, bevor Sie sie speichern.',
       threadScheduledFor: 'Geplant für {{date}}',
       threadMessageLabel: 'Nachricht',
+      threadAuthor: {
+        you: 'Sie',
+        student: 'Kandidat:in',
+        startup: 'Start-up-Team',
+      },
+      studentInboxTitle: 'Nachrichten',
+      studentInboxSubtitle:
+        'Sobald Start-ups Ihre Bewerbung prüfen, melden sie sich hier bei Ihnen.',
+      studentInboxEmptyTitle: 'Noch keine Nachrichten',
+      studentInboxEmptyDescription:
+        'Bewerben Sie sich auf Rollen und behalten Sie Antworten von Start-ups hier im Blick.',
+      studentInboxCount: '{{count}} Gespräch{{plural}}',
+      studentInboxJobFallback: 'Rolle',
+      studentInboxCompanyFallback: 'Start-up',
+      studentReplyPlaceholder: 'Schreiben Sie Ihre Antwort…',
+      studentReplyCta: 'Antwort senden',
+      studentReplyLocked:
+        'Start-ups schicken die erste Nachricht. Sobald sie sich melden, können Sie hier antworten.',
       feedback: {
         submitted: 'Bewerbung versendet! 🎉',
         submittedFallback:
@@ -4219,7 +4321,21 @@ const SwissStartupConnect = () => {
     }
     try {
       const stored = window.localStorage.getItem(APPLICATION_THREAD_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
+      if (!stored) {
+        return {};
+      }
+      const parsed = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object') {
+        return {};
+      }
+      const normalised = {};
+      Object.entries(parsed).forEach(([key, value]) => {
+        if (!key) {
+          return;
+        }
+        normalised[key] = normalizeThreadStateValue(value);
+      });
+      return normalised;
     } catch (error) {
       console.error('Failed to parse application threads', error);
       return {};
@@ -4266,6 +4382,112 @@ const SwissStartupConnect = () => {
       localizedLanguages: getJobLanguages(applicationModal),
     };
   }, [applicationModal, getJobLanguages, getLocalizedJobText]);
+  const getApplicationThreadKey = useCallback((application) => {
+    if (!application) {
+      return '';
+    }
+
+    const jobIdentifier = application.job_id ?? application?.jobs?.id;
+    const profileIdentifier = application.profile_id ?? application?.profiles?.id;
+
+    if (!jobIdentifier || !profileIdentifier) {
+      return '';
+    }
+
+    return normalizeApplicationKey(jobIdentifier, profileIdentifier);
+  }, []);
+
+  const buildThreadMetaFromApplication = useCallback(
+    (application) => {
+      if (!application) {
+        return null;
+      }
+
+      const job = application.jobs || {};
+      const candidate = application.profiles || {};
+      const jobId = job.id ?? application.job_id ?? '';
+      const profileId = candidate.id ?? application.profile_id ?? '';
+
+      if (!jobId && !profileId) {
+        return null;
+      }
+
+      const jobTitle = getLocalizedJobText(job, 'title') || job.title || '';
+      const companyName = job.company_name || '';
+      const startupId = job.startup_id ?? application.startup_id ?? '';
+
+      return {
+        jobId,
+        profileId,
+        jobTitle,
+        companyName,
+        startupId,
+      };
+    },
+    [getLocalizedJobText]
+  );
+  const studentInboxThreads = useMemo(() => {
+    if (!user || user.type !== 'student') {
+      return [];
+    }
+
+    const profileIdentifier = profile?.id || profileForm?.id || user?.id;
+    const profileKey = getJobIdKey(profileIdentifier);
+    if (!profileKey) {
+      return [];
+    }
+
+    const threads = [];
+
+    Object.entries(applicationThreads).forEach(([key, value]) => {
+      const { entries, meta } = normalizeThreadStateValue(value);
+      const { jobId, profileId } = parseThreadKey(key);
+      const resolvedProfileId = getJobIdKey(meta?.profileId || profileId);
+
+      if (!resolvedProfileId || resolvedProfileId !== profileKey) {
+        return;
+      }
+
+      const resolvedJobId = getJobIdKey(meta?.jobId || jobId);
+      let jobTitle = meta?.jobTitle || '';
+      let companyName = meta?.companyName || '';
+
+      if (resolvedJobId) {
+        const jobMatch = jobs.find((job) => getJobIdKey(job.id) === resolvedJobId);
+        if (jobMatch) {
+          jobTitle = jobTitle || getLocalizedJobText(jobMatch, 'title') || jobMatch.title || '';
+          companyName = companyName || jobMatch.company_name || '';
+        }
+      }
+
+      const sortedEntries = [...entries].sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return aTime - bTime;
+      });
+
+      const employerHasMessaged = sortedEntries.some(
+        (entry) => (entry.author || 'startup') === 'startup'
+      );
+      const latestEntry = sortedEntries[sortedEntries.length - 1];
+      const lastTime = latestEntry ? new Date(latestEntry.createdAt).getTime() : 0;
+
+      threads.push({
+        key,
+        entries: sortedEntries,
+        meta: {
+          jobId: resolvedJobId,
+          profileId: resolvedProfileId,
+          jobTitle,
+          companyName,
+        },
+        employerHasMessaged,
+        lastTime,
+      });
+    });
+
+    return threads.sort((a, b) => b.lastTime - a.lastTime);
+  }, [applicationThreads, user, profile?.id, profileForm?.id, jobs, getLocalizedJobText]);
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
   const [securityOldPassword, setSecurityOldPassword] = useState('');
@@ -4429,6 +4651,55 @@ const SwissStartupConnect = () => {
     }
     return undefined;
   }, [applicationThreads]);
+
+  useEffect(() => {
+    if (user?.type !== 'startup' || applications.length === 0) {
+      return;
+    }
+
+    setApplicationThreads((previous) => {
+      let nextState = previous;
+      let changed = false;
+
+      applications.forEach((application) => {
+        const threadKey = getApplicationThreadKey(application);
+        if (!threadKey) {
+          return;
+        }
+
+        const meta = buildThreadMetaFromApplication(application);
+        const existing = nextState[threadKey];
+        const normalised = normalizeThreadStateValue(existing);
+        const existingMeta = normalised.meta || {};
+        const mergedMeta = meta ? { ...existingMeta, ...meta } : existingMeta;
+        const needsMetaUpdate =
+          meta && Object.keys(meta).some((key) => meta[key] && existingMeta[key] !== meta[key]);
+        const needsStructureUpdate = !existing || Array.isArray(existing);
+
+        if (needsMetaUpdate || needsStructureUpdate) {
+          if (!changed) {
+            nextState = { ...nextState };
+            changed = true;
+          }
+          nextState[threadKey] = {
+            entries: normalised.entries,
+            meta: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
+          };
+        }
+
+        const legacyKey = getJobIdKey(application.id);
+        if (legacyKey && legacyKey !== threadKey && nextState[legacyKey]) {
+          if (!changed) {
+            nextState = { ...nextState };
+            changed = true;
+          }
+          delete nextState[legacyKey];
+        }
+      });
+
+      return changed ? nextState : previous;
+    });
+  }, [applications, user?.type, getApplicationThreadKey, buildThreadMetaFromApplication]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -8089,72 +8360,162 @@ const SwissStartupConnect = () => {
     }
   };
 
-  const handleApplicationThreadDraftChange = (applicationId, value) => {
-    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: value }));
+  const appendThreadEntry = (threadKey, entry, meta, legacyKey) => {
+    if (!threadKey) {
+      return;
+    }
+
+    setApplicationThreads((prev) => {
+      const baseState = legacyKey && legacyKey !== threadKey ? removeThreadKeys(prev, [legacyKey]) : prev;
+      const current = normalizeThreadStateValue(baseState[threadKey]);
+      const mergedMeta = meta ? { ...(current.meta || {}), ...meta } : current.meta || null;
+      const safeMeta = mergedMeta && Object.keys(mergedMeta).length > 0 ? mergedMeta : null;
+      const nextValue = {
+        entries: [...current.entries, entry],
+        meta: safeMeta,
+      };
+      return { ...baseState, [threadKey]: nextValue };
+    });
+  };
+
+  const handleApplicationThreadDraftChange = (threadKey, value, legacyKey) => {
+    const cleanupKeys = legacyKey && legacyKey !== threadKey ? [legacyKey] : [];
+    setApplicationThreadDrafts((prev) => {
+      const cleaned = cleanupKeys.length > 0 ? removeThreadKeys(prev, cleanupKeys) : prev;
+      if (!threadKey) {
+        return cleaned;
+      }
+      if (cleaned[threadKey] === value) {
+        return cleaned;
+      }
+      return { ...cleaned, [threadKey]: value };
+    });
     if (value?.trim?.()) {
-      setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+      setApplicationThreadErrors((prev) =>
+        removeThreadKeys(prev, [threadKey, legacyKey].filter(Boolean))
+      );
     }
   };
 
-  const handleApplicationThreadTypeChange = (applicationId, nextType) => {
-    setApplicationThreadTypeDrafts((prev) => ({ ...prev, [applicationId]: nextType }));
-    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+  const handleApplicationThreadTypeChange = (threadKey, nextType, legacyKey) => {
+    const cleanupKeys = legacyKey && legacyKey !== threadKey ? [legacyKey] : [];
+    setApplicationThreadTypeDrafts((prev) => {
+      const cleaned = cleanupKeys.length > 0 ? removeThreadKeys(prev, cleanupKeys) : prev;
+      if (!threadKey) {
+        return cleaned;
+      }
+      if (cleaned[threadKey] === nextType) {
+        return cleaned;
+      }
+      return { ...cleaned, [threadKey]: nextType };
+    });
+    setApplicationThreadErrors((prev) =>
+      removeThreadKeys(prev, [threadKey, legacyKey].filter(Boolean))
+    );
     if (nextType !== 'interview') {
-      setApplicationThreadScheduleDrafts((prev) => {
-        if (!prev[applicationId]) {
-          return prev;
-        }
-        const next = { ...prev };
-        delete next[applicationId];
-        return next;
-      });
+      setApplicationThreadScheduleDrafts((prev) =>
+        removeThreadKeys(prev, [threadKey, legacyKey].filter(Boolean))
+      );
     }
   };
 
-  const handleApplicationThreadScheduleChange = (applicationId, value) => {
-    setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: value }));
+  const handleApplicationThreadScheduleChange = (threadKey, value, legacyKey) => {
+    const cleanupKeys = legacyKey && legacyKey !== threadKey ? [legacyKey] : [];
+    setApplicationThreadScheduleDrafts((prev) => {
+      const cleaned = cleanupKeys.length > 0 ? removeThreadKeys(prev, cleanupKeys) : prev;
+      if (!threadKey) {
+        return cleaned;
+      }
+      if (cleaned[threadKey] === value) {
+        return cleaned;
+      }
+      return { ...cleaned, [threadKey]: value };
+    });
   };
 
-  const handleApplicationThreadSubmit = (event, applicationId) => {
+  const handleApplicationThreadSubmit = (event, application, threadKey, legacyKey) => {
     event.preventDefault();
-    const rawMessage = applicationThreadDrafts[applicationId] || '';
-    const message = rawMessage.trim();
+
+    const targetKey = threadKey || legacyKey || getJobIdKey(application?.id);
+    const rawDraft = pickThreadValue(applicationThreadDrafts, threadKey, legacyKey) || '';
+    const draftString = typeof rawDraft === 'string' ? rawDraft : String(rawDraft);
+    const message = draftString.trim();
+
+    if (!targetKey) {
+      return;
+    }
+
     if (!message) {
       setApplicationThreadErrors((prev) => ({
         ...prev,
-        [applicationId]: translate('applications.threadValidation', 'Add a note before saving it.'),
+        [targetKey]: translate('applications.threadValidation', 'Add a note before saving it.'),
       }));
       return;
     }
 
-    const type = applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0];
-    const scheduleAtRaw = applicationThreadScheduleDrafts[applicationId] || '';
-    const scheduleAt = type === 'interview' && scheduleAtRaw ? scheduleAtRaw : null;
+    const typeDraft = pickThreadValue(applicationThreadTypeDrafts, threadKey, legacyKey);
+    const type = typeof typeDraft === 'string' && typeDraft ? typeDraft : APPLICATION_THREAD_TYPES[0];
+    const scheduleDraft = pickThreadValue(applicationThreadScheduleDrafts, threadKey, legacyKey);
+    const scheduleRaw = typeof scheduleDraft === 'string' ? scheduleDraft.trim() : '';
+    const scheduleAt = type === 'interview' && scheduleRaw ? scheduleRaw : null;
 
     const entry = {
-      id: `${applicationId}-${Date.now()}`,
+      id: `${targetKey}-${Date.now()}`,
       type,
       message,
       createdAt: new Date().toISOString(),
       scheduleAt,
+      author: 'startup',
     };
 
-    setApplicationThreads((prev) => {
-      const thread = prev[applicationId] || [];
-      return {
-        ...prev,
-        [applicationId]: [...thread, entry],
-      };
-    });
-    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: '' }));
-    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
-    if (scheduleAtRaw) {
-      setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: '' }));
+    appendThreadEntry(targetKey, entry, buildThreadMetaFromApplication(application), legacyKey);
+
+    const keysToClear = [threadKey, legacyKey, targetKey].filter(Boolean);
+    setApplicationThreadDrafts((prev) => removeThreadKeys(prev, keysToClear));
+    setApplicationThreadErrors((prev) => removeThreadKeys(prev, keysToClear));
+    setApplicationThreadScheduleDrafts((prev) => removeThreadKeys(prev, keysToClear));
+    if (legacyKey && legacyKey !== targetKey) {
+      setApplicationThreadTypeDrafts((prev) => removeThreadKeys(prev, [legacyKey]));
     }
   };
 
+  const handleStudentThreadSubmit = (event, threadKey, meta, canReply) => {
+    event.preventDefault();
+    if (!canReply || !threadKey) {
+      return;
+    }
+
+    const rawDraft = pickThreadValue(applicationThreadDrafts, threadKey, null) || '';
+    const draftString = typeof rawDraft === 'string' ? rawDraft : String(rawDraft);
+    const message = draftString.trim();
+
+    if (!message) {
+      setApplicationThreadErrors((prev) => ({
+        ...prev,
+        [threadKey]: translate('applications.threadValidation', 'Add a note before saving it.'),
+      }));
+      return;
+    }
+
+    const entry = {
+      id: `${threadKey}-${Date.now()}`,
+      type: 'message',
+      message,
+      createdAt: new Date().toISOString(),
+      scheduleAt: null,
+      author: 'student',
+    };
+
+    appendThreadEntry(threadKey, entry, meta, null);
+    setApplicationThreadDrafts((prev) => removeThreadKeys(prev, [threadKey]));
+    setApplicationThreadErrors((prev) => removeThreadKeys(prev, [threadKey]));
+  };
+
   const resolveApplicationThreadType = useCallback(
-    (applicationId) => applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0],
+    (primaryKey, fallbackKey) =>
+      (typeof primaryKey === 'string' && applicationThreadTypeDrafts[primaryKey]) ||
+      (typeof fallbackKey === 'string' && applicationThreadTypeDrafts[fallbackKey]) ||
+      APPLICATION_THREAD_TYPES[0],
     [applicationThreadTypeDrafts]
   );
 
@@ -8370,6 +8731,9 @@ const SwissStartupConnect = () => {
     if (user?.type === 'startup') {
       baseTabs.push('my-jobs', 'applications');
     }
+    if (user?.type === 'student') {
+      baseTabs.push('messages');
+    }
     baseTabs.push('saved');
     return baseTabs;
   }, [user?.type]);
@@ -8381,6 +8745,7 @@ const SwissStartupConnect = () => {
       companies: translate('nav.companies', 'Startups'),
       'my-jobs': translate('nav.myJobs', 'My jobs'),
       applications: translate('nav.applications', 'Applicants'),
+      messages: translate('nav.messages', 'Messages'),
       saved: translate('nav.saved', 'Saved'),
     }),
     [translate]
@@ -9676,10 +10041,36 @@ const SwissStartupConnect = () => {
                       const jobTitle = getLocalizedJobText(job, 'title');
                       const cvLink = application.cv_override_url || candidate?.cv_url;
                       const appliedDate = new Date(application.created_at).toLocaleDateString();
-                      const threadEntries = applicationThreads[application.id] || [];
-                      const resolvedType = resolveApplicationThreadType(application.id);
-                      const scheduleDraftValue = applicationThreadScheduleDrafts[application.id] || '';
-                      const threadError = applicationThreadErrors[application.id];
+                      const threadKey = getApplicationThreadKey(application);
+                      const legacyThreadKey = getJobIdKey(application.id);
+                      const rawThreadState =
+                        (threadKey && applicationThreads[threadKey]) ||
+                        (legacyThreadKey && applicationThreads[legacyThreadKey]) ||
+                        null;
+                      const { entries: threadEntries } = normalizeThreadStateValue(rawThreadState);
+                      const primaryThreadKey = threadKey || legacyThreadKey || String(application.id);
+                      const cleanupThreadKey =
+                        threadKey && legacyThreadKey && legacyThreadKey !== threadKey
+                          ? legacyThreadKey
+                          : undefined;
+                      const resolvedType = resolveApplicationThreadType(
+                        primaryThreadKey,
+                        cleanupThreadKey
+                      );
+                      const scheduleDraftRaw =
+                        pickThreadValue(
+                          applicationThreadScheduleDrafts,
+                          primaryThreadKey,
+                          cleanupThreadKey
+                        ) || '';
+                      const scheduleDraftValue =
+                        typeof scheduleDraftRaw === 'string' ? scheduleDraftRaw : String(scheduleDraftRaw);
+                      const threadDraftRaw =
+                        pickThreadValue(applicationThreadDrafts, primaryThreadKey, cleanupThreadKey) || '';
+                      const threadDraftValue =
+                        typeof threadDraftRaw === 'string' ? threadDraftRaw : String(threadDraftRaw);
+                      const threadError =
+                        pickThreadValue(applicationThreadErrors, primaryThreadKey, cleanupThreadKey) || '';
                       return (
                         <article key={application.id} className="ssc__application-card">
                         <header className="ssc__application-header">
@@ -9722,18 +10113,18 @@ const SwissStartupConnect = () => {
                               </span>
                             )}
                           </div>
-                          <div>
+                          <div className="ssc__candidate-body">
                             <strong>{candidate?.full_name || translate('applications.candidateFallback', 'Candidate')}</strong>
-                            <ul>
-                              <li>
+                            <div className="ssc__candidate-details">
+                              <span>
                                 {candidate?.university ||
                                   translate('applications.universityFallback', 'University not provided')}
-                              </li>
-                              <li>
+                              </span>
+                              <span>
                                 {candidate?.program ||
                                   translate('applications.programFallback', 'Program not provided')}
-                              </li>
-                            </ul>
+                              </span>
+                            </div>
                             {cvLink ? (
                               <a href={cvLink} target="_blank" rel="noreferrer">
                                 {translate('applications.viewCv', 'View CV')}
@@ -9776,10 +10167,19 @@ const SwissStartupConnect = () => {
                                       ? 'Internal note'
                                       : 'Message'
                                 );
+                                const authorKey = (entry.author || 'startup') === 'student' ? 'student' : 'startup';
+                                const authorLabel =
+                                  authorKey === 'student'
+                                    ? candidate?.full_name ||
+                                      translate('applications.threadAuthor.student', 'Candidate')
+                                    : translate('applications.threadAuthor.you', 'You');
                                 return (
                                   <li key={entry.id} className="ssc__thread-item">
                                     <div className="ssc__thread-meta">
-                                      <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                      <div className="ssc__thread-meta-left">
+                                        <span className="ssc__thread-author">{authorLabel}</span>
+                                        <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                      </div>
                                       <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
                                     </div>
                                     <p>{entry.message}</p>
@@ -9808,7 +10208,14 @@ const SwissStartupConnect = () => {
 
                           <form
                             className="ssc__thread-form"
-                            onSubmit={(event) => handleApplicationThreadSubmit(event, application.id)}
+                            onSubmit={(event) =>
+                              handleApplicationThreadSubmit(
+                                event,
+                                application,
+                                primaryThreadKey,
+                                cleanupThreadKey
+                              )
+                            }
                           >
                             <div className="ssc__thread-form-row">
                               <label className="ssc__thread-field">
@@ -9818,7 +10225,11 @@ const SwissStartupConnect = () => {
                                     className="ssc__select"
                                     value={resolvedType}
                                     onChange={(event) =>
-                                      handleApplicationThreadTypeChange(application.id, event.target.value)
+                                      handleApplicationThreadTypeChange(
+                                        primaryThreadKey,
+                                        event.target.value,
+                                        cleanupThreadKey
+                                      )
                                     }
                                   >
                                     {APPLICATION_THREAD_TYPES.map((type) => (
@@ -9845,7 +10256,11 @@ const SwissStartupConnect = () => {
                                     type="datetime-local"
                                     value={scheduleDraftValue}
                                     onChange={(event) =>
-                                      handleApplicationThreadScheduleChange(application.id, event.target.value)
+                                      handleApplicationThreadScheduleChange(
+                                        primaryThreadKey,
+                                        event.target.value,
+                                        cleanupThreadKey
+                                      )
                                     }
                                   />
                                   <small>
@@ -9864,8 +10279,14 @@ const SwissStartupConnect = () => {
                               </span>
                               <textarea
                                 rows={3}
-                                value={applicationThreadDrafts[application.id] || ''}
-                                onChange={(event) => handleApplicationThreadDraftChange(application.id, event.target.value)}
+                                value={threadDraftValue}
+                                onChange={(event) =>
+                                  handleApplicationThreadDraftChange(
+                                    primaryThreadKey,
+                                    event.target.value,
+                                    cleanupThreadKey
+                                  )
+                                }
                                 placeholder={translate(
                                   'applications.threadPlaceholder',
                                   'Share an update, confirm an interview, or leave an internal note…'
@@ -9900,6 +10321,169 @@ const SwissStartupConnect = () => {
                     {translate(
                       'applications.emptyBody',
                       'Share your job link or post a new role to start receiving applications.'
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'messages' && user?.type === 'student' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>{translate('applications.studentInboxTitle', 'Messages')}</h2>
+                  <p>
+                    {translate(
+                      'applications.studentInboxSubtitle',
+                      'Startups will reach out here after reviewing your applications.'
+                    )}
+                  </p>
+                </div>
+                {studentInboxThreads.length > 0 && (
+                  <span className="ssc__pill">
+                    {translate('applications.studentInboxCount', '{{count}} conversation{{plural}}', {
+                      count: studentInboxThreads.length,
+                      plural: buildPluralSuffix(studentInboxThreads.length, { de: ['', 'e'] }),
+                    })}
+                  </span>
+                )}
+              </div>
+
+              {studentInboxThreads.length > 0 ? (
+                <div className="ssc__student-inbox">
+                  {studentInboxThreads.map((thread) => {
+                    const jobTitle =
+                      thread.meta.jobTitle ||
+                      translate('applications.studentInboxJobFallback', 'Opportunity');
+                    const companyName =
+                      thread.meta.companyName ||
+                      translate('applications.studentInboxCompanyFallback', 'Startup');
+                    const draftRaw = pickThreadValue(applicationThreadDrafts, thread.key, null) || '';
+                    const draftValue = typeof draftRaw === 'string' ? draftRaw : String(draftRaw);
+                    const threadError = pickThreadValue(applicationThreadErrors, thread.key, null) || '';
+                    return (
+                      <article key={thread.key} className="ssc__student-thread">
+                        <header className="ssc__student-thread-header">
+                          <span className="ssc__thread-icon" aria-hidden="true">
+                            <MessageCircle size={18} />
+                          </span>
+                          <div>
+                            <h3>{jobTitle}</h3>
+                            <p>{companyName}</p>
+                          </div>
+                        </header>
+
+                        {thread.entries.length > 0 ? (
+                          <ul className="ssc__thread-list">
+                            {thread.entries.map((entry) => {
+                              const typeLabel = translate(
+                                `applications.threadTypes.${entry.type}`,
+                                entry.type === 'interview'
+                                  ? 'Interview'
+                                  : entry.type === 'note'
+                                    ? 'Internal note'
+                                    : 'Message'
+                              );
+                              const authorIsStudent = (entry.author || 'startup') === 'student';
+                              const authorLabel = authorIsStudent
+                                ? translate('applications.threadAuthor.you', 'You')
+                                : companyName || translate('applications.threadAuthor.startup', 'Startup team');
+                              return (
+                                <li key={entry.id} className="ssc__thread-item">
+                                  <div className="ssc__thread-meta">
+                                    <div className="ssc__thread-meta-left">
+                                      <span className="ssc__thread-author">{authorLabel}</span>
+                                      <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                    </div>
+                                    <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
+                                  </div>
+                                  <p>{entry.message}</p>
+                                  {entry.scheduleAt ? (
+                                    <div className="ssc__thread-schedule">
+                                      <Calendar size={14} aria-hidden="true" />
+                                      <span>
+                                        {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
+                                          date: formatThreadTimestamp(entry.scheduleAt),
+                                        })}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="ssc__thread-empty">
+                            {translate(
+                              'applications.threadEmpty',
+                              'No conversation yet. Start by adding a note below.'
+                            )}
+                          </p>
+                        )}
+
+                        <form
+                          className="ssc__thread-form"
+                          onSubmit={(event) =>
+                            handleStudentThreadSubmit(
+                              event,
+                              thread.key,
+                              thread.meta,
+                              thread.employerHasMessaged
+                            )
+                          }
+                        >
+                          <label className="ssc__thread-field">
+                            <span className="ssc__thread-label">
+                              {translate('applications.threadMessageLabel', 'Message')}
+                            </span>
+                            <textarea
+                              rows={3}
+                              value={draftValue}
+                              onChange={(event) =>
+                                handleApplicationThreadDraftChange(thread.key, event.target.value)
+                              }
+                              placeholder={translate(
+                                'applications.studentReplyPlaceholder',
+                                'Write your reply…'
+                              )}
+                              disabled={!thread.employerHasMessaged}
+                            />
+                          </label>
+                          {threadError && <p className="ssc__thread-error">{threadError}</p>}
+
+                          <button
+                            type="submit"
+                            className="ssc__primary-btn ssc__thread-submit"
+                            disabled={!thread.employerHasMessaged}
+                          >
+                            <Send size={16} />
+                            <span>{translate('applications.studentReplyCta', 'Send reply')}</span>
+                          </button>
+
+                          {!thread.employerHasMessaged && (
+                            <p className="ssc__student-reply-lock">
+                              {translate(
+                                'applications.studentReplyLocked',
+                                'Startups send the first message. You’ll be able to respond here once they reach out.'
+                              )}
+                            </p>
+                          )}
+                        </form>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <MessageCircle size={40} />
+                  <h3>{translate('applications.studentInboxEmptyTitle', 'No messages yet')}</h3>
+                  <p>
+                    {translate(
+                      'applications.studentInboxEmptyDescription',
+                      'Apply to roles and keep an eye out for startup replies here.'
                     )}
                   </p>
                 </div>
