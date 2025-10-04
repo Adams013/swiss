@@ -42,6 +42,7 @@ const LANGUAGE_OPTIONS = [
 const LANGUAGE_TAG_PREFIX = '__lang:';
 
 const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
+const LOCAL_APPLICATION_STORAGE_KEY = 'ssc_local_applications_v1';
 
 const readCachedProfile = (userId) => {
   if (typeof window === 'undefined' || !userId) {
@@ -156,6 +157,124 @@ const sanitizeIdArray = (value) => {
   });
 
   return Array.from(unique);
+};
+
+const readLocalApplications = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_APPLICATION_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to read local applications', error);
+    return [];
+  }
+};
+
+const writeLocalApplications = (entries) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(LOCAL_APPLICATION_STORAGE_KEY, JSON.stringify(entries));
+  } catch (error) {
+    console.error('Failed to write local applications', error);
+  }
+};
+
+const normalizeApplicationKey = (jobId, profileId) => {
+  const jobKey = getJobIdKey(jobId);
+  const profileKey = getJobIdKey(profileId);
+  return `${jobKey}::${profileKey}`;
+};
+
+const upsertLocalApplication = (entry) => {
+  if (!entry) {
+    return null;
+  }
+
+  const stored = readLocalApplications();
+  const targetKey = normalizeApplicationKey(entry.job_id, entry.profile_id);
+  const filtered = stored.filter((existing) => {
+    const existingKey = normalizeApplicationKey(existing.job_id, existing.profile_id);
+    return existingKey !== targetKey;
+  });
+  const nextEntries = [...filtered, entry];
+  writeLocalApplications(nextEntries);
+  return entry;
+};
+
+const loadLocalApplicationsForStartup = (startupId, remoteApplications = []) => {
+  const stored = readLocalApplications();
+  const remoteKeys = new Set(
+    Array.isArray(remoteApplications)
+      ? remoteApplications.map((application) => normalizeApplicationKey(application.job_id, application.profile_id))
+      : []
+  );
+
+  let changed = false;
+  const filtered = stored.filter((entry) => {
+    const key = normalizeApplicationKey(entry.job_id, entry.profile_id);
+    if (remoteKeys.has(key)) {
+      changed = true;
+      return false;
+    }
+    return true;
+  });
+
+  if (changed) {
+    writeLocalApplications(filtered);
+  }
+
+  const normalizedStartupId = getJobIdKey(startupId);
+
+  return filtered
+    .filter((entry) => {
+      if (!normalizedStartupId) {
+        return true;
+      }
+      return getJobIdKey(entry.startup_id) === normalizedStartupId;
+    })
+    .map((entry) => ({ ...entry, isLocal: true }));
+};
+
+const updateStoredLocalApplication = (applicationId, updater) => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const stored = readLocalApplications();
+    let changed = false;
+    const updated = stored
+      .map((entry) => {
+        if (entry.id !== applicationId) {
+          return entry;
+        }
+
+        const next = updater ? updater(entry) : entry;
+        if (next === entry) {
+          return entry;
+        }
+
+        changed = true;
+        return next;
+      })
+      .filter(Boolean);
+
+    if (changed) {
+      writeLocalApplications(updated);
+    }
+
+    return updated.find((entry) => entry.id === applicationId) || null;
+  } catch (error) {
+    console.error('Failed to update local application', error);
+    return null;
+  }
 };
 
 const firstNonEmpty = (...candidates) => {
@@ -4809,15 +4928,43 @@ const SwissStartupConnect = () => {
 
         if (fetchError) {
           console.error('Applications load error', fetchError);
-          setApplications([]);
+          const localFallback = loadLocalApplicationsForStartup(startupProfile?.id);
+          const sortedLocal = [...localFallback].sort((a, b) => {
+            const aTime = new Date(a.created_at).getTime();
+            const bTime = new Date(b.created_at).getTime();
+            const safeATime = Number.isFinite(aTime) ? aTime : 0;
+            const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+            return safeBTime - safeATime;
+          });
+          setApplications(sortedLocal);
+          setApplicationColumnPresence((previous) => {
+            const next = { ...previous };
+            const derived = deriveColumnPresence(sortedLocal);
+            Object.keys(derived).forEach((column) => {
+              next[column] = true;
+            });
+            return next;
+          });
         } else {
-          setApplications(fetchedApplications);
+          const remoteApplications = fetchedApplications.map((application) => ({
+            ...application,
+            isLocal: false,
+          }));
+          const localFallback = loadLocalApplicationsForStartup(startupProfile?.id, fetchedApplications);
+          const combined = [...remoteApplications, ...localFallback].sort((a, b) => {
+            const aTime = new Date(a.created_at).getTime();
+            const bTime = new Date(b.created_at).getTime();
+            const safeATime = Number.isFinite(aTime) ? aTime : 0;
+            const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+            return safeBTime - safeATime;
+          });
+          setApplications(combined);
           setApplicationColumnPresence((previous) => {
             const next = { ...previous };
             columnsToRequest.forEach((column) => {
               next[column] = true;
             });
-            const derived = deriveColumnPresence(fetchedApplications);
+            const derived = deriveColumnPresence(combined);
             Object.keys(derived).forEach((column) => {
               next[column] = true;
             });
@@ -4826,7 +4973,23 @@ const SwissStartupConnect = () => {
         }
       } catch (error) {
         console.error('Applications load error', error);
-        setApplications([]);
+        const localFallback = loadLocalApplicationsForStartup(startupProfile?.id);
+        const sortedLocal = [...localFallback].sort((a, b) => {
+          const aTime = new Date(a.created_at).getTime();
+          const bTime = new Date(b.created_at).getTime();
+          const safeATime = Number.isFinite(aTime) ? aTime : 0;
+          const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+          return safeBTime - safeATime;
+        });
+        setApplications(sortedLocal);
+        setApplicationColumnPresence((previous) => {
+          const next = { ...previous };
+          const derived = deriveColumnPresence(sortedLocal);
+          Object.keys(derived).forEach((column) => {
+            next[column] = true;
+          });
+          return next;
+        });
       } finally {
         setApplicationsLoading(false);
       }
@@ -7759,6 +7922,44 @@ const SwissStartupConnect = () => {
 
         fallbackNotice = true;
         console.warn('RLS prevented Supabase application insert; storing locally.');
+
+        const now = new Date();
+        const createdAt = Number.isFinite(now.getTime()) ? now.toISOString() : new Date().toISOString();
+        const baseProfileCvUrl = profileForm.cv_url?.trim?.() || profile?.cv_url || '';
+        const profileName =
+          profileForm.full_name?.trim?.() || profile?.full_name || user?.name?.trim?.() || '';
+        const companyNameSnapshot = applicationModal.company_name?.trim?.() || 'Verified startup';
+        const jobTitleSnapshot = getLocalizedJobText(applicationModal, 'title') || applicationModal.title || '';
+        const localStartupId = applicationModal.startup_id || null;
+        const localApplicationEntry = {
+          id: `local-${Date.now()}`,
+          job_id: applicationModal.id,
+          profile_id: profile.id,
+          startup_id: localStartupId,
+          status: 'submitted',
+          acknowledged: false,
+          motivational_letter:
+            applicationColumnPresence.motivational_letter !== false ? motivationalLetterUrl || null : null,
+          cv_override_url:
+            applicationColumnPresence.cv_override_url !== false && !useExistingCv ? selectedCvUrl : null,
+          created_at: createdAt,
+          profiles: {
+            id: profile.id,
+            full_name: profileName,
+            university: profileForm.university?.trim?.() || profile?.university || '',
+            program: profileForm.program?.trim?.() || profile?.program || '',
+            avatar_url: profileForm.avatar_url?.trim?.() || profile?.avatar_url || user?.avatar_url || '',
+            cv_url: useExistingCv ? selectedCvUrl : baseProfileCvUrl,
+          },
+          jobs: {
+            id: applicationModal.id,
+            title: jobTitleSnapshot,
+            company_name: companyNameSnapshot,
+            startup_id: localStartupId,
+          },
+          isLocal: true,
+        };
+        upsertLocalApplication(localApplicationEntry);
       } else {
         const successfulColumns = Object.keys(attemptPayload).filter(
           (key) => key !== 'job_id' && key !== 'profile_id'
@@ -7826,6 +8027,24 @@ const SwissStartupConnect = () => {
 
   const updateApplicationStatus = async (applicationId, nextStatus) => {
     setApplicationStatusUpdating(applicationId);
+    const targetApplication = applications.find((application) => application.id === applicationId);
+    if (targetApplication?.isLocal) {
+      const statusLabel = translate(`applications.status.${nextStatus}`, nextStatus.replace('_', ' '));
+      setApplications((previous) =>
+        previous.map((application) =>
+          application.id === applicationId ? { ...application, status: nextStatus } : application
+        )
+      );
+      updateStoredLocalApplication(applicationId, (entry) => ({ ...entry, status: nextStatus }));
+      setFeedback({
+        type: 'success',
+        message: translate('applications.statusFeedback', 'Application marked as {{status}}.', {
+          status: statusLabel,
+        }),
+      });
+      setApplicationStatusUpdating(null);
+      return;
+    }
     try {
       const { error } = await supabase
         .from('job_applications')
