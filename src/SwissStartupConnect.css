@@ -670,14 +670,16 @@
   gap: 0.85rem;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  max-width: 44rem;
+  flex-wrap: nowrap;
+  width: min(100%, 44rem);
 }
 
 .ssc__search--inline {
   margin: 0 0 1.5rem;
   max-width: none;
   justify-content: flex-start;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .ssc__search--inline .ssc__search-field {
@@ -690,7 +692,7 @@
 }
 
 .ssc__search-field {
-  flex: 1 1 280px;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -699,6 +701,7 @@
   padding: 0.75rem 1.1rem;
   border: 1px solid var(--ssc-border);
   box-shadow: 0 16px 34px rgba(var(--ssc-ink-rgb), 0.1);
+  min-width: 0;
 }
 
 .ssc__search-field input {
@@ -719,6 +722,8 @@
   color: #fff;
   box-shadow: 0 18px 36px rgba(var(--ssc-primary-rgb), 0.28);
   transition: transform 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ssc__search-btn:hover {
@@ -1073,6 +1078,7 @@
   margin-top: 0.25rem;
   touch-action: pan-y;
   cursor: default;
+  min-width: 0;
 }
 
 .ssc__salary-slider::before,
@@ -1272,6 +1278,29 @@
   .ssc__salary-divider,
   .ssc__filter-divider {
     display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .ssc__search {
+    gap: 0.7rem;
+    width: min(100%, 38rem);
+  }
+
+  .ssc__search-btn {
+    padding: 0.72rem 1.3rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .ssc__search {
+    flex-wrap: wrap;
+    width: min(100%, 30rem);
+  }
+
+  .ssc__search-btn {
+    width: 100%;
+    text-align: center;
   }
 }
 

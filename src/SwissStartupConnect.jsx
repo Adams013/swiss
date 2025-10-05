@@ -5484,6 +5484,25 @@ const SwissStartupConnect = () => {
     [equityBounds]
   );
 
+  const [activeSalaryThumb, setActiveSalaryThumb] = useState(null);
+  const [activeEquityThumb, setActiveEquityThumb] = useState(null);
+
+  const handleSalaryThumbActivate = useCallback((bound) => {
+    setActiveSalaryThumb(bound);
+  }, []);
+
+  const handleSalaryThumbRelease = useCallback(() => {
+    setActiveSalaryThumb(null);
+  }, []);
+
+  const handleEquityThumbActivate = useCallback((bound) => {
+    setActiveEquityThumb(bound);
+  }, []);
+
+  const handleEquityThumbRelease = useCallback(() => {
+    setActiveEquityThumb(null);
+  }, []);
+
   const handleSalarySliderChange = (bound) => (event) => {
     const rawValue = Number(event.target.value);
     if (!Number.isFinite(rawValue)) {
@@ -5497,10 +5516,10 @@ const SwissStartupConnect = () => {
 
     updateSalaryRange((prev) => {
       if (bound === 'min') {
-        return [Math.min(monthlyValue, prev[1]), prev[1]];
+        return [monthlyValue, prev[1]];
       }
 
-      return [prev[0], Math.max(monthlyValue, prev[0])];
+      return [prev[0], monthlyValue];
     });
   };
 
@@ -5530,10 +5549,10 @@ const SwissStartupConnect = () => {
 
     updateSalaryRange((prev) => {
       if (bound === 'min') {
-        return [Math.min(monthlyValue, prev[1]), prev[1]];
+        return [monthlyValue, prev[1]];
       }
 
-      return [prev[0], Math.max(monthlyValue, prev[0])];
+      return [prev[0], monthlyValue];
     });
   };
 
@@ -5545,10 +5564,10 @@ const SwissStartupConnect = () => {
 
     updateEquityRange((prev) => {
       if (bound === 'min') {
-        return [Math.min(rawValue, prev[1]), prev[1]];
+        return [rawValue, prev[1]];
       }
 
-      return [prev[0], Math.max(rawValue, prev[0])];
+      return [prev[0], rawValue];
     });
   };
 
@@ -5573,12 +5592,10 @@ const SwissStartupConnect = () => {
 
     updateEquityRange((prev) => {
       if (bound === 'min') {
-        const nextMin = Math.min(numeric, prev[1]);
-        return [nextMin, prev[1]];
+        return [numeric, prev[1]];
       }
 
-      const nextMax = Math.max(numeric, prev[0]);
-      return [prev[0], nextMax];
+      return [prev[0], numeric];
     });
   };
 
@@ -9381,6 +9398,13 @@ const SwissStartupConnect = () => {
                       step={salarySliderStep}
                       value={salarySliderMinDisplay}
                       onChange={handleSalarySliderChange('min')}
+                      onInput={handleSalarySliderChange('min')}
+                      onPointerDown={() => handleSalaryThumbActivate('min')}
+                      onPointerUp={handleSalaryThumbRelease}
+                      onPointerCancel={handleSalaryThumbRelease}
+                      onFocus={() => handleSalaryThumbActivate('min')}
+                      onBlur={handleSalaryThumbRelease}
+                      style={{ zIndex: activeSalaryThumb === 'min' ? 2 : 1 }}
                       disabled={salarySliderDisabled}
                       aria-label={translate('filters.salaryAriaMin', 'Minimum {{cadence}} salary', {
                         cadence: salaryFilterCadenceLabel,
@@ -9393,6 +9417,13 @@ const SwissStartupConnect = () => {
                       step={salarySliderStep}
                       value={salarySliderMaxDisplay}
                       onChange={handleSalarySliderChange('max')}
+                      onInput={handleSalarySliderChange('max')}
+                      onPointerDown={() => handleSalaryThumbActivate('max')}
+                      onPointerUp={handleSalaryThumbRelease}
+                      onPointerCancel={handleSalaryThumbRelease}
+                      onFocus={() => handleSalaryThumbActivate('max')}
+                      onBlur={handleSalaryThumbRelease}
+                      style={{ zIndex: activeSalaryThumb === 'max' ? 2 : 1 }}
                       disabled={salarySliderDisabled}
                       aria-label={translate('filters.salaryAriaMax', 'Maximum {{cadence}} salary', {
                         cadence: salaryFilterCadenceLabel,
@@ -9454,6 +9485,13 @@ const SwissStartupConnect = () => {
                       step={EQUITY_STEP}
                       value={equitySliderMinValue}
                       onChange={handleEquitySliderChange('min')}
+                      onInput={handleEquitySliderChange('min')}
+                      onPointerDown={() => handleEquityThumbActivate('min')}
+                      onPointerUp={handleEquityThumbRelease}
+                      onPointerCancel={handleEquityThumbRelease}
+                      onFocus={() => handleEquityThumbActivate('min')}
+                      onBlur={handleEquityThumbRelease}
+                      style={{ zIndex: activeEquityThumb === 'min' ? 2 : 1 }}
                       disabled={equitySliderDisabled}
                       aria-label={translate('filters.equityAriaMin', 'Minimum equity')}
                     />
@@ -9464,6 +9502,13 @@ const SwissStartupConnect = () => {
                       step={EQUITY_STEP}
                       value={equitySliderMaxValue}
                       onChange={handleEquitySliderChange('max')}
+                      onInput={handleEquitySliderChange('max')}
+                      onPointerDown={() => handleEquityThumbActivate('max')}
+                      onPointerUp={handleEquityThumbRelease}
+                      onPointerCancel={handleEquityThumbRelease}
+                      onFocus={() => handleEquityThumbActivate('max')}
+                      onBlur={handleEquityThumbRelease}
+                      style={{ zIndex: activeEquityThumb === 'max' ? 2 : 1 }}
                       disabled={equitySliderDisabled}
                       aria-label={translate('filters.equityAriaMax', 'Maximum equity')}
                     />
