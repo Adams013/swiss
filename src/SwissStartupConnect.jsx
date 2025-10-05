@@ -1112,11 +1112,17 @@ const TRANSLATIONS = {
         hired: 'Embauché·e',
         rejected: 'Refusé·e',
       },
+      listHeaders: {
+        name: 'Candidat·e',
+        university: 'Université',
+        applied: 'Date',
+      },
       statusFeedback: 'Candidature marquée comme {{status}}.',
       candidateFallback: 'Candidat·e',
       candidateInitialFallback: 'C',
       universityFallback: 'Université non renseignée',
       programFallback: 'Programme non renseigné',
+      appliedDateUnknown: 'Date indisponible',
       threadTitle: 'Communication et planification',
       threadEmpty: 'Aucun message pour le moment. Lancez la conversation ci-dessous.',
       threadPlaceholder: 'Partager une mise à jour, confirmer un entretien ou ajouter une note interne…',
@@ -1994,11 +2000,17 @@ const TRANSLATIONS = {
         hired: 'Eingestellt',
         rejected: 'Abgelehnt',
       },
+      listHeaders: {
+        name: 'Kandidat:in',
+        university: 'Hochschule',
+        applied: 'Datum',
+      },
       statusFeedback: 'Bewerbung als {{status}} markiert.',
       candidateFallback: 'Kandidat:in',
       candidateInitialFallback: 'K',
       universityFallback: 'Hochschule nicht angegeben',
       programFallback: 'Studiengang nicht angegeben',
+      appliedDateUnknown: 'Datum nicht verfügbar',
       threadTitle: 'Kommunikation & Terminplanung',
       threadEmpty: 'Noch keine Einträge. Starten Sie das Gespräch unten.',
       threadPlaceholder: 'Update teilen, Interview bestätigen oder interne Notiz hinzufügen…',
@@ -4315,6 +4327,7 @@ const SwissStartupConnect = () => {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
   const [applicationsVersion, setApplicationsVersion] = useState(0);
+  const [expandedApplicationId, setExpandedApplicationId] = useState(null);
   const [applicationThreads, setApplicationThreads] = useState(() => {
     if (typeof window === 'undefined') {
       return {};
@@ -4539,6 +4552,9 @@ const SwissStartupConnect = () => {
   const showToast = useCallback((message) => {
     setToast({ id: Date.now(), message });
   }, []);
+  const handleToggleApplicationRow = useCallback((applicationId) => {
+    setExpandedApplicationId((previous) => (previous === applicationId ? null : applicationId));
+  }, []);
 
   useEffect(() => {
     if (!feedback) return undefined;
@@ -4551,6 +4567,17 @@ const SwissStartupConnect = () => {
     const timeout = setTimeout(() => setToast(null), 1000);
     return () => clearTimeout(timeout);
   }, [toast]);
+
+  useEffect(() => {
+    if (!expandedApplicationId) {
+      return;
+    }
+
+    const match = applications.some((application) => application.id === expandedApplicationId);
+    if (!match) {
+      setExpandedApplicationId(null);
+    }
+  }, [applications, expandedApplicationId]);
 
   useEffect(() => {
     if (user?.type !== 'student') {
@@ -9708,169 +9735,6 @@ const SwissStartupConnect = () => {
                 </div>
               ) : (
                 <div className="ssc__empty-state">
-                  <BookmarkPlus size={40} />
-                  <h3>{translate('jobs.noMatchesTitle', 'No matches yet')}</h3>
-                  <p>
-                    {translate(
-                      'jobs.noMatchesBody',
-                      'Try removing a filter or widening your salary range.'
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {activeTab === 'companies' && (
-          <section className="ssc__section">
-            <div className="ssc__max">
-              <div className="ssc__section-header">
-                <div>
-                  <h2>{translate('companies.heading', 'Featured startups')}</h2>
-                  <p>
-                    {translate(
-                      'companies.subheading',
-                      'Meet the founders building Switzerland’s next generation of companies.'
-                    )}
-                  </p>
-                </div>
-                <div className="ssc__company-toolbar">
-                  <div
-                    className="ssc__sort-control"
-                    role="group"
-                    aria-label={translate('companies.sortAria', 'Sort startups')}
-                  >
-                    <span className="ssc__sort-label">{translate('companies.sortLabel', 'Sort by')}</span>
-                    <div className="ssc__sort-options">
-                      {companySortOptions.map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`ssc__sort-button ${companySort === option.value ? 'is-active' : ''}`}
-                            onClick={() => setCompanySort(option.value)}
-                            aria-pressed={companySort === option.value}
-                          >
-                            <Icon size={16} />
-                            {option.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {companiesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {[1, 2, 3, 4].map((index) => (
-                    <div key={index} className="ssc__job-skeleton" />
-                  ))}
-                </div>
-              ) : sortedCompanies.length > 0 ? (
-                <div className="ssc__company-grid">
-                  {sortedCompanies.map((company) => {
-                    const followKey = String(company.id || company.name);
-                    const jobCountValue = Number(company.jobCount);
-                    const jobCount = Number.isFinite(jobCountValue) ? jobCountValue : 0;
-                    const jobCountKey = jobCount === 1 ? 'companies.jobCount.one' : 'companies.jobCount.other';
-                    const jobCountLabel = translate(
-                      jobCountKey,
-                      jobCount === 1 ? '1 open role' : `${jobCount} open roles`,
-                      { count: jobCount }
-                    );
-                    const tagline = getLocalizedCompanyText(company, 'tagline');
-                    const industry = getLocalizedCompanyText(company, 'industry');
-                    const team = getLocalizedCompanyText(company, 'team');
-                    const fundraising = getLocalizedCompanyText(company, 'fundraising');
-                    const culture = getLocalizedCompanyText(company, 'culture');
-                    return (
-                      <article key={followKey} className="ssc__company-card">
-                        <div className="ssc__company-logo">
-                          <Building2 size={20} />
-                        </div>
-                        <div className="ssc__company-content">
-                          <div className="ssc__company-header">
-                            <h3 className="ssc__company-name">{company.name}</h3>
-                            {company.verification_status === 'verified' && (
-                              <span className="ssc__badge">
-                                <CheckCircle2 size={14} />{' '}
-                                {translate('companies.verifiedBadge', 'Verified')}
-                              </span>
-                            )}
-                          </div>
-                          <p className="ssc__company-tagline">{tagline}</p>
-                          <div className="ssc__company-meta">
-                            {company.location && <span>{company.location}</span>}
-                            {industry && <span>{industry}</span>}
-                          </div>
-                          {(team || fundraising) && (
-                            <div className="ssc__company-insights">
-                              {team && (
-                                <span className="ssc__company-pill ssc__company-pill--team">
-                                  <Users size={14} />
-                                  {team}
-                                </span>
-                              )}
-                              {fundraising && (
-                                <span className="ssc__company-pill ssc__company-pill--funding">
-                                  <Sparkles size={14} />
-                                  {fundraising}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <p className="ssc__company-stats">{culture}</p>
-                          <div className="ssc__company-foot">
-                            <span className="ssc__company-jobs">{jobCountLabel}</span>
-                            <div className="ssc__company-actions">
-                              {company.website && (
-                                <a
-                                  className="ssc__outline-btn"
-                                  href={company.website}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {translate('companies.visitWebsite', 'Visit website')}
-                                </a>
-                              )}
-                              {company.info_link && (
-                                <a
-                                  className="ssc__outline-btn"
-                                  href={company.info_link}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {translate('companies.moreInfo', 'More about us')}
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                className={`ssc__follow-btn ${company.isFollowed ? 'is-active' : ''}`}
-                                onClick={() => toggleFollowCompany(followKey)}
-                              >
-                                {company.isFollowed
-                                  ? translate('companies.following', 'Following')
-                                  : translate('companies.follow', 'Follow')}
-                              </button>
-                              <button
-                                type="button"
-                                className="ssc__ghost-btn"
-                                onClick={() => openReviewsModal(company)}
-                              >
-                                {translate('companies.reviews', 'Reviews')}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="ssc__empty-state">
                   <Building2 size={40} />
                   <h3>No startups listed yet</h3>
                   <p>Check back soon or invite your favourite Swiss startup to join.</p>
@@ -10035,12 +9899,39 @@ const SwissStartupConnect = () => {
                 </div>
               ) : applications.length > 0 ? (
                 <div className="ssc__applications-grid">
+                  <div className="ssc__applications-header">
+                    <span>{translate('applications.listHeaders.name', 'Name')}</span>
+                    <span>{translate('applications.listHeaders.university', 'University')}</span>
+                    <span>{translate('applications.listHeaders.applied', 'Applied')}</span>
+                    <span aria-hidden="true" />
+                  </div>
+                  <ul className="ssc__applications-rows">
                     {applications.map((application) => {
                       const candidate = application.profiles;
                       const job = application.jobs;
                       const jobTitle = getLocalizedJobText(job, 'title');
                       const cvLink = application.cv_override_url || candidate?.cv_url;
-                      const appliedDate = new Date(application.created_at).toLocaleDateString();
+                      const candidateName =
+                        candidate?.full_name || translate('applications.candidateFallback', 'Candidate');
+                      const candidateUniversity =
+                        candidate?.university ||
+                        translate('applications.universityFallback', 'University not provided');
+                      const appliedAt = application.created_at ? new Date(application.created_at) : null;
+                      const appliedAtValid = appliedAt && !Number.isNaN(appliedAt.valueOf());
+                      const appliedDateSummary = appliedAtValid
+                        ? appliedAt.toLocaleDateString(undefined, {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : translate('applications.appliedDateUnknown', 'Date unavailable');
+                      const appliedDateDetail = appliedAtValid
+                        ? appliedAt.toLocaleDateString(undefined, {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : translate('applications.appliedDateUnknown', 'Date unavailable');
                       const threadKey = getApplicationThreadKey(application);
                       const legacyThreadKey = getJobIdKey(application.id);
                       const rawThreadState =
@@ -10071,247 +9962,296 @@ const SwissStartupConnect = () => {
                         typeof threadDraftRaw === 'string' ? threadDraftRaw : String(threadDraftRaw);
                       const threadError =
                         pickThreadValue(applicationThreadErrors, primaryThreadKey, cleanupThreadKey) || '';
+                      const isExpanded = expandedApplicationId === application.id;
+                      const panelId = `ssc-application-panel-${application.id}`;
+                      const buttonId = `ssc-application-toggle-${application.id}`;
                       return (
-                        <article key={application.id} className="ssc__application-card">
-                        <header className="ssc__application-header">
-                          <div>
-                            <h3>{jobTitle}</h3>
-                            <p>{job?.company_name}</p>
-                          </div>
-                          <div className="ssc__status-select">
-                            <label>
-                              {translate('applications.statusLabel', 'Status')}
-                              <div className="ssc__select-wrapper">
-                                <select
-                                  className="ssc__select"
-                                  value={application.status}
-                                  onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
-                                  disabled={applicationStatusUpdating === application.id}
-                                >
-                                  {applicationStatuses.map((status) => (
-                                    <option key={status} value={status}>
-                                      {translate(`applications.status.${status}`, formatStatusKeyLabel(status))}
-                                    </option>
-                                  ))}
-                                </select>
-                                <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
-                              </div>
-                            </label>
-                          </div>
-                        </header>
-
-                        <div className="ssc__candidate">
-                          <div className="ssc__avatar-medium">
-                            {candidate?.avatar_url ? (
-                              <img
-                                src={candidate.avatar_url}
-                                alt={candidate.full_name || translate('applications.candidateFallback', 'Candidate')}
-                              />
-                            ) : (
-                              <span>
-                                {candidate?.full_name?.charAt(0) || translate('applications.candidateInitialFallback', 'C')}
-                              </span>
-                            )}
-                          </div>
-                          <div className="ssc__candidate-body">
-                            <strong>{candidate?.full_name || translate('applications.candidateFallback', 'Candidate')}</strong>
-                            <div className="ssc__candidate-details">
-                              <span>
-                                {candidate?.university ||
-                                  translate('applications.universityFallback', 'University not provided')}
-                              </span>
-                              <span>
-                                {candidate?.program ||
-                                  translate('applications.programFallback', 'Program not provided')}
-                              </span>
-                            </div>
-                            {cvLink ? (
-                              <a href={cvLink} target="_blank" rel="noreferrer">
-                                {translate('applications.viewCv', 'View CV')}
-                              </a>
-                            ) : (
-                              <span>{translate('applications.noCv', 'No CV provided')}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {application.motivational_letter && (
-                          <details className="ssc__letter">
-                            <summary>{translate('applications.motivationalHeading', 'Motivational letter')}</summary>
-                            {application.motivational_letter.startsWith('http') ? (
-                              <a href={application.motivational_letter} target="_blank" rel="noreferrer">
-                                {translate('applications.downloadLetter', 'Download motivational letter')}
-                              </a>
-                            ) : (
-                              <p>{application.motivational_letter}</p>
-                            )}
-                          </details>
-                        )}
-
-                        <section className="ssc__application-thread">
-                          <header className="ssc__thread-header">
-                            <span className="ssc__thread-icon" aria-hidden="true">
-                              <MessageCircle size={18} />
-                            </span>
-                            <h4>{translate('applications.threadTitle', 'Communication & scheduling')}</h4>
-                          </header>
-
-                          {threadEntries.length > 0 ? (
-                            <ul className="ssc__thread-list">
-                              {threadEntries.map((entry) => {
-                                const typeLabel = translate(
-                                  `applications.threadTypes.${entry.type}`,
-                                  entry.type === 'interview'
-                                    ? 'Interview'
-                                    : entry.type === 'note'
-                                      ? 'Internal note'
-                                      : 'Message'
-                                );
-                                const authorKey = (entry.author || 'startup') === 'student' ? 'student' : 'startup';
-                                const authorLabel =
-                                  authorKey === 'student'
-                                    ? candidate?.full_name ||
-                                      translate('applications.threadAuthor.student', 'Candidate')
-                                    : translate('applications.threadAuthor.you', 'You');
-                                return (
-                                  <li key={entry.id} className="ssc__thread-item">
-                                    <div className="ssc__thread-meta">
-                                      <div className="ssc__thread-meta-left">
-                                        <span className="ssc__thread-author">{authorLabel}</span>
-                                        <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
-                                      </div>
-                                      <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
-                                    </div>
-                                    <p>{entry.message}</p>
-                                    {entry.scheduleAt ? (
-                                      <div className="ssc__thread-schedule">
-                                        <Calendar size={14} aria-hidden="true" />
-                                        <span>
-                                          {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
-                                            date: formatThreadTimestamp(entry.scheduleAt),
-                                          })}
-                                        </span>
-                                      </div>
-                                    ) : null}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <p className="ssc__thread-empty">
-                              {translate(
-                                'applications.threadEmpty',
-                                'No conversation yet. Start by adding a note below.'
-                              )}
-                            </p>
-                          )}
-
-                          <form
-                            className="ssc__thread-form"
-                            onSubmit={(event) =>
-                              handleApplicationThreadSubmit(
-                                event,
-                                application,
-                                primaryThreadKey,
-                                cleanupThreadKey
-                              )
-                            }
+                        <li
+                          key={application.id}
+                          className={`ssc__applications-row ${isExpanded ? 'ssc__applications-row--expanded' : ''}`}
+                        >
+                          <button
+                            type="button"
+                            id={buttonId}
+                            className="ssc__applications-toggle"
+                            aria-expanded={isExpanded}
+                            aria-controls={panelId}
+                            onClick={() => handleToggleApplicationRow(application.id)}
                           >
-                            <div className="ssc__thread-form-row">
-                              <label className="ssc__thread-field">
-                                <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
-                                <div className="ssc__select-wrapper">
-                                  <select
-                                    className="ssc__select"
-                                    value={resolvedType}
-                                    onChange={(event) =>
-                                      handleApplicationThreadTypeChange(
-                                        primaryThreadKey,
-                                        event.target.value,
-                                        cleanupThreadKey
-                                      )
-                                    }
-                                  >
-                                    {APPLICATION_THREAD_TYPES.map((type) => (
-                                      <option key={type} value={type}>
-                                        {translate(
-                                          `applications.threadTypes.${type}`,
-                                          type === 'interview'
-                                            ? 'Interview'
-                                            : type === 'note'
-                                              ? 'Internal note'
-                                              : 'Message'
-                                        )}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
+                            <span className="ssc__applications-cell ssc__applications-cell--primary">
+                              {candidateName}
+                            </span>
+                            <span className="ssc__applications-cell">{candidateUniversity}</span>
+                            <span className="ssc__applications-cell ssc__applications-cell--muted">
+                              {appliedDateSummary}
+                            </span>
+                            <ChevronDown
+                              className="ssc__applications-toggle-icon"
+                              size={18}
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <div
+                            id={panelId}
+                            role="region"
+                            aria-labelledby={buttonId}
+                            className="ssc__applications-panel"
+                            hidden={!isExpanded}
+                          >
+                            <article className="ssc__application-card">
+                              <header className="ssc__application-header">
+                                <div>
+                                  <h3>{jobTitle}</h3>
+                                  <p>{job?.company_name}</p>
                                 </div>
-                              </label>
+                                <div className="ssc__status-select">
+                                  <label>
+                                    {translate('applications.statusLabel', 'Status')}
+                                    <div className="ssc__select-wrapper">
+                                      <select
+                                        className="ssc__select"
+                                        value={application.status}
+                                        onChange={(event) =>
+                                          updateApplicationStatus(application.id, event.target.value)
+                                        }
+                                        disabled={applicationStatusUpdating === application.id}
+                                      >
+                                        {applicationStatuses.map((status) => (
+                                          <option key={status} value={status}>
+                                            {translate(
+                                              `applications.status.${status}`,
+                                              formatStatusKeyLabel(status)
+                                            )}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
+                                    </div>
+                                  </label>
+                                </div>
+                              </header>
 
-                              {resolvedType === 'interview' && (
-                                <label className="ssc__thread-field">
-                                  <span>{translate('applications.threadScheduleLabel', 'Date & time')}</span>
-                                  <input
-                                    type="datetime-local"
-                                    value={scheduleDraftValue}
-                                    onChange={(event) =>
-                                      handleApplicationThreadScheduleChange(
-                                        primaryThreadKey,
-                                        event.target.value,
-                                        cleanupThreadKey
-                                      )
-                                    }
-                                  />
-                                  <small>
-                                    {translate(
-                                      'applications.threadScheduleHelper',
-                                      'Share a proposed or confirmed slot.'
-                                    )}
-                                  </small>
-                                </label>
+                              <div className="ssc__candidate">
+                                <div className="ssc__avatar-medium">
+                                  {candidate?.avatar_url ? (
+                                    <img
+                                      src={candidate.avatar_url}
+                                      alt={candidateName}
+                                    />
+                                  ) : (
+                                    <span>
+                                      {candidate?.full_name?.charAt(0) ||
+                                        translate('applications.candidateInitialFallback', 'C')}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="ssc__candidate-body">
+                                  <strong>{candidateName}</strong>
+                                  <div className="ssc__candidate-details">
+                                    <span>{candidateUniversity}</span>
+                                    <span>
+                                      {candidate?.program ||
+                                        translate('applications.programFallback', 'Program not provided')}
+                                    </span>
+                                  </div>
+                                  {cvLink ? (
+                                    <a href={cvLink} target="_blank" rel="noreferrer">
+                                      {translate('applications.viewCv', 'View CV')}
+                                    </a>
+                                  ) : (
+                                    <span>{translate('applications.noCv', 'No CV provided')}</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {application.motivational_letter && (
+                                <details className="ssc__letter">
+                                  <summary>
+                                    {translate('applications.motivationalHeading', 'Motivational letter')}
+                                  </summary>
+                                  {application.motivational_letter.startsWith('http') ? (
+                                    <a href={application.motivational_letter} target="_blank" rel="noreferrer">
+                                      {translate('applications.downloadLetter', 'Download motivational letter')}
+                                    </a>
+                                  ) : (
+                                    <p>{application.motivational_letter}</p>
+                                  )}
+                                </details>
                               )}
-                            </div>
 
-                            <label className="ssc__thread-field">
-                              <span className="ssc__thread-label">
-                                {translate('applications.threadMessageLabel', 'Message')}
-                              </span>
-                              <textarea
-                                rows={3}
-                                value={threadDraftValue}
-                                onChange={(event) =>
-                                  handleApplicationThreadDraftChange(
-                                    primaryThreadKey,
-                                    event.target.value,
-                                    cleanupThreadKey
-                                  )
-                                }
-                                placeholder={translate(
-                                  'applications.threadPlaceholder',
-                                  'Share an update, confirm an interview, or leave an internal note…'
+                              <section className="ssc__application-thread">
+                                <header className="ssc__thread-header">
+                                  <span className="ssc__thread-icon" aria-hidden="true">
+                                    <MessageCircle size={18} />
+                                  </span>
+                                  <h4>{translate('applications.threadTitle', 'Communication & scheduling')}</h4>
+                                </header>
+
+                                {threadEntries.length > 0 ? (
+                                  <ul className="ssc__thread-list">
+                                    {threadEntries.map((entry) => {
+                                      const typeLabel = translate(
+                                        `applications.threadTypes.${entry.type}`,
+                                        entry.type === 'interview'
+                                          ? 'Interview'
+                                          : entry.type === 'note'
+                                            ? 'Internal note'
+                                            : 'Message'
+                                      );
+                                      const authorKey = (entry.author || 'startup') === 'student' ? 'student' : 'startup';
+                                      const authorLabel =
+                                        authorKey === 'student'
+                                          ? candidateName ||
+                                            translate('applications.threadAuthor.student', 'Candidate')
+                                          : translate('applications.threadAuthor.you', 'You');
+                                      return (
+                                        <li key={entry.id} className="ssc__thread-item">
+                                          <div className="ssc__thread-meta">
+                                            <div className="ssc__thread-meta-left">
+                                              <span className="ssc__thread-author">{authorLabel}</span>
+                                              <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                            </div>
+                                            <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
+                                          </div>
+                                          <p>{entry.message}</p>
+                                          {entry.scheduleAt ? (
+                                            <div className="ssc__thread-schedule">
+                                              <Calendar size={14} aria-hidden="true" />
+                                              <span>
+                                                {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
+                                                  date: formatThreadTimestamp(entry.scheduleAt),
+                                                })}
+                                              </span>
+                                            </div>
+                                          ) : null}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                ) : (
+                                  <p className="ssc__thread-empty">
+                                    {translate(
+                                      'applications.threadEmpty',
+                                      'No conversation yet. Start by adding a note below.'
+                                    )}
+                                  </p>
                                 )}
-                              />
-                            </label>
-                            {threadError && <p className="ssc__thread-error">{threadError}</p>}
 
-                            <button type="submit" className="ssc__primary-btn ssc__thread-submit">
-                              <Send size={16} />
-                              <span>{translate('applications.threadSubmit', 'Add to thread')}</span>
-                            </button>
-                          </form>
-                        </section>
+                                <form
+                                  className="ssc__thread-form"
+                                  onSubmit={(event) =>
+                                    handleApplicationThreadSubmit(
+                                      event,
+                                      application,
+                                      primaryThreadKey,
+                                      cleanupThreadKey
+                                    )
+                                  }
+                                >
+                                  <div className="ssc__thread-form-row">
+                                    <label className="ssc__thread-field">
+                                      <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
+                                      <div className="ssc__select-wrapper">
+                                        <select
+                                          className="ssc__select"
+                                          value={resolvedType}
+                                          onChange={(event) =>
+                                            handleApplicationThreadTypeChange(
+                                              primaryThreadKey,
+                                              event.target.value,
+                                              cleanupThreadKey
+                                            )
+                                          }
+                                        >
+                                          {APPLICATION_THREAD_TYPES.map((type) => (
+                                            <option key={type} value={type}>
+                                              {translate(
+                                                `applications.threadTypes.${type}`,
+                                                type === 'interview'
+                                                  ? 'Interview'
+                                                  : type === 'note'
+                                                    ? 'Internal note'
+                                                    : 'Message'
+                                              )}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
+                                      </div>
+                                    </label>
 
-                        <footer className="ssc__application-footer">
-                          <span>
-                            {translate('applications.appliedOn', 'Applied {{date}}', {
-                              date: appliedDate,
-                            })}
-                          </span>
-                        </footer>
-                      </article>
-                    );
-                  })}
+                                    {resolvedType === 'interview' && (
+                                      <label className="ssc__thread-field">
+                                        <span>{translate('applications.threadScheduleLabel', 'Date & time')}</span>
+                                        <input
+                                          type="datetime-local"
+                                          value={scheduleDraftValue}
+                                          onChange={(event) =>
+                                            handleApplicationThreadScheduleChange(
+                                              primaryThreadKey,
+                                              event.target.value,
+                                              cleanupThreadKey
+                                            )
+                                          }
+                                        />
+                                        <small>
+                                          {translate(
+                                            'applications.threadScheduleHelper',
+                                            'Share a proposed or confirmed slot.'
+                                          )}
+                                        </small>
+                                      </label>
+                                    )}
+                                  </div>
+
+                                  <label className="ssc__thread-field">
+                                    <span className="ssc__thread-label">
+                                      {translate('applications.threadMessageLabel', 'Message')}
+                                    </span>
+                                    <textarea
+                                      value={threadDraftValue}
+                                      onChange={(event) =>
+                                        handleApplicationThreadDraftChange(
+                                          primaryThreadKey,
+                                          event.target.value,
+                                          cleanupThreadKey
+                                        )
+                                      }
+                                      placeholder={translate(
+                                        'applications.threadPlaceholder',
+                                        'Share an update, confirm an interview, or leave an internal note…'
+                                      )}
+                                    />
+                                  </label>
+                                  {threadError && <p className="ssc__thread-error">{threadError}</p>}
+                                  <button type="submit" className="ssc__primary-btn">
+                                    {translate('applications.threadSubmit', 'Add to thread')}
+                                  </button>
+                                </form>
+                              </section>
+
+                              <footer className="ssc__application-footer">
+                                <span>
+                                  {appliedAtValid
+                                    ? translate('applications.appliedOn', 'Applied {{date}}', {
+                                        date: appliedDateDetail,
+                                      })
+                                    : appliedDateDetail}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="ssc__ghost-btn"
+                                  onClick={() => handleApplicationRemoval(application.id)}
+                                >
+                                  {translate('applications.remove', 'Remove application')}
+                                </button>
+                              </footer>
+                            </article>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               ) : (
                 <div className="ssc__empty-state">
