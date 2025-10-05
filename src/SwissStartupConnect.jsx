@@ -8763,7 +8763,11 @@ const SwissStartupConnect = () => {
     }
   };
 
-  const toggleFollowCompany = (companyId) => {
+  const toggleFollowCompany = (followKey) => {
+    if (!followKey) {
+      return;
+    }
+
     if (!user) {
       setIsRegistering(false);
       setShowLoginModal(true);
@@ -8774,8 +8778,11 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    const key = String(companyId);
     setFollowedCompanies((prev) => {
+      const key = followKey.trim();
+      if (!key) {
+        return prev;
+      }
       if (prev.includes(key)) {
         return prev.filter((id) => id !== key);
       }
@@ -8787,6 +8794,7 @@ const SwissStartupConnect = () => {
   const closeReviewsModal = () => setReviewsModal(null);
 
   const loadingSpinner = jobsLoading || companiesLoading || authLoading;
+  const showCompanySkeleton = companiesLoading && sortedCompanies.length === 0;
 
   const navTabs = useMemo(() => {
     const baseTabs = ['general', 'jobs', 'companies'];
@@ -8842,14 +8850,51 @@ const SwissStartupConnect = () => {
   );
   const [followedCompanies, setFollowedCompanies] = useState(() => {
     if (typeof window === 'undefined') return [];
-    const stored = window.localStorage.getItem('ssc_followed_companies');
-    return stored ? JSON.parse(stored).map(String) : [];
+    try {
+      const stored = window.localStorage.getItem('ssc_followed_companies');
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return Array.from(
+        new Set(
+          parsed
+            .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+            .filter(Boolean)
+        )
+      );
+    } catch (error) {
+      console.error('Failed to parse followed companies', error);
+      return [];
+    }
   });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('ssc_followed_companies', JSON.stringify(followedCompanies));
+    const sanitized = Array.from(new Set(followedCompanies.filter(Boolean)));
+    window.localStorage.setItem('ssc_followed_companies', JSON.stringify(sanitized));
   }, [followedCompanies]);
+
+  const resolveCompanyFollowKey = useCallback((company) => {
+    if (!company) {
+      return '';
+    }
+
+    if (company.id != null) {
+      return String(company.id).trim();
+    }
+
+    const baseName = typeof company.name === 'string' ? company.name.trim() : '';
+    if (baseName) {
+      return baseName;
+    }
+
+    const fallbackName =
+      typeof company?.translations?.en?.name === 'string'
+        ? company.translations.en.name.trim()
+        : '';
+    return fallbackName;
+  }, []);
 
   const sortedCompanies = useMemo(() => {
     const enriched = augmentedCompanies.map((company) => {
@@ -8860,10 +8905,12 @@ const SwissStartupConnect = () => {
         (idKey && companyJobCounts[idKey]) ||
         (normalizedNameKey && companyJobCounts[normalizedNameKey]) ||
         0;
+      const followKey = resolveCompanyFollowKey(company);
       return {
         ...company,
         jobCount,
-        isFollowed: followedCompanies.includes(String(company.id || company.name)),
+        followKey,
+        isFollowed: followKey ? followedCompanies.includes(followKey) : false,
       };
     });
 
@@ -8876,7 +8923,7 @@ const SwissStartupConnect = () => {
       const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
       return bTime - aTime;
     });
-  }, [augmentedCompanies, companyJobCounts, companySort, followedCompanies]);
+  }, [augmentedCompanies, companyJobCounts, companySort, followedCompanies, resolveCompanyFollowKey]);
 
   const featuredCompanies = useMemo(() => {
     return [...sortedCompanies]
@@ -9827,9 +9874,42 @@ const SwissStartupConnect = () => {
                 </div>
               </div>
 
-              {sortedCompanies.length > 0 ? (
+              {showCompanySkeleton ? (
+                <div className="ssc__company-grid" aria-hidden="true">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <article key={`company-skeleton-${index}`} className="ssc__company-card ssc__company-card--loading">
+                      <div className="ssc__company-logo">
+                        <span className="ssc__skeleton ssc__skeleton--icon" />
+                      </div>
+                      <div className="ssc__company-content">
+                        <span className="ssc__skeleton ssc__skeleton--title" />
+                        <span className="ssc__skeleton ssc__skeleton--text" />
+                        <ul className="ssc__company-meta">
+                          <li>
+                            <span className="ssc__skeleton ssc__skeleton--chip" />
+                          </li>
+                          <li>
+                            <span className="ssc__skeleton ssc__skeleton--chip" />
+                          </li>
+                        </ul>
+                        <div className="ssc__company-insights">
+                          <span className="ssc__skeleton ssc__skeleton--pill" />
+                          <span className="ssc__skeleton ssc__skeleton--pill" />
+                        </div>
+                        <div className="ssc__company-foot">
+                          <span className="ssc__skeleton ssc__skeleton--text" />
+                          <div className="ssc__company-actions">
+                            <span className="ssc__skeleton ssc__skeleton--button" />
+                            <span className="ssc__skeleton ssc__skeleton--button" />
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : sortedCompanies.length > 0 ? (
                 <div className="ssc__company-grid">
-                  {sortedCompanies.map((company) => {
+                  {sortedCompanies.map((company, index) => {
                     const companyName =
                       getLocalizedCompanyText(company, 'name')?.trim() ||
                       company.name?.trim() ||
@@ -9840,15 +9920,34 @@ const SwissStartupConnect = () => {
                     const companyTeam = getLocalizedCompanyText(company, 'team');
                     const companyFundraising = getLocalizedCompanyText(company, 'fundraising');
                     const companyCulture = getLocalizedCompanyText(company, 'culture');
-                    const followKey = String(company.id ?? company.name ?? companyName);
-                    const isFollowed = followedCompanies.includes(followKey);
+                    const followKey = company.followKey;
+                    const isFollowed = Boolean(followKey && followedCompanies.includes(followKey));
+                    const jobCount = Number.isFinite(company.jobCount) ? company.jobCount : 0;
                     const jobCountLabel = translate(
-                      company.jobCount === 1 ? 'companies.jobCount.one' : 'companies.jobCount.other',
-                      company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`,
-                      { count: company.jobCount }
+                      jobCount === 1 ? 'companies.jobCount.one' : 'companies.jobCount.other',
+                      jobCount === 1 ? '1 open role' : `${jobCount} open roles`,
+                      { count: jobCount }
                     );
+                    const metaItems = [
+                      companyLocation && { icon: MapPin, label: companyLocation },
+                      companyIndustry && { icon: Layers, label: companyIndustry },
+                    ].filter(Boolean);
+                    const insightPills = [
+                      companyTeam && {
+                        icon: Users,
+                        label: companyTeam,
+                        className: 'ssc__company-pill--team',
+                      },
+                      companyFundraising && {
+                        icon: Sparkles,
+                        label: companyFundraising,
+                        className: 'ssc__company-pill--funding',
+                      },
+                    ].filter(Boolean);
+                    const canFollow = Boolean(followKey);
+                    const reactKey = followKey || companyName || `company-${index}`;
                     return (
-                      <article key={followKey} className="ssc__company-card">
+                      <article key={reactKey} className="ssc__company-card">
                         <div className="ssc__company-logo">
                           {company.logo_url ? (
                             <img src={company.logo_url} alt={`${companyName} logo`} />
@@ -9867,34 +9966,30 @@ const SwissStartupConnect = () => {
                             )}
                           </div>
                           {companyTagline && <p className="ssc__company-tagline">{companyTagline}</p>}
-                          <div className="ssc__company-meta">
-                            {companyLocation && (
-                              <span>
-                                <MapPin size={14} />
-                                {companyLocation}
-                              </span>
-                            )}
-                            {companyIndustry && (
-                              <span>
-                                <Layers size={14} />
-                                {companyIndustry}
-                              </span>
-                            )}
-                          </div>
-                          {(companyTeam || companyFundraising || company.info_link) && (
+                          {metaItems.length > 0 && (
+                            <ul className="ssc__company-meta">
+                              {metaItems.map((item) => {
+                                const MetaIcon = item.icon;
+                                return (
+                                  <li key={`${companyName}-${item.label}`}>
+                                    <MetaIcon size={14} />
+                                    {item.label}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                          {(insightPills.length > 0 || company.info_link) && (
                             <div className="ssc__company-insights">
-                              {companyTeam && (
-                                <span className="ssc__company-pill ssc__company-pill--team">
-                                  <Users size={14} />
-                                  {companyTeam}
-                                </span>
-                              )}
-                              {companyFundraising && (
-                                <span className="ssc__company-pill ssc__company-pill--funding">
-                                  <Sparkles size={14} />
-                                  {companyFundraising}
-                                </span>
-                              )}
+                              {insightPills.map((pill) => {
+                                const PillIcon = pill.icon;
+                                return (
+                                  <span key={`${companyName}-${pill.label}`} className={`ssc__company-pill ${pill.className}`}>
+                                    <PillIcon size={14} />
+                                    {pill.label}
+                                  </span>
+                                );
+                              })}
                               {company.info_link && (
                                 <a
                                   href={company.info_link}
@@ -9909,7 +10004,7 @@ const SwissStartupConnect = () => {
                             </div>
                           )}
                           {companyCulture && (
-                            <p className="ssc__company-tagline">{companyCulture}</p>
+                            <p className="ssc__company-culture">{companyCulture}</p>
                           )}
                           <div className="ssc__company-foot">
                             <span className="ssc__company-jobs">{jobCountLabel}</span>
@@ -9919,6 +10014,7 @@ const SwissStartupConnect = () => {
                                 className={`ssc__follow-btn ${isFollowed ? 'is-active' : ''}`}
                                 onClick={() => toggleFollowCompany(followKey)}
                                 aria-pressed={isFollowed}
+                                disabled={!canFollow}
                               >
                                 {isFollowed
                                   ? translate('companies.following', 'Following')
@@ -10891,27 +10987,34 @@ const SwissStartupConnect = () => {
                     </div>
                     <ul className="ssc__featured-list">
                       {featuredCompanies.length > 0 ? (
-                        featuredCompanies.map((company) => {
-                          const followKey = String(company.id || company.name);
+                        featuredCompanies.map((company, index) => {
+                          const followKey = company.followKey;
+                          const reactKey = followKey || company.name || `featured-${index}`;
+                          const companyName =
+                            getLocalizedCompanyText(company, 'name')?.trim() ||
+                            company.name ||
+                            translate('companies.defaultName', 'Verified startup');
+                          const jobCount = Number.isFinite(company.jobCount) ? company.jobCount : 0;
                           const jobCountLabel = translate(
-                            company.jobCount === 1
+                            jobCount === 1
                               ? 'featured.singleRole'
                               : 'featured.multipleRoles',
-                            company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`,
+                            jobCount === 1 ? '1 open role' : `${jobCount} open roles`,
                             {
-                              count: company.jobCount,
+                              count: jobCount,
                             }
                           );
                           return (
-                            <li key={followKey} className="ssc__featured-item">
+                            <li key={reactKey} className="ssc__featured-item">
                               <div>
-                                <span className="ssc__featured-name">{company.name}</span>
+                                <span className="ssc__featured-name">{companyName}</span>
                                 <span className="ssc__featured-meta">{jobCountLabel}</span>
                               </div>
                               <button
                                 type="button"
                                 className={`ssc__follow-chip ${company.isFollowed ? 'is-active' : ''}`}
                                 onClick={() => toggleFollowCompany(followKey)}
+                                disabled={!followKey}
                               >
                                 {company.isFollowed
                                   ? translate('featured.following', 'Following')
