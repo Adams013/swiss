@@ -5516,10 +5516,12 @@ const SwissStartupConnect = () => {
 
     updateSalaryRange((prev) => {
       if (bound === 'min') {
-        return [monthlyValue, prev[1]];
+        const nextMin = Math.min(monthlyValue, prev[1]);
+        return [nextMin, prev[1]];
       }
 
-      return [prev[0], monthlyValue];
+      const nextMax = Math.max(monthlyValue, prev[0]);
+      return [prev[0], nextMax];
     });
   };
 
@@ -5564,10 +5566,12 @@ const SwissStartupConnect = () => {
 
     updateEquityRange((prev) => {
       if (bound === 'min') {
-        return [rawValue, prev[1]];
+        const nextMin = Math.min(rawValue, prev[1]);
+        return [nextMin, prev[1]];
       }
 
-      return [prev[0], rawValue];
+      const nextMax = Math.max(rawValue, prev[0]);
+      return [prev[0], nextMax];
     });
   };
 
@@ -8988,13 +8992,17 @@ const SwissStartupConnect = () => {
     return Math.min(Math.max(((value - sliderBaseMin) / sliderRangeDenominator) * 100, 0), 100);
   };
 
+  const salaryRangeLowerDisplay = Math.min(
+    Number.isFinite(salaryDisplayMinValue) ? salaryDisplayMinValue : salaryDisplayMinBound,
+    Number.isFinite(salaryDisplayMaxValue) ? salaryDisplayMaxValue : salaryDisplayMaxBound
+  );
+  const salaryRangeUpperDisplay = Math.max(
+    Number.isFinite(salaryDisplayMinValue) ? salaryDisplayMinValue : salaryDisplayMinBound,
+    Number.isFinite(salaryDisplayMaxValue) ? salaryDisplayMaxValue : salaryDisplayMaxBound
+  );
   const salarySliderStyle = {
-    '--range-min': `${calculateSliderPercent(
-      Number.isFinite(salaryDisplayMinValue) ? salaryDisplayMinValue : salaryDisplayMinBound
-    )}%`,
-    '--range-max': `${calculateSliderPercent(
-      Number.isFinite(salaryDisplayMaxValue) ? salaryDisplayMaxValue : salaryDisplayMaxBound
-    )}%`,
+    '--range-min': `${calculateSliderPercent(salaryRangeLowerDisplay)}%`,
+    '--range-max': `${calculateSliderPercent(salaryRangeUpperDisplay)}%`,
   };
   const salarySliderDisabled =
     !Number.isFinite(salaryDisplayMinBound) ||
@@ -9046,15 +9054,16 @@ const SwissStartupConnect = () => {
     normalizedEquityMaxBound
   );
   const equitySliderRangeSpan = Math.max(normalizedEquityMaxBound - normalizedEquityMinBound, EQUITY_STEP);
+  const equitySliderLowerValue = Math.min(equitySliderMinValue, equitySliderMaxValue);
+  const equitySliderUpperValue = Math.max(equitySliderMinValue, equitySliderMaxValue);
+  const toEquityPercent = (value) =>
+    Math.min(
+      Math.max(((value - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
+      100
+    );
   const equitySliderStyle = {
-    '--range-min': `${Math.min(
-      Math.max(((equitySliderMinValue - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
-      100
-    )}%`,
-    '--range-max': `${Math.min(
-      Math.max(((equitySliderMaxValue - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
-      100
-    )}%`,
+    '--range-min': `${toEquityPercent(equitySliderLowerValue)}%`,
+    '--range-max': `${toEquityPercent(equitySliderUpperValue)}%`,
   };
   const equitySliderDisabled = normalizedEquityMinBound === normalizedEquityMaxBound;
   const equityRangeAtDefault =
