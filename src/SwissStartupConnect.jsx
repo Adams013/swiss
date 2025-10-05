@@ -4238,8 +4238,15 @@ const SwissStartupConnect = () => {
 
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
-    const stored = window.localStorage.getItem('ssc_saved_jobs');
-    return stored ? JSON.parse(stored) : [];
+
+    try {
+      const stored = window.localStorage.getItem('ssc_saved_jobs');
+      const parsed = stored ? JSON.parse(stored) : [];
+      return sanitizeIdArray(parsed);
+    } catch (error) {
+      console.error('Failed to parse saved jobs', error);
+      return [];
+    }
   });
   const [selectedJob, setSelectedJob] = useState(null);
 
@@ -4809,7 +4816,9 @@ const SwissStartupConnect = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('ssc_saved_jobs', JSON.stringify(savedJobs));
+
+    const sanitised = sanitizeIdArray(savedJobs);
+    window.localStorage.setItem('ssc_saved_jobs', JSON.stringify(sanitised));
   }, [savedJobs]);
 
   useEffect(() => {
@@ -8793,9 +8802,6 @@ const SwissStartupConnect = () => {
   const closeResourceModal = () => setResourceModal(null);
   const closeReviewsModal = () => setReviewsModal(null);
 
-  const loadingSpinner = jobsLoading || companiesLoading || authLoading;
-  const showCompanySkeleton = companiesLoading && sortedCompanies.length === 0;
-
   const navTabs = useMemo(() => {
     const baseTabs = ['general', 'jobs', 'companies'];
     if (user?.type === 'startup') {
@@ -8924,6 +8930,9 @@ const SwissStartupConnect = () => {
       return bTime - aTime;
     });
   }, [augmentedCompanies, companyJobCounts, companySort, followedCompanies, resolveCompanyFollowKey]);
+
+  const loadingSpinner = jobsLoading || companiesLoading || authLoading;
+  const showCompanySkeleton = companiesLoading && sortedCompanies.length === 0;
 
   const featuredCompanies = useMemo(() => {
     return [...sortedCompanies]
