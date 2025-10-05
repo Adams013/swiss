@@ -42,6 +42,7 @@ const LANGUAGE_OPTIONS = [
 const LANGUAGE_TAG_PREFIX = '__lang:';
 
 const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
+const LOCAL_APPLICATION_STORAGE_KEY = 'ssc_local_applications_v1';
 
 const readCachedProfile = (userId) => {
   if (typeof window === 'undefined' || !userId) {
@@ -156,6 +157,188 @@ const sanitizeIdArray = (value) => {
   });
 
   return Array.from(unique);
+};
+
+const readLocalApplications = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_APPLICATION_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to read local applications', error);
+    return [];
+  }
+};
+
+const writeLocalApplications = (entries) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(LOCAL_APPLICATION_STORAGE_KEY, JSON.stringify(entries));
+  } catch (error) {
+    console.error('Failed to write local applications', error);
+  }
+};
+
+const normalizeApplicationKey = (jobId, profileId) => {
+  const jobKey = getJobIdKey(jobId);
+  const profileKey = getJobIdKey(profileId);
+  return `${jobKey}::${profileKey}`;
+};
+
+const normalizeThreadStateValue = (value) => {
+  if (Array.isArray(value)) {
+    return { entries: value, meta: null };
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Array.isArray(value.entries) ? value.entries : [];
+    const meta = value.meta && typeof value.meta === 'object' ? value.meta : null;
+    return { entries, meta };
+  }
+
+  return { entries: [], meta: null };
+};
+
+const pickThreadValue = (store, primaryKey, fallbackKey) => {
+  if (!store || typeof store !== 'object') {
+    return undefined;
+  }
+
+  if (primaryKey && Object.prototype.hasOwnProperty.call(store, primaryKey)) {
+    return store[primaryKey];
+  }
+
+  if (fallbackKey && Object.prototype.hasOwnProperty.call(store, fallbackKey)) {
+    return store[fallbackKey];
+  }
+
+  return undefined;
+};
+
+const removeThreadKeys = (store, keys = []) => {
+  if (!store || typeof store !== 'object' || !Array.isArray(keys) || keys.length === 0) {
+    return store;
+  }
+
+  let next = store;
+  let mutated = false;
+
+  keys.forEach((key) => {
+    if (!key) {
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(next, key)) {
+      if (!mutated) {
+        next = { ...next };
+        mutated = true;
+      }
+      delete next[key];
+    }
+  });
+
+  return mutated ? next : store;
+};
+
+const parseThreadKey = (key) => {
+  if (typeof key !== 'string') {
+    return { jobId: '', profileId: '' };
+  }
+
+  const [jobId = '', profileId = ''] = key.split('::');
+  return { jobId: jobId || '', profileId: profileId || '' };
+};
+
+const upsertLocalApplication = (entry) => {
+  if (!entry) {
+    return null;
+  }
+
+  const stored = readLocalApplications();
+  const targetKey = normalizeApplicationKey(entry.job_id, entry.profile_id);
+  const filtered = stored.filter((existing) => {
+    const existingKey = normalizeApplicationKey(existing.job_id, existing.profile_id);
+    return existingKey !== targetKey;
+  });
+  const nextEntries = [...filtered, entry];
+  writeLocalApplications(nextEntries);
+  return entry;
+};
+
+const loadLocalApplicationsForStartup = (startupId, remoteApplications = []) => {
+  const stored = readLocalApplications();
+  const remoteKeys = new Set(
+    Array.isArray(remoteApplications)
+      ? remoteApplications.map((application) => normalizeApplicationKey(application.job_id, application.profile_id))
+      : []
+  );
+
+  let changed = false;
+  const filtered = stored.filter((entry) => {
+    const key = normalizeApplicationKey(entry.job_id, entry.profile_id);
+    if (remoteKeys.has(key)) {
+      changed = true;
+      return false;
+    }
+    return true;
+  });
+
+  if (changed) {
+    writeLocalApplications(filtered);
+  }
+
+  const normalizedStartupId = getJobIdKey(startupId);
+
+  return filtered
+    .filter((entry) => {
+      if (!normalizedStartupId) {
+        return true;
+      }
+      return getJobIdKey(entry.startup_id) === normalizedStartupId;
+    })
+    .map((entry) => ({ ...entry, isLocal: true }));
+};
+
+const updateStoredLocalApplication = (applicationId, updater) => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const stored = readLocalApplications();
+    let changed = false;
+    const updated = stored
+      .map((entry) => {
+        if (entry.id !== applicationId) {
+          return entry;
+        }
+
+        const next = updater ? updater(entry) : entry;
+        if (next === entry) {
+          return entry;
+        }
+
+        changed = true;
+        return next;
+      })
+      .filter(Boolean);
+
+    if (changed) {
+      writeLocalApplications(updated);
+    }
+
+    return updated.find((entry) => entry.id === applicationId) || null;
+  } catch (error) {
+    console.error('Failed to update local application', error);
+    return null;
+  }
 };
 
 const firstNonEmpty = (...candidates) => {
@@ -290,6 +473,7 @@ const TRANSLATIONS = {
       companies: 'Startups',
       myJobs: 'Mes offres',
       applications: 'Candidatures',
+      messages: 'Messages',
       saved: 'Favoris',
       join: 'Rejoindre',
       signIn: 'Se connecter',
@@ -457,6 +641,11 @@ const TRANSLATIONS = {
       saveTooltip: 'Connectez-vous avec un compte étudiant pour enregistrer des offres',
       thirteenth: '13e salaire',
       motivationalTag: 'Lettre de motivation',
+      arrangements: {
+        onSite: 'Sur site',
+        hybrid: 'Hybride',
+        remote: 'Télétravail',
+      },
       languagesLabel: 'Langues requises',
       requirementsHeading: 'Pré-requis',
       benefitsHeading: 'Avantages',
@@ -498,6 +687,7 @@ const TRANSLATIONS = {
       labels: {
         title: 'Intitulé du poste',
         location: 'Ville ou canton',
+        workArrangement: 'Mode de travail',
         employmentType: 'Type de contrat',
         weeklyHours: 'Heures hebdomadaires',
         internshipLength: 'Durée du stage (mois)',
@@ -521,6 +711,12 @@ const TRANSLATIONS = {
           partTime: 'Temps partiel',
           internship: 'Stage',
           contract: 'Contrat',
+        },
+        workArrangement: {
+          select: 'Sélectionner un mode',
+          onSite: 'Sur site',
+          hybrid: 'Hybride',
+          remote: 'Télétravail',
         },
         salaryCadence: {
           select: 'Sélectionner un rythme',
@@ -585,6 +781,7 @@ const TRANSLATIONS = {
         verificationRequired: 'Seules les startups vérifiées peuvent publier des offres.',
         locationInvalid: 'Choisissez une ville, un canton ou une option télétravail en Suisse dans la liste.',
         salaryCadenceMissing: 'Sélectionnez si le salaire est horaire, hebdomadaire, mensuel ou annuel.',
+        workArrangementMissing: 'Choisissez si le poste est sur site, hybride ou en télétravail.',
         salaryMinMissing: 'Indiquez le salaire minimum avant de publier l’offre.',
         salaryMinBelowMinimum: 'Le salaire {{cadence}} doit être au minimum de {{minimum}} CHF.',
         salaryMaxMissing: 'Indiquez le salaire maximum de la fourchette.',
@@ -915,11 +1112,18 @@ const TRANSLATIONS = {
         hired: 'Embauché·e',
         rejected: 'Refusé·e',
       },
+      listHeaders: {
+        name: 'Candidat·e',
+        university: 'Université',
+        status: 'Statut',
+        applied: 'Date',
+      },
       statusFeedback: 'Candidature marquée comme {{status}}.',
       candidateFallback: 'Candidat·e',
       candidateInitialFallback: 'C',
       universityFallback: 'Université non renseignée',
       programFallback: 'Programme non renseigné',
+      appliedDateUnknown: 'Date indisponible',
       threadTitle: 'Communication et planification',
       threadEmpty: 'Aucun message pour le moment. Lancez la conversation ci-dessous.',
       threadPlaceholder: 'Partager une mise à jour, confirmer un entretien ou ajouter une note interne…',
@@ -935,6 +1139,24 @@ const TRANSLATIONS = {
       threadValidation: 'Ajoutez un message avant de l’enregistrer.',
       threadScheduledFor: 'Prévu le {{date}}',
       threadMessageLabel: 'Message',
+      threadAuthor: {
+        you: 'Vous',
+        student: 'Candidat·e',
+        startup: 'Équipe startup',
+      },
+      studentInboxTitle: 'Messages',
+      studentInboxSubtitle:
+        'Les startups vous écriront ici après avoir consulté votre candidature.',
+      studentInboxEmptyTitle: 'Pas encore de messages',
+      studentInboxEmptyDescription:
+        'Postulez à des rôles et surveillez cette rubrique pour les réponses des startups.',
+      studentInboxCount: '{{count}} conversation{{plural}}',
+      studentInboxJobFallback: 'Opportunité',
+      studentInboxCompanyFallback: 'Startup',
+      studentReplyPlaceholder: 'Écrivez votre réponse…',
+      studentReplyCta: 'Envoyer la réponse',
+      studentReplyLocked:
+        'Les startups enverront le premier message. Vous pourrez répondre dès qu’elles vous contactent.',
       feedback: {
         submitted: 'Candidature envoyée ! 🎉',
         submittedFallback:
@@ -1139,6 +1361,7 @@ const TRANSLATIONS = {
       companies: 'Start-ups',
       myJobs: 'Meine Inserate',
       applications: 'Bewerbungen',
+      messages: 'Nachrichten',
       saved: 'Gemerkt',
       join: 'Beitreten',
       signIn: 'Anmelden',
@@ -1306,6 +1529,11 @@ const TRANSLATIONS = {
       saveTooltip: 'Mit Studierendenkonto anmelden, um Stellen zu merken',
       thirteenth: '13. Monatslohn',
       motivationalTag: 'Motivationsschreiben',
+      arrangements: {
+        onSite: 'Vor Ort',
+        hybrid: 'Hybrid',
+        remote: 'Remote',
+      },
       languagesLabel: 'Erforderliche Sprachen',
       requirementsHeading: 'Anforderungen',
       benefitsHeading: 'Leistungen',
@@ -1347,6 +1575,7 @@ const TRANSLATIONS = {
       labels: {
         title: 'Stellentitel',
         location: 'Ort oder Kanton',
+        workArrangement: 'Arbeitsmodell',
         employmentType: 'Anstellungsart',
         weeklyHours: 'Wochenstunden',
         internshipLength: 'Praktikumsdauer (Monate)',
@@ -1370,6 +1599,12 @@ const TRANSLATIONS = {
           partTime: 'Teilzeit',
           internship: 'Praktikum',
           contract: 'Vertrag',
+        },
+        workArrangement: {
+          select: 'Modus wählen',
+          onSite: 'Vor Ort',
+          hybrid: 'Hybrid',
+          remote: 'Remote',
         },
         salaryCadence: {
           select: 'Rhythmus wählen',
@@ -1434,6 +1669,7 @@ const TRANSLATIONS = {
         verificationRequired: 'Nur verifizierte Start-ups können Stellen veröffentlichen.',
         locationInvalid: 'Wählen Sie eine Schweizer Stadt, einen Kanton oder eine Remote-Option aus der Liste.',
         salaryCadenceMissing: 'Wählen Sie, ob das Gehalt stündlich, wöchentlich, monatlich oder jährlich ist.',
+        workArrangementMissing: 'Wählen Sie, ob die Rolle vor Ort, hybrid oder remote ist.',
         salaryMinMissing: 'Geben Sie das Mindestgehalt an, bevor Sie veröffentlichen.',
         salaryMinBelowMinimum: 'Das {{cadence}}e Gehalt muss mindestens {{minimum}} CHF betragen.',
         salaryMaxMissing: 'Geben Sie das maximale Gehalt für das Band an.',
@@ -1765,11 +2001,18 @@ const TRANSLATIONS = {
         hired: 'Eingestellt',
         rejected: 'Abgelehnt',
       },
+      listHeaders: {
+        name: 'Kandidat:in',
+        university: 'Hochschule',
+        status: 'Status',
+        applied: 'Datum',
+      },
       statusFeedback: 'Bewerbung als {{status}} markiert.',
       candidateFallback: 'Kandidat:in',
       candidateInitialFallback: 'K',
       universityFallback: 'Hochschule nicht angegeben',
       programFallback: 'Studiengang nicht angegeben',
+      appliedDateUnknown: 'Datum nicht verfügbar',
       threadTitle: 'Kommunikation & Terminplanung',
       threadEmpty: 'Noch keine Einträge. Starten Sie das Gespräch unten.',
       threadPlaceholder: 'Update teilen, Interview bestätigen oder interne Notiz hinzufügen…',
@@ -1785,6 +2028,24 @@ const TRANSLATIONS = {
       threadValidation: 'Fügen Sie eine Nachricht hinzu, bevor Sie sie speichern.',
       threadScheduledFor: 'Geplant für {{date}}',
       threadMessageLabel: 'Nachricht',
+      threadAuthor: {
+        you: 'Sie',
+        student: 'Kandidat:in',
+        startup: 'Start-up-Team',
+      },
+      studentInboxTitle: 'Nachrichten',
+      studentInboxSubtitle:
+        'Sobald Start-ups Ihre Bewerbung prüfen, melden sie sich hier bei Ihnen.',
+      studentInboxEmptyTitle: 'Noch keine Nachrichten',
+      studentInboxEmptyDescription:
+        'Bewerben Sie sich auf Rollen und behalten Sie Antworten von Start-ups hier im Blick.',
+      studentInboxCount: '{{count}} Gespräch{{plural}}',
+      studentInboxJobFallback: 'Rolle',
+      studentInboxCompanyFallback: 'Start-up',
+      studentReplyPlaceholder: 'Schreiben Sie Ihre Antwort…',
+      studentReplyCta: 'Antwort senden',
+      studentReplyLocked:
+        'Start-ups schicken die erste Nachricht. Sobald sie sich melden, können Sie hier antworten.',
       feedback: {
         submitted: 'Bewerbung versendet! 🎉',
         submittedFallback:
@@ -2010,6 +2271,7 @@ const mockJobs = [
     company_name: 'TechFlow AG',
     startup_id: 'mock-company-1',
     location: 'Zurich, Switzerland',
+    work_arrangement: 'on_site',
     employment_type: 'Full-time',
     salary: '80k – 110k CHF',
     equity: '0.2% – 0.4%',
@@ -2062,6 +2324,7 @@ const mockJobs = [
     company_name: 'Alpine Health',
     startup_id: 'mock-company-2',
     location: 'Geneva, Switzerland',
+    work_arrangement: 'on_site',
     employment_type: 'Full-time',
     salary: '95k – 125k CHF',
     equity: '0.3% – 0.5%',
@@ -2114,6 +2377,7 @@ const mockJobs = [
     company_name: 'Alpine Health',
     startup_id: 'mock-company-2',
     location: 'Remote within Switzerland',
+    work_arrangement: 'remote',
     employment_type: 'Part-time',
     weekly_hours_value: 24,
     salary: '28 – 34 CHF / hour',
@@ -2167,6 +2431,7 @@ const mockJobs = [
     company_name: 'Cognivia Labs',
     startup_id: 'mock-company-3',
     location: 'Lausanne, Switzerland (Hybrid)',
+    work_arrangement: 'hybrid',
     employment_type: 'Internship',
     internship_duration_months: 6,
     salary: '3.5k CHF / month',
@@ -2229,6 +2494,22 @@ const mockCompanies = [
     website: 'https://techflow.example',
     verification_status: 'verified',
     created_at: '2024-01-12T10:00:00Z',
+    translations: {
+      fr: {
+        tagline: 'Intelligence de liquidité pour les PME suisses',
+        industry: 'Fintech',
+        team: '65 personnes',
+        fundraising: 'CHF 28M levés',
+        culture: 'Axé produit, hybride par défaut, opérations neutres en carbone.',
+      },
+      de: {
+        tagline: 'Liquiditätsintelligenz für Schweizer KMU',
+        industry: 'Fintech',
+        team: '65 Personen',
+        fundraising: 'CHF 28 Mio. aufgenommen',
+        culture: 'Produktgetrieben, hybrid-first, CO₂-neutrale Abläufe.',
+      },
+    },
   },
   {
     id: 'mock-company-2',
@@ -2242,6 +2523,22 @@ const mockCompanies = [
     website: 'https://alpinehealth.example',
     verification_status: 'pending',
     created_at: '2024-01-08T09:30:00Z',
+    translations: {
+      fr: {
+        tagline: 'Parcours de soins numériques pour cliniques et télésanté',
+        industry: 'Healthtech',
+        team: '32 personnes',
+        fundraising: 'CHF 12M levés',
+        culture: 'Humain, informé par la clinique, confiance dans les données.',
+      },
+      de: {
+        tagline: 'Digitale Versorgungspfade für Kliniken und Telemedizin',
+        industry: 'Healthtech',
+        team: '32 Personen',
+        fundraising: 'CHF 12 Mio. aufgenommen',
+        culture: 'Menschenzentriert, klinisch fundiert, datenbasiertes Vertrauen.',
+      },
+    },
   },
   {
     id: 'mock-company-3',
@@ -2255,6 +2552,22 @@ const mockCompanies = [
     website: 'https://cognivia.example',
     verification_status: 'verified',
     created_at: '2024-01-18T14:45:00Z',
+    translations: {
+      fr: {
+        tagline: 'Outils ML pour des percées scientifiques',
+        industry: 'Deep Tech',
+        team: '48 personnes',
+        fundraising: 'CHF 35M levés',
+        culture: 'Ancrée dans la recherche, expert·e·s humbles, expérimentation rapide.',
+      },
+      de: {
+        tagline: 'ML-Tools für wissenschaftliche Durchbrüche',
+        industry: 'Deep Tech',
+        team: '48 Personen',
+        fundraising: 'CHF 35 Mio. aufgenommen',
+        culture: 'Forschungsbasiert, bodenständige Expert:innen, schnelle Experimente.',
+      },
+    },
   },
 ];
 
@@ -2419,6 +2732,19 @@ const SWISS_LOCATION_OPTIONS = [
   ['Across Switzerland', 'Across Switzerland', 'filters.locations.acrossSwitzerland'],
 ].map(([value, label, translationKey]) => ({ value, label, translationKey }));
 
+const WORK_ARRANGEMENT_OPTIONS = [
+  { value: 'on_site', label: 'On-site', translationKey: 'onSite' },
+  { value: 'hybrid', label: 'Hybrid', translationKey: 'hybrid' },
+  { value: 'remote', label: 'Remote', translationKey: 'remote' },
+];
+
+const WORK_ARRANGEMENT_VALUES = new Set(WORK_ARRANGEMENT_OPTIONS.map((option) => option.value));
+
+const WORK_ARRANGEMENT_LABEL_MAP = WORK_ARRANGEMENT_OPTIONS.reduce((accumulator, option) => {
+  accumulator[option.value] = option;
+  return accumulator;
+}, {});
+
 const ALLOWED_SWISS_LOCATIONS = new Set(
   SWISS_LOCATION_OPTIONS.map((option) =>
     option.value
@@ -2428,6 +2754,20 @@ const ALLOWED_SWISS_LOCATIONS = new Set(
       .toLowerCase(),
   ),
 );
+
+const buildWorkArrangementLabel = (translate, arrangement) => {
+  if (!arrangement || typeof arrangement !== 'string') {
+    return '';
+  }
+
+  const normalized = arrangement.trim();
+  const option = WORK_ARRANGEMENT_LABEL_MAP[normalized];
+  if (!option) {
+    return '';
+  }
+
+  return translate(`jobs.arrangements.${option.translationKey}`, option.label);
+};
 
 const steps = [
   {
@@ -2608,6 +2948,18 @@ const cvWritingTips = [
 ];
 
 const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
+
+const formatStatusKeyLabel = (statusKey) => {
+  if (!statusKey || typeof statusKey !== 'string') {
+    return '';
+  }
+
+  return statusKey
+    .split('_')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+};
 
 const activeCityFilters = [
   {
@@ -3704,6 +4056,25 @@ const SwissStartupConnect = () => {
     [language]
   );
 
+  const getLocalizedCompanyText = useCallback(
+    (company, field) => {
+      if (!company) {
+        return '';
+      }
+
+      if (language !== 'en') {
+        const localized = company?.translations?.[language]?.[field];
+        if (typeof localized === 'string' && localized.trim()) {
+          return localized;
+        }
+      }
+
+      const original = company?.[field];
+      return typeof original === 'string' ? original : '';
+    },
+    [language]
+  );
+
   const getJobLanguages = useCallback(
     (job) => {
       if (!job) {
@@ -3958,13 +4329,28 @@ const SwissStartupConnect = () => {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationStatusUpdating, setApplicationStatusUpdating] = useState(null);
   const [applicationsVersion, setApplicationsVersion] = useState(0);
+  const [expandedApplicationId, setExpandedApplicationId] = useState(null);
   const [applicationThreads, setApplicationThreads] = useState(() => {
     if (typeof window === 'undefined') {
       return {};
     }
     try {
       const stored = window.localStorage.getItem(APPLICATION_THREAD_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
+      if (!stored) {
+        return {};
+      }
+      const parsed = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object') {
+        return {};
+      }
+      const normalised = {};
+      Object.entries(parsed).forEach(([key, value]) => {
+        if (!key) {
+          return;
+        }
+        normalised[key] = normalizeThreadStateValue(value);
+      });
+      return normalised;
     } catch (error) {
       console.error('Failed to parse application threads', error);
       return {};
@@ -3997,6 +4383,7 @@ const SwissStartupConnect = () => {
   }, [selectedJob, getJobLanguages, getLocalizedJobList, getLocalizedJobText]);
   const selectedJobIdKey = getJobIdKey(selectedJob?.id);
   const selectedJobApplied = selectedJobIdKey ? appliedJobSet.has(selectedJobIdKey) : false;
+  const selectedJobArrangementLabel = buildWorkArrangementLabel(translate, selectedJob?.work_arrangement);
 
   const localizedApplicationModal = useMemo(() => {
     if (!applicationModal) {
@@ -4010,6 +4397,112 @@ const SwissStartupConnect = () => {
       localizedLanguages: getJobLanguages(applicationModal),
     };
   }, [applicationModal, getJobLanguages, getLocalizedJobText]);
+  const getApplicationThreadKey = useCallback((application) => {
+    if (!application) {
+      return '';
+    }
+
+    const jobIdentifier = application.job_id ?? application?.jobs?.id;
+    const profileIdentifier = application.profile_id ?? application?.profiles?.id;
+
+    if (!jobIdentifier || !profileIdentifier) {
+      return '';
+    }
+
+    return normalizeApplicationKey(jobIdentifier, profileIdentifier);
+  }, []);
+
+  const buildThreadMetaFromApplication = useCallback(
+    (application) => {
+      if (!application) {
+        return null;
+      }
+
+      const job = application.jobs || {};
+      const candidate = application.profiles || {};
+      const jobId = job.id ?? application.job_id ?? '';
+      const profileId = candidate.id ?? application.profile_id ?? '';
+
+      if (!jobId && !profileId) {
+        return null;
+      }
+
+      const jobTitle = getLocalizedJobText(job, 'title') || job.title || '';
+      const companyName = job.company_name || '';
+      const startupId = job.startup_id ?? application.startup_id ?? '';
+
+      return {
+        jobId,
+        profileId,
+        jobTitle,
+        companyName,
+        startupId,
+      };
+    },
+    [getLocalizedJobText]
+  );
+  const studentInboxThreads = useMemo(() => {
+    if (!user || user.type !== 'student') {
+      return [];
+    }
+
+    const profileIdentifier = profile?.id || profileForm?.id || user?.id;
+    const profileKey = getJobIdKey(profileIdentifier);
+    if (!profileKey) {
+      return [];
+    }
+
+    const threads = [];
+
+    Object.entries(applicationThreads).forEach(([key, value]) => {
+      const { entries, meta } = normalizeThreadStateValue(value);
+      const { jobId, profileId } = parseThreadKey(key);
+      const resolvedProfileId = getJobIdKey(meta?.profileId || profileId);
+
+      if (!resolvedProfileId || resolvedProfileId !== profileKey) {
+        return;
+      }
+
+      const resolvedJobId = getJobIdKey(meta?.jobId || jobId);
+      let jobTitle = meta?.jobTitle || '';
+      let companyName = meta?.companyName || '';
+
+      if (resolvedJobId) {
+        const jobMatch = jobs.find((job) => getJobIdKey(job.id) === resolvedJobId);
+        if (jobMatch) {
+          jobTitle = jobTitle || getLocalizedJobText(jobMatch, 'title') || jobMatch.title || '';
+          companyName = companyName || jobMatch.company_name || '';
+        }
+      }
+
+      const sortedEntries = [...entries].sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return aTime - bTime;
+      });
+
+      const employerHasMessaged = sortedEntries.some(
+        (entry) => (entry.author || 'startup') === 'startup'
+      );
+      const latestEntry = sortedEntries[sortedEntries.length - 1];
+      const lastTime = latestEntry ? new Date(latestEntry.createdAt).getTime() : 0;
+
+      threads.push({
+        key,
+        entries: sortedEntries,
+        meta: {
+          jobId: resolvedJobId,
+          profileId: resolvedProfileId,
+          jobTitle,
+          companyName,
+        },
+        employerHasMessaged,
+        lastTime,
+      });
+    });
+
+    return threads.sort((a, b) => b.lastTime - a.lastTime);
+  }, [applicationThreads, user, profile?.id, profileForm?.id, jobs, getLocalizedJobText]);
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
   const [securityOldPassword, setSecurityOldPassword] = useState('');
@@ -4036,6 +4529,7 @@ const SwissStartupConnect = () => {
   const [jobForm, setJobForm] = useState({
     title: '',
     location: '',
+    work_arrangement: '',
     employment_type: 'Full-time',
     weekly_hours: '',
     internship_duration_months: '',
@@ -4060,6 +4554,9 @@ const SwissStartupConnect = () => {
   const showToast = useCallback((message) => {
     setToast({ id: Date.now(), message });
   }, []);
+  const handleToggleApplicationRow = useCallback((applicationId) => {
+    setExpandedApplicationId((previous) => (previous === applicationId ? null : applicationId));
+  }, []);
 
   useEffect(() => {
     if (!feedback) return undefined;
@@ -4072,6 +4569,17 @@ const SwissStartupConnect = () => {
     const timeout = setTimeout(() => setToast(null), 1000);
     return () => clearTimeout(timeout);
   }, [toast]);
+
+  useEffect(() => {
+    if (!expandedApplicationId) {
+      return;
+    }
+
+    const match = applications.some((application) => application.id === expandedApplicationId);
+    if (!match) {
+      setExpandedApplicationId(null);
+    }
+  }, [applications, expandedApplicationId]);
 
   useEffect(() => {
     if (user?.type !== 'student') {
@@ -4172,6 +4680,55 @@ const SwissStartupConnect = () => {
     }
     return undefined;
   }, [applicationThreads]);
+
+  useEffect(() => {
+    if (user?.type !== 'startup' || applications.length === 0) {
+      return;
+    }
+
+    setApplicationThreads((previous) => {
+      let nextState = previous;
+      let changed = false;
+
+      applications.forEach((application) => {
+        const threadKey = getApplicationThreadKey(application);
+        if (!threadKey) {
+          return;
+        }
+
+        const meta = buildThreadMetaFromApplication(application);
+        const existing = nextState[threadKey];
+        const normalised = normalizeThreadStateValue(existing);
+        const existingMeta = normalised.meta || {};
+        const mergedMeta = meta ? { ...existingMeta, ...meta } : existingMeta;
+        const needsMetaUpdate =
+          meta && Object.keys(meta).some((key) => meta[key] && existingMeta[key] !== meta[key]);
+        const needsStructureUpdate = !existing || Array.isArray(existing);
+
+        if (needsMetaUpdate || needsStructureUpdate) {
+          if (!changed) {
+            nextState = { ...nextState };
+            changed = true;
+          }
+          nextState[threadKey] = {
+            entries: normalised.entries,
+            meta: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
+          };
+        }
+
+        const legacyKey = getJobIdKey(application.id);
+        if (legacyKey && legacyKey !== threadKey && nextState[legacyKey]) {
+          if (!changed) {
+            nextState = { ...nextState };
+            changed = true;
+          }
+          delete nextState[legacyKey];
+        }
+      });
+
+      return changed ? nextState : previous;
+    });
+  }, [applications, user?.type, getApplicationThreadKey, buildThreadMetaFromApplication]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -4683,15 +5240,43 @@ const SwissStartupConnect = () => {
 
         if (fetchError) {
           console.error('Applications load error', fetchError);
-          setApplications([]);
+          const localFallback = loadLocalApplicationsForStartup(startupProfile?.id);
+          const sortedLocal = [...localFallback].sort((a, b) => {
+            const aTime = new Date(a.created_at).getTime();
+            const bTime = new Date(b.created_at).getTime();
+            const safeATime = Number.isFinite(aTime) ? aTime : 0;
+            const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+            return safeBTime - safeATime;
+          });
+          setApplications(sortedLocal);
+          setApplicationColumnPresence((previous) => {
+            const next = { ...previous };
+            const derived = deriveColumnPresence(sortedLocal);
+            Object.keys(derived).forEach((column) => {
+              next[column] = true;
+            });
+            return next;
+          });
         } else {
-          setApplications(fetchedApplications);
+          const remoteApplications = fetchedApplications.map((application) => ({
+            ...application,
+            isLocal: false,
+          }));
+          const localFallback = loadLocalApplicationsForStartup(startupProfile?.id, fetchedApplications);
+          const combined = [...remoteApplications, ...localFallback].sort((a, b) => {
+            const aTime = new Date(a.created_at).getTime();
+            const bTime = new Date(b.created_at).getTime();
+            const safeATime = Number.isFinite(aTime) ? aTime : 0;
+            const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+            return safeBTime - safeATime;
+          });
+          setApplications(combined);
           setApplicationColumnPresence((previous) => {
             const next = { ...previous };
             columnsToRequest.forEach((column) => {
               next[column] = true;
             });
-            const derived = deriveColumnPresence(fetchedApplications);
+            const derived = deriveColumnPresence(combined);
             Object.keys(derived).forEach((column) => {
               next[column] = true;
             });
@@ -4700,7 +5285,23 @@ const SwissStartupConnect = () => {
         }
       } catch (error) {
         console.error('Applications load error', error);
-        setApplications([]);
+        const localFallback = loadLocalApplicationsForStartup(startupProfile?.id);
+        const sortedLocal = [...localFallback].sort((a, b) => {
+          const aTime = new Date(a.created_at).getTime();
+          const bTime = new Date(b.created_at).getTime();
+          const safeATime = Number.isFinite(aTime) ? aTime : 0;
+          const safeBTime = Number.isFinite(bTime) ? bTime : 0;
+          return safeBTime - safeATime;
+        });
+        setApplications(sortedLocal);
+        setApplicationColumnPresence((previous) => {
+          const next = { ...previous };
+          const derived = deriveColumnPresence(sortedLocal);
+          Object.keys(derived).forEach((column) => {
+            next[column] = true;
+          });
+          return next;
+        });
       } finally {
         setApplicationsLoading(false);
       }
@@ -6929,6 +7530,18 @@ const SwissStartupConnect = () => {
       );
       const locationValue = locationOption ? locationOption.value : locationSelection;
 
+      const arrangementSelection = jobForm.work_arrangement?.trim() ?? '';
+      if (!WORK_ARRANGEMENT_VALUES.has(arrangementSelection)) {
+        setPostJobError(
+          translate(
+            'jobForm.errors.workArrangementMissing',
+            'Select whether the role is on-site, hybrid, or remote.',
+          ),
+        );
+        setPostingJob(false);
+        return;
+      }
+
       const languageSelection = Array.isArray(jobForm.language_requirements)
         ? jobForm.language_requirements.filter(Boolean)
         : [];
@@ -7126,6 +7739,7 @@ const SwissStartupConnect = () => {
         title: jobForm.title.trim(),
         company_name: startupProfile.name || startupForm.name,
         location: locationValue,
+        work_arrangement: arrangementSelection,
         employment_type: employmentTypeForPayload,
         salary: salaryDisplay,
         equity: equityNumericValue != null ? equityDisplay : null,
@@ -7277,6 +7891,7 @@ const SwissStartupConnect = () => {
       setJobForm({
         title: '',
         location: '',
+        work_arrangement: '',
         employment_type: 'Full-time',
         weekly_hours: '',
         internship_duration_months: '',
@@ -7619,6 +8234,44 @@ const SwissStartupConnect = () => {
 
         fallbackNotice = true;
         console.warn('RLS prevented Supabase application insert; storing locally.');
+
+        const now = new Date();
+        const createdAt = Number.isFinite(now.getTime()) ? now.toISOString() : new Date().toISOString();
+        const baseProfileCvUrl = profileForm.cv_url?.trim?.() || profile?.cv_url || '';
+        const profileName =
+          profileForm.full_name?.trim?.() || profile?.full_name || user?.name?.trim?.() || '';
+        const companyNameSnapshot = applicationModal.company_name?.trim?.() || 'Verified startup';
+        const jobTitleSnapshot = getLocalizedJobText(applicationModal, 'title') || applicationModal.title || '';
+        const localStartupId = applicationModal.startup_id || null;
+        const localApplicationEntry = {
+          id: `local-${Date.now()}`,
+          job_id: applicationModal.id,
+          profile_id: profile.id,
+          startup_id: localStartupId,
+          status: 'submitted',
+          acknowledged: false,
+          motivational_letter:
+            applicationColumnPresence.motivational_letter !== false ? motivationalLetterUrl || null : null,
+          cv_override_url:
+            applicationColumnPresence.cv_override_url !== false && !useExistingCv ? selectedCvUrl : null,
+          created_at: createdAt,
+          profiles: {
+            id: profile.id,
+            full_name: profileName,
+            university: profileForm.university?.trim?.() || profile?.university || '',
+            program: profileForm.program?.trim?.() || profile?.program || '',
+            avatar_url: profileForm.avatar_url?.trim?.() || profile?.avatar_url || user?.avatar_url || '',
+            cv_url: useExistingCv ? selectedCvUrl : baseProfileCvUrl,
+          },
+          jobs: {
+            id: applicationModal.id,
+            title: jobTitleSnapshot,
+            company_name: companyNameSnapshot,
+            startup_id: localStartupId,
+          },
+          isLocal: true,
+        };
+        upsertLocalApplication(localApplicationEntry);
       } else {
         const successfulColumns = Object.keys(attemptPayload).filter(
           (key) => key !== 'job_id' && key !== 'profile_id'
@@ -7686,6 +8339,27 @@ const SwissStartupConnect = () => {
 
   const updateApplicationStatus = async (applicationId, nextStatus) => {
     setApplicationStatusUpdating(applicationId);
+    const targetApplication = applications.find((application) => application.id === applicationId);
+    if (targetApplication?.isLocal) {
+      const statusLabel = translate(
+        `applications.status.${nextStatus}`,
+        formatStatusKeyLabel(nextStatus)
+      );
+      setApplications((previous) =>
+        previous.map((application) =>
+          application.id === applicationId ? { ...application, status: nextStatus } : application
+        )
+      );
+      updateStoredLocalApplication(applicationId, (entry) => ({ ...entry, status: nextStatus }));
+      setFeedback({
+        type: 'success',
+        message: translate('applications.statusFeedback', 'Application marked as {{status}}.', {
+          status: statusLabel,
+        }),
+      });
+      setApplicationStatusUpdating(null);
+      return;
+    }
     try {
       const { error } = await supabase
         .from('job_applications')
@@ -7697,7 +8371,10 @@ const SwissStartupConnect = () => {
         return;
       }
 
-      const statusLabel = translate(`applications.status.${nextStatus}`, nextStatus.replace('_', ' '));
+      const statusLabel = translate(
+        `applications.status.${nextStatus}`,
+        formatStatusKeyLabel(nextStatus)
+      );
       setFeedback({
         type: 'success',
         message: translate('applications.statusFeedback', 'Application marked as {{status}}.', {
@@ -7712,72 +8389,162 @@ const SwissStartupConnect = () => {
     }
   };
 
-  const handleApplicationThreadDraftChange = (applicationId, value) => {
-    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: value }));
+  const appendThreadEntry = (threadKey, entry, meta, legacyKey) => {
+    if (!threadKey) {
+      return;
+    }
+
+    setApplicationThreads((prev) => {
+      const baseState = legacyKey && legacyKey !== threadKey ? removeThreadKeys(prev, [legacyKey]) : prev;
+      const current = normalizeThreadStateValue(baseState[threadKey]);
+      const mergedMeta = meta ? { ...(current.meta || {}), ...meta } : current.meta || null;
+      const safeMeta = mergedMeta && Object.keys(mergedMeta).length > 0 ? mergedMeta : null;
+      const nextValue = {
+        entries: [...current.entries, entry],
+        meta: safeMeta,
+      };
+      return { ...baseState, [threadKey]: nextValue };
+    });
+  };
+
+  const handleApplicationThreadDraftChange = (threadKey, value, legacyKey) => {
+    const cleanupKeys = legacyKey && legacyKey !== threadKey ? [legacyKey] : [];
+    setApplicationThreadDrafts((prev) => {
+      const cleaned = cleanupKeys.length > 0 ? removeThreadKeys(prev, cleanupKeys) : prev;
+      if (!threadKey) {
+        return cleaned;
+      }
+      if (cleaned[threadKey] === value) {
+        return cleaned;
+      }
+      return { ...cleaned, [threadKey]: value };
+    });
     if (value?.trim?.()) {
-      setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+      setApplicationThreadErrors((prev) =>
+        removeThreadKeys(prev, [threadKey, legacyKey].filter(Boolean))
+      );
     }
   };
 
-  const handleApplicationThreadTypeChange = (applicationId, nextType) => {
-    setApplicationThreadTypeDrafts((prev) => ({ ...prev, [applicationId]: nextType }));
-    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
+  const handleApplicationThreadTypeChange = (threadKey, nextType, legacyKey) => {
+    const cleanupKeys = legacyKey && legacyKey !== threadKey ? [legacyKey] : [];
+    setApplicationThreadTypeDrafts((prev) => {
+      const cleaned = cleanupKeys.length > 0 ? removeThreadKeys(prev, cleanupKeys) : prev;
+      if (!threadKey) {
+        return cleaned;
+      }
+      if (cleaned[threadKey] === nextType) {
+        return cleaned;
+      }
+      return { ...cleaned, [threadKey]: nextType };
+    });
+    setApplicationThreadErrors((prev) =>
+      removeThreadKeys(prev, [threadKey, legacyKey].filter(Boolean))
+    );
     if (nextType !== 'interview') {
-      setApplicationThreadScheduleDrafts((prev) => {
-        if (!prev[applicationId]) {
-          return prev;
-        }
-        const next = { ...prev };
-        delete next[applicationId];
-        return next;
-      });
+      setApplicationThreadScheduleDrafts((prev) =>
+        removeThreadKeys(prev, [threadKey, legacyKey].filter(Boolean))
+      );
     }
   };
 
-  const handleApplicationThreadScheduleChange = (applicationId, value) => {
-    setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: value }));
+  const handleApplicationThreadScheduleChange = (threadKey, value, legacyKey) => {
+    const cleanupKeys = legacyKey && legacyKey !== threadKey ? [legacyKey] : [];
+    setApplicationThreadScheduleDrafts((prev) => {
+      const cleaned = cleanupKeys.length > 0 ? removeThreadKeys(prev, cleanupKeys) : prev;
+      if (!threadKey) {
+        return cleaned;
+      }
+      if (cleaned[threadKey] === value) {
+        return cleaned;
+      }
+      return { ...cleaned, [threadKey]: value };
+    });
   };
 
-  const handleApplicationThreadSubmit = (event, applicationId) => {
+  const handleApplicationThreadSubmit = (event, application, threadKey, legacyKey) => {
     event.preventDefault();
-    const rawMessage = applicationThreadDrafts[applicationId] || '';
-    const message = rawMessage.trim();
+
+    const targetKey = threadKey || legacyKey || getJobIdKey(application?.id);
+    const rawDraft = pickThreadValue(applicationThreadDrafts, threadKey, legacyKey) || '';
+    const draftString = typeof rawDraft === 'string' ? rawDraft : String(rawDraft);
+    const message = draftString.trim();
+
+    if (!targetKey) {
+      return;
+    }
+
     if (!message) {
       setApplicationThreadErrors((prev) => ({
         ...prev,
-        [applicationId]: translate('applications.threadValidation', 'Add a note before saving it.'),
+        [targetKey]: translate('applications.threadValidation', 'Add a note before saving it.'),
       }));
       return;
     }
 
-    const type = applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0];
-    const scheduleAtRaw = applicationThreadScheduleDrafts[applicationId] || '';
-    const scheduleAt = type === 'interview' && scheduleAtRaw ? scheduleAtRaw : null;
+    const typeDraft = pickThreadValue(applicationThreadTypeDrafts, threadKey, legacyKey);
+    const type = typeof typeDraft === 'string' && typeDraft ? typeDraft : APPLICATION_THREAD_TYPES[0];
+    const scheduleDraft = pickThreadValue(applicationThreadScheduleDrafts, threadKey, legacyKey);
+    const scheduleRaw = typeof scheduleDraft === 'string' ? scheduleDraft.trim() : '';
+    const scheduleAt = type === 'interview' && scheduleRaw ? scheduleRaw : null;
 
     const entry = {
-      id: `${applicationId}-${Date.now()}`,
+      id: `${targetKey}-${Date.now()}`,
       type,
       message,
       createdAt: new Date().toISOString(),
       scheduleAt,
+      author: 'startup',
     };
 
-    setApplicationThreads((prev) => {
-      const thread = prev[applicationId] || [];
-      return {
-        ...prev,
-        [applicationId]: [...thread, entry],
-      };
-    });
-    setApplicationThreadDrafts((prev) => ({ ...prev, [applicationId]: '' }));
-    setApplicationThreadErrors((prev) => ({ ...prev, [applicationId]: '' }));
-    if (scheduleAtRaw) {
-      setApplicationThreadScheduleDrafts((prev) => ({ ...prev, [applicationId]: '' }));
+    appendThreadEntry(targetKey, entry, buildThreadMetaFromApplication(application), legacyKey);
+
+    const keysToClear = [threadKey, legacyKey, targetKey].filter(Boolean);
+    setApplicationThreadDrafts((prev) => removeThreadKeys(prev, keysToClear));
+    setApplicationThreadErrors((prev) => removeThreadKeys(prev, keysToClear));
+    setApplicationThreadScheduleDrafts((prev) => removeThreadKeys(prev, keysToClear));
+    if (legacyKey && legacyKey !== targetKey) {
+      setApplicationThreadTypeDrafts((prev) => removeThreadKeys(prev, [legacyKey]));
     }
   };
 
+  const handleStudentThreadSubmit = (event, threadKey, meta, canReply) => {
+    event.preventDefault();
+    if (!canReply || !threadKey) {
+      return;
+    }
+
+    const rawDraft = pickThreadValue(applicationThreadDrafts, threadKey, null) || '';
+    const draftString = typeof rawDraft === 'string' ? rawDraft : String(rawDraft);
+    const message = draftString.trim();
+
+    if (!message) {
+      setApplicationThreadErrors((prev) => ({
+        ...prev,
+        [threadKey]: translate('applications.threadValidation', 'Add a note before saving it.'),
+      }));
+      return;
+    }
+
+    const entry = {
+      id: `${threadKey}-${Date.now()}`,
+      type: 'message',
+      message,
+      createdAt: new Date().toISOString(),
+      scheduleAt: null,
+      author: 'student',
+    };
+
+    appendThreadEntry(threadKey, entry, meta, null);
+    setApplicationThreadDrafts((prev) => removeThreadKeys(prev, [threadKey]));
+    setApplicationThreadErrors((prev) => removeThreadKeys(prev, [threadKey]));
+  };
+
   const resolveApplicationThreadType = useCallback(
-    (applicationId) => applicationThreadTypeDrafts[applicationId] || APPLICATION_THREAD_TYPES[0],
+    (primaryKey, fallbackKey) =>
+      (typeof primaryKey === 'string' && applicationThreadTypeDrafts[primaryKey]) ||
+      (typeof fallbackKey === 'string' && applicationThreadTypeDrafts[fallbackKey]) ||
+      APPLICATION_THREAD_TYPES[0],
     [applicationThreadTypeDrafts]
   );
 
@@ -7993,6 +8760,9 @@ const SwissStartupConnect = () => {
     if (user?.type === 'startup') {
       baseTabs.push('my-jobs', 'applications');
     }
+    if (user?.type === 'student') {
+      baseTabs.push('messages');
+    }
     baseTabs.push('saved');
     return baseTabs;
   }, [user?.type]);
@@ -8004,6 +8774,7 @@ const SwissStartupConnect = () => {
       companies: translate('nav.companies', 'Startups'),
       'my-jobs': translate('nav.myJobs', 'My jobs'),
       applications: translate('nav.applications', 'Applicants'),
+      messages: translate('nav.messages', 'Messages'),
       saved: translate('nav.saved', 'Saved'),
     }),
     [translate]
@@ -8820,6 +9591,7 @@ const SwissStartupConnect = () => {
                     const jobTitle = getLocalizedJobText(job, 'title');
                     const jobDescription = getLocalizedJobText(job, 'description');
                     const jobLanguages = getJobLanguages(job);
+                    const jobArrangementLabel = buildWorkArrangementLabel(translate, job.work_arrangement);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -8850,6 +9622,12 @@ const SwissStartupConnect = () => {
                             <MapPin size={16} />
                             {job.location}
                           </span>
+                          {jobArrangementLabel && (
+                            <span>
+                              <Building2 size={16} />
+                              {jobArrangementLabel}
+                            </span>
+                          )}
                           <span>
                             <Clock size={16} />
                             {timingText}
@@ -8956,164 +9734,6 @@ const SwissStartupConnect = () => {
                       </button>
                     </article>
                   )}
-                </div>
-              ) : (
-                <div className="ssc__empty-state">
-                  <BookmarkPlus size={40} />
-                  <h3>{translate('jobs.noMatchesTitle', 'No matches yet')}</h3>
-                  <p>
-                    {translate(
-                      'jobs.noMatchesBody',
-                      'Try removing a filter or widening your salary range.'
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {activeTab === 'companies' && (
-          <section className="ssc__section">
-            <div className="ssc__max">
-              <div className="ssc__section-header">
-                <div>
-                  <h2>{translate('companies.heading', 'Featured startups')}</h2>
-                  <p>
-                    {translate(
-                      'companies.subheading',
-                      'Meet the founders building Switzerland’s next generation of companies.'
-                    )}
-                  </p>
-                </div>
-                <div className="ssc__company-toolbar">
-                  <div
-                    className="ssc__sort-control"
-                    role="group"
-                    aria-label={translate('companies.sortAria', 'Sort startups')}
-                  >
-                    <span className="ssc__sort-label">{translate('companies.sortLabel', 'Sort by')}</span>
-                    <div className="ssc__sort-options">
-                      {companySortOptions.map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`ssc__sort-button ${companySort === option.value ? 'is-active' : ''}`}
-                            onClick={() => setCompanySort(option.value)}
-                            aria-pressed={companySort === option.value}
-                          >
-                            <Icon size={16} />
-                            {option.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {companiesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {[1, 2, 3, 4].map((index) => (
-                    <div key={index} className="ssc__job-skeleton" />
-                  ))}
-                </div>
-              ) : sortedCompanies.length > 0 ? (
-                <div className="ssc__company-grid">
-                  {sortedCompanies.map((company) => {
-                    const followKey = String(company.id || company.name);
-                    const jobCountValue = Number(company.jobCount);
-                    const jobCount = Number.isFinite(jobCountValue) ? jobCountValue : 0;
-                    const jobCountKey = jobCount === 1 ? 'companies.jobCount.one' : 'companies.jobCount.other';
-                    const jobCountLabel = translate(
-                      jobCountKey,
-                      jobCount === 1 ? '1 open role' : `${jobCount} open roles`,
-                      { count: jobCount }
-                    );
-                    return (
-                      <article key={followKey} className="ssc__company-card">
-                        <div className="ssc__company-logo">
-                          <Building2 size={20} />
-                        </div>
-                        <div className="ssc__company-content">
-                          <div className="ssc__company-header">
-                            <h3 className="ssc__company-name">{company.name}</h3>
-                            {company.verification_status === 'verified' && (
-                              <span className="ssc__badge">
-                                <CheckCircle2 size={14} />{' '}
-                                {translate('companies.verifiedBadge', 'Verified')}
-                              </span>
-                            )}
-                          </div>
-                          <p className="ssc__company-tagline">{company.tagline}</p>
-                          <div className="ssc__company-meta">
-                            {company.location && <span>{company.location}</span>}
-                            {company.industry && <span>{company.industry}</span>}
-                          </div>
-                          {(company.team || company.fundraising) && (
-                            <div className="ssc__company-insights">
-                              {company.team && (
-                                <span className="ssc__company-pill ssc__company-pill--team">
-                                  <Users size={14} />
-                                  {company.team}
-                                </span>
-                              )}
-                              {company.fundraising && (
-                                <span className="ssc__company-pill ssc__company-pill--funding">
-                                  <Sparkles size={14} />
-                                  {company.fundraising}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <p className="ssc__company-stats">{company.culture}</p>
-                          <div className="ssc__company-foot">
-                            <span className="ssc__company-jobs">{jobCountLabel}</span>
-                            <div className="ssc__company-actions">
-                              {company.website && (
-                                <a
-                                  className="ssc__outline-btn"
-                                  href={company.website}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {translate('companies.visitWebsite', 'Visit website')}
-                                </a>
-                              )}
-                              {company.info_link && (
-                                <a
-                                  className="ssc__outline-btn"
-                                  href={company.info_link}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {translate('companies.moreInfo', 'More about us')}
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                className={`ssc__follow-btn ${company.isFollowed ? 'is-active' : ''}`}
-                                onClick={() => toggleFollowCompany(followKey)}
-                              >
-                                {company.isFollowed
-                                  ? translate('companies.following', 'Following')
-                                  : translate('companies.follow', 'Follow')}
-                              </button>
-                              <button
-                                type="button"
-                                className="ssc__ghost-btn"
-                                onClick={() => openReviewsModal(company)}
-                              >
-                                {translate('companies.reviews', 'Reviews')}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
                 </div>
               ) : (
                 <div className="ssc__empty-state">
@@ -9281,221 +9901,379 @@ const SwissStartupConnect = () => {
                 </div>
               ) : applications.length > 0 ? (
                 <div className="ssc__applications-grid">
+                  <div className="ssc__applications-header">
+                    <span>{translate('applications.listHeaders.name', 'Name')}</span>
+                    <span>{translate('applications.listHeaders.university', 'University')}</span>
+                    <span>{translate('applications.listHeaders.status', 'Status')}</span>
+                    <span>{translate('applications.listHeaders.applied', 'Applied')}</span>
+                    <span aria-hidden="true" />
+                  </div>
+                  <ul className="ssc__applications-rows">
                     {applications.map((application) => {
                       const candidate = application.profiles;
                       const job = application.jobs;
                       const jobTitle = getLocalizedJobText(job, 'title');
                       const cvLink = application.cv_override_url || candidate?.cv_url;
-                      const appliedDate = new Date(application.created_at).toLocaleDateString();
-                      const threadEntries = applicationThreads[application.id] || [];
-                      const resolvedType = resolveApplicationThreadType(application.id);
-                      const scheduleDraftValue = applicationThreadScheduleDrafts[application.id] || '';
-                      const threadError = applicationThreadErrors[application.id];
+                      const candidateName =
+                        candidate?.full_name || translate('applications.candidateFallback', 'Candidate');
+                      const candidateUniversity =
+                        candidate?.university ||
+                        translate('applications.universityFallback', 'University not provided');
+                      const appliedAt = application.created_at ? new Date(application.created_at) : null;
+                      const appliedAtValid = appliedAt && !Number.isNaN(appliedAt.valueOf());
+                      const appliedDateSummary = appliedAtValid
+                        ? appliedAt.toLocaleDateString(undefined, {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : translate('applications.appliedDateUnknown', 'Date unavailable');
+                      const appliedDateDetail = appliedAtValid
+                        ? appliedAt.toLocaleDateString(undefined, {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : translate('applications.appliedDateUnknown', 'Date unavailable');
+                      const threadKey = getApplicationThreadKey(application);
+                      const legacyThreadKey = getJobIdKey(application.id);
+                      const rawThreadState =
+                        (threadKey && applicationThreads[threadKey]) ||
+                        (legacyThreadKey && applicationThreads[legacyThreadKey]) ||
+                        null;
+                      const { entries: threadEntries } = normalizeThreadStateValue(rawThreadState);
+                      const primaryThreadKey = threadKey || legacyThreadKey || String(application.id);
+                      const cleanupThreadKey =
+                        threadKey && legacyThreadKey && legacyThreadKey !== threadKey
+                          ? legacyThreadKey
+                          : undefined;
+                      const resolvedType = resolveApplicationThreadType(
+                        primaryThreadKey,
+                        cleanupThreadKey
+                      );
+                      const statusKey =
+                        application.status && applicationStatuses.includes(application.status)
+                          ? application.status
+                          : 'submitted';
+                      const statusFallback = statusKey
+                        .split('_')
+                        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                        .join(' ');
+                      const statusLabel = translate(
+                        `applications.status.${statusKey}`,
+                        statusFallback
+                      );
+                      const scheduleDraftRaw =
+                        pickThreadValue(
+                          applicationThreadScheduleDrafts,
+                          primaryThreadKey,
+                          cleanupThreadKey
+                        ) || '';
+                      const scheduleDraftValue =
+                        typeof scheduleDraftRaw === 'string' ? scheduleDraftRaw : String(scheduleDraftRaw);
+                      const threadDraftRaw =
+                        pickThreadValue(applicationThreadDrafts, primaryThreadKey, cleanupThreadKey) || '';
+                      const threadDraftValue =
+                        typeof threadDraftRaw === 'string' ? threadDraftRaw : String(threadDraftRaw);
+                      const threadError =
+                        pickThreadValue(applicationThreadErrors, primaryThreadKey, cleanupThreadKey) || '';
+                      const isExpanded = expandedApplicationId === application.id;
+                      const panelId = `ssc-application-panel-${application.id}`;
+                      const buttonId = `ssc-application-toggle-${application.id}`;
                       return (
-                        <article key={application.id} className="ssc__application-card">
-                        <header className="ssc__application-header">
-                          <div>
-                            <h3>{jobTitle}</h3>
-                            <p>{job?.company_name}</p>
-                          </div>
-                          <div className="ssc__status-select">
-                            <label>
-                              {translate('applications.statusLabel', 'Status')}
-                              <select
-                                value={application.status}
-                                onChange={(event) => updateApplicationStatus(application.id, event.target.value)}
-                                disabled={applicationStatusUpdating === application.id}
-                              >
-                                {applicationStatuses.map((status) => (
-                                  <option key={status} value={status}>
-                                    {translate(`applications.status.${status}`, status.replace('_', ' '))}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          </div>
-                        </header>
-
-                        <div className="ssc__candidate">
-                          <div className="ssc__avatar-medium">
-                            {candidate?.avatar_url ? (
-                              <img
-                                src={candidate.avatar_url}
-                                alt={candidate.full_name || translate('applications.candidateFallback', 'Candidate')}
-                              />
-                            ) : (
-                              <span>
-                                {candidate?.full_name?.charAt(0) || translate('applications.candidateInitialFallback', 'C')}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <strong>{candidate?.full_name || translate('applications.candidateFallback', 'Candidate')}</strong>
-                            <ul>
-                              <li>
-                                {candidate?.university ||
-                                  translate('applications.universityFallback', 'University not provided')}
-                              </li>
-                              <li>
-                                {candidate?.program ||
-                                  translate('applications.programFallback', 'Program not provided')}
-                              </li>
-                            </ul>
-                            {cvLink ? (
-                              <a href={cvLink} target="_blank" rel="noreferrer">
-                                {translate('applications.viewCv', 'View CV')}
-                              </a>
-                            ) : (
-                              <span>{translate('applications.noCv', 'No CV provided')}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {application.motivational_letter && (
-                          <details className="ssc__letter">
-                            <summary>{translate('applications.motivationalHeading', 'Motivational letter')}</summary>
-                            {application.motivational_letter.startsWith('http') ? (
-                              <a href={application.motivational_letter} target="_blank" rel="noreferrer">
-                                {translate('applications.downloadLetter', 'Download motivational letter')}
-                              </a>
-                            ) : (
-                              <p>{application.motivational_letter}</p>
-                            )}
-                          </details>
-                        )}
-
-                        <section className="ssc__application-thread">
-                          <header className="ssc__thread-header">
-                            <span className="ssc__thread-icon" aria-hidden="true">
-                              <MessageCircle size={18} />
-                            </span>
-                            <h4>{translate('applications.threadTitle', 'Communication & scheduling')}</h4>
-                          </header>
-
-                          {threadEntries.length > 0 ? (
-                            <ul className="ssc__thread-list">
-                              {threadEntries.map((entry) => {
-                                const typeLabel = translate(
-                                  `applications.threadTypes.${entry.type}`,
-                                  entry.type === 'interview'
-                                    ? 'Interview'
-                                    : entry.type === 'note'
-                                      ? 'Internal note'
-                                      : 'Message'
-                                );
-                                return (
-                                  <li key={entry.id} className="ssc__thread-item">
-                                    <div className="ssc__thread-meta">
-                                      <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
-                                      <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
-                                    </div>
-                                    <p>{entry.message}</p>
-                                    {entry.scheduleAt ? (
-                                      <div className="ssc__thread-schedule">
-                                        <Calendar size={14} aria-hidden="true" />
-                                        <span>
-                                          {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
-                                            date: formatThreadTimestamp(entry.scheduleAt),
-                                          })}
-                                        </span>
-                                      </div>
-                                    ) : null}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <p className="ssc__thread-empty">
-                              {translate(
-                                'applications.threadEmpty',
-                                'No conversation yet. Start by adding a note below.'
-                              )}
-                            </p>
-                          )}
-
-                          <form
-                            className="ssc__thread-form"
-                            onSubmit={(event) => handleApplicationThreadSubmit(event, application.id)}
+                        <li
+                          key={application.id}
+                          className={`ssc__applications-row ${isExpanded ? 'ssc__applications-row--expanded' : ''}`}
+                        >
+                          <button
+                            type="button"
+                            id={buttonId}
+                            className="ssc__applications-toggle"
+                            aria-expanded={isExpanded}
+                            aria-controls={panelId}
+                            onClick={() => handleToggleApplicationRow(application.id)}
                           >
-                            <div className="ssc__thread-form-row">
-                              <label className="ssc__thread-field">
-                                <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
-                                <div className="ssc__select-wrapper">
-                                  <select
-                                    value={resolvedType}
-                                    onChange={(event) =>
-                                      handleApplicationThreadTypeChange(application.id, event.target.value)
-                                    }
-                                  >
-                                    {APPLICATION_THREAD_TYPES.map((type) => (
-                                      <option key={type} value={type}>
-                                        {translate(
-                                          `applications.threadTypes.${type}`,
-                                          type === 'interview'
-                                            ? 'Interview'
-                                            : type === 'note'
-                                              ? 'Internal note'
-                                              : 'Message'
-                                        )}
-                                      </option>
-                                    ))}
-                                  </select>
+                            <span className="ssc__applications-cell ssc__applications-cell--primary">
+                              {candidateName}
+                            </span>
+                            <span className="ssc__applications-cell ssc__applications-cell--secondary">
+                              {candidateUniversity}
+                            </span>
+                            <span
+                              className={`ssc__applications-cell ssc__applications-status ssc__applications-status--${statusKey}`}
+                            >
+                              {statusLabel}
+                            </span>
+                            <span className="ssc__applications-cell ssc__applications-cell--muted">
+                              {appliedDateSummary}
+                            </span>
+                            <ChevronDown
+                              className="ssc__applications-toggle-icon"
+                              size={18}
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <div
+                            id={panelId}
+                            role="region"
+                            aria-labelledby={buttonId}
+                            className="ssc__applications-panel"
+                            hidden={!isExpanded}
+                          >
+                            <article className="ssc__application-card">
+                              <header className="ssc__application-header">
+                                <div>
+                                  <h3>{jobTitle}</h3>
+                                  <p>{job?.company_name}</p>
                                 </div>
-                              </label>
+                                <div className="ssc__status-select">
+                                  <label>
+                                    {translate('applications.statusLabel', 'Status')}
+                                    <div className="ssc__select-wrapper">
+                                      <select
+                                        className="ssc__select"
+                                        value={application.status}
+                                        onChange={(event) =>
+                                          updateApplicationStatus(application.id, event.target.value)
+                                        }
+                                        disabled={applicationStatusUpdating === application.id}
+                                      >
+                                        {applicationStatuses.map((status) => (
+                                          <option key={status} value={status}>
+                                            {translate(
+                                              `applications.status.${status}`,
+                                              formatStatusKeyLabel(status)
+                                            )}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
+                                    </div>
+                                  </label>
+                                </div>
+                              </header>
 
-                              {resolvedType === 'interview' && (
-                                <label className="ssc__thread-field">
-                                  <span>{translate('applications.threadScheduleLabel', 'Date & time')}</span>
-                                  <input
-                                    type="datetime-local"
-                                    value={scheduleDraftValue}
-                                    onChange={(event) =>
-                                      handleApplicationThreadScheduleChange(application.id, event.target.value)
-                                    }
-                                  />
-                                  <small>
-                                    {translate(
-                                      'applications.threadScheduleHelper',
-                                      'Share a proposed or confirmed slot.'
-                                    )}
-                                  </small>
-                                </label>
+                              <div className="ssc__candidate">
+                                <div className="ssc__avatar-medium">
+                                  {candidate?.avatar_url ? (
+                                    <img
+                                      src={candidate.avatar_url}
+                                      alt={candidateName}
+                                    />
+                                  ) : (
+                                    <span>
+                                      {candidate?.full_name?.charAt(0) ||
+                                        translate('applications.candidateInitialFallback', 'C')}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="ssc__candidate-body">
+                                  <strong>{candidateName}</strong>
+                                  <div className="ssc__candidate-details">
+                                    <span>{candidateUniversity}</span>
+                                    <span>
+                                      {candidate?.program ||
+                                        translate('applications.programFallback', 'Program not provided')}
+                                    </span>
+                                  </div>
+                                  {cvLink ? (
+                                    <a href={cvLink} target="_blank" rel="noreferrer">
+                                      {translate('applications.viewCv', 'View CV')}
+                                    </a>
+                                  ) : (
+                                    <span>{translate('applications.noCv', 'No CV provided')}</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {application.motivational_letter && (
+                                <details className="ssc__letter">
+                                  <summary>
+                                    {translate('applications.motivationalHeading', 'Motivational letter')}
+                                  </summary>
+                                  {application.motivational_letter.startsWith('http') ? (
+                                    <a href={application.motivational_letter} target="_blank" rel="noreferrer">
+                                      {translate('applications.downloadLetter', 'Download motivational letter')}
+                                    </a>
+                                  ) : (
+                                    <p>{application.motivational_letter}</p>
+                                  )}
+                                </details>
                               )}
-                            </div>
 
-                            <label className="ssc__thread-field">
-                              <span className="ssc__thread-label">
-                                {translate('applications.threadMessageLabel', 'Message')}
-                              </span>
-                              <textarea
-                                rows={3}
-                                value={applicationThreadDrafts[application.id] || ''}
-                                onChange={(event) => handleApplicationThreadDraftChange(application.id, event.target.value)}
-                                placeholder={translate(
-                                  'applications.threadPlaceholder',
-                                  'Share an update, confirm an interview, or leave an internal note…'
+                              <section className="ssc__application-thread">
+                                <header className="ssc__thread-header">
+                                  <span className="ssc__thread-icon" aria-hidden="true">
+                                    <MessageCircle size={18} />
+                                  </span>
+                                  <h4>{translate('applications.threadTitle', 'Communication & scheduling')}</h4>
+                                </header>
+
+                                {threadEntries.length > 0 ? (
+                                  <ul className="ssc__thread-list">
+                                    {threadEntries.map((entry) => {
+                                      const typeLabel = translate(
+                                        `applications.threadTypes.${entry.type}`,
+                                        entry.type === 'interview'
+                                          ? 'Interview'
+                                          : entry.type === 'note'
+                                            ? 'Internal note'
+                                            : 'Message'
+                                      );
+                                      const authorKey = (entry.author || 'startup') === 'student' ? 'student' : 'startup';
+                                      const authorLabel =
+                                        authorKey === 'student'
+                                          ? candidateName ||
+                                            translate('applications.threadAuthor.student', 'Candidate')
+                                          : translate('applications.threadAuthor.you', 'You');
+                                      return (
+                                        <li key={entry.id} className="ssc__thread-item">
+                                          <div className="ssc__thread-meta">
+                                            <div className="ssc__thread-meta-left">
+                                              <span className="ssc__thread-author">{authorLabel}</span>
+                                              <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                            </div>
+                                            <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
+                                          </div>
+                                          <p>{entry.message}</p>
+                                          {entry.scheduleAt ? (
+                                            <div className="ssc__thread-schedule">
+                                              <Calendar size={14} aria-hidden="true" />
+                                              <span>
+                                                {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
+                                                  date: formatThreadTimestamp(entry.scheduleAt),
+                                                })}
+                                              </span>
+                                            </div>
+                                          ) : null}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                ) : (
+                                  <p className="ssc__thread-empty">
+                                    {translate(
+                                      'applications.threadEmpty',
+                                      'No conversation yet. Start by adding a note below.'
+                                    )}
+                                  </p>
                                 )}
-                              />
-                            </label>
-                            {threadError && <p className="ssc__thread-error">{threadError}</p>}
 
-                            <button type="submit" className="ssc__primary-btn ssc__thread-submit">
-                              <Send size={16} />
-                              <span>{translate('applications.threadSubmit', 'Add to thread')}</span>
-                            </button>
-                          </form>
-                        </section>
+                                <form
+                                  className="ssc__thread-form"
+                                  onSubmit={(event) =>
+                                    handleApplicationThreadSubmit(
+                                      event,
+                                      application,
+                                      primaryThreadKey,
+                                      cleanupThreadKey
+                                    )
+                                  }
+                                >
+                                  <div className="ssc__thread-form-row">
+                                    <label className="ssc__thread-field">
+                                      <span>{translate('applications.threadTypeLabel', 'Entry type')}</span>
+                                      <div className="ssc__select-wrapper">
+                                        <select
+                                          className="ssc__select"
+                                          value={resolvedType}
+                                          onChange={(event) =>
+                                            handleApplicationThreadTypeChange(
+                                              primaryThreadKey,
+                                              event.target.value,
+                                              cleanupThreadKey
+                                            )
+                                          }
+                                        >
+                                          {APPLICATION_THREAD_TYPES.map((type) => (
+                                            <option key={type} value={type}>
+                                              {translate(
+                                                `applications.threadTypes.${type}`,
+                                                type === 'interview'
+                                                  ? 'Interview'
+                                                  : type === 'note'
+                                                    ? 'Internal note'
+                                                    : 'Message'
+                                              )}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <ChevronDown className="ssc__select-caret" size={16} aria-hidden="true" />
+                                      </div>
+                                    </label>
 
-                        <footer className="ssc__application-footer">
-                          <span>
-                            {translate('applications.appliedOn', 'Applied {{date}}', {
-                              date: appliedDate,
-                            })}
-                          </span>
-                        </footer>
-                      </article>
-                    );
-                  })}
+                                    {resolvedType === 'interview' && (
+                                      <label className="ssc__thread-field">
+                                        <span>{translate('applications.threadScheduleLabel', 'Date & time')}</span>
+                                        <input
+                                          type="datetime-local"
+                                          value={scheduleDraftValue}
+                                          onChange={(event) =>
+                                            handleApplicationThreadScheduleChange(
+                                              primaryThreadKey,
+                                              event.target.value,
+                                              cleanupThreadKey
+                                            )
+                                          }
+                                        />
+                                        <small>
+                                          {translate(
+                                            'applications.threadScheduleHelper',
+                                            'Share a proposed or confirmed slot.'
+                                          )}
+                                        </small>
+                                      </label>
+                                    )}
+                                  </div>
+
+                                  <label className="ssc__thread-field">
+                                    <span className="ssc__thread-label">
+                                      {translate('applications.threadMessageLabel', 'Message')}
+                                    </span>
+                                    <textarea
+                                      value={threadDraftValue}
+                                      onChange={(event) =>
+                                        handleApplicationThreadDraftChange(
+                                          primaryThreadKey,
+                                          event.target.value,
+                                          cleanupThreadKey
+                                        )
+                                      }
+                                      placeholder={translate(
+                                        'applications.threadPlaceholder',
+                                        'Share an update, confirm an interview, or leave an internal note…'
+                                      )}
+                                    />
+                                  </label>
+                                  {threadError && <p className="ssc__thread-error">{threadError}</p>}
+                                  <button type="submit" className="ssc__primary-btn">
+                                    {translate('applications.threadSubmit', 'Add to thread')}
+                                  </button>
+                                </form>
+                              </section>
+
+                              <footer className="ssc__application-footer">
+                                <span className="ssc__application-applied">
+                                  {appliedAtValid
+                                    ? translate('applications.appliedOn', 'Applied {{date}}', {
+                                        date: appliedDateDetail,
+                                      })
+                                    : appliedDateDetail}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="ssc__ghost-btn"
+                                  onClick={() => handleApplicationRemoval(application.id)}
+                                >
+                                  {translate('applications.remove', 'Remove application')}
+                                </button>
+                              </footer>
+                            </article>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               ) : (
                 <div className="ssc__empty-state">
@@ -9505,6 +10283,169 @@ const SwissStartupConnect = () => {
                     {translate(
                       'applications.emptyBody',
                       'Share your job link or post a new role to start receiving applications.'
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'messages' && user?.type === 'student' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>{translate('applications.studentInboxTitle', 'Messages')}</h2>
+                  <p>
+                    {translate(
+                      'applications.studentInboxSubtitle',
+                      'Startups will reach out here after reviewing your applications.'
+                    )}
+                  </p>
+                </div>
+                {studentInboxThreads.length > 0 && (
+                  <span className="ssc__pill">
+                    {translate('applications.studentInboxCount', '{{count}} conversation{{plural}}', {
+                      count: studentInboxThreads.length,
+                      plural: buildPluralSuffix(studentInboxThreads.length, { de: ['', 'e'] }),
+                    })}
+                  </span>
+                )}
+              </div>
+
+              {studentInboxThreads.length > 0 ? (
+                <div className="ssc__student-inbox">
+                  {studentInboxThreads.map((thread) => {
+                    const jobTitle =
+                      thread.meta.jobTitle ||
+                      translate('applications.studentInboxJobFallback', 'Opportunity');
+                    const companyName =
+                      thread.meta.companyName ||
+                      translate('applications.studentInboxCompanyFallback', 'Startup');
+                    const draftRaw = pickThreadValue(applicationThreadDrafts, thread.key, null) || '';
+                    const draftValue = typeof draftRaw === 'string' ? draftRaw : String(draftRaw);
+                    const threadError = pickThreadValue(applicationThreadErrors, thread.key, null) || '';
+                    return (
+                      <article key={thread.key} className="ssc__student-thread">
+                        <header className="ssc__student-thread-header">
+                          <span className="ssc__thread-icon" aria-hidden="true">
+                            <MessageCircle size={18} />
+                          </span>
+                          <div>
+                            <h3>{jobTitle}</h3>
+                            <p>{companyName}</p>
+                          </div>
+                        </header>
+
+                        {thread.entries.length > 0 ? (
+                          <ul className="ssc__thread-list">
+                            {thread.entries.map((entry) => {
+                              const typeLabel = translate(
+                                `applications.threadTypes.${entry.type}`,
+                                entry.type === 'interview'
+                                  ? 'Interview'
+                                  : entry.type === 'note'
+                                    ? 'Internal note'
+                                    : 'Message'
+                              );
+                              const authorIsStudent = (entry.author || 'startup') === 'student';
+                              const authorLabel = authorIsStudent
+                                ? translate('applications.threadAuthor.you', 'You')
+                                : companyName || translate('applications.threadAuthor.startup', 'Startup team');
+                              return (
+                                <li key={entry.id} className="ssc__thread-item">
+                                  <div className="ssc__thread-meta">
+                                    <div className="ssc__thread-meta-left">
+                                      <span className="ssc__thread-author">{authorLabel}</span>
+                                      <span className={`ssc__badge ssc__badge--${entry.type}`}>{typeLabel}</span>
+                                    </div>
+                                    <time dateTime={entry.createdAt}>{formatThreadTimestamp(entry.createdAt)}</time>
+                                  </div>
+                                  <p>{entry.message}</p>
+                                  {entry.scheduleAt ? (
+                                    <div className="ssc__thread-schedule">
+                                      <Calendar size={14} aria-hidden="true" />
+                                      <span>
+                                        {translate('applications.threadScheduledFor', 'Scheduled for {{date}}', {
+                                          date: formatThreadTimestamp(entry.scheduleAt),
+                                        })}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="ssc__thread-empty">
+                            {translate(
+                              'applications.threadEmpty',
+                              'No conversation yet. Start by adding a note below.'
+                            )}
+                          </p>
+                        )}
+
+                        <form
+                          className="ssc__thread-form"
+                          onSubmit={(event) =>
+                            handleStudentThreadSubmit(
+                              event,
+                              thread.key,
+                              thread.meta,
+                              thread.employerHasMessaged
+                            )
+                          }
+                        >
+                          <label className="ssc__thread-field">
+                            <span className="ssc__thread-label">
+                              {translate('applications.threadMessageLabel', 'Message')}
+                            </span>
+                            <textarea
+                              rows={3}
+                              value={draftValue}
+                              onChange={(event) =>
+                                handleApplicationThreadDraftChange(thread.key, event.target.value)
+                              }
+                              placeholder={translate(
+                                'applications.studentReplyPlaceholder',
+                                'Write your reply…'
+                              )}
+                              disabled={!thread.employerHasMessaged}
+                            />
+                          </label>
+                          {threadError && <p className="ssc__thread-error">{threadError}</p>}
+
+                          <button
+                            type="submit"
+                            className="ssc__primary-btn ssc__thread-submit"
+                            disabled={!thread.employerHasMessaged}
+                          >
+                            <Send size={16} />
+                            <span>{translate('applications.studentReplyCta', 'Send reply')}</span>
+                          </button>
+
+                          {!thread.employerHasMessaged && (
+                            <p className="ssc__student-reply-lock">
+                              {translate(
+                                'applications.studentReplyLocked',
+                                'Startups send the first message. You’ll be able to respond here once they reach out.'
+                              )}
+                            </p>
+                          )}
+                        </form>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <MessageCircle size={40} />
+                  <h3>{translate('applications.studentInboxEmptyTitle', 'No messages yet')}</h3>
+                  <p>
+                    {translate(
+                      'applications.studentInboxEmptyDescription',
+                      'Apply to roles and keep an eye out for startup replies here.'
                     )}
                   </p>
                 </div>
@@ -9568,6 +10509,7 @@ const SwissStartupConnect = () => {
                     const jobLanguages = getJobLanguages(job);
                     const jobIdKey = getJobIdKey(job.id);
                     const hasApplied = jobIdKey ? appliedJobSet.has(jobIdKey) : false;
+                    const jobArrangementLabel = buildWorkArrangementLabel(translate, job.work_arrangement);
                     return (
                       <article key={job.id} className="ssc__job-card">
                         <div className="ssc__job-header">
@@ -9589,6 +10531,12 @@ const SwissStartupConnect = () => {
                             <MapPin size={16} />
                             {job.location}
                           </span>
+                          {jobArrangementLabel && (
+                            <span>
+                              <Building2 size={16} />
+                              {jobArrangementLabel}
+                            </span>
+                          )}
                           <span>
                             <Clock size={16} />
                             {timingText}
@@ -10114,6 +11062,12 @@ const SwissStartupConnect = () => {
                   <MapPin size={16} />
                   {localizedSelectedJob.location}
                 </span>
+                {selectedJobArrangementLabel && (
+                  <span>
+                    <Building2 size={16} />
+                    {selectedJobArrangementLabel}
+                  </span>
+                )}
                 <span>
                   <Clock size={16} />
                   {buildTimingText(localizedSelectedJob)}
@@ -10786,6 +11740,32 @@ const SwissStartupConnect = () => {
                       {SWISS_LOCATION_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {translate(option.translationKey, option.label)}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="ssc__select-caret" size={16} />
+                  </div>
+                </label>
+                <label className="ssc__field">
+                  <span>{translate('jobForm.labels.workArrangement', 'Work arrangement')}</span>
+                  <div className="ssc__select-wrapper">
+                    <select
+                      className="ssc__select"
+                      value={jobForm.work_arrangement}
+                      onChange={(event) =>
+                        setJobForm((prev) => ({ ...prev, work_arrangement: event.target.value }))
+                      }
+                      required
+                    >
+                      <option value="">
+                        {translate('jobForm.options.workArrangement.select', 'Select arrangement')}
+                      </option>
+                      {WORK_ARRANGEMENT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {translate(
+                            `jobForm.options.workArrangement.${option.translationKey}`,
+                            option.label,
+                          )}
                         </option>
                       ))}
                     </select>
