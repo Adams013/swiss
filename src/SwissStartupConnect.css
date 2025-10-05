@@ -2856,7 +2856,7 @@
 
 .ssc__applications-header {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.2fr) 32px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1.1fr) 32px;
   gap: 1rem;
   padding: 0.85rem 1.5rem;
   text-transform: uppercase;
@@ -2886,7 +2886,7 @@
   border: none;
   background: transparent;
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.2fr) 32px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1.1fr) 32px;
   gap: 1rem;
   align-items: center;
   padding: 1.05rem 1.5rem;
@@ -2917,9 +2917,33 @@
   color: var(--ssc-ink);
 }
 
+.ssc__applications-cell--secondary {
+  color: var(--ssc-muted);
+  font-size: 0.9rem;
+}
+
 .ssc__applications-cell--muted {
   color: var(--ssc-muted);
   font-size: 0.9rem;
+}
+
+.ssc__applications-status {
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+  color: var(--ssc-muted);
+}
+
+.ssc__applications-status--offer {
+  color: #2563eb;
+}
+
+.ssc__applications-status--hired {
+  color: #047857;
+}
+
+.ssc__applications-status--rejected {
+  color: #dc2626;
 }
 
 .ssc__applications-toggle-icon {
@@ -2953,21 +2977,28 @@
   .ssc__applications-toggle {
     grid-template-columns: minmax(0, 1fr) auto;
     padding: 1rem 1.1rem;
-    row-gap: 0.35rem;
+    row-gap: 0.4rem;
   }
 
   .ssc__applications-cell {
     white-space: normal;
+    grid-column: 1 / -1;
   }
 
-  .ssc__applications-toggle span:nth-child(2),
-  .ssc__applications-toggle span:nth-child(3) {
-    font-size: 0.85rem;
-    color: var(--ssc-muted);
+  .ssc__applications-cell--primary {
+    grid-column: 1 / 2;
   }
 
   .ssc__applications-toggle-icon {
     align-self: center;
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+  }
+
+  .ssc__applications-cell--secondary,
+  .ssc__applications-status,
+  .ssc__applications-cell--muted {
+    font-size: 0.85rem;
   }
 
   .ssc__applications-panel {
@@ -3293,9 +3324,20 @@
 
 .ssc__application-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
   color: var(--ssc-muted);
   font-size: 0.85rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ssc-border);
+}
+
+.ssc__application-applied {
+  font-weight: 600;
+  color: var(--ssc-ink);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
 }
 
 .ssc__loading {

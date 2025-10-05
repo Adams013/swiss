@@ -1115,6 +1115,7 @@ const TRANSLATIONS = {
       listHeaders: {
         name: 'Candidat·e',
         university: 'Université',
+        status: 'Statut',
         applied: 'Date',
       },
       statusFeedback: 'Candidature marquée comme {{status}}.',
@@ -2003,6 +2004,7 @@ const TRANSLATIONS = {
       listHeaders: {
         name: 'Kandidat:in',
         university: 'Hochschule',
+        status: 'Status',
         applied: 'Datum',
       },
       statusFeedback: 'Bewerbung als {{status}} markiert.',
@@ -9902,6 +9904,7 @@ const SwissStartupConnect = () => {
                   <div className="ssc__applications-header">
                     <span>{translate('applications.listHeaders.name', 'Name')}</span>
                     <span>{translate('applications.listHeaders.university', 'University')}</span>
+                    <span>{translate('applications.listHeaders.status', 'Status')}</span>
                     <span>{translate('applications.listHeaders.applied', 'Applied')}</span>
                     <span aria-hidden="true" />
                   </div>
@@ -9948,6 +9951,18 @@ const SwissStartupConnect = () => {
                         primaryThreadKey,
                         cleanupThreadKey
                       );
+                      const statusKey =
+                        application.status && applicationStatuses.includes(application.status)
+                          ? application.status
+                          : 'submitted';
+                      const statusFallback = statusKey
+                        .split('_')
+                        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                        .join(' ');
+                      const statusLabel = translate(
+                        `applications.status.${statusKey}`,
+                        statusFallback
+                      );
                       const scheduleDraftRaw =
                         pickThreadValue(
                           applicationThreadScheduleDrafts,
@@ -9981,7 +9996,14 @@ const SwissStartupConnect = () => {
                             <span className="ssc__applications-cell ssc__applications-cell--primary">
                               {candidateName}
                             </span>
-                            <span className="ssc__applications-cell">{candidateUniversity}</span>
+                            <span className="ssc__applications-cell ssc__applications-cell--secondary">
+                              {candidateUniversity}
+                            </span>
+                            <span
+                              className={`ssc__applications-cell ssc__applications-status ssc__applications-status--${statusKey}`}
+                            >
+                              {statusLabel}
+                            </span>
                             <span className="ssc__applications-cell ssc__applications-cell--muted">
                               {appliedDateSummary}
                             </span>
@@ -10231,7 +10253,7 @@ const SwissStartupConnect = () => {
                               </section>
 
                               <footer className="ssc__application-footer">
-                                <span>
+                                <span className="ssc__application-applied">
                                   {appliedAtValid
                                     ? translate('applications.appliedOn', 'Applied {{date}}', {
                                         date: appliedDateDetail,
