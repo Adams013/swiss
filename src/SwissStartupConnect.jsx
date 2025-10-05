@@ -1094,6 +1094,10 @@ const TRANSLATIONS = {
       subheading: 'Rencontrez les fondateurs qui bâtissent la prochaine génération d’entreprises suisses.',
       sortAria: 'Trier les startups',
       sortLabel: 'Trier par',
+      count: '{{count}} startup{{plural}}',
+      emptyTitle: 'Aucune startup pour le moment',
+      emptyDescription:
+        'Revenez bientôt pour découvrir les nouvelles équipes qui recrutent sur SwissStartup Connect.',
     },
     applications: {
       viewCv: 'Voir le CV',
@@ -1983,6 +1987,10 @@ const TRANSLATIONS = {
       subheading: 'Lernen Sie die Gründer:innen kennen, die die nächste Generation Schweizer Unternehmen aufbauen.',
       sortAria: 'Start-ups sortieren',
       sortLabel: 'Sortieren nach',
+      count: '{{count}} Start-up{{plural}}',
+      emptyTitle: 'Noch keine Start-ups verfügbar',
+      emptyDescription:
+        'Schauen Sie bald wieder vorbei – neue Teams veröffentlichen hier ihre offenen Rollen.',
     },
     applications: {
       viewCv: 'Lebenslauf ansehen',
@@ -4126,6 +4134,31 @@ const SwissStartupConnect = () => {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
   const [activeTab, setActiveTab] = useState('general');
+  const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    if (activeTab !== 'general') {
+      setHasScrolledPastHero(false);
+      return undefined;
+    }
+
+    const handleScroll = () => {
+      const shouldHide = window.scrollY > 80;
+      setHasScrolledPastHero((previous) => (previous === shouldHide ? previous : shouldHide));
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [activeTab]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [salaryRange, setSalaryRange] = useState(defaultSalaryBounds);
@@ -9192,7 +9225,7 @@ const SwissStartupConnect = () => {
 
               <button
                 type="button"
-                className="ssc__hero-scroll-indicator"
+                className={`ssc__hero-scroll-indicator${hasScrolledPastHero ? ' is-hidden' : ''}`}
                 onClick={scrollToFilters}
                 aria-label={translate('hero.scrollAria', 'Scroll to filters')}
               >
@@ -9740,6 +9773,193 @@ const SwissStartupConnect = () => {
                   <Building2 size={40} />
                   <h3>No startups listed yet</h3>
                   <p>Check back soon or invite your favourite Swiss startup to join.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'companies' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>{translate('companies.heading', 'Startups to discover')}</h2>
+                  <p>
+                    {translate(
+                      'companies.subheading',
+                      'Meet the founders building the next generation of Swiss companies.'
+                    )}
+                  </p>
+                </div>
+                <div className="ssc__company-toolbar">
+                  <span className="ssc__pill">
+                    {translate('companies.count', '{{count}} startup{{plural}}', {
+                      count: sortedCompanies.length,
+                      plural: buildPluralSuffix(sortedCompanies.length),
+                    })}
+                  </span>
+                  <div
+                    className="ssc__sort-control"
+                    role="group"
+                    aria-label={translate('companies.sortAria', 'Sort startups')}
+                  >
+                    <span className="ssc__sort-label">{translate('companies.sortLabel', 'Sort by')}</span>
+                    <div className="ssc__sort-options">
+                      {companySortOptions.map((option) => {
+                        const Icon = option.icon;
+                        const isActive = companySort === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`ssc__sort-button ${isActive ? 'is-active' : ''}`}
+                            onClick={() => setCompanySort(option.value)}
+                            aria-pressed={isActive}
+                          >
+                            <Icon size={16} />
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {sortedCompanies.length > 0 ? (
+                <div className="ssc__company-grid">
+                  {sortedCompanies.map((company) => {
+                    const companyName =
+                      getLocalizedCompanyText(company, 'name')?.trim() ||
+                      company.name?.trim() ||
+                      translate('companies.defaultName', 'Verified startup');
+                    const companyTagline = getLocalizedCompanyText(company, 'tagline');
+                    const companyLocation = getLocalizedCompanyText(company, 'location');
+                    const companyIndustry = getLocalizedCompanyText(company, 'industry');
+                    const companyTeam = getLocalizedCompanyText(company, 'team');
+                    const companyFundraising = getLocalizedCompanyText(company, 'fundraising');
+                    const companyCulture = getLocalizedCompanyText(company, 'culture');
+                    const followKey = String(company.id ?? company.name ?? companyName);
+                    const isFollowed = followedCompanies.includes(followKey);
+                    const jobCountLabel = translate(
+                      company.jobCount === 1 ? 'companies.jobCount.one' : 'companies.jobCount.other',
+                      company.jobCount === 1 ? '1 open role' : `${company.jobCount} open roles`,
+                      { count: company.jobCount }
+                    );
+                    return (
+                      <article key={followKey} className="ssc__company-card">
+                        <div className="ssc__company-logo">
+                          {company.logo_url ? (
+                            <img src={company.logo_url} alt={`${companyName} logo`} />
+                          ) : (
+                            <Rocket size={22} />
+                          )}
+                        </div>
+                        <div className="ssc__company-content">
+                          <div className="ssc__company-header">
+                            <h3 className="ssc__company-name">{companyName}</h3>
+                            {company.verification_status === 'verified' && (
+                              <span className="ssc__badge verified">
+                                <CheckCircle2 size={14} />
+                                {translate('companies.verifiedBadge', 'Verified')}
+                              </span>
+                            )}
+                          </div>
+                          {companyTagline && <p className="ssc__company-tagline">{companyTagline}</p>}
+                          <div className="ssc__company-meta">
+                            {companyLocation && (
+                              <span>
+                                <MapPin size={14} />
+                                {companyLocation}
+                              </span>
+                            )}
+                            {companyIndustry && (
+                              <span>
+                                <Layers size={14} />
+                                {companyIndustry}
+                              </span>
+                            )}
+                          </div>
+                          {(companyTeam || companyFundraising || company.info_link) && (
+                            <div className="ssc__company-insights">
+                              {companyTeam && (
+                                <span className="ssc__company-pill ssc__company-pill--team">
+                                  <Users size={14} />
+                                  {companyTeam}
+                                </span>
+                              )}
+                              {companyFundraising && (
+                                <span className="ssc__company-pill ssc__company-pill--funding">
+                                  <Sparkles size={14} />
+                                  {companyFundraising}
+                                </span>
+                              )}
+                              {company.info_link && (
+                                <a
+                                  href={company.info_link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="ssc__company-pill ssc__company-pill--link"
+                                >
+                                  <ArrowRight size={14} />
+                                  {translate('companies.moreInfo', 'More about us')}
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          {companyCulture && (
+                            <p className="ssc__company-tagline">{companyCulture}</p>
+                          )}
+                          <div className="ssc__company-foot">
+                            <span className="ssc__company-jobs">{jobCountLabel}</span>
+                            <div className="ssc__company-actions">
+                              <button
+                                type="button"
+                                className={`ssc__follow-btn ${isFollowed ? 'is-active' : ''}`}
+                                onClick={() => toggleFollowCompany(followKey)}
+                                aria-pressed={isFollowed}
+                              >
+                                {isFollowed
+                                  ? translate('companies.following', 'Following')
+                                  : translate('companies.follow', 'Follow')}
+                              </button>
+                              {company.website && (
+                                <a
+                                  href={company.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="ssc__outline-btn"
+                                >
+                                  {translate('companies.visitWebsite', 'Visit website')}
+                                </a>
+                              )}
+                              {company.id && (
+                                <button
+                                  type="button"
+                                  className="ssc__link-button"
+                                  onClick={() => openReviewsModal(company)}
+                                >
+                                  {translate('companies.reviews', 'Reviews')}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Building2 size={40} />
+                  <h3>{translate('companies.emptyTitle', 'No startups to show yet')}</h3>
+                  <p>
+                    {translate(
+                      'companies.emptyDescription',
+                      'Check back soon to meet the next wave of Swiss startup teams hiring here.'
+                    )}
+                  </p>
                 </div>
               )}
             </div>
