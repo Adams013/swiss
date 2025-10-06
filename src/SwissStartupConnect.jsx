@@ -5441,12 +5441,11 @@ const SwissStartupConnect = () => {
   );
 
   const updateEquityRange = useCallback(
-    (computeNext) => {
+    (computeNext, thumbOverride) => {
       setEquityRangeDirty(true);
       let resolvedValues = null;
-      let resolvedThumbs = null;
+      const [boundMin, boundMax] = equityBounds;
       setEquityRange((prev) => {
-        const [boundMin, boundMax] = equityBounds;
         const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
 
         if (!next || !Array.isArray(next) || next.length < 2) {
@@ -5462,8 +5461,6 @@ const SwissStartupConnect = () => {
         const clampedMin = clamp(roundToStep(nextMinCandidate, EQUITY_STEP), boundMin, boundMax);
         const clampedMax = clamp(roundToStep(nextMaxCandidate, EQUITY_STEP), boundMin, boundMax);
 
-        resolvedThumbs = [clampedMin, clampedMax];
-
         let nextMin = clampedMin;
         let nextMax = clampedMax;
 
@@ -5472,6 +5469,7 @@ const SwissStartupConnect = () => {
         }
 
         if (nextMin === prev[0] && nextMax === prev[1]) {
+          resolvedValues = [nextMin, nextMax];
           return prev;
         }
 
@@ -5479,13 +5477,29 @@ const SwissStartupConnect = () => {
         return [nextMin, nextMax];
       });
 
-      if (resolvedThumbs) {
-        const [thumbMin, thumbMax] = resolvedThumbs;
+      if (thumbOverride) {
+        const { bound, value } = thumbOverride;
+        const clampedThumb = clamp(roundToStep(value, EQUITY_STEP), boundMin, boundMax);
         setEquityThumbValues((prev) => {
-          if (prev[0] === thumbMin && prev[1] === thumbMax) {
+          if (bound === 'min') {
+            if (prev[0] === clampedThumb) {
+              return prev;
+            }
+            return [clampedThumb, prev[1]];
+          }
+
+          if (prev[1] === clampedThumb) {
             return prev;
           }
-          return [thumbMin, thumbMax];
+          return [prev[0], clampedThumb];
+        });
+      } else if (resolvedValues) {
+        const [nextMin, nextMax] = resolvedValues;
+        setEquityThumbValues((prev) => {
+          if (prev[0] === nextMin && prev[1] === nextMax) {
+            return prev;
+          }
+          return [nextMin, nextMax];
         });
       }
 
@@ -5586,13 +5600,16 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange((prev) => {
-      if (bound === 'min') {
-        return [rawValue, prev[1]];
-      }
+    updateEquityRange(
+      (prev) => {
+        if (bound === 'min') {
+          return [rawValue, prev[1]];
+        }
 
-      return [prev[0], rawValue];
-    });
+        return [prev[0], rawValue];
+      },
+      { bound, value: rawValue }
+    );
   };
 
   const handleEquityInputChange = (bound, value) => {
@@ -5614,13 +5631,16 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange((prev) => {
-      if (bound === 'min') {
-        return [numeric, prev[1]];
-      }
+    updateEquityRange(
+      (prev) => {
+        if (bound === 'min') {
+          return [numeric, prev[1]];
+        }
 
-      return [prev[0], numeric];
-    });
+        return [prev[0], numeric];
+      },
+      { bound, value: numeric }
+    );
   };
 
   const handleEquityInputFocus = (bound) => () => {
@@ -5656,13 +5676,16 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange((prev) => {
-      if (bound === 'min') {
-        return [numeric, prev[1]];
-      }
+    updateEquityRange(
+      (prev) => {
+        if (bound === 'min') {
+          return [numeric, prev[1]];
+        }
 
-      return [prev[0], numeric];
-    });
+        return [prev[0], numeric];
+      },
+      { bound, value: numeric }
+    );
   };
 
 
