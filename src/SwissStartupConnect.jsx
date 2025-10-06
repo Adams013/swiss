@@ -4171,7 +4171,6 @@ const SwissStartupConnect = () => {
   }));
   const [equityRange, setEquityRange] = useState(defaultEquityBounds);
   const [equityBounds, setEquityBounds] = useState(defaultEquityBounds);
-  const [equityThumbValues, setEquityThumbValues] = useState(defaultEquityBounds);
   const [equityRangeDirty, setEquityRangeDirty] = useState(false);
   const [equityInputValues, setEquityInputValues] = useState(() => ({
     min: formatEquityValue(defaultEquityBounds[0]),
@@ -5380,13 +5379,6 @@ const SwissStartupConnect = () => {
       }
       return [boundMin, boundMax];
     });
-    setEquityThumbValues((prev) => {
-      const [boundMin, boundMax] = equityBounds;
-      if (prev[0] === boundMin && prev[1] === boundMax) {
-        return prev;
-      }
-      return [boundMin, boundMax];
-    });
   };
 
   const updateSalaryRange = useCallback(
@@ -5441,7 +5433,7 @@ const SwissStartupConnect = () => {
   );
 
   const updateEquityRange = useCallback(
-    (computeNext, thumbOverride) => {
+    (computeNext) => {
       setEquityRangeDirty(true);
       let resolvedValues = null;
       const [boundMin, boundMax] = equityBounds;
@@ -5476,32 +5468,6 @@ const SwissStartupConnect = () => {
         resolvedValues = [nextMin, nextMax];
         return [nextMin, nextMax];
       });
-
-      if (thumbOverride) {
-        const { bound, value } = thumbOverride;
-        const clampedThumb = clamp(roundToStep(value, EQUITY_STEP), boundMin, boundMax);
-        setEquityThumbValues((prev) => {
-          if (bound === 'min') {
-            if (prev[0] === clampedThumb) {
-              return prev;
-            }
-            return [clampedThumb, prev[1]];
-          }
-
-          if (prev[1] === clampedThumb) {
-            return prev;
-          }
-          return [prev[0], clampedThumb];
-        });
-      } else if (resolvedValues) {
-        const [nextMin, nextMax] = resolvedValues;
-        setEquityThumbValues((prev) => {
-          if (prev[0] === nextMin && prev[1] === nextMax) {
-            return prev;
-          }
-          return [nextMin, nextMax];
-        });
-      }
 
       if (resolvedValues) {
         const [nextMin, nextMax] = resolvedValues;
@@ -5600,16 +5566,13 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange(
-      (prev) => {
-        if (bound === 'min') {
-          return [rawValue, prev[1]];
-        }
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        return [rawValue, prev[1]];
+      }
 
-        return [prev[0], rawValue];
-      },
-      { bound, value: rawValue }
-    );
+      return [prev[0], rawValue];
+    });
   };
 
   const handleEquityInputChange = (bound, value) => {
@@ -5631,16 +5594,13 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange(
-      (prev) => {
-        if (bound === 'min') {
-          return [numeric, prev[1]];
-        }
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        return [numeric, prev[1]];
+      }
 
-        return [prev[0], numeric];
-      },
-      { bound, value: numeric }
-    );
+      return [prev[0], numeric];
+    });
   };
 
   const handleEquityInputFocus = (bound) => () => {
@@ -5676,16 +5636,13 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange(
-      (prev) => {
-        if (bound === 'min') {
-          return [numeric, prev[1]];
-        }
+    updateEquityRange((prev) => {
+      if (bound === 'min') {
+        return [numeric, prev[1]];
+      }
 
-        return [prev[0], numeric];
-      },
-      { bound, value: numeric }
-    );
+      return [prev[0], numeric];
+    });
   };
 
 
@@ -6168,15 +6125,8 @@ const SwissStartupConnect = () => {
 
       if (!equityRangeDirty) {
         if (prev[0] === boundMin && prev[1] === boundMax) {
-          setEquityThumbValues((thumbPrev) => {
-            if (thumbPrev[0] === prev[0] && thumbPrev[1] === prev[1]) {
-              return thumbPrev;
-            }
-            return prev;
-          });
           return prev;
         }
-        setEquityThumbValues([boundMin, boundMax]);
         return [boundMin, boundMax];
       }
 
@@ -6185,15 +6135,8 @@ const SwissStartupConnect = () => {
 
       if (!Number.isFinite(clampedMin) || !Number.isFinite(clampedMax) || clampedMin > clampedMax) {
         if (prev[0] === boundMin && prev[1] === boundMax) {
-          setEquityThumbValues((thumbPrev) => {
-            if (thumbPrev[0] === prev[0] && thumbPrev[1] === prev[1]) {
-              return thumbPrev;
-            }
-            return prev;
-          });
           return prev;
         }
-        setEquityThumbValues([boundMin, boundMax]);
         return [boundMin, boundMax];
       }
 
@@ -6201,16 +6144,9 @@ const SwissStartupConnect = () => {
       const roundedMax = roundToStep(clampedMax, EQUITY_STEP);
 
       if (prev[0] === roundedMin && prev[1] === roundedMax) {
-        setEquityThumbValues((thumbPrev) => {
-          if (thumbPrev[0] === prev[0] && thumbPrev[1] === prev[1]) {
-            return thumbPrev;
-          }
-          return prev;
-        });
         return prev;
       }
 
-      setEquityThumbValues([roundedMin, roundedMax]);
       return [roundedMin, roundedMax];
     });
   }, [normalizedJobs, equityRangeDirty]);
@@ -9105,14 +9041,16 @@ const SwissStartupConnect = () => {
   const safeEquityBoundMax = Number.isFinite(equityBounds[1]) ? equityBounds[1] : defaultEquityBounds[1];
   const normalizedEquityMinBound = Math.min(safeEquityBoundMin, safeEquityBoundMax);
   const normalizedEquityMaxBound = Math.max(safeEquityBoundMin, safeEquityBoundMax);
-  const equityThumbMin = Number.isFinite(equityThumbValues[0])
-    ? equityThumbValues[0]
-    : normalizedEquityMinBound;
-  const equityThumbMax = Number.isFinite(equityThumbValues[1])
-    ? equityThumbValues[1]
-    : normalizedEquityMaxBound;
-  const equitySliderMinValue = clamp(equityThumbMin, normalizedEquityMinBound, normalizedEquityMaxBound);
-  const equitySliderMaxValue = clamp(equityThumbMax, normalizedEquityMinBound, normalizedEquityMaxBound);
+  const equitySliderMinValue = clamp(
+    Number.isFinite(equityMin) ? equityMin : normalizedEquityMinBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
+  const equitySliderMaxValue = clamp(
+    Number.isFinite(equityMax) ? equityMax : normalizedEquityMaxBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
   const equitySliderRangeSpan = Math.max(normalizedEquityMaxBound - normalizedEquityMinBound, EQUITY_STEP);
   const equitySliderLowerValue = Math.min(equitySliderMinValue, equitySliderMaxValue);
   const equitySliderUpperValue = Math.max(equitySliderMinValue, equitySliderMaxValue);
