@@ -5516,12 +5516,10 @@ const SwissStartupConnect = () => {
 
     updateSalaryRange((prev) => {
       if (bound === 'min') {
-        const nextMin = Math.min(monthlyValue, prev[1]);
-        return [nextMin, prev[1]];
+        return [monthlyValue, prev[1]];
       }
 
-      const nextMax = Math.max(monthlyValue, prev[0]);
-      return [prev[0], nextMax];
+      return [prev[0], monthlyValue];
     });
   };
 
@@ -5566,12 +5564,10 @@ const SwissStartupConnect = () => {
 
     updateEquityRange((prev) => {
       if (bound === 'min') {
-        const nextMin = Math.min(rawValue, prev[1]);
-        return [nextMin, prev[1]];
+        return [rawValue, prev[1]];
       }
 
-      const nextMax = Math.max(rawValue, prev[0]);
-      return [prev[0], nextMax];
+      return [prev[0], rawValue];
     });
   };
 
@@ -5638,12 +5634,10 @@ const SwissStartupConnect = () => {
 
     updateEquityRange((prev) => {
       if (bound === 'min') {
-        const nextMin = Math.min(numeric, prev[1]);
-        return [nextMin, prev[1]];
+        return [numeric, prev[1]];
       }
 
-      const nextMax = Math.max(numeric, prev[0]);
-      return [prev[0], nextMax];
+      return [prev[0], numeric];
     });
   };
 
