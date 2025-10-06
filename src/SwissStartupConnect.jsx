@@ -3166,6 +3166,7 @@ const SALARY_CADENCE_OPTIONS = SALARY_FILTER_CADENCE_OPTIONS;
 const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
 
 const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
+const SALARY_CALCULATOR_TRANSITION_MS = 250;
 
 const THIRTEENTH_SALARY_PATTERN = /\b(?:13(?:th)?|thirteenth)\b/i;
 
@@ -4171,7 +4172,6 @@ const SwissStartupConnect = () => {
   }));
   const [equityRange, setEquityRange] = useState(defaultEquityBounds);
   const [equityBounds, setEquityBounds] = useState(defaultEquityBounds);
-  const [equityThumbValues, setEquityThumbValues] = useState(defaultEquityBounds);
   const [equityRangeDirty, setEquityRangeDirty] = useState(false);
   const [equityInputValues, setEquityInputValues] = useState(() => ({
     min: formatEquityValue(defaultEquityBounds[0]),
@@ -4590,6 +4590,7 @@ const SwissStartupConnect = () => {
   const [salaryCalculatorRevealed, setSalaryCalculatorRevealed] = useState(false);
   const [salaryCalculatorCompany, setSalaryCalculatorCompany] = useState('');
   const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
+  const [salaryCalculatorPanelVisible, setSalaryCalculatorPanelVisible] = useState(false);
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
   const showToast = useCallback((message) => {
@@ -4671,6 +4672,25 @@ const SwissStartupConnect = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [salaryCalculatorOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    if (salaryCalculatorOpen) {
+      setSalaryCalculatorPanelVisible(true);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSalaryCalculatorPanelVisible(false);
+    }, SALARY_CALCULATOR_TRANSITION_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [salaryCalculatorOpen]);
 
   useEffect(() => {
@@ -5380,13 +5400,6 @@ const SwissStartupConnect = () => {
       }
       return [boundMin, boundMax];
     });
-    setEquityThumbValues((prev) => {
-      const [boundMin, boundMax] = equityBounds;
-      if (prev[0] === boundMin && prev[1] === boundMax) {
-        return prev;
-      }
-      return [boundMin, boundMax];
-    });
   };
 
   const updateSalaryRange = useCallback(
@@ -5441,9 +5454,10 @@ const SwissStartupConnect = () => {
   );
 
   const updateEquityRange = useCallback(
-    (computeNext, thumbOverride) => {
+    (computeNext, options = {}) => {
       setEquityRangeDirty(true);
       let resolvedValues = null;
+      const { constrain } = options;
       const [boundMin, boundMax] = equityBounds;
       setEquityRange((prev) => {
         const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
@@ -5458,13 +5472,16 @@ const SwissStartupConnect = () => {
           return prev;
         }
 
-        const clampedMin = clamp(roundToStep(nextMinCandidate, EQUITY_STEP), boundMin, boundMax);
-        const clampedMax = clamp(roundToStep(nextMaxCandidate, EQUITY_STEP), boundMin, boundMax);
+        let nextMin = clamp(roundToStep(nextMinCandidate, EQUITY_STEP), boundMin, boundMax);
+        let nextMax = clamp(roundToStep(nextMaxCandidate, EQUITY_STEP), boundMin, boundMax);
 
-        let nextMin = clampedMin;
-        let nextMax = clampedMax;
-
-        if (nextMin > nextMax) {
+        if (constrain === 'min') {
+          nextMin = Math.min(nextMin, prev[1]);
+          nextMax = Math.max(nextMax, nextMin);
+        } else if (constrain === 'max') {
+          nextMax = Math.max(nextMax, prev[0]);
+          nextMin = Math.min(nextMin, nextMax);
+        } else if (nextMin > nextMax) {
           [nextMin, nextMax] = [nextMax, nextMin];
         }
 
@@ -5476,32 +5493,6 @@ const SwissStartupConnect = () => {
         resolvedValues = [nextMin, nextMax];
         return [nextMin, nextMax];
       });
-
-      if (thumbOverride) {
-        const { bound, value } = thumbOverride;
-        const clampedThumb = clamp(roundToStep(value, EQUITY_STEP), boundMin, boundMax);
-        setEquityThumbValues((prev) => {
-          if (bound === 'min') {
-            if (prev[0] === clampedThumb) {
-              return prev;
-            }
-            return [clampedThumb, prev[1]];
-          }
-
-          if (prev[1] === clampedThumb) {
-            return prev;
-          }
-          return [prev[0], clampedThumb];
-        });
-      } else if (resolvedValues) {
-        const [nextMin, nextMax] = resolvedValues;
-        setEquityThumbValues((prev) => {
-          if (prev[0] === nextMin && prev[1] === nextMax) {
-            return prev;
-          }
-          return [nextMin, nextMax];
-        });
-      }
 
       if (resolvedValues) {
         const [nextMin, nextMax] = resolvedValues;
@@ -5608,7 +5599,7 @@ const SwissStartupConnect = () => {
 
         return [prev[0], rawValue];
       },
-      { bound, value: rawValue }
+      { constrain: bound }
     );
   };
 
@@ -5639,7 +5630,7 @@ const SwissStartupConnect = () => {
 
         return [prev[0], numeric];
       },
-      { bound, value: numeric }
+      { constrain: bound }
     );
   };
 
@@ -5684,7 +5675,7 @@ const SwissStartupConnect = () => {
 
         return [prev[0], numeric];
       },
-      { bound, value: numeric }
+      { constrain: bound }
     );
   };
 
@@ -6168,15 +6159,8 @@ const SwissStartupConnect = () => {
 
       if (!equityRangeDirty) {
         if (prev[0] === boundMin && prev[1] === boundMax) {
-          setEquityThumbValues((thumbPrev) => {
-            if (thumbPrev[0] === prev[0] && thumbPrev[1] === prev[1]) {
-              return thumbPrev;
-            }
-            return prev;
-          });
           return prev;
         }
-        setEquityThumbValues([boundMin, boundMax]);
         return [boundMin, boundMax];
       }
 
@@ -6185,15 +6169,8 @@ const SwissStartupConnect = () => {
 
       if (!Number.isFinite(clampedMin) || !Number.isFinite(clampedMax) || clampedMin > clampedMax) {
         if (prev[0] === boundMin && prev[1] === boundMax) {
-          setEquityThumbValues((thumbPrev) => {
-            if (thumbPrev[0] === prev[0] && thumbPrev[1] === prev[1]) {
-              return thumbPrev;
-            }
-            return prev;
-          });
           return prev;
         }
-        setEquityThumbValues([boundMin, boundMax]);
         return [boundMin, boundMax];
       }
 
@@ -6201,16 +6178,9 @@ const SwissStartupConnect = () => {
       const roundedMax = roundToStep(clampedMax, EQUITY_STEP);
 
       if (prev[0] === roundedMin && prev[1] === roundedMax) {
-        setEquityThumbValues((thumbPrev) => {
-          if (thumbPrev[0] === prev[0] && thumbPrev[1] === prev[1]) {
-            return thumbPrev;
-          }
-          return prev;
-        });
         return prev;
       }
 
-      setEquityThumbValues([roundedMin, roundedMax]);
       return [roundedMin, roundedMax];
     });
   }, [normalizedJobs, equityRangeDirty]);
@@ -9105,17 +9075,21 @@ const SwissStartupConnect = () => {
   const safeEquityBoundMax = Number.isFinite(equityBounds[1]) ? equityBounds[1] : defaultEquityBounds[1];
   const normalizedEquityMinBound = Math.min(safeEquityBoundMin, safeEquityBoundMax);
   const normalizedEquityMaxBound = Math.max(safeEquityBoundMin, safeEquityBoundMax);
-  const equityThumbMin = Number.isFinite(equityThumbValues[0])
-    ? equityThumbValues[0]
-    : normalizedEquityMinBound;
-  const equityThumbMax = Number.isFinite(equityThumbValues[1])
-    ? equityThumbValues[1]
-    : normalizedEquityMaxBound;
-  const equitySliderMinValue = clamp(equityThumbMin, normalizedEquityMinBound, normalizedEquityMaxBound);
-  const equitySliderMaxValue = clamp(equityThumbMax, normalizedEquityMinBound, normalizedEquityMaxBound);
+  const equitySliderMinValue = clamp(
+    Number.isFinite(equityMin) ? equityMin : normalizedEquityMinBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
+  const equitySliderMaxValue = clamp(
+    Number.isFinite(equityMax) ? equityMax : normalizedEquityMaxBound,
+    normalizedEquityMinBound,
+    normalizedEquityMaxBound
+  );
   const equitySliderRangeSpan = Math.max(normalizedEquityMaxBound - normalizedEquityMinBound, EQUITY_STEP);
   const equitySliderLowerValue = Math.min(equitySliderMinValue, equitySliderMaxValue);
   const equitySliderUpperValue = Math.max(equitySliderMinValue, equitySliderMaxValue);
+  const equitySliderMinThumbMax = Math.max(equitySliderUpperValue, equitySliderLowerValue);
+  const equitySliderMaxThumbMin = Math.min(equitySliderLowerValue, equitySliderUpperValue);
   const toEquityPercent = (value) =>
     Math.min(
       Math.max(((value - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
@@ -9130,6 +9104,7 @@ const SwissStartupConnect = () => {
     equityMin === normalizedEquityMinBound && equityMax === normalizedEquityMaxBound;
   const filtersActive =
     selectedFilters.length > 0 || !salaryRangeAtDefault || !equityRangeAtDefault;
+  const shouldRenderSalaryCalculatorPanel = salaryCalculatorOpen || salaryCalculatorPanelVisible;
 
 
   return (
@@ -9550,7 +9525,7 @@ const SwissStartupConnect = () => {
                     <input
                       type="range"
                       min={normalizedEquityMinBound}
-                      max={normalizedEquityMaxBound}
+                      max={equitySliderMinThumbMax}
                       step={EQUITY_STEP}
                       value={equitySliderMinValue}
                       onChange={handleEquitySliderChange('min')}
@@ -9566,7 +9541,7 @@ const SwissStartupConnect = () => {
                     />
                     <input
                       type="range"
-                      min={normalizedEquityMinBound}
+                      min={equitySliderMaxThumbMin}
                       max={normalizedEquityMaxBound}
                       step={EQUITY_STEP}
                       value={equitySliderMaxValue}
@@ -9689,92 +9664,101 @@ const SwissStartupConnect = () => {
                   >
                     <Calculator size={22} />
                   </button>
-                  <aside
-                    id={SALARY_CALCULATOR_PANEL_ID}
-                    className={`ssc__calculator-panel ${salaryCalculatorOpen ? 'is-open' : ''}`}
-                    aria-hidden={!salaryCalculatorOpen}
-                  >
-                    <div className="ssc__calculator-head">
-                      <div className="ssc__calculator-title">
-                        <span className="ssc__calculator-chip">
-                          {translate('calculator.chip', 'Compensation insights')}
-                        </span>
-                        <h3>{translate('calculator.title', 'Salary calculator')}</h3>
+                  {shouldRenderSalaryCalculatorPanel ? (
+                    <aside
+                      id={SALARY_CALCULATOR_PANEL_ID}
+                      className={`ssc__calculator-panel ${salaryCalculatorOpen ? 'is-open' : ''}`}
+                      aria-hidden={!salaryCalculatorOpen}
+                    >
+                      <div className="ssc__calculator-head">
+                        <div className="ssc__calculator-title">
+                          <span className="ssc__calculator-chip">
+                            {translate('calculator.chip', 'Compensation insights')}
+                          </span>
+                          <h3>{translate('calculator.title', 'Salary calculator')}</h3>
+                        </div>
+                        <button
+                          type="button"
+                          className="ssc__calculator-close"
+                          onClick={() => setSalaryCalculatorOpen(false)}
+                          aria-label={translate('calculator.closeLabel', 'Close salary calculator')}
+                        >
+                          <X size={16} />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="ssc__calculator-close"
-                        onClick={() => setSalaryCalculatorOpen(false)}
-                        aria-label={translate('calculator.closeLabel', 'Close salary calculator')}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    {calculatorCompanies.length === 0 ? (
-                      <p className="ssc__calculator-empty">
-                        {translate('calculator.empty', 'No roles available to convert yet.')}
-                      </p>
-                    ) : (
-                      <>
-                        <div className="ssc__calculator-fields">
-                          <label htmlFor="calculator-company">
-                            <span>{translate('calculator.company', 'Company')}</span>
-                            <div className="ssc__select-wrapper">
-                              <select
-                                id="calculator-company"
-                                className="ssc__select"
-                                value={salaryCalculatorCompany}
-                                onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
-                              >
-                                {calculatorCompanies.map((company) => (
-                                  <option key={company.key} value={company.key}>
-                                    {company.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
-                            </div>
-                          </label>
-                          <label htmlFor="calculator-role">
-                            <span>{translate('calculator.role', 'Role')}</span>
-                            <div className="ssc__select-wrapper">
-                              <select
-                                id="calculator-role"
-                                className="ssc__select"
-                                value={salaryCalculatorJobId}
-                                onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
-                                disabled={calculatorJobs.length === 0}
-                              >
-                                {calculatorJobs.length === 0 ? (
-                                  <option value="" disabled>
-                                    {translate('calculator.noRoles', 'No roles available')}
-                                  </option>
-                                ) : (
-                                  calculatorJobs.map((job) => (
-                                    <option key={job.id} value={job.id}>
-                                      {getLocalizedJobText(job, 'title') || job.title}
+                      {calculatorCompanies.length === 0 ? (
+                        <p className="ssc__calculator-empty">
+                          {translate('calculator.empty', 'No roles available to convert yet.')}
+                        </p>
+                      ) : (
+                        <>
+                          <div className="ssc__calculator-fields">
+                            <label htmlFor="calculator-company">
+                              <span>{translate('calculator.company', 'Company')}</span>
+                              <div className="ssc__select-wrapper">
+                                <select
+                                  id="calculator-company"
+                                  className="ssc__select"
+                                  value={salaryCalculatorCompany}
+                                  onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
+                                >
+                                  {calculatorCompanies.map((company) => (
+                                    <option key={company.key} value={company.key}>
+                                      {company.label}
                                     </option>
-                                  ))
-                                )}
-                              </select>
-                              <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
-                            </div>
-                          </label>
-                        </div>
-                        <div className="ssc__calculator-results">
-                          {salaryCalculatorSummary.rows.map((row) => (
-                            <div key={row.key} className="ssc__calculator-row">
-                              <span>{row.label}</span>
-                              <strong>{row.value}</strong>
-                            </div>
-                          ))}
-                        </div>
-                        {salaryCalculatorSummary.note && (
-                          <p className="ssc__calculator-note">{salaryCalculatorSummary.note}</p>
-                        )}
-                      </>
-                    )}
-                  </aside>
+                                  ))}
+                                </select>
+                                <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
+                              </div>
+                            </label>
+                            <label htmlFor="calculator-role">
+                              <span>{translate('calculator.role', 'Role')}</span>
+                              <div className="ssc__select-wrapper">
+                                <select
+                                  id="calculator-role"
+                                  className="ssc__select"
+                                  value={salaryCalculatorJobId}
+                                  onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
+                                  disabled={calculatorJobs.length === 0}
+                                >
+                                  {calculatorJobs.length === 0 ? (
+                                    <option value="" disabled>
+                                      {translate('calculator.noRoles', 'No roles available')}
+                                    </option>
+                                  ) : (
+                                    calculatorJobs.map((job) => (
+                                      <option key={job.id} value={job.id}>
+                                        {getLocalizedJobText(job, 'title') || job.title}
+                                      </option>
+                                    ))
+                                  )}
+                                </select>
+                                <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
+                              </div>
+                            </label>
+                          </div>
+                          <div className="ssc__calculator-results">
+                            {salaryCalculatorSummary.rows.map((row) => (
+                              <div key={row.key} className="ssc__calculator-row">
+                                <span>{row.label}</span>
+                                <strong>{row.value}</strong>
+                              </div>
+                            ))}
+                          </div>
+                          {salaryCalculatorSummary.note && (
+                            <p className="ssc__calculator-note">{salaryCalculatorSummary.note}</p>
+                          )}
+                        </>
+                      )}
+                    </aside>
+                  ) : (
+                    <aside
+                      id={SALARY_CALCULATOR_PANEL_ID}
+                      className="ssc__calculator-panel"
+                      aria-hidden="true"
+                      hidden
+                    />
+                  )}
                 </div>
               )}
 
