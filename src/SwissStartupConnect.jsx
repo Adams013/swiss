@@ -5433,9 +5433,10 @@ const SwissStartupConnect = () => {
   );
 
   const updateEquityRange = useCallback(
-    (computeNext) => {
+    (computeNext, options = {}) => {
       setEquityRangeDirty(true);
       let resolvedValues = null;
+      const { constrain } = options;
       const [boundMin, boundMax] = equityBounds;
       setEquityRange((prev) => {
         const next = typeof computeNext === 'function' ? computeNext(prev, boundMin, boundMax) : computeNext;
@@ -5450,13 +5451,16 @@ const SwissStartupConnect = () => {
           return prev;
         }
 
-        const clampedMin = clamp(roundToStep(nextMinCandidate, EQUITY_STEP), boundMin, boundMax);
-        const clampedMax = clamp(roundToStep(nextMaxCandidate, EQUITY_STEP), boundMin, boundMax);
+        let nextMin = clamp(roundToStep(nextMinCandidate, EQUITY_STEP), boundMin, boundMax);
+        let nextMax = clamp(roundToStep(nextMaxCandidate, EQUITY_STEP), boundMin, boundMax);
 
-        let nextMin = clampedMin;
-        let nextMax = clampedMax;
-
-        if (nextMin > nextMax) {
+        if (constrain === 'min') {
+          nextMin = Math.min(nextMin, prev[1]);
+          nextMax = Math.max(nextMax, nextMin);
+        } else if (constrain === 'max') {
+          nextMax = Math.max(nextMax, prev[0]);
+          nextMin = Math.min(nextMin, nextMax);
+        } else if (nextMin > nextMax) {
           [nextMin, nextMax] = [nextMax, nextMin];
         }
 
@@ -5566,13 +5570,16 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange((prev) => {
-      if (bound === 'min') {
-        return [rawValue, prev[1]];
-      }
+    updateEquityRange(
+      (prev) => {
+        if (bound === 'min') {
+          return [rawValue, prev[1]];
+        }
 
-      return [prev[0], rawValue];
-    });
+        return [prev[0], rawValue];
+      },
+      { constrain: bound }
+    );
   };
 
   const handleEquityInputChange = (bound, value) => {
@@ -5594,13 +5601,16 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange((prev) => {
-      if (bound === 'min') {
-        return [numeric, prev[1]];
-      }
+    updateEquityRange(
+      (prev) => {
+        if (bound === 'min') {
+          return [numeric, prev[1]];
+        }
 
-      return [prev[0], numeric];
-    });
+        return [prev[0], numeric];
+      },
+      { constrain: bound }
+    );
   };
 
   const handleEquityInputFocus = (bound) => () => {
@@ -5636,13 +5646,16 @@ const SwissStartupConnect = () => {
       return;
     }
 
-    updateEquityRange((prev) => {
-      if (bound === 'min') {
-        return [numeric, prev[1]];
-      }
+    updateEquityRange(
+      (prev) => {
+        if (bound === 'min') {
+          return [numeric, prev[1]];
+        }
 
-      return [prev[0], numeric];
-    });
+        return [prev[0], numeric];
+      },
+      { constrain: bound }
+    );
   };
 
 
@@ -9054,6 +9067,8 @@ const SwissStartupConnect = () => {
   const equitySliderRangeSpan = Math.max(normalizedEquityMaxBound - normalizedEquityMinBound, EQUITY_STEP);
   const equitySliderLowerValue = Math.min(equitySliderMinValue, equitySliderMaxValue);
   const equitySliderUpperValue = Math.max(equitySliderMinValue, equitySliderMaxValue);
+  const equitySliderMinThumbMax = Math.max(equitySliderUpperValue, equitySliderLowerValue);
+  const equitySliderMaxThumbMin = Math.min(equitySliderLowerValue, equitySliderUpperValue);
   const toEquityPercent = (value) =>
     Math.min(
       Math.max(((value - normalizedEquityMinBound) / equitySliderRangeSpan) * 100, 0),
@@ -9488,7 +9503,7 @@ const SwissStartupConnect = () => {
                     <input
                       type="range"
                       min={normalizedEquityMinBound}
-                      max={normalizedEquityMaxBound}
+                      max={equitySliderMinThumbMax}
                       step={EQUITY_STEP}
                       value={equitySliderMinValue}
                       onChange={handleEquitySliderChange('min')}
@@ -9504,7 +9519,7 @@ const SwissStartupConnect = () => {
                     />
                     <input
                       type="range"
-                      min={normalizedEquityMinBound}
+                      min={equitySliderMaxThumbMin}
                       max={normalizedEquityMaxBound}
                       step={EQUITY_STEP}
                       value={equitySliderMaxValue}
