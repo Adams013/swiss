@@ -3166,6 +3166,7 @@ const SALARY_CADENCE_OPTIONS = SALARY_FILTER_CADENCE_OPTIONS;
 const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
 
 const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
+const SALARY_CALCULATOR_TRANSITION_MS = 250;
 
 const THIRTEENTH_SALARY_PATTERN = /\b(?:13(?:th)?|thirteenth)\b/i;
 
@@ -4589,6 +4590,7 @@ const SwissStartupConnect = () => {
   const [salaryCalculatorRevealed, setSalaryCalculatorRevealed] = useState(false);
   const [salaryCalculatorCompany, setSalaryCalculatorCompany] = useState('');
   const [salaryCalculatorJobId, setSalaryCalculatorJobId] = useState('');
+  const [salaryCalculatorPanelVisible, setSalaryCalculatorPanelVisible] = useState(false);
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
   const showToast = useCallback((message) => {
@@ -4670,6 +4672,25 @@ const SwissStartupConnect = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [salaryCalculatorOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    if (salaryCalculatorOpen) {
+      setSalaryCalculatorPanelVisible(true);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSalaryCalculatorPanelVisible(false);
+    }, SALARY_CALCULATOR_TRANSITION_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [salaryCalculatorOpen]);
 
   useEffect(() => {
@@ -9083,6 +9104,7 @@ const SwissStartupConnect = () => {
     equityMin === normalizedEquityMinBound && equityMax === normalizedEquityMaxBound;
   const filtersActive =
     selectedFilters.length > 0 || !salaryRangeAtDefault || !equityRangeAtDefault;
+  const shouldRenderSalaryCalculatorPanel = salaryCalculatorOpen || salaryCalculatorPanelVisible;
 
 
   return (
@@ -9642,92 +9664,101 @@ const SwissStartupConnect = () => {
                   >
                     <Calculator size={22} />
                   </button>
-                  <aside
-                    id={SALARY_CALCULATOR_PANEL_ID}
-                    className={`ssc__calculator-panel ${salaryCalculatorOpen ? 'is-open' : ''}`}
-                    aria-hidden={!salaryCalculatorOpen}
-                  >
-                    <div className="ssc__calculator-head">
-                      <div className="ssc__calculator-title">
-                        <span className="ssc__calculator-chip">
-                          {translate('calculator.chip', 'Compensation insights')}
-                        </span>
-                        <h3>{translate('calculator.title', 'Salary calculator')}</h3>
+                  {shouldRenderSalaryCalculatorPanel ? (
+                    <aside
+                      id={SALARY_CALCULATOR_PANEL_ID}
+                      className={`ssc__calculator-panel ${salaryCalculatorOpen ? 'is-open' : ''}`}
+                      aria-hidden={!salaryCalculatorOpen}
+                    >
+                      <div className="ssc__calculator-head">
+                        <div className="ssc__calculator-title">
+                          <span className="ssc__calculator-chip">
+                            {translate('calculator.chip', 'Compensation insights')}
+                          </span>
+                          <h3>{translate('calculator.title', 'Salary calculator')}</h3>
+                        </div>
+                        <button
+                          type="button"
+                          className="ssc__calculator-close"
+                          onClick={() => setSalaryCalculatorOpen(false)}
+                          aria-label={translate('calculator.closeLabel', 'Close salary calculator')}
+                        >
+                          <X size={16} />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="ssc__calculator-close"
-                        onClick={() => setSalaryCalculatorOpen(false)}
-                        aria-label={translate('calculator.closeLabel', 'Close salary calculator')}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    {calculatorCompanies.length === 0 ? (
-                      <p className="ssc__calculator-empty">
-                        {translate('calculator.empty', 'No roles available to convert yet.')}
-                      </p>
-                    ) : (
-                      <>
-                        <div className="ssc__calculator-fields">
-                          <label htmlFor="calculator-company">
-                            <span>{translate('calculator.company', 'Company')}</span>
-                            <div className="ssc__select-wrapper">
-                              <select
-                                id="calculator-company"
-                                className="ssc__select"
-                                value={salaryCalculatorCompany}
-                                onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
-                              >
-                                {calculatorCompanies.map((company) => (
-                                  <option key={company.key} value={company.key}>
-                                    {company.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
-                            </div>
-                          </label>
-                          <label htmlFor="calculator-role">
-                            <span>{translate('calculator.role', 'Role')}</span>
-                            <div className="ssc__select-wrapper">
-                              <select
-                                id="calculator-role"
-                                className="ssc__select"
-                                value={salaryCalculatorJobId}
-                                onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
-                                disabled={calculatorJobs.length === 0}
-                              >
-                                {calculatorJobs.length === 0 ? (
-                                  <option value="" disabled>
-                                    {translate('calculator.noRoles', 'No roles available')}
-                                  </option>
-                                ) : (
-                                  calculatorJobs.map((job) => (
-                                    <option key={job.id} value={job.id}>
-                                      {getLocalizedJobText(job, 'title') || job.title}
+                      {calculatorCompanies.length === 0 ? (
+                        <p className="ssc__calculator-empty">
+                          {translate('calculator.empty', 'No roles available to convert yet.')}
+                        </p>
+                      ) : (
+                        <>
+                          <div className="ssc__calculator-fields">
+                            <label htmlFor="calculator-company">
+                              <span>{translate('calculator.company', 'Company')}</span>
+                              <div className="ssc__select-wrapper">
+                                <select
+                                  id="calculator-company"
+                                  className="ssc__select"
+                                  value={salaryCalculatorCompany}
+                                  onChange={(event) => setSalaryCalculatorCompany(event.target.value)}
+                                >
+                                  {calculatorCompanies.map((company) => (
+                                    <option key={company.key} value={company.key}>
+                                      {company.label}
                                     </option>
-                                  ))
-                                )}
-                              </select>
-                              <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
-                            </div>
-                          </label>
-                        </div>
-                        <div className="ssc__calculator-results">
-                          {salaryCalculatorSummary.rows.map((row) => (
-                            <div key={row.key} className="ssc__calculator-row">
-                              <span>{row.label}</span>
-                              <strong>{row.value}</strong>
-                            </div>
-                          ))}
-                        </div>
-                        {salaryCalculatorSummary.note && (
-                          <p className="ssc__calculator-note">{salaryCalculatorSummary.note}</p>
-                        )}
-                      </>
-                    )}
-                  </aside>
+                                  ))}
+                                </select>
+                                <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
+                              </div>
+                            </label>
+                            <label htmlFor="calculator-role">
+                              <span>{translate('calculator.role', 'Role')}</span>
+                              <div className="ssc__select-wrapper">
+                                <select
+                                  id="calculator-role"
+                                  className="ssc__select"
+                                  value={salaryCalculatorJobId}
+                                  onChange={(event) => setSalaryCalculatorJobId(event.target.value)}
+                                  disabled={calculatorJobs.length === 0}
+                                >
+                                  {calculatorJobs.length === 0 ? (
+                                    <option value="" disabled>
+                                      {translate('calculator.noRoles', 'No roles available')}
+                                    </option>
+                                  ) : (
+                                    calculatorJobs.map((job) => (
+                                      <option key={job.id} value={job.id}>
+                                        {getLocalizedJobText(job, 'title') || job.title}
+                                      </option>
+                                    ))
+                                  )}
+                                </select>
+                                <ChevronDown className="ssc__select-caret" size={18} aria-hidden="true" />
+                              </div>
+                            </label>
+                          </div>
+                          <div className="ssc__calculator-results">
+                            {salaryCalculatorSummary.rows.map((row) => (
+                              <div key={row.key} className="ssc__calculator-row">
+                                <span>{row.label}</span>
+                                <strong>{row.value}</strong>
+                              </div>
+                            ))}
+                          </div>
+                          {salaryCalculatorSummary.note && (
+                            <p className="ssc__calculator-note">{salaryCalculatorSummary.note}</p>
+                          )}
+                        </>
+                      )}
+                    </aside>
+                  ) : (
+                    <aside
+                      id={SALARY_CALCULATOR_PANEL_ID}
+                      className="ssc__calculator-panel"
+                      aria-hidden="true"
+                      hidden
+                    />
+                  )}
                 </div>
               )}
 
