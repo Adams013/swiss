@@ -9227,190 +9227,192 @@ const SwissStartupConnect = () => {
             ))}
           </nav>
 
-          <button
-            type="button"
-            className={`ssc__theme-toggle ${isDarkMode ? 'is-active' : ''}`}
-            onClick={toggleTheme}
-            role="switch"
-            aria-checked={isDarkMode}
-            aria-label={themeToggleLabel}
-            title={themeToggleLabel}
-          >
-            <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={16} aria-hidden="true" />
-            <span className="ssc__theme-toggle-thumb" aria-hidden="true" />
-            <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={16} aria-hidden="true" />
-          </button>
-
-          <div
-            className={`ssc__language-toggle ${isLanguageMenuOpen ? 'is-open' : ''}`}
-            role="group"
-            aria-label={translate('nav.language', 'Language')}
-            ref={languageToggleRef}
-            onMouseEnter={() => setIsLanguageMenuOpen(true)}
-            onMouseLeave={() => setIsLanguageMenuOpen(false)}
-            onBlur={(event) => {
-              if (
-                languageToggleRef.current &&
-                event.relatedTarget &&
-                languageToggleRef.current.contains(event.relatedTarget)
-              ) {
-                return;
-              }
-              setIsLanguageMenuOpen(false);
-            }}
-          >
+          <div className="ssc__header-controls">
             <button
               type="button"
-              className="ssc__language-toggle-button"
-              onClick={() =>
-                setIsLanguageMenuOpen((prev) => {
-                  const isHovering = languageToggleRef.current?.matches?.(':hover');
-                  if (prev && isHovering) {
-                    return prev;
-                  }
-                  return !prev;
-                })
-              }
-              aria-haspopup="listbox"
-              aria-expanded={isLanguageMenuOpen}
-              aria-controls={languageMenuId}
-              title={currentLanguageOption.label}
+              className={`ssc__theme-toggle ${isDarkMode ? 'is-active' : ''}`}
+              onClick={toggleTheme}
+              role="switch"
+              aria-checked={isDarkMode}
+              aria-label={themeToggleLabel}
+              title={themeToggleLabel}
             >
-              {currentLanguageOption.shortLabel || currentLanguageOption.label}
+              <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={16} aria-hidden="true" />
+              <span className="ssc__theme-toggle-thumb" aria-hidden="true" />
+              <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={16} aria-hidden="true" />
             </button>
-            {otherLanguageOptions.length > 0 && (
-              <div
-                id={languageMenuId}
-                className="ssc__language-menu"
-                role="listbox"
-                aria-hidden={!isLanguageMenuOpen}
-              >
-                {otherLanguageOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className="ssc__language-menu-option"
-                    role="option"
-                    onClick={() => {
-                      setLanguage(option.value);
-                      setIsLanguageMenuOpen(false);
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
-            {!user ? (
-              <div className="ssc__auth-buttons">
-                <button
-                  type="button"
-                  className="ssc__cta-btn"
-                  onClick={() => {
-                    setIsRegistering(true);
-                    setShowLoginModal(true);
-                    setAuthError('');
-                  }}
+            <div
+              className={`ssc__language-toggle ${isLanguageMenuOpen ? 'is-open' : ''}`}
+              role="group"
+              aria-label={translate('nav.language', 'Language')}
+              ref={languageToggleRef}
+              onMouseEnter={() => setIsLanguageMenuOpen(true)}
+              onMouseLeave={() => setIsLanguageMenuOpen(false)}
+              onBlur={(event) => {
+                if (
+                  languageToggleRef.current &&
+                  event.relatedTarget &&
+                  languageToggleRef.current.contains(event.relatedTarget)
+                ) {
+                  return;
+                }
+                setIsLanguageMenuOpen(false);
+              }}
+            >
+              <button
+                type="button"
+                className="ssc__language-toggle-button"
+                onClick={() =>
+                  setIsLanguageMenuOpen((prev) => {
+                    const isHovering = languageToggleRef.current?.matches?.(':hover');
+                    if (prev && isHovering) {
+                      return prev;
+                    }
+                    return !prev;
+                  })
+                }
+                aria-haspopup="listbox"
+                aria-expanded={isLanguageMenuOpen}
+                aria-controls={languageMenuId}
+                title={currentLanguageOption.label}
+              >
+                {currentLanguageOption.shortLabel || currentLanguageOption.label}
+              </button>
+              {otherLanguageOptions.length > 0 && (
+                <div
+                  id={languageMenuId}
+                  className="ssc__language-menu"
+                  role="listbox"
+                  aria-hidden={!isLanguageMenuOpen}
                 >
-                  {translate('nav.join', 'Join us')}
-                </button>
-                <button
-                  type="button"
-                  className="ssc__signin"
-                  onClick={() => {
-                    setIsRegistering(false);
-                    setShowLoginModal(true);
-                    setAuthError('');
-                  }}
-                >
-                  {translate('nav.signIn', 'Sign in')}
-                </button>
-              </div>
-            ) : (
-              <div className="ssc__user-chip">
-                <button
-                  type="button"
-                  className="ssc__user-menu-toggle"
-                  onClick={() => setShowUserMenu((prev) => !prev)}
-                >
-                  <div className="ssc__avatar-small">
-                    {userAvatarUrl ? (
-                      <img src={userAvatarUrl} alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')} />
-                    ) : (
-                      <span>{userInitial}</span>
-                    )}
-                  </div>
-                  <div className="ssc__user-meta">
-                    <span className="ssc__user-name">{userDisplayName}</span>
-                    <span className="ssc__user-role">{user.type}</span>
-                  </div>
-                  <ChevronDown className={`ssc__caret ${showUserMenu ? 'is-open' : ''}`} size={16} />
-                </button>
-                {showUserMenu && (
-                  <div className="ssc__user-menu">
-                    <header className="ssc__user-menu-header">
-                      <div className="ssc__avatar-medium">
-                        {userAvatarUrl ? (
-                          <img
-                            src={userAvatarUrl}
-                            alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')}
-                          />
-                        ) : (
-                          <span>{userInitial}</span>
-                        )}
-                      </div>
-                      <div>
-                        <strong>{userDisplayName}</strong>
-                        <span className="ssc__user-menu-role">{user.type}</span>
-                      </div>
-                    </header>
-                    <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
-                      {translate('accountMenu.profile', 'Profile')}
-                    </button>
+                  {otherLanguageOptions.map((option) => (
                     <button
+                      key={option.value}
                       type="button"
+                      className="ssc__language-menu-option"
+                      role="option"
                       onClick={() => {
-                        setSecurityEmail(user.email || '');
-                        setSecurityEmailMessage('');
-                        setSecurityEmailSaving(false);
-                        setSecurityModalOpen(true);
-                        setShowUserMenu(false);
+                        setLanguage(option.value);
+                        setIsLanguageMenuOpen(false);
                       }}
                     >
-                      {translate('accountMenu.security', 'Privacy & security')}
+                      {option.label}
                     </button>
-                    {user.type === 'startup' && (
-                      <>
-                        <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>
-                          {translate('accountMenu.myJobs', 'My jobs')}
-                        </button>
-                        <button type="button" onClick={() => { setStartupModalOpen(true); setShowUserMenu(false); }}>
-                          {translate('accountMenu.companyProfile', 'Company profile')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            openPostJobFlow();
-                          }}
-                        >
-                          {translate('accountMenu.postVacancy', 'Post vacancy')}
-                        </button>
-                        <button type="button" onClick={() => { setActiveTab('applications'); setShowUserMenu(false); }}>
-                          {translate('accountMenu.viewApplicants', 'View applicants')}
-                        </button>
-                      </>
-                    )}
-                    <button type="button" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
-                      {translate('accountMenu.logout', 'Log out')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
+              {!user ? (
+                <div className="ssc__auth-buttons">
+                  <button
+                    type="button"
+                    className="ssc__cta-btn"
+                    onClick={() => {
+                      setIsRegistering(true);
+                      setShowLoginModal(true);
+                      setAuthError('');
+                    }}
+                  >
+                    {translate('nav.join', 'Join us')}
+                  </button>
+                  <button
+                    type="button"
+                    className="ssc__signin"
+                    onClick={() => {
+                      setIsRegistering(false);
+                      setShowLoginModal(true);
+                      setAuthError('');
+                    }}
+                  >
+                    {translate('nav.signIn', 'Sign in')}
+                  </button>
+                </div>
+              ) : (
+                <div className="ssc__user-chip">
+                  <button
+                    type="button"
+                    className="ssc__user-menu-toggle"
+                    onClick={() => setShowUserMenu((prev) => !prev)}
+                  >
+                    <div className="ssc__avatar-small">
+                      {userAvatarUrl ? (
+                        <img src={userAvatarUrl} alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')} />
+                      ) : (
+                        <span>{userInitial}</span>
+                      )}
+                    </div>
+                    <div className="ssc__user-meta">
+                      <span className="ssc__user-name">{userDisplayName}</span>
+                      <span className="ssc__user-role">{user.type}</span>
+                    </div>
+                    <ChevronDown className={`ssc__caret ${showUserMenu ? 'is-open' : ''}`} size={16} />
+                  </button>
+                  {showUserMenu && (
+                    <div className="ssc__user-menu">
+                      <header className="ssc__user-menu-header">
+                        <div className="ssc__avatar-medium">
+                          {userAvatarUrl ? (
+                            <img
+                              src={userAvatarUrl}
+                              alt={userDisplayName || translate('accountMenu.memberFallback', 'Member')}
+                            />
+                          ) : (
+                            <span>{userInitial}</span>
+                          )}
+                        </div>
+                        <div>
+                          <strong>{userDisplayName}</strong>
+                          <span className="ssc__user-menu-role">{user.type}</span>
+                        </div>
+                      </header>
+                      <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
+                        {translate('accountMenu.profile', 'Profile')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSecurityEmail(user.email || '');
+                          setSecurityEmailMessage('');
+                          setSecurityEmailSaving(false);
+                          setSecurityModalOpen(true);
+                          setShowUserMenu(false);
+                        }}
+                      >
+                        {translate('accountMenu.security', 'Privacy & security')}
+                      </button>
+                      {user.type === 'startup' && (
+                        <>
+                          <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>
+                            {translate('accountMenu.myJobs', 'My jobs')}
+                          </button>
+                          <button type="button" onClick={() => { setStartupModalOpen(true); setShowUserMenu(false); }}>
+                            {translate('accountMenu.companyProfile', 'Company profile')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              openPostJobFlow();
+                            }}
+                          >
+                            {translate('accountMenu.postVacancy', 'Post vacancy')}
+                          </button>
+                          <button type="button" onClick={() => { setActiveTab('applications'); setShowUserMenu(false); }}>
+                            {translate('accountMenu.viewApplicants', 'View applicants')}
+                          </button>
+                        </>
+                      )}
+                      <button type="button" onClick={() => { setShowUserMenu(false); handleLogout(); }}>
+                        {translate('accountMenu.logout', 'Log out')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
