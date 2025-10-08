@@ -9410,8 +9410,9 @@ const SwissStartupConnect = () => {
                       </button>
                     </div>
                   )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
