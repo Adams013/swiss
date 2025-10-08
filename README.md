@@ -2,6 +2,39 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Resolving "This branch has conflicts" in GitHub
+
+When GitHub shows a banner that says **"This branch has conflicts that must be resolved"** it means
+changes on your feature branch and the base branch touch the same parts of a file. GitHub will not
+let you merge until the conflicts are addressed locally. To resolve them:
+
+1. Pull the latest changes from the base branch (usually `main`):
+
+   ```bash
+   git fetch origin
+   git checkout work
+   git merge origin/main
+   ```
+
+2. Git will mark the conflicted files. Open each file and keep the desired code, removing the
+   `<<<<<<<`, `=======`, and `>>>>>>>` markers that Git adds around the conflicting sections.
+
+3. Stage the resolved files and complete the merge:
+
+   ```bash
+   git add src/SwissStartupConnect.jsx
+   git commit
+   ```
+
+4. Finally, push the updated branch so the pull request reflects the conflict resolution:
+
+   ```bash
+   git push origin work
+   ```
+
+After the push, the warning banner disappears and the pull request can proceed with reviews and the
+final merge.
+
 ## Available Scripts
 
 In the project directory, you can run:
