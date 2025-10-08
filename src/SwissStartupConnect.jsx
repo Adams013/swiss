@@ -4001,6 +4001,7 @@ const mapSupabaseUser = (supabaseUser) => {
 
 const SwissStartupConnect = () => {
   const [language, setLanguage] = useState(getInitialLanguage);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const translate = useCallback(
     (key, fallback = '', replacements) => {
       const apply = (template) => {
@@ -8929,6 +8930,13 @@ const SwissStartupConnect = () => {
 
   const brandHomeLabel = translate('nav.brandHome', 'Go to general overview');
 
+  const currentLanguageOption =
+    LANGUAGE_OPTIONS.find((option) => option.value === language) || LANGUAGE_OPTIONS[0];
+  const otherLanguageOptions = LANGUAGE_OPTIONS.filter(
+    (option) => option.value !== currentLanguageOption.value
+  );
+  const languageMenuId = 'ssc-language-menu';
+
   const isStudent = user?.type === 'student';
   const isLoggedIn = Boolean(user);
   const canApply = isLoggedIn && isStudent;
@@ -8940,6 +8948,7 @@ const SwissStartupConnect = () => {
   const isCvUploading = cvUploadState === 'uploading';
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [compactHeader, setCompactHeader] = useState(false);
+  const languageToggleRef = useRef(null);
   const actionsRef = useRef(null);
   const filtersSectionRef = useRef(null);
   const equityInputFocusRef = useRef({ min: false, max: false });
@@ -8982,6 +8991,32 @@ const SwissStartupConnect = () => {
     const sanitized = Array.from(new Set(followedCompanies.filter(Boolean)));
     window.localStorage.setItem('ssc_followed_companies', JSON.stringify(sanitized));
   }, [followedCompanies]);
+
+  useEffect(() => {
+    if (!isLanguageMenuOpen) {
+      return undefined;
+    }
+
+    const handleClickOutside = (event) => {
+      if (!languageToggleRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (typeof Node !== 'undefined' && !(target instanceof Node)) {
+        return;
+      }
+
+      if (!languageToggleRef.current.contains(target)) {
+        setIsLanguageMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isLanguageMenuOpen]);
 
   const resolveCompanyFollowKey = useCallback((company) => {
     if (!company) {
@@ -9207,22 +9242,65 @@ const SwissStartupConnect = () => {
           </button>
 
           <div
-            className="ssc__language-toggle"
+            className={`ssc__language-toggle ${isLanguageMenuOpen ? 'is-open' : ''}`}
             role="group"
             aria-label={translate('nav.language', 'Language')}
+            ref={languageToggleRef}
+            onMouseEnter={() => setIsLanguageMenuOpen(true)}
+            onMouseLeave={() => setIsLanguageMenuOpen(false)}
+            onBlur={(event) => {
+              if (
+                languageToggleRef.current &&
+                event.relatedTarget &&
+                languageToggleRef.current.contains(event.relatedTarget)
+              ) {
+                return;
+              }
+              setIsLanguageMenuOpen(false);
+            }}
           >
-            {LANGUAGE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`ssc__language-option ${language === option.value ? 'is-active' : ''}`}
-                onClick={() => setLanguage(option.value)}
-                aria-pressed={language === option.value}
-                title={option.label}
+            <button
+              type="button"
+              className="ssc__language-toggle-button"
+              onClick={() =>
+                setIsLanguageMenuOpen((prev) => {
+                  const isHovering = languageToggleRef.current?.matches?.(':hover');
+                  if (prev && isHovering) {
+                    return prev;
+                  }
+                  return !prev;
+                })
+              }
+              aria-haspopup="listbox"
+              aria-expanded={isLanguageMenuOpen}
+              aria-controls={languageMenuId}
+              title={currentLanguageOption.label}
+            >
+              {currentLanguageOption.shortLabel || currentLanguageOption.label}
+            </button>
+            {otherLanguageOptions.length > 0 && (
+              <div
+                id={languageMenuId}
+                className="ssc__language-menu"
+                role="listbox"
+                aria-hidden={!isLanguageMenuOpen}
               >
-                {option.shortLabel || option.label}
-              </button>
-            ))}
+                {otherLanguageOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className="ssc__language-menu-option"
+                    role="option"
+                    onClick={() => {
+                      setLanguage(option.value);
+                      setIsLanguageMenuOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
