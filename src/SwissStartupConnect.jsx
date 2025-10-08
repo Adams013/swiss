@@ -14,12 +14,14 @@ import {
   Heart,
   Languages,
   Lightbulb,
+  Moon,
   Layers,
   MapPin,
   Percent,
   Rocket,
   Search,
   Send,
+  Sun,
   Sparkles,
   TrendingUp,
   Trophy,
@@ -43,6 +45,7 @@ const LANGUAGE_TAG_PREFIX = '__lang:';
 
 const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
 const LOCAL_APPLICATION_STORAGE_KEY = 'ssc_local_applications_v1';
+const THEME_STORAGE_KEY = 'ssc_theme_preference';
 
 const readCachedProfile = (userId) => {
   if (typeof window === 'undefined' || !userId) {
@@ -2272,6 +2275,23 @@ const getInitialLanguage = () => {
   return 'en';
 };
 
+const getInitialTheme = () => {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === 'dark' || stored === 'light') {
+    return stored;
+  }
+
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+
+  return 'light';
+};
+
 const mockJobs = [
   {
     id: 'mock-1',
@@ -4118,6 +4138,22 @@ const SwissStartupConnect = () => {
     window.localStorage.setItem('ssc_language', language);
   }, [language]);
 
+  const [theme, setTheme] = useState(getInitialTheme);
+  const isDarkMode = theme === 'dark';
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+    }
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    }
+  }, [isDarkMode, theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((previous) => (previous === 'dark' ? 'light' : 'dark'));
+  }, []);
+
   const buildPluralSuffix = useCallback(
     (count, overrides = {}) => {
       const defaults = {
@@ -4136,6 +4172,13 @@ const SwissStartupConnect = () => {
 
   const [activeTab, setActiveTab] = useState('general');
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+
+  const handleBrandClick = useCallback(() => {
+    setActiveTab('general');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [setActiveTab]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -8880,6 +8923,12 @@ const SwissStartupConnect = () => {
     [translate]
   );
 
+  const themeToggleLabel = isDarkMode
+    ? translate('nav.theme.light', 'Switch to light mode')
+    : translate('nav.theme.dark', 'Switch to dark mode');
+
+  const brandHomeLabel = translate('nav.brandHome', 'Go to general overview');
+
   const isStudent = user?.type === 'student';
   const isLoggedIn = Boolean(user);
   const canApply = isLoggedIn && isStudent;
@@ -9108,7 +9157,7 @@ const SwissStartupConnect = () => {
 
 
   return (
-    <div className="ssc">
+    <div className={`ssc ${isDarkMode ? 'ssc--dark' : ''}`}>
       {toast && (
         <div className="ssc__toast" role="status" aria-live="polite">
           <CheckCircle2 size={20} />
@@ -9117,12 +9166,18 @@ const SwissStartupConnect = () => {
       )}
       <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
-          <div className="ssc__brand">
+          <button
+            type="button"
+            className="ssc__brand"
+            onClick={handleBrandClick}
+            aria-label={brandHomeLabel}
+            title={brandHomeLabel}
+          >
             <div className="ssc__brand-badge">⌁</div>
             <div className="ssc__brand-text">
               <span className="ssc__brand-name">SwissStartup Connect</span>
             </div>
-          </div>
+          </button>
 
           <nav className="ssc__nav">
             {navTabs.map((tab) => (
@@ -9136,6 +9191,20 @@ const SwissStartupConnect = () => {
               </button>
             ))}
           </nav>
+
+          <button
+            type="button"
+            className={`ssc__theme-toggle ${isDarkMode ? 'is-active' : ''}`}
+            onClick={toggleTheme}
+            role="switch"
+            aria-checked={isDarkMode}
+            aria-label={themeToggleLabel}
+            title={themeToggleLabel}
+          >
+            <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={16} aria-hidden="true" />
+            <span className="ssc__theme-toggle-thumb" aria-hidden="true" />
+            <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={16} aria-hidden="true" />
+          </button>
 
           <div
             className="ssc__language-toggle"
