@@ -501,6 +501,13 @@ const mapEventRecord = (eventRecord) => {
     eventRecord.registration_link,
     eventRecord.rsvp_url
   );
+  const imageUrl = firstNonEmpty(
+    eventRecord.image_url,
+    eventRecord.banner_url,
+    eventRecord.cover_image,
+    eventRecord.hero_image,
+    eventRecord.image
+  );
   const registrationRequired =
     eventRecord.registration_required != null
       ? Boolean(eventRecord.registration_required)
@@ -524,6 +531,7 @@ const mapEventRecord = (eventRecord) => {
     registration_url: registrationUrl || '',
     startup_id: eventRecord.startup_id || eventRecord.owner_id || '',
     created_at: eventRecord.created_at || null,
+    image_url: imageUrl || '',
   };
 };
 
@@ -597,6 +605,9 @@ const createInitialEventForm = () => ({
   city: '',
   registration_required: false,
   registration_url: '',
+  image_file: null,
+  image_preview: '',
+  image_url: '',
 });
 
 const TRANSLATIONS = {
@@ -836,6 +847,7 @@ const TRANSLATIONS = {
       registrationRequired: 'Inscription requise',
       registrationCta: 'Accéder à l’inscription',
       registrationNotRequired: 'Aucune inscription requise pour cet événement',
+      imageAlt: 'Visuel de l’événement {{title}}',
       verificationRequired: 'Faites vérifier votre startup pour publier des événements.',
       verificationCta: 'Compléter la vérification',
       signInPrompt: 'Connectez-vous avec un compte startup pour promouvoir vos événements.',
@@ -850,6 +862,7 @@ const TRANSLATIONS = {
         address: 'Adresse complète',
         city: 'Ville',
         description: 'Programme / contenu',
+        image: 'Image de l’événement',
         registrationLink: 'Lien d’inscription (optionnel)',
         registrationToggle: 'Inscription obligatoire',
         helper: 'Partagez un lien d’inscription ou laissez vide si l’événement est en accès libre.',
@@ -858,11 +871,16 @@ const TRANSLATIONS = {
         cityPlaceholder: 'Lausanne',
         addressPlaceholder: 'Rue, numéro, NPA, ville',
         descriptionPlaceholder: 'Décrivez le format, les intervenant·e·s ou l’ambiance prévue.',
+        imageHelper: 'Téléchargez une photo ou une bannière pour mettre votre annonce en valeur.',
         submit: 'Publier l’événement',
         saving: 'Publication…',
         missingFields: 'Ajoutez un nom, une date, une heure et une adresse complète.',
         registrationMissing: 'Ajoutez un lien d’inscription ou indiquez que l’accès est libre.',
         success: 'Événement publié !',
+        removeImage: 'Retirer l’image',
+        imagePreviewAlt: 'Aperçu de votre image d’événement',
+        imageUploadFailed: 'Le téléversement de l’image a échoué. Réessayez plus tard.',
+        imageInvalidType: 'Importez un fichier image (JPG, PNG, GIF) pour l’événement.',
       },
     },
     jobForm: {
@@ -1770,6 +1788,7 @@ const TRANSLATIONS = {
       registrationRequired: 'Anmeldung erforderlich',
       registrationCta: 'Zur Anmeldung',
       registrationNotRequired: 'Keine Anmeldung für dieses Event nötig',
+      imageAlt: 'Eventbild für {{title}}',
       verificationRequired: 'Lassen Sie Ihr Start-up verifizieren, um Veranstaltungen zu veröffentlichen.',
       verificationCta: 'Verifizierung starten',
       signInPrompt: 'Melden Sie sich mit einem Start-up-Konto an, um Ihre Events zu teilen.',
@@ -1784,6 +1803,7 @@ const TRANSLATIONS = {
         address: 'Vollständige Adresse',
         city: 'Stadt',
         description: 'Programm / Inhalte',
+        image: 'Eventbild',
         registrationLink: 'Anmeldelink (optional)',
         registrationToggle: 'Anmeldung erforderlich',
         helper: 'Teilen Sie einen Anmeldelink oder lassen Sie das Feld frei, wenn das Event offen ist.',
@@ -1792,11 +1812,16 @@ const TRANSLATIONS = {
         cityPlaceholder: 'Zürich',
         addressPlaceholder: 'Strasse, Nummer, PLZ, Ort',
         descriptionPlaceholder: 'Beschreiben Sie Format, Speaker oder Highlights des Events.',
+        imageHelper: 'Lade ein Foto oder Banner hoch, um deinen Event hervorzuheben.',
         submit: 'Veranstaltung veröffentlichen',
         saving: 'Wird veröffentlicht…',
         missingFields: 'Bitte Name, Datum, Zeit und Adresse ergänzen.',
         registrationMissing: 'Fügen Sie einen Anmeldelink hinzu oder markieren Sie das Event als offen.',
         success: 'Veranstaltung veröffentlicht!',
+        removeImage: 'Bild entfernen',
+        imagePreviewAlt: 'Vorschau deines Eventbilds',
+        imageUploadFailed: 'Das Hochladen des Bildes ist fehlgeschlagen. Bitte versuche es erneut.',
+        imageInvalidType: 'Bitte lade eine Bilddatei (JPG, PNG, GIF) für den Event hoch.',
       },
     },
     jobForm: {
@@ -2746,6 +2771,8 @@ const mockEvents = [
     registration_required: true,
     registration_url: 'https://example.com/swiss-startup-night',
     startup_id: 'mock-company-1',
+    image_url:
+      'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'mock-event-2',
@@ -2762,6 +2789,8 @@ const mockEvents = [
     registration_required: false,
     registration_url: '',
     startup_id: 'mock-company-2',
+    image_url:
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
   },
   {
     id: 'mock-event-3',
@@ -2778,6 +2807,8 @@ const mockEvents = [
     registration_required: true,
     registration_url: 'https://example.com/basel-biotech-meetup',
     startup_id: 'mock-company-3',
+    image_url:
+      'https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=900&q=80',
   },
 ];
 
@@ -4608,6 +4639,7 @@ const SwissStartupConnect = () => {
   const [eventForm, setEventForm] = useState(createInitialEventForm);
   const [eventFormError, setEventFormError] = useState('');
   const [eventFormSaving, setEventFormSaving] = useState(false);
+  const eventImageInputRef = useRef(null);
 
   const [feedback, setFeedback] = useState(null);
   const [toast, setToast] = useState(null);
@@ -4959,6 +4991,66 @@ const SwissStartupConnect = () => {
   const handleEventFieldChange = useCallback((field, value) => {
     setEventForm((previous) => ({ ...previous, [field]: value }));
   }, []);
+  const handleEventImageRemove = useCallback(() => {
+    setEventForm((previous) => ({
+      ...previous,
+      image_file: null,
+      image_preview: '',
+      image_url: '',
+    }));
+    setEventFormError('');
+    if (eventImageInputRef.current) {
+      eventImageInputRef.current.value = '';
+    }
+  }, []);
+  const handleEventImageChange = useCallback(
+    (changeEvent) => {
+      const file = changeEvent.target.files?.[0];
+
+      if (!file) {
+        handleEventImageRemove();
+        return;
+      }
+
+      if (!file.type?.startsWith('image/')) {
+        setEventForm((previous) => ({
+          ...previous,
+          image_file: null,
+          image_preview: '',
+          image_url: '',
+        }));
+        setEventFormError(
+          translate(
+            'events.form.imageInvalidType',
+            'Upload an image file (JPG, PNG, GIF) for the event.'
+          )
+        );
+        if (eventImageInputRef.current) {
+          eventImageInputRef.current.value = '';
+        }
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const preview = typeof reader.result === 'string' ? reader.result : '';
+        setEventForm((previous) => ({
+          ...previous,
+          image_file: file,
+          image_preview: preview,
+          image_url: '',
+        }));
+        setEventFormError('');
+      };
+      reader.onerror = () => {
+        setEventFormError(
+          translate('events.form.imageUploadFailed', 'We could not upload your image. Try again.')
+        );
+      };
+      reader.readAsDataURL(file);
+    },
+    [handleEventImageRemove, translate]
+  );
   const handleEventFormSubmit = useCallback(
     async (formEvent) => {
       formEvent?.preventDefault?.();
@@ -4994,6 +5086,29 @@ const SwissStartupConnect = () => {
 
       setEventFormSaving(true);
 
+      const localImagePreview = eventForm.image_preview;
+      const imageFile = eventForm.image_file;
+      let uploadedImageUrl = eventForm.image_url?.trim?.() ?? '';
+
+      if (imageFile) {
+        try {
+          const publicUrl = await uploadFile('events', imageFile, { prefix: 'banners' });
+          if (!publicUrl) {
+            throw new Error(
+              translate('events.form.imageUploadFailed', 'We could not upload your image. Try again.')
+            );
+          }
+          uploadedImageUrl = publicUrl;
+        } catch (error) {
+          console.error('Event image upload error', error);
+          setEventFormError(
+            translate('events.form.imageUploadFailed', 'We could not upload your image. Try again.')
+          );
+          setEventFormSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         title: trimmedTitle,
         description: trimmedDescription,
@@ -5010,14 +5125,40 @@ const SwissStartupConnect = () => {
         owner_id: user?.id || null,
       };
 
+      if (uploadedImageUrl) {
+        payload.image_url = uploadedImageUrl;
+      }
+
       try {
-        const { error } = await supabase.from('events').insert(payload);
-        if (error) {
-          throw error;
+        const recordToInsert = { ...payload };
+        if (!uploadedImageUrl) {
+          delete recordToInsert.image_url;
+        }
+
+        const attemptInsert = async (body) => {
+          const { error } = await supabase.from('events').insert(body);
+          return error;
+        };
+
+        let insertError = await attemptInsert(recordToInsert);
+
+        if (insertError) {
+          const message = insertError.message?.toLowerCase?.() ?? '';
+          if (message.includes('column') && message.includes('image_url')) {
+            delete recordToInsert.image_url;
+            insertError = await attemptInsert(recordToInsert);
+          }
+        }
+
+        if (insertError) {
+          throw insertError;
         }
         showToast(translate('events.form.success', 'Event published!'));
         setEventForm(createInitialEventForm());
         setEventFormError('');
+        if (eventImageInputRef.current) {
+          eventImageInputRef.current.value = '';
+        }
         setEventsVersion((prev) => prev + 1);
       } catch (error) {
         console.error('Event publish error', error);
@@ -5025,11 +5166,15 @@ const SwissStartupConnect = () => {
           ...payload,
           id: `local-event-${Date.now()}`,
           created_at: new Date().toISOString(),
+          image_url: uploadedImageUrl || localImagePreview || '',
         };
         setEvents((previous) => [fallbackEvent, ...previous]);
         showToast(translate('events.form.success', 'Event published!'));
         setEventForm(createInitialEventForm());
         setEventFormError('');
+        if (eventImageInputRef.current) {
+          eventImageInputRef.current.value = '';
+        }
       } finally {
         setEventFormSaving(false);
       }
@@ -5037,6 +5182,7 @@ const SwissStartupConnect = () => {
     [
       eventForm,
       isStartupVerified,
+      uploadFile,
       showToast,
       startupProfile?.id,
       startupProfile?.name,
@@ -10808,6 +10954,16 @@ const SwissStartupConnect = () => {
                     );
                     return (
                       <article key={event.id} className="ssc__event-card">
+                        {event.image_url && (
+                          <div className="ssc__event-image">
+                            <img
+                              src={event.image_url}
+                              alt={translate('events.imageAlt', 'Event visual for {{title}}', {
+                                title: event.title,
+                              })}
+                            />
+                          </div>
+                        )}
                         <div className="ssc__event-card-header">
                           <div>
                             <h3>{event.title}</h3>
@@ -11006,6 +11162,43 @@ const SwissStartupConnect = () => {
                         )}
                       />
                     </label>
+
+                    <label className="ssc__field">
+                      <span>{translate('events.form.image', 'Event image')}</span>
+                      <div className="ssc__upload-inline">
+                        <input
+                          ref={eventImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleEventImageChange}
+                        />
+                        {eventForm.image_file?.name && <small>{eventForm.image_file.name}</small>}
+                      </div>
+                      <span className="ssc__field-note">
+                        {translate(
+                          'events.form.imageHelper',
+                          'Upload a photo or banner to highlight your gathering.'
+                        )}
+                      </span>
+                    </label>
+
+                    {(eventForm.image_preview || eventForm.image_url) && (
+                      <div className="ssc__event-form-preview">
+                        <div className="ssc__event-form-preview-image">
+                          <img
+                            src={eventForm.image_preview || eventForm.image_url}
+                            alt={translate('events.form.imagePreviewAlt', 'Preview of your event image')}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="ssc__ghost-btn ssc__event-form-preview-remove"
+                          onClick={handleEventImageRemove}
+                        >
+                          {translate('events.form.removeImage', 'Remove image')}
+                        </button>
+                      </div>
+                    )}
 
                     <label className="ssc__field">
                       <span>{translate('events.form.registrationLink', 'Registration link (optional)')}</span>
