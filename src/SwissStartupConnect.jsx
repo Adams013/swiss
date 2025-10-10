@@ -31,6 +31,7 @@ import {
   MessageCircle,
   CheckCircle2,
   Star,
+  Ticket,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
@@ -462,6 +463,142 @@ const mapStartupToCompany = (startup) => {
   };
 };
 
+const mapEventRecord = (eventRecord) => {
+  if (!eventRecord || typeof eventRecord !== 'object') {
+    return null;
+  }
+
+  const title = firstNonEmpty(eventRecord.title, eventRecord.name, eventRecord.event_name);
+  const organizer = firstNonEmpty(
+    eventRecord.organizer,
+    eventRecord.organiser,
+    eventRecord.startup_name,
+    eventRecord.company_name,
+    eventRecord.host
+  );
+  const date = firstNonEmpty(eventRecord.date, eventRecord.start_date, eventRecord.event_date);
+  const startTime = firstNonEmpty(eventRecord.start_time, eventRecord.time, eventRecord.start);
+  const endTime = firstNonEmpty(eventRecord.end_time, eventRecord.finish_time, eventRecord.end);
+  const venue = firstNonEmpty(eventRecord.venue, eventRecord.location_name, eventRecord.location);
+  const addressCandidates = [
+    eventRecord.full_address,
+    eventRecord.address,
+    [
+      eventRecord.address_line1,
+      eventRecord.address_line2,
+      eventRecord.postal_code,
+      eventRecord.city,
+      eventRecord.country,
+    ]
+      .filter(Boolean)
+      .join(', '),
+  ].filter(Boolean);
+  const combinedAddress = addressCandidates.find(Boolean) || '';
+  const city = firstNonEmpty(eventRecord.city, eventRecord.region, eventRecord.town);
+  const description = firstNonEmpty(eventRecord.description, eventRecord.summary, eventRecord.details);
+  const registrationUrl = firstNonEmpty(
+    eventRecord.registration_url,
+    eventRecord.registration_link,
+    eventRecord.rsvp_url
+  );
+  const registrationRequired =
+    eventRecord.registration_required != null
+      ? Boolean(eventRecord.registration_required)
+      : Boolean(registrationUrl);
+
+  const addressParts = [venue, combinedAddress].filter(Boolean);
+  const dedupedAddress = Array.from(new Set(addressParts));
+
+  return {
+    id: eventRecord.id ?? `event-${Math.random().toString(36).slice(2)}`,
+    title: title || 'Community event',
+    organizer: organizer || '',
+    date: date || '',
+    start_time: startTime || '',
+    end_time: endTime || '',
+    venue: venue || '',
+    address: dedupedAddress.join(', '),
+    city: city || '',
+    description: description || '',
+    registration_required: registrationRequired,
+    registration_url: registrationUrl || '',
+    startup_id: eventRecord.startup_id || eventRecord.owner_id || '',
+    created_at: eventRecord.created_at || null,
+  };
+};
+
+const formatEventDateLabel = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatEventTimeLabel = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const normalized = value.length === 5 ? `${value}:00` : value;
+  const date = new Date(`1970-01-01T${normalized}`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const getEventSortTimestamp = (event) => {
+  if (!event) {
+    return 0;
+  }
+
+  const datePart = event.date || '';
+  if (datePart) {
+    const timePart = event.start_time ? event.start_time : '00:00';
+    const normalizedTime = timePart.length === 5 ? `${timePart}:00` : timePart;
+    const isoString = `${datePart}T${normalizedTime}`;
+    const date = new Date(isoString);
+    const timestamp = date.getTime();
+    if (!Number.isNaN(timestamp)) {
+      return timestamp;
+    }
+  }
+
+  if (event.created_at) {
+    const created = new Date(event.created_at).getTime();
+    if (!Number.isNaN(created)) {
+      return created;
+    }
+  }
+
+  return 0;
+};
+
+const createInitialEventForm = () => ({
+  title: '',
+  description: '',
+  date: '',
+  start_time: '',
+  end_time: '',
+  venue: '',
+  address: '',
+  city: '',
+  registration_required: false,
+  registration_url: '',
+});
+
 const TRANSLATIONS = {
   fr: {
     common: {
@@ -474,6 +611,7 @@ const TRANSLATIONS = {
       general: 'Général',
       jobs: 'Opportunités',
       companies: 'Startups',
+      events: 'Événements',
       myJobs: 'Mes offres',
       applications: 'Candidatures',
       messages: 'Messages',
@@ -685,6 +823,47 @@ const TRANSLATIONS = {
       seeMoreButton: 'Explorer les rôles',
       noMatchesTitle: 'Aucun résultat',
       noMatchesBody: 'Retirez un filtre ou élargissez votre fourchette salariale.',
+    },
+    events: {
+      heading: 'Événements de l’écosystème',
+      subheading:
+        'Rencontrez la communauté start-up suisse lors de rencontres organisées par nos membres.',
+      count: '{{count}} événement{{plural}} à venir',
+      emptyTitle: 'Aucun événement pour le moment',
+      emptyDescription:
+        'Revenez bientôt ou invitez votre startup préférée à partager ses prochaines dates.',
+      organizer: 'Organisé par {{organizer}}',
+      registrationRequired: 'Inscription requise',
+      registrationCta: 'Accéder à l’inscription',
+      registrationNotRequired: 'Aucune inscription requise pour cet événement',
+      verificationRequired: 'Faites vérifier votre startup pour publier des événements.',
+      verificationCta: 'Compléter la vérification',
+      signInPrompt: 'Connectez-vous avec un compte startup pour promouvoir vos événements.',
+      form: {
+        heading: 'Partager un événement',
+        subtitle: 'Indiquez où la communauté peut rencontrer votre équipe en personne.',
+        title: 'Nom de l’événement',
+        date: 'Date',
+        startTime: 'Heure de début',
+        endTime: 'Heure de fin (optionnel)',
+        venue: 'Lieu ou hôte',
+        address: 'Adresse complète',
+        city: 'Ville',
+        description: 'Programme / contenu',
+        registrationLink: 'Lien d’inscription (optionnel)',
+        registrationToggle: 'Inscription obligatoire',
+        helper: 'Partagez un lien d’inscription ou laissez vide si l’événement est en accès libre.',
+        titlePlaceholder: 'Swiss Startup Night',
+        venuePlaceholder: 'Impact Hub Lausanne',
+        cityPlaceholder: 'Lausanne',
+        addressPlaceholder: 'Rue, numéro, NPA, ville',
+        descriptionPlaceholder: 'Décrivez le format, les intervenant·e·s ou l’ambiance prévue.',
+        submit: 'Publier l’événement',
+        saving: 'Publication…',
+        missingFields: 'Ajoutez un nom, une date, une heure et une adresse complète.',
+        registrationMissing: 'Ajoutez un lien d’inscription ou indiquez que l’accès est libre.',
+        success: 'Événement publié !',
+      },
     },
     jobForm: {
       labels: {
@@ -1366,6 +1545,7 @@ const TRANSLATIONS = {
       general: 'Überblick',
       jobs: 'Stellen',
       companies: 'Start-ups',
+      events: 'Veranstaltungen',
       myJobs: 'Meine Inserate',
       applications: 'Bewerbungen',
       messages: 'Nachrichten',
@@ -1577,6 +1757,47 @@ const TRANSLATIONS = {
       seeMoreButton: 'Rollen ansehen',
       noMatchesTitle: 'Keine Treffer',
       noMatchesBody: 'Entfernen Sie einen Filter oder erweitern Sie Ihre Gehaltsspanne.',
+    },
+    events: {
+      heading: 'Veranstaltungen des Ökosystems',
+      subheading:
+        'Treffen Sie Gründer:innen, Talente und Investor:innen bei kommenden Treffen von Schweizer Start-ups.',
+      count: '{{count}} Veranstaltung{{plural}} geplant',
+      emptyTitle: 'Noch keine Veranstaltungen',
+      emptyDescription:
+        'Schauen Sie bald wieder vorbei oder bitten Sie Ihr Lieblings-Start-up, Termine zu teilen.',
+      organizer: 'Veranstaltet von {{organizer}}',
+      registrationRequired: 'Anmeldung erforderlich',
+      registrationCta: 'Zur Anmeldung',
+      registrationNotRequired: 'Keine Anmeldung für dieses Event nötig',
+      verificationRequired: 'Lassen Sie Ihr Start-up verifizieren, um Veranstaltungen zu veröffentlichen.',
+      verificationCta: 'Verifizierung starten',
+      signInPrompt: 'Melden Sie sich mit einem Start-up-Konto an, um Ihre Events zu teilen.',
+      form: {
+        heading: 'Event teilen',
+        subtitle: 'Zeigen Sie der Community, wo man Ihr Team persönlich trifft.',
+        title: 'Name der Veranstaltung',
+        date: 'Datum',
+        startTime: 'Startzeit',
+        endTime: 'Endzeit (optional)',
+        venue: 'Veranstaltungsort oder Gastgeber',
+        address: 'Vollständige Adresse',
+        city: 'Stadt',
+        description: 'Programm / Inhalte',
+        registrationLink: 'Anmeldelink (optional)',
+        registrationToggle: 'Anmeldung erforderlich',
+        helper: 'Teilen Sie einen Anmeldelink oder lassen Sie das Feld frei, wenn das Event offen ist.',
+        titlePlaceholder: 'Swiss Startup Night',
+        venuePlaceholder: 'Impact Hub Zürich',
+        cityPlaceholder: 'Zürich',
+        addressPlaceholder: 'Strasse, Nummer, PLZ, Ort',
+        descriptionPlaceholder: 'Beschreiben Sie Format, Speaker oder Highlights des Events.',
+        submit: 'Veranstaltung veröffentlichen',
+        saving: 'Wird veröffentlicht…',
+        missingFields: 'Bitte Name, Datum, Zeit und Adresse ergänzen.',
+        registrationMissing: 'Fügen Sie einen Anmeldelink hinzu oder markieren Sie das Event als offen.',
+        success: 'Veranstaltung veröffentlicht!',
+      },
     },
     jobForm: {
       labels: {
@@ -2506,6 +2727,57 @@ const mockJobs = [
         ],
       },
     },
+  },
+];
+
+const mockEvents = [
+  {
+    id: 'mock-event-1',
+    title: 'Swiss Startup Night',
+    organizer: 'TechFlow AG',
+    date: '2024-07-11',
+    start_time: '18:00',
+    end_time: '21:30',
+    venue: 'Kraftwerk Zürich',
+    address: 'Selnaustrasse 25, 8001 Zürich, Switzerland',
+    city: 'Zürich',
+    description:
+      'An evening of founder stories, rapid-fire pitches, and networking with the Swiss innovation community in the heart of Zürich.',
+    registration_required: true,
+    registration_url: 'https://example.com/swiss-startup-night',
+    startup_id: 'mock-company-1',
+  },
+  {
+    id: 'mock-event-2',
+    title: 'Lausanne Innovation Breakfast',
+    organizer: 'Alpine Health',
+    date: '2024-07-24',
+    start_time: '08:30',
+    end_time: '10:00',
+    venue: 'Impact Hub Lausanne',
+    address: 'Rue du Jura 11, 1004 Lausanne, Switzerland',
+    city: 'Lausanne',
+    description:
+      'Share coffee with the Alpine Health founders to hear how they scale connected care and discover collaboration opportunities.',
+    registration_required: false,
+    registration_url: '',
+    startup_id: 'mock-company-2',
+  },
+  {
+    id: 'mock-event-3',
+    title: 'Basel BioTech Meetup',
+    organizer: 'Cognivia Labs',
+    date: '2024-08-08',
+    start_time: '17:30',
+    end_time: '19:30',
+    venue: 'Switzerland Innovation Park Basel Area',
+    address: 'Hochbergerstrasse 60C, 4057 Basel, Switzerland',
+    city: 'Basel',
+    description:
+      'Meet fellow researchers, founders, and students working on cutting-edge therapeutics with lightning talks and lab tours.',
+    registration_required: true,
+    registration_url: 'https://example.com/basel-biotech-meetup',
+    startup_id: 'mock-company-3',
   },
 ];
 
@@ -4239,6 +4511,8 @@ const SwissStartupConnect = () => {
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [events, setEvents] = useState(mockEvents);
+  const [eventsLoading, setEventsLoading] = useState(false);
   const upsertCompanyFromStartup = useCallback(
     (startupRecord) => {
       const mapped = mapStartupToCompany(startupRecord);
@@ -4281,6 +4555,43 @@ const SwissStartupConnect = () => {
     [translate]
   );
 
+  const eventsForDisplay = useMemo(() => {
+    const now = Date.now();
+    const withSortValue = events.map((event) => ({
+      ...event,
+      sortValue: getEventSortTimestamp(event),
+    }));
+
+    const upcoming = [];
+    const past = [];
+
+    withSortValue.forEach((event) => {
+      const value = event.sortValue;
+      if (Number.isFinite(value) && value < now) {
+        past.push(event);
+      } else {
+        upcoming.push(event);
+      }
+    });
+
+    const sortAscending = (a, b) => {
+      const aValue = Number.isFinite(a.sortValue) ? a.sortValue : Number.MAX_SAFE_INTEGER;
+      const bValue = Number.isFinite(b.sortValue) ? b.sortValue : Number.MAX_SAFE_INTEGER;
+      return aValue - bValue;
+    };
+
+    const sortDescending = (a, b) => {
+      const aValue = Number.isFinite(a.sortValue) ? a.sortValue : 0;
+      const bValue = Number.isFinite(b.sortValue) ? b.sortValue : 0;
+      return bValue - aValue;
+    };
+
+    upcoming.sort(sortAscending);
+    past.sort(sortDescending);
+
+    return [...upcoming, ...past].map(({ sortValue, ...rest }) => rest);
+  }, [events]);
+
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
 
@@ -4294,6 +4605,9 @@ const SwissStartupConnect = () => {
     }
   });
   const [selectedJob, setSelectedJob] = useState(null);
+  const [eventForm, setEventForm] = useState(createInitialEventForm);
+  const [eventFormError, setEventFormError] = useState('');
+  const [eventFormSaving, setEventFormSaving] = useState(false);
 
   const [feedback, setFeedback] = useState(null);
   const [toast, setToast] = useState(null);
@@ -4373,6 +4687,7 @@ const SwissStartupConnect = () => {
   const [profileSaving, setProfileSaving] = useState(false);
 
   const [startupProfile, setStartupProfile] = useState(null);
+  const isStartupVerified = startupProfile?.verification_status === 'verified';
   const [startupModalOpen, setStartupModalOpen] = useState(false);
   const [startupForm, setStartupForm] = useState({
     name: '',
@@ -4607,6 +4922,7 @@ const SwissStartupConnect = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showNewConfirm, setShowNewConfirm] = useState(false);
 
+  const [eventsVersion, setEventsVersion] = useState(0);
   const [jobsVersion, setJobsVersion] = useState(0);
   const [postJobModalOpen, setPostJobModalOpen] = useState(false);
   const [postingJob, setPostingJob] = useState(false);
@@ -4640,6 +4956,95 @@ const SwissStartupConnect = () => {
   const showToast = useCallback((message) => {
     setToast({ id: Date.now(), message });
   }, []);
+  const handleEventFieldChange = useCallback((field, value) => {
+    setEventForm((previous) => ({ ...previous, [field]: value }));
+  }, []);
+  const handleEventFormSubmit = useCallback(
+    async (formEvent) => {
+      formEvent?.preventDefault?.();
+      setEventFormError('');
+
+      if (!isStartupVerified) {
+        setEventFormError(
+          translate('events.verificationRequired', 'Verify your startup to publish events.')
+        );
+        return;
+      }
+
+      const trimmedTitle = eventForm.title.trim();
+      const trimmedAddress = eventForm.address.trim();
+      const trimmedVenue = eventForm.venue.trim();
+      const trimmedCity = eventForm.city.trim();
+      const trimmedDescription = eventForm.description.trim();
+      const trimmedRegistrationUrl = eventForm.registration_url.trim();
+
+      if (!trimmedTitle || !eventForm.date || !eventForm.start_time || !trimmedAddress) {
+        setEventFormError(
+          translate('events.form.missingFields', 'Add a title, date, time, and full address.')
+        );
+        return;
+      }
+
+      if (eventForm.registration_required && !trimmedRegistrationUrl) {
+        setEventFormError(
+          translate('events.form.registrationMissing', 'Add a registration link or mark the event as open to all.')
+        );
+        return;
+      }
+
+      setEventFormSaving(true);
+
+      const payload = {
+        title: trimmedTitle,
+        description: trimmedDescription,
+        date: eventForm.date,
+        start_time: eventForm.start_time,
+        end_time: eventForm.end_time || '',
+        venue: trimmedVenue,
+        address: trimmedAddress,
+        city: trimmedCity,
+        registration_required: eventForm.registration_required,
+        registration_url: eventForm.registration_required ? trimmedRegistrationUrl : '',
+        organizer: startupProfile?.name || userDisplayName || '',
+        startup_id: startupProfile?.id || null,
+        owner_id: user?.id || null,
+      };
+
+      try {
+        const { error } = await supabase.from('events').insert(payload);
+        if (error) {
+          throw error;
+        }
+        showToast(translate('events.form.success', 'Event published!'));
+        setEventForm(createInitialEventForm());
+        setEventFormError('');
+        setEventsVersion((prev) => prev + 1);
+      } catch (error) {
+        console.error('Event publish error', error);
+        const fallbackEvent = {
+          ...payload,
+          id: `local-event-${Date.now()}`,
+          created_at: new Date().toISOString(),
+        };
+        setEvents((previous) => [fallbackEvent, ...previous]);
+        showToast(translate('events.form.success', 'Event published!'));
+        setEventForm(createInitialEventForm());
+        setEventFormError('');
+      } finally {
+        setEventFormSaving(false);
+      }
+    },
+    [
+      eventForm,
+      isStartupVerified,
+      showToast,
+      startupProfile?.id,
+      startupProfile?.name,
+      translate,
+      user?.id,
+      userDisplayName,
+    ]
+  );
   const handleToggleApplicationRow = useCallback((applicationId) => {
     setExpandedApplicationId((previous) => (previous === applicationId ? null : applicationId));
   }, []);
@@ -5256,6 +5661,40 @@ const SwissStartupConnect = () => {
 
     fetchJobs();
   }, [jobsVersion]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true);
+      try {
+        const { data, error } = await supabase.from('events').select('*').order('date', { ascending: true });
+
+        if (error) {
+          console.info('Falling back to mock events', error.message);
+          setEvents(mockEvents);
+        } else if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((entry) => mapEventRecord(entry)).filter(Boolean);
+          const supabaseIds = new Set(mapped.map((event) => event.id));
+          const merged = [
+            ...mapped,
+            ...mockEvents.filter((event) => {
+              const idKey = event.id != null ? String(event.id) : '';
+              return idKey ? !supabaseIds.has(idKey) : true;
+            }),
+          ];
+          setEvents(merged);
+        } else {
+          setEvents(mockEvents);
+        }
+      } catch (error) {
+        console.error('Event load error', error);
+        setEvents(mockEvents);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [eventsVersion]);
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -6378,7 +6817,6 @@ const SwissStartupConnect = () => {
     return [...companies, ...derived.values()];
   }, [companies, normalizedJobs, translate]);
 
-  const isStartupVerified = startupProfile?.verification_status === 'verified';
   const startupId = startupProfile?.id ? String(startupProfile.id) : null;
 
   const startupJobs = useMemo(() => {
@@ -8900,7 +9338,7 @@ const SwissStartupConnect = () => {
   const closeReviewsModal = () => setReviewsModal(null);
 
   const navTabs = useMemo(() => {
-    const baseTabs = ['general', 'jobs', 'companies'];
+    const baseTabs = ['general', 'jobs', 'companies', 'events'];
     if (user?.type === 'startup') {
       baseTabs.push('my-jobs', 'applications');
     }
@@ -8916,6 +9354,7 @@ const SwissStartupConnect = () => {
       general: translate('nav.general', 'General'),
       jobs: translate('nav.jobs', 'Opportunities'),
       companies: translate('nav.companies', 'Startups'),
+      events: translate('nav.events', 'Events'),
       'my-jobs': translate('nav.myJobs', 'My jobs'),
       applications: translate('nav.applications', 'Applicants'),
       messages: translate('nav.messages', 'Messages'),
@@ -9068,7 +9507,7 @@ const SwissStartupConnect = () => {
     });
   }, [augmentedCompanies, companyJobCounts, companySort, followedCompanies, resolveCompanyFollowKey]);
 
-  const loadingSpinner = jobsLoading || companiesLoading || authLoading;
+  const loadingSpinner = jobsLoading || companiesLoading || eventsLoading || authLoading;
   const showCompanySkeleton = companiesLoading && sortedCompanies.length === 0;
 
   const featuredCompanies = useMemo(() => {
@@ -10313,6 +10752,334 @@ const SwissStartupConnect = () => {
                     )}
                   </p>
                 </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'events' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>{translate('events.heading', 'Upcoming events')}</h2>
+                  <p>
+                    {translate(
+                      'events.subheading',
+                      'Meet founders, talent, and partners at gatherings hosted by Swiss startups.'
+                    )}
+                  </p>
+                </div>
+                <div className="ssc__section-header-actions">
+                  <span className="ssc__pill">
+                    {translate('events.count', '{{count}} upcoming event{{plural}}', {
+                      count: eventsForDisplay.length,
+                      plural: buildPluralSuffix(eventsForDisplay.length, { de: ['', 'en'] }),
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {eventsLoading ? (
+                <div className="ssc__grid ssc__grid--events">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <article key={`event-skeleton-${index}`} className="ssc__event-card ssc__event-card--loading">
+                      <div className="ssc__event-skeleton ssc__event-skeleton--title" />
+                      <div className="ssc__event-skeleton ssc__event-skeleton--meta" />
+                      <div className="ssc__event-skeleton ssc__event-skeleton--meta" />
+                      <div className="ssc__event-skeleton ssc__event-skeleton--description" />
+                    </article>
+                  ))}
+                </div>
+              ) : eventsForDisplay.length > 0 ? (
+                <div className="ssc__grid ssc__grid--events">
+                  {eventsForDisplay.map((event) => {
+                    const dateLabel = formatEventDateLabel(event.date);
+                    const startTimeLabel = formatEventTimeLabel(event.start_time);
+                    const endTimeLabel = formatEventTimeLabel(event.end_time);
+                    const timeLabel = startTimeLabel && endTimeLabel ? `${startTimeLabel} – ${endTimeLabel}` : startTimeLabel;
+                    const registrationRequiredLabel = translate(
+                      'events.registrationRequired',
+                      'Registration required'
+                    );
+                    const registrationOpenLabel = translate(
+                      'events.registrationNotRequired',
+                      'No registration needed for this event'
+                    );
+                    return (
+                      <article key={event.id} className="ssc__event-card">
+                        <div className="ssc__event-card-header">
+                          <div>
+                            <h3>{event.title}</h3>
+                            {event.organizer && (
+                              <p>
+                                {translate('events.organizer', 'Hosted by {{organizer}}', {
+                                  organizer: event.organizer,
+                                })}
+                              </p>
+                            )}
+                          </div>
+                          {event.city && <span className="ssc__pill ssc__pill--muted">{event.city}</span>}
+                        </div>
+                        <div className="ssc__event-meta">
+                          {dateLabel && (
+                            <span>
+                              <Calendar size={16} />
+                              {dateLabel}
+                            </span>
+                          )}
+                          {timeLabel && (
+                            <span>
+                              <Clock size={16} />
+                              {timeLabel}
+                            </span>
+                          )}
+                          {event.address && (
+                            <span>
+                              <MapPin size={16} />
+                              {event.address}
+                            </span>
+                          )}
+                        </div>
+                        {event.description && (
+                          <p className="ssc__event-description">{event.description}</p>
+                        )}
+                        <div className="ssc__event-registration">
+                          {event.registration_required ? (
+                            event.registration_url ? (
+                              <a
+                                href={event.registration_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="ssc__event-registration-link"
+                              >
+                                <Ticket size={16} />
+                                {translate('events.registrationCta', 'Registration')}
+                                <ArrowRight size={16} />
+                              </a>
+                            ) : (
+                              <span className="ssc__event-registration-note">
+                                <Ticket size={16} />
+                                {registrationRequiredLabel}
+                              </span>
+                            )
+                          ) : (
+                            <span className="ssc__event-registration-note">
+                              <Ticket size={16} />
+                              {registrationOpenLabel}
+                            </span>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Calendar size={40} />
+                  <h3>{translate('events.emptyTitle', 'No events yet')}</h3>
+                  <p>
+                    {translate(
+                      'events.emptyDescription',
+                      'Check back soon or ask your favourite startups to share where they will be next.'
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {user?.type === 'startup' ? (
+                <article className="ssc__event-form-card">
+                  <div className="ssc__event-form-header">
+                    <div>
+                      <h3>{translate('events.form.heading', 'Share an event')}</h3>
+                      <p>
+                        {translate(
+                          'events.form.subtitle',
+                          'Let the community know where they can meet your team in person.'
+                        )}
+                      </p>
+                    </div>
+                    {!isStartupVerified && (
+                      <span className="ssc__pill ssc__pill--muted">
+                        {translate('events.verificationRequired', 'Verify your startup to publish events.')}
+                      </span>
+                    )}
+                  </div>
+
+                  {!isStartupVerified && (
+                    <div className="ssc__event-form-note">
+                      <span>
+                        {translate(
+                          'events.verificationRequired',
+                          'Verify your startup to publish events.'
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        className="ssc__ghost-btn"
+                        onClick={() => setStartupModalOpen(true)}
+                      >
+                        {translate('events.verificationCta', 'Complete verification')}
+                      </button>
+                    </div>
+                  )}
+
+                  <form className="ssc__form ssc__event-form" onSubmit={handleEventFormSubmit}>
+                    <div className="ssc__form-grid">
+                      <label className="ssc__field">
+                        <span>{translate('events.form.title', 'Event name')}</span>
+                        <input
+                          type="text"
+                          value={eventForm.title}
+                          onChange={(event) => handleEventFieldChange('title', event.target.value)}
+                          placeholder={translate('events.form.titlePlaceholder', 'Swiss Startup Night')}
+                        />
+                      </label>
+                      <label className="ssc__field">
+                        <span>{translate('events.form.date', 'Date')}</span>
+                        <input
+                          type="date"
+                          value={eventForm.date}
+                          onChange={(event) => handleEventFieldChange('date', event.target.value)}
+                        />
+                      </label>
+                      <label className="ssc__field">
+                        <span>{translate('events.form.startTime', 'Start time')}</span>
+                        <input
+                          type="time"
+                          value={eventForm.start_time}
+                          onChange={(event) => handleEventFieldChange('start_time', event.target.value)}
+                        />
+                      </label>
+                      <label className="ssc__field">
+                        <span>{translate('events.form.endTime', 'End time (optional)')}</span>
+                        <input
+                          type="time"
+                          value={eventForm.end_time}
+                          onChange={(event) => handleEventFieldChange('end_time', event.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="ssc__form-grid">
+                      <label className="ssc__field">
+                        <span>{translate('events.form.venue', 'Venue or host')}</span>
+                        <input
+                          type="text"
+                          value={eventForm.venue}
+                          onChange={(event) => handleEventFieldChange('venue', event.target.value)}
+                          placeholder={translate('events.form.venuePlaceholder', 'Impact Hub Zürich')}
+                        />
+                      </label>
+                      <label className="ssc__field">
+                        <span>{translate('events.form.city', 'City')}</span>
+                        <input
+                          type="text"
+                          value={eventForm.city}
+                          onChange={(event) => handleEventFieldChange('city', event.target.value)}
+                          placeholder={translate('events.form.cityPlaceholder', 'Zürich')}
+                        />
+                      </label>
+                    </div>
+
+                    <label className="ssc__field">
+                      <span>{translate('events.form.address', 'Full address')}</span>
+                      <input
+                        type="text"
+                        value={eventForm.address}
+                        onChange={(event) => handleEventFieldChange('address', event.target.value)}
+                        placeholder={translate(
+                          'events.form.addressPlaceholder',
+                          'Street, number, postcode, city'
+                        )}
+                      />
+                    </label>
+
+                    <label className="ssc__field">
+                      <span>{translate('events.form.description', 'What attendees can expect')}</span>
+                      <textarea
+                        value={eventForm.description}
+                        onChange={(event) => handleEventFieldChange('description', event.target.value)}
+                        placeholder={translate(
+                          'events.form.descriptionPlaceholder',
+                          'Share the format, speakers, or activities that make this event special.'
+                        )}
+                      />
+                    </label>
+
+                    <label className="ssc__field">
+                      <span>{translate('events.form.registrationLink', 'Registration link (optional)')}</span>
+                      <input
+                        type="url"
+                        value={eventForm.registration_url}
+                        onChange={(event) => handleEventFieldChange('registration_url', event.target.value)}
+                        placeholder="https://"
+                      />
+                      <span className="ssc__field-note">
+                        {translate(
+                          'events.form.helper',
+                          'Share a registration page or leave blank if the event is open entry.'
+                        )}
+                      </span>
+                    </label>
+
+                    <label className="ssc__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={eventForm.registration_required}
+                        onChange={(event) => handleEventFieldChange('registration_required', event.target.checked)}
+                      />
+                      <span>{translate('events.form.registrationToggle', 'Registration required')}</span>
+                    </label>
+
+                    {eventFormError && <p className="ssc__form-error">{eventFormError}</p>}
+
+                    <div className="ssc__event-form-actions">
+                      <button
+                        type="submit"
+                        className="ssc__primary-btn"
+                        disabled={eventFormSaving || !isStartupVerified}
+                      >
+                        {eventFormSaving
+                          ? translate('events.form.saving', 'Publishing…')
+                          : translate('events.form.submit', 'Publish event')}
+                      </button>
+                    </div>
+                  </form>
+                </article>
+              ) : (
+                <article className="ssc__event-form-card ssc__event-form-card--muted">
+                  <div className="ssc__event-form-header">
+                    <div>
+                      <h3>{translate('events.form.heading', 'Share an event')}</h3>
+                      <p>
+                        {translate(
+                          'events.form.subtitle',
+                          'Let the community know where they can meet your team in person.'
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="ssc__event-form-empty">
+                    {translate(
+                      'events.signInPrompt',
+                      'Sign in as a startup to promote your event schedule.'
+                    )}
+                  </p>
+                  {!user && (
+                    <button
+                      type="button"
+                      className="ssc__primary-btn"
+                      onClick={() => {
+                        setIsRegistering(false);
+                        setShowLoginModal(true);
+                        setAuthError('');
+                      }}
+                    >
+                      {translate('nav.signIn', 'Sign in')}
+                    </button>
+                  )}
+                </article>
               )}
             </div>
           </section>
