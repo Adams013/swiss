@@ -4663,6 +4663,19 @@
   margin-bottom: 16px;
 }
 
+.ssc__event-venue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ssc-ink);
+}
+
+.ssc__event-venue svg {
+  color: var(--ssc-primary);
+}
+
 .ssc__event-date,
 .ssc__event-time,
 .ssc__event-location {
@@ -4716,6 +4729,10 @@
 .ssc--dark .ssc__event-time,
 .ssc--dark .ssc__event-location {
   color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__event-venue {
+  color: var(--ssc-ink);
 }
 
 .ssc--dark .ssc__event-description {

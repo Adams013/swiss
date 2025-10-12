@@ -11,8 +11,9 @@ CREATE TABLE IF NOT EXISTS events (
   city TEXT NOT NULL,
   postal_code TEXT NOT NULL,
   event_date DATE NOT NULL,
-  event_time TIME,
+  event_time TIME NOT NULL,
   poster_url TEXT,
+  CONSTRAINT events_street_has_number CHECK (street_address ~ '\\d'),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
