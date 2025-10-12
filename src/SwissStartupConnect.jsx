@@ -36,6 +36,81 @@ import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 import JobMapView from './JobMapView';
 
+const sortEventsByScheduleStatic = (list) => {
+  if (!Array.isArray(list)) {
+    return [];
+  }
+  return [...list].sort((a, b) => {
+    const buildDateValue = (entry) => {
+      if (!entry || !entry.event_date) {
+        return 0;
+      }
+      const time = entry.event_time ? String(entry.event_time) : '00:00';
+      const formattedTime = time.length > 5 ? time.slice(0, 8) : time;
+      const composed = `${entry.event_date}T${formattedTime}`;
+      const value = new Date(composed).getTime();
+      return Number.isFinite(value) ? value : 0;
+    };
+
+    return buildDateValue(a) - buildDateValue(b);
+  });
+};
+
+const MOCK_EVENTS = sortEventsByScheduleStatic([
+  {
+    id: 'mock-event-1',
+    title: 'Zurich HealthTech Meetup',
+    description:
+      'Join health innovators and startup founders for an evening of demos and networking focused on patient-centric care.',
+    location: 'Impact Hub Zurich - Colab',
+    street_address: 'Sihlquai 131',
+    city: 'Zurich',
+    postal_code: '8005',
+    event_date: '2024-09-12',
+    event_time: '18:30',
+    poster_url: null,
+  },
+  {
+    id: 'mock-event-2',
+    title: 'Geneva Climate Tech Roundtable',
+    description:
+      'Founders, researchers, and investors explore climate resilience projects and opportunities for collaboration.',
+    location: 'Campus Biotech Conference Hall',
+    street_address: 'Chemin des Mines 9',
+    city: 'Geneva',
+    postal_code: '1202',
+    event_date: '2024-09-19',
+    event_time: '17:45',
+    poster_url: null,
+  },
+  {
+    id: 'mock-event-3',
+    title: 'Lausanne AI in Manufacturing Lab Tour',
+    description:
+      'Discover how robotics startups are transforming Swiss manufacturing during a guided tour and founder Q&A session.',
+    location: 'EPFL Innovation Park - Building C',
+    street_address: 'Route Cantonale 1C',
+    city: 'Lausanne',
+    postal_code: '1015',
+    event_date: '2024-09-26',
+    event_time: '16:00',
+    poster_url: null,
+  },
+  {
+    id: 'mock-event-4',
+    title: 'Bern GovTech Breakfast Briefing',
+    description:
+      'Discuss digital public services with municipal leaders and startups over coffee and tactical breakout sessions.',
+    location: 'Stadthaus Bern - Forum Room',
+    street_address: 'Junkerngasse 47',
+    city: 'Bern',
+    postal_code: '3000',
+    event_date: '2024-10-03',
+    event_time: '08:30',
+    poster_url: null,
+  },
+]);
+
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English', shortLabel: 'EN' },
   { value: 'fr', label: 'Français', shortLabel: 'FR' },
@@ -4455,7 +4530,7 @@ const SwissStartupConnect = () => {
   const [passwordResetSaving, setPasswordResetSaving] = useState(false);
 
   // Events state
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState(() => sortEventsByScheduleStatic(MOCK_EVENTS));
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [eventForm, setEventForm] = useState({
@@ -4471,24 +4546,7 @@ const SwissStartupConnect = () => {
     poster_file: null,
   });
   const [eventFormSaving, setEventFormSaving] = useState(false);
-  const sortEventsBySchedule = useCallback((list) => {
-    if (!Array.isArray(list)) {
-      return [];
-    }
-    return [...list].sort((a, b) => {
-      const buildDateValue = (entry) => {
-        if (!entry || !entry.event_date) {
-          return 0;
-        }
-        const time = entry.event_time ? String(entry.event_time) : '00:00';
-        const composed = `${entry.event_date}T${time.length > 5 ? time.slice(0, 8) : time}`;
-        const value = new Date(composed).getTime();
-        return Number.isFinite(value) ? value : 0;
-      };
-
-      return buildDateValue(a) - buildDateValue(b);
-    });
-  }, []);
+  const sortEventsBySchedule = useCallback(sortEventsByScheduleStatic, []);
 
   const localizedSelectedJob = useMemo(() => {
     if (!selectedJob) {
@@ -5466,13 +5524,18 @@ const SwissStartupConnect = () => {
 
         if (error) {
           console.error('Events load error', error);
-          setEvents([]);
+          setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
         } else {
-          setEvents(sortEventsBySchedule(data || []));
+          const sortedEvents = sortEventsBySchedule(data || []);
+          if (sortedEvents.length > 0) {
+            setEvents(sortedEvents);
+          } else {
+            setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
+          }
         }
       } catch (error) {
         console.error('Events load error', error);
-        setEvents([]);
+        setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
       } finally {
         setEventsLoading(false);
       }
@@ -9018,7 +9081,12 @@ const SwissStartupConnect = () => {
         .from('events')
         .select('*')
         .order('event_date', { ascending: true });
-      setEvents(sortEventsBySchedule(data || []));
+      const sortedEvents = sortEventsBySchedule(data || []);
+      if (sortedEvents.length > 0) {
+        setEvents(sortedEvents);
+      } else {
+        setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
+      }
     } catch (error) {
       setFeedback({ type: 'error', message: error.message });
     } finally {
@@ -11226,6 +11294,7 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <JobMapView
                 jobs={normalizedJobs}
+                events={events}
                 onJobClick={(job) => {
                   setSelectedJob(job);
                   setShowJobModal(true);

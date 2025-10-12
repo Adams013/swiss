@@ -2,8 +2,9 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import SwitzerlandMap, { resolveCityKeyForJob, SWISS_CITIES } from './SwitzerlandMap';
 import CityJobPanel from './CityJobPanel';
 
-const JobMapView = ({ 
-  jobs = [], 
+const JobMapView = ({
+  jobs = [],
+  events = [],
   onJobClick,
   translate = (key, fallback) => fallback,
   focusJobId = null,
@@ -12,8 +13,24 @@ const JobMapView = ({
   const [selectedCity, setSelectedCity] = useState(null);
   const [cityJobs, setCityJobs] = useState([]);
   const [showJobPanel, setShowJobPanel] = useState(false);
+  const [mapLayer, setMapLayer] = useState('jobs');
+
+  const showJobs = mapLayer === 'jobs' || mapLayer === 'both';
+  const showEvents = mapLayer === 'events' || mapLayer === 'both';
+
+  const mapLayerOptions = useMemo(
+    () => [
+      { value: 'jobs', label: translate('map.toggle.jobs', 'Job opportunities') },
+      { value: 'events', label: translate('map.toggle.events', 'Events') },
+      { value: 'both', label: translate('map.toggle.both', 'Both') },
+    ],
+    [translate]
+  );
 
   const jobsByCity = useMemo(() => {
+    if (!showJobs) {
+      return {};
+    }
     const grouped = {};
     jobs.forEach((job) => {
       const cityKey = resolveCityKeyForJob(job);
@@ -26,13 +43,19 @@ const JobMapView = ({
       grouped[cityKey].push(job);
     });
     return grouped;
-  }, [jobs]);
+  }, [jobs, showJobs]);
 
-  const handleCityClick = useCallback((cityName, jobsInCity) => {
-    setSelectedCity(cityName);
-    setCityJobs(jobsInCity);
-    setShowJobPanel(true);
-  }, []);
+  const handleCityClick = useCallback(
+    (cityName, jobsInCity) => {
+      if (!showJobs) {
+        return;
+      }
+      setSelectedCity(cityName);
+      setCityJobs(jobsInCity);
+      setShowJobPanel(true);
+    },
+    [showJobs]
+  );
 
   const handleClosePanel = useCallback(() => {
     setShowJobPanel(false);
@@ -47,7 +70,7 @@ const JobMapView = ({
   }, [onJobClick]);
 
   useEffect(() => {
-    if (!selectedCity) {
+    if (!selectedCity || !showJobs) {
       setCityJobs([]);
       return;
     }
@@ -62,10 +85,15 @@ const JobMapView = ({
       }
       return nextJobs;
     });
-  }, [jobsByCity, selectedCity]);
+  }, [jobsByCity, selectedCity, showJobs]);
 
   useEffect(() => {
     if (!focusJobId) {
+      return;
+    }
+
+    if (!showJobs) {
+      setMapLayer('jobs');
       return;
     }
 
@@ -96,7 +124,7 @@ const JobMapView = ({
     if (onFocusHandled) {
       onFocusHandled();
     }
-  }, [focusJobId, jobs, jobsByCity, onFocusHandled]);
+  }, [focusJobId, jobs, jobsByCity, onFocusHandled, showJobs]);
 
   const selectedCityLabel = useMemo(() => {
     if (!selectedCity) {
@@ -105,26 +133,76 @@ const JobMapView = ({
     return SWISS_CITIES[selectedCity]?.name || selectedCity;
   }, [selectedCity]);
 
+  useEffect(() => {
+    if (mapLayer === 'events' && showJobPanel) {
+      setShowJobPanel(false);
+      setSelectedCity(null);
+      setCityJobs([]);
+    }
+  }, [mapLayer, showJobPanel]);
+
+  const mapTitle = useMemo(() => {
+    if (mapLayer === 'events') {
+      return translate('map.title.events', 'Events across Switzerland');
+    }
+    if (mapLayer === 'both') {
+      return translate('map.title.both', 'Jobs and events across Switzerland');
+    }
+    return translate('map.title.jobs', translate('map.title', 'Job Locations in Switzerland'));
+  }, [mapLayer, translate]);
+
+  const mapDescription = useMemo(() => {
+    if (mapLayer === 'events') {
+      return translate(
+        'map.description.events',
+        'Browse upcoming startup community events in Swiss cities.'
+      );
+    }
+    if (mapLayer === 'both') {
+      return translate(
+        'map.description.both',
+        'See where opportunities and events overlap to plan your next visit.'
+      );
+    }
+    return translate(
+      'map.description.jobs',
+      translate('map.description', 'Click on a city to see available jobs')
+    );
+  }, [mapLayer, translate]);
+
   return (
     <div className="ssc__map-view">
       <div className="ssc__map-header">
-        <h2 className="ssc__map-title">
-          {translate('map.title', 'Job Locations in Switzerland')}
-        </h2>
-        <p className="ssc__map-description">
-          {translate('map.description', 'Click on a city to see available jobs')}
-        </p>
+        <div>
+          <h2 className="ssc__map-title">{mapTitle}</h2>
+          <p className="ssc__map-description">{mapDescription}</p>
+        </div>
+        <div className="ssc__map-controls" role="group" aria-label={translate('map.toggle.label', 'Show on map')}>
+          {mapLayerOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`ssc__map-toggle ${mapLayer === option.value ? 'is-active' : ''}`}
+              onClick={() => setMapLayer(option.value)}
+              aria-pressed={mapLayer === option.value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="ssc__map-container">
         <SwitzerlandMap
           jobs={jobs}
+          events={events}
           onCityClick={handleCityClick}
           selectedCity={selectedCity}
-          showJobPanel={showJobPanel}
+          showJobPanel={showJobPanel && showJobs}
+          visibleLayer={mapLayer}
         />
-        
-        {showJobPanel && (
+
+        {showJobPanel && showJobs && (
           <CityJobPanel
             selectedCity={selectedCity}
             selectedCityLabel={selectedCityLabel}
@@ -158,6 +236,12 @@ const JobMapView = ({
             <div className="ssc__map-legend-circle ssc__map-legend-circle--lots"></div>
             <span>{translate('map.legend.lots', '20+ jobs')}</span>
           </div>
+          {showEvents && (
+            <div className="ssc__map-legend-item">
+              <div className="ssc__map-legend-circle ssc__map-legend-circle--events"></div>
+              <span>{translate('map.legend.events', 'Events')}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

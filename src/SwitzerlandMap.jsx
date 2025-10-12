@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Briefcase } from 'lucide-react';
+import { MapPin, Briefcase, Calendar } from 'lucide-react';
 
 // Fix for default markers in react-leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -125,11 +125,72 @@ export const resolveCityKeyForJob = (job) => {
   return null;
 };
 
-const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) => {
+const EVENT_MARKER_OUTLINE = '#7c3aed';
+const EVENT_MARKER_FILL = '#a855f7';
+
+export const resolveCityKeyForEvent = (event) => {
+  if (!event) {
+    return null;
+  }
+  const candidates = new Set();
+  const addCandidate = (value) => {
+    if (typeof value !== 'string') {
+      return;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return;
+    }
+    candidates.add(trimmed);
+    trimmed
+      .split(/[,/|•()-]/)
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .forEach((segment) => candidates.add(segment));
+  };
+
+  [
+    event.city,
+    event.location,
+    event.street_address,
+    event.location_name,
+  ].forEach(addCandidate);
+
+  for (const candidate of candidates) {
+    const lookup = CITY_LOOKUP_BY_LOWER[candidate.toLowerCase()];
+    if (lookup) {
+      return lookup;
+    }
+  }
+
+  for (const candidate of candidates) {
+    const loweredCandidate = candidate.toLowerCase();
+    const match = CITY_KEYS_EXCLUDING_REMOTE.find((city) =>
+      loweredCandidate.includes(city.toLowerCase())
+    );
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+};
+
+const SwitzerlandMap = ({
+  jobs = [],
+  events = [],
+  onCityClick,
+  selectedCity,
+  showJobPanel,
+  visibleLayer = 'jobs',
+}) => {
   const [mapCenter] = useState([46.8182, 8.2275]); // Center of Switzerland
   const [mapZoom] = useState(8);
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
+
+  const showJobs = visibleLayer === 'jobs' || visibleLayer === 'both';
+  const showEvents = visibleLayer === 'events' || visibleLayer === 'both';
 
   useEffect(() => {
     // Set map as loaded immediately since CSS is imported statically
@@ -138,6 +199,9 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
 
   // Group jobs by city
   const jobsByCity = useMemo(() => {
+    if (!showJobs) {
+      return {};
+    }
     const grouped = {};
 
     jobs.forEach((job) => {
@@ -153,10 +217,34 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
     });
 
     return grouped;
-  }, [jobs]);
+  }, [jobs, showJobs]);
+
+  const eventsByCity = useMemo(() => {
+    if (!showEvents) {
+      return {};
+    }
+    const grouped = {};
+
+    events.forEach((event) => {
+      const cityKey = resolveCityKeyForEvent(event);
+      if (!cityKey || !SWISS_CITIES[cityKey]) {
+        return;
+      }
+
+      if (!grouped[cityKey]) {
+        grouped[cityKey] = [];
+      }
+      grouped[cityKey].push(event);
+    });
+
+    return grouped;
+  }, [events, showEvents]);
 
   // Create city markers with job counts
   const cityMarkers = useMemo(() => {
+    if (!showJobs) {
+      return [];
+    }
     const getColor = (count) => {
       if (count >= 20) return '#ef4444'; // red
       if (count >= 10) return '#f97316'; // orange
@@ -210,10 +298,82 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
         );
       })
       .filter(Boolean);
-  }, [jobsByCity, onCityClick, selectedCity]);
+  }, [jobsByCity, onCityClick, selectedCity, showJobs]);
+
+  const eventMarkers = useMemo(() => {
+    if (!showEvents) {
+      return [];
+    }
+
+    return Object.entries(eventsByCity)
+      .map(([cityName, cityEvents]) => {
+        const coords = SWISS_CITIES[cityName];
+        if (!coords) {
+          return null;
+        }
+
+        const eventCount = cityEvents.length;
+        if (eventCount === 0) {
+          return null;
+        }
+
+        const baseRadius = 6;
+        const maxRadius = 22;
+        const radius = Math.min(baseRadius + eventCount * 2, maxRadius);
+        const previewEvents = cityEvents.slice(0, 3);
+        const remainingCount = Math.max(eventCount - previewEvents.length, 0);
+
+        return (
+          <CircleMarker
+            key={`event-${cityName}`}
+            center={[coords.lat, coords.lng]}
+            radius={radius}
+            color={EVENT_MARKER_OUTLINE}
+            fillColor={EVENT_MARKER_FILL}
+            fillOpacity={0.65}
+            weight={3}
+          >
+            <Popup>
+              <div className="text-center p-2">
+                <div className="flex items-center justify-center mb-2">
+                  <MapPin className="w-4 h-4 mr-1" />
+                  <span className="font-semibold">{SWISS_CITIES[cityName]?.name || cityName}</span>
+                </div>
+                <div className="flex items-center justify-center mb-2">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  <span className="text-sm">
+                    {eventCount} event{eventCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <ul className="text-left text-sm space-y-1">
+                  {previewEvents.map((event) => {
+                    const timeValue = event.event_time ? String(event.event_time) : '';
+                    const formattedTime = timeValue
+                      ? timeValue.length > 5
+                        ? timeValue.slice(0, 5)
+                        : timeValue
+                      : '';
+                    return (
+                      <li key={event.id} className="leading-snug">
+                        <span className="font-medium">{event.title}</span>
+                        {formattedTime && <span className="text-xs text-gray-500"> · {formattedTime}</span>}
+                      </li>
+                    );
+                  })}
+                  {remainingCount > 0 && (
+                    <li className="text-xs text-gray-500">+{remainingCount} more</li>
+                  )}
+                </ul>
+              </div>
+            </Popup>
+          </CircleMarker>
+        );
+      })
+      .filter(Boolean);
+  }, [eventsByCity, showEvents]);
 
   useEffect(() => {
-    if (!selectedCity || !mapRef.current) {
+    if (!showJobs || !selectedCity || !mapRef.current) {
       return;
     }
     const cityMeta = SWISS_CITIES[selectedCity];
@@ -222,7 +382,7 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
     }
     const targetZoom = Math.max(mapRef.current.getZoom(), 9);
     mapRef.current.flyTo([cityMeta.lat, cityMeta.lng], targetZoom, { duration: 0.6 });
-  }, [selectedCity]);
+  }, [selectedCity, showJobs]);
 
   if (!mapLoaded) {
     return (
@@ -252,6 +412,7 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {cityMarkers}
+        {eventMarkers}
       </MapContainer>
     </div>
   );

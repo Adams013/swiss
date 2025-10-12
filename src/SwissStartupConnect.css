@@ -4223,6 +4223,17 @@
 
 .ssc__map-header {
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .ssc__map-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
 }
 
 .ssc__map-title {
@@ -4235,6 +4246,44 @@
 .ssc__map-description {
   color: #6b7280;
   font-size: 16px;
+}
+
+.ssc__map-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 9999px;
+  align-self: flex-start;
+}
+
+.ssc__map-toggle {
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ssc__map-toggle:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1f2937;
+}
+
+.ssc__map-toggle.is-active {
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
+}
+
+.ssc__map-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .ssc__map-container {
@@ -4493,6 +4542,13 @@
   background: #ef4444;
 }
 
+.ssc__map-legend-circle--events {
+  width: 18px;
+  height: 18px;
+  background: #a855f7;
+  border: 2px solid #7c3aed;
+}
+
 /* Dark mode styles */
 .ssc--dark .ssc__job-panel {
   background: #1f2937;
@@ -4554,6 +4610,25 @@
 
 .ssc--dark .ssc__map-legend-title {
   color: #f9fafb;
+}
+
+.ssc--dark .ssc__map-controls {
+  background: #1f2937;
+}
+
+.ssc--dark .ssc__map-toggle {
+  color: #d1d5db;
+}
+
+.ssc--dark .ssc__map-toggle:hover {
+  background: rgba(55, 65, 81, 0.7);
+  color: #f9fafb;
+}
+
+.ssc--dark .ssc__map-toggle.is-active {
+  background: #374151;
+  color: #f9fafb;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /* Dark mode for map components */
