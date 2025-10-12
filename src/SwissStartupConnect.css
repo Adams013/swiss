@@ -192,6 +192,7 @@
   align-items: center;
   gap: 1.5rem;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .ssc__brand {
@@ -255,6 +256,21 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-start;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.ssc__nav::-webkit-scrollbar {
+  height: 6px;
+}
+
+.ssc__nav::-webkit-scrollbar-thumb {
+  background: rgba(var(--ssc-ink-rgb), 0.16);
+  border-radius: 999px;
 }
 
 .ssc__header-controls {
@@ -263,6 +279,7 @@
   gap: 0.85rem;
   margin-left: auto;
   flex-wrap: nowrap;
+  flex: 0 0 auto;
 }
 
 .ssc__theme-toggle {
@@ -434,6 +451,7 @@
   transition: all 0.2s ease;
   line-height: 1.05;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .ssc__nav-button:hover {
@@ -460,56 +478,39 @@
   transform: translateY(-12px);
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1100px) {
   .ssc__header-inner {
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem 1.25rem;
+    align-items: flex-start;
+    gap: 0.85rem 1.25rem;
   }
 
   .ssc__header-left {
-    width: 100%;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.5rem 1rem;
   }
 
   .ssc__brand {
-    width: 100%;
-    justify-content: center;
-    text-align: center;
+    flex: 0 0 auto;
+    text-align: left;
   }
 
   .ssc__header-left .ssc__nav {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-    row-gap: 0.4rem;
-    margin: 0 auto;
+    flex: 1 1 100%;
+    justify-content: flex-start;
   }
 
   .ssc__header-controls {
-    order: 3;
-    width: 100%;
-    margin: 0;
-    justify-content: center;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: 0.75rem 1rem;
+  }
+
+  .ssc__actions {
+    justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 0.75rem 1.25rem;
-  }
-
-  .ssc__theme-toggle,
-  .ssc__language-toggle,
-  .ssc__actions {
-    margin: 0;
-  }
-
-  .ssc__language-toggle {
-    justify-content: center;
-  }
-
-  .ssc__actions {
-    justify-content: center;
   }
 }
 
