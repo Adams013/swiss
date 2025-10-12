@@ -187,6 +187,13 @@
   transition: min-height 0.3s ease, padding 0.3s ease;
 }
 
+.ssc__header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
 .ssc__brand {
   display: flex;
   align-items: center;
@@ -236,6 +243,7 @@
 .ssc__brand-name {
   font-weight: 700;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .ssc__brand-sub {
@@ -459,14 +467,21 @@
     gap: 1rem 1.25rem;
   }
 
+  .ssc__header-left {
+    width: 100%;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   .ssc__brand {
     width: 100%;
     justify-content: center;
     text-align: center;
   }
 
-  .ssc__nav {
-    order: 2;
+  .ssc__header-left .ssc__nav {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
@@ -4136,6 +4151,13 @@
     text-align: center;
   }
 
+  .ssc__header-left {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
   .ssc__nav {
     order: 3;
     width: 100%;
@@ -4195,6 +4217,10 @@
 
 @media (max-width: 480px) {
   .ssc__header-inner {
+    align-items: flex-start;
+  }
+
+  .ssc__header-left {
     align-items: flex-start;
   }
 

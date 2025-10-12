@@ -9445,31 +9445,33 @@ const SwissStartupConnect = () => {
       )}
       <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
-          <button
-            type="button"
-            className="ssc__brand"
-            onClick={handleBrandClick}
-            aria-label={brandHomeLabel}
-            title={brandHomeLabel}
-          >
-            <div className="ssc__brand-badge">⌁</div>
-            <div className="ssc__brand-text">
-              <span className="ssc__brand-name">SwissStartup Connect</span>
-            </div>
-          </button>
+          <div className="ssc__header-left">
+            <button
+              type="button"
+              className="ssc__brand"
+              onClick={handleBrandClick}
+              aria-label={brandHomeLabel}
+              title={brandHomeLabel}
+            >
+              <div className="ssc__brand-badge">⌁</div>
+              <div className="ssc__brand-text">
+                <span className="ssc__brand-name">SwissStartup Connect</span>
+              </div>
+            </button>
 
-          <nav className="ssc__nav">
-            {navTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
-              >
-                {navLabels[tab]}
-              </button>
-            ))}
-          </nav>
+            <nav className="ssc__nav">
+              {navTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
+                >
+                  {navLabels[tab]}
+                </button>
+              ))}
+            </nav>
+          </div>
 
           <div className="ssc__header-controls">
             <button
