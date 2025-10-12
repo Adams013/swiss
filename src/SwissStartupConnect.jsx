@@ -9147,7 +9147,9 @@ const SwissStartupConnect = () => {
     if (user?.type === 'student') {
       baseTabs.push('messages');
     }
-    baseTabs.push('saved');
+    if (user?.type !== 'student') {
+      baseTabs.push('saved');
+    }
     return baseTabs;
   }, [user?.type]);
 
@@ -9629,6 +9631,17 @@ const SwissStartupConnect = () => {
                       >
                         {translate('accountMenu.security', 'Privacy & security')}
                       </button>
+                      {user.type === 'student' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('saved');
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          {translate('accountMenu.savedRoles', 'Saved roles')}
+                        </button>
+                      )}
                       {user.type === 'startup' && (
                         <>
                           <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>

@@ -259,18 +259,7 @@
   flex: 1 1 auto;
   min-width: 0;
   justify-content: flex-start;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.ssc__nav::-webkit-scrollbar {
-  height: 6px;
-}
-
-.ssc__nav::-webkit-scrollbar-thumb {
-  background: rgba(var(--ssc-ink-rgb), 0.16);
-  border-radius: 999px;
+  flex-wrap: wrap;
 }
 
 .ssc__header-controls {
@@ -4162,8 +4151,8 @@
   .ssc__nav {
     order: 3;
     width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 0.5rem;
   }
 
@@ -4238,7 +4227,7 @@
   .ssc__nav {
     width: 100%;
     justify-content: center;
-    overflow-x: auto;
+    flex-wrap: wrap;
     gap: 0.4rem;
   }
 }
