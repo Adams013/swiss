@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
+import JobMapView from './JobMapView';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English', shortLabel: 'EN' },
@@ -4294,6 +4295,7 @@ const SwissStartupConnect = () => {
     }
   });
   const [selectedJob, setSelectedJob] = useState(null);
+  const [mapFocusJobId, setMapFocusJobId] = useState(null);
 
   const [feedback, setFeedback] = useState(null);
   const [toast, setToast] = useState(null);
@@ -4451,6 +4453,24 @@ const SwissStartupConnect = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordResetError, setPasswordResetError] = useState('');
   const [passwordResetSaving, setPasswordResetSaving] = useState(false);
+
+  // Events state
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    description: '',
+    location: '',
+    street_address: '',
+    city: '',
+    postal_code: '',
+    event_date: '',
+    event_time: '',
+    poster_url: '',
+    poster_file: null,
+  });
+  const [eventFormSaving, setEventFormSaving] = useState(false);
 
   const localizedSelectedJob = useMemo(() => {
     if (!selectedJob) {
@@ -4773,7 +4793,7 @@ const SwissStartupConnect = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') {
-      return undefined;
+      return;
     }
     try {
       window.localStorage.setItem(
@@ -4783,7 +4803,6 @@ const SwissStartupConnect = () => {
     } catch (error) {
       console.error('Failed to persist application threads', error);
     }
-    return undefined;
   }, [applicationThreads]);
 
   useEffect(() => {
@@ -5416,6 +5435,33 @@ const SwissStartupConnect = () => {
 
     fetchApplications();
   }, [user, startupProfile?.id, applicationsVersion]);
+
+  // Fetch events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('event_date', { ascending: true });
+
+        if (error) {
+          console.error('Events load error', error);
+          setEvents([]);
+        } else {
+          setEvents(data || []);
+        }
+      } catch (error) {
+        console.error('Events load error', error);
+        setEvents([]);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const addFilter = (filterId) => {
     setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
@@ -8869,6 +8915,71 @@ const SwissStartupConnect = () => {
     }
   };
 
+  const handleEventSubmit = async (event) => {
+    event.preventDefault();
+    if (!user || user.type !== 'startup' || !startupProfile) return;
+
+    setEventFormSaving(true);
+    try {
+      let posterUrl = eventForm.poster_url;
+
+      // Upload poster if file is provided
+      if (eventForm.poster_file) {
+        const fileExt = eventForm.poster_file.name.split('.').pop();
+        const fileName = `${startupProfile.id}_${Date.now()}.${fileExt}`;
+        const filePath = `event-posters/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-posters')
+          .upload(filePath, eventForm.poster_file);
+
+        if (uploadError) {
+          setFeedback({ type: 'error', message: 'Failed to upload poster image' });
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('event-posters')
+          .getPublicUrl(filePath);
+        
+        posterUrl = publicUrl;
+      }
+
+      const payload = {
+        startup_id: startupProfile.id,
+        title: eventForm.title.trim(),
+        description: eventForm.description.trim(),
+        location: eventForm.location.trim(),
+        street_address: eventForm.street_address.trim(),
+        city: eventForm.city.trim(),
+        postal_code: eventForm.postal_code.trim(),
+        event_date: eventForm.event_date,
+        event_time: eventForm.event_time,
+        poster_url: posterUrl,
+      };
+
+      const { error } = await supabase.from('events').insert(payload);
+      if (error) {
+        setFeedback({ type: 'error', message: error.message });
+        return;
+      }
+
+      setFeedback({ type: 'success', message: 'Event posted successfully!' });
+      closeEventModal();
+      
+      // Refresh events list
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .order('event_date', { ascending: true });
+      setEvents(data || []);
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setEventFormSaving(false);
+    }
+  };
+
   const toggleFollowCompany = (followKey) => {
     if (!followKey) {
       return;
@@ -8898,11 +9009,26 @@ const SwissStartupConnect = () => {
 
   const closeResourceModal = () => setResourceModal(null);
   const closeReviewsModal = () => setReviewsModal(null);
+  const closeEventModal = () => {
+    setEventModalOpen(false);
+    setEventForm({
+      title: '',
+      description: '',
+      location: '',
+      street_address: '',
+      city: '',
+      postal_code: '',
+      event_date: '',
+      event_time: '',
+      poster_url: '',
+      poster_file: null,
+    });
+  };
 
   const navTabs = useMemo(() => {
-    const baseTabs = ['general', 'jobs', 'companies'];
+    const baseTabs = ['general', 'jobs', 'companies', 'map'];
     if (user?.type === 'startup') {
-      baseTabs.push('my-jobs', 'applications');
+      baseTabs.push('my-jobs', 'applications', 'events');
     }
     if (user?.type === 'student') {
       baseTabs.push('messages');
@@ -8919,6 +9045,8 @@ const SwissStartupConnect = () => {
       'my-jobs': translate('nav.myJobs', 'My jobs'),
       applications: translate('nav.applications', 'Applicants'),
       messages: translate('nav.messages', 'Messages'),
+      map: translate('nav.map', 'Map'),
+      events: translate('nav.events', 'Events'),
       saved: translate('nav.saved', 'Saved'),
     }),
     [translate]
@@ -10031,6 +10159,25 @@ const SwissStartupConnect = () => {
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
                               {translate('jobs.viewRole', 'View role')}
                             </button>
+                            <button 
+                              type="button" 
+                              className="ssc__ghost-btn ssc__map-btn" 
+                              onClick={() => {
+                                setMapFocusJobId(job.id);
+                                setActiveTab('map');
+                                // Scroll to map section
+                                setTimeout(() => {
+                                  const mapSection = document.querySelector('[data-tab="map"]');
+                                  if (mapSection) {
+                                    mapSection.scrollIntoView({ behavior: 'smooth' });
+                                  }
+                                }, 100);
+                              }}
+                              title={translate('jobs.showOnMap', 'Show this job on the map')}
+                            >
+                              <MapPin size={16} />
+                              {translate('jobs.showOnMap', 'Show on map')}
+                            </button>
                             {canApply ? (
                               <button
                                 type="button"
@@ -11026,6 +11173,123 @@ const SwissStartupConnect = () => {
           </section>
         )}
 
+        {activeTab === 'map' && (
+          <section className="ssc__section" data-tab="map">
+            <div className="ssc__max">
+              <JobMapView
+                jobs={normalizedJobs}
+                onJobClick={(job) => {
+                  setSelectedJob(job);
+                  setShowJobModal(true);
+                }}
+                translate={translate}
+                focusJobId={mapFocusJobId}
+                onFocusHandled={() => setMapFocusJobId(null)}
+              />
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'events' && user?.type === 'startup' && (
+          <section className="ssc__section">
+            <div className="ssc__max">
+              <div className="ssc__section-header">
+                <div>
+                  <h2>{translate('events.title', 'Events')}</h2>
+                  <p>
+                    {translate(
+                      'events.subtitle',
+                      'Share events you organize or attend to connect with the community.'
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="ssc__primary-btn"
+                  onClick={() => setEventModalOpen(true)}
+                >
+                  {translate('events.postEvent', 'Post Event')}
+                </button>
+              </div>
+
+              {eventsLoading ? (
+                <div className="ssc__loading">Loading events...</div>
+              ) : events.length > 0 ? (
+                <div className="ssc__grid">
+                  {events.map((event) => {
+                    const eventDate = event.event_date ? new Date(event.event_date) : null;
+                    const formattedDate = eventDate
+                      ? eventDate.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : '';
+                    const formattedTime = event.event_time || '';
+                    const fullAddress = [
+                      event.street_address,
+                      event.postal_code,
+                      event.city,
+                    ]
+                      .filter(Boolean)
+                      .join(', ');
+
+                    return (
+                      <article key={event.id} className="ssc__event-card">
+                        {event.poster_url && (
+                          <div className="ssc__event-poster">
+                            <img
+                              src={event.poster_url}
+                              alt={`${event.title} poster`}
+                              className="ssc__event-poster-image"
+                            />
+                          </div>
+                        )}
+                        <div className="ssc__event-content">
+                          <div className="ssc__event-header">
+                            <h3>{event.title}</h3>
+                            <div className="ssc__event-meta">
+                              <div className="ssc__event-date">
+                                <Calendar size={16} />
+                                <span>{formattedDate}</span>
+                              </div>
+                              {formattedTime && (
+                                <div className="ssc__event-time">
+                                  <Clock size={16} />
+                                  <span>{formattedTime}</span>
+                                </div>
+                              )}
+                              <div className="ssc__event-location">
+                                <MapPin size={16} />
+                                <span>{fullAddress}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {event.description && (
+                            <p className="ssc__event-description">{event.description}</p>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ssc__empty-state">
+                  <Calendar size={40} />
+                  <h3>{translate('events.emptyTitle', 'No events yet')}</h3>
+                  <p>
+                    {translate(
+                      'events.emptyDescription',
+                      'Be the first to share an event with the community!'
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {activeTab === 'saved' && (
           <section className="ssc__section">
             <div className="ssc__max">
@@ -11171,6 +11435,25 @@ const SwissStartupConnect = () => {
                           <div className="ssc__job-actions">
                             <button type="button" className="ssc__ghost-btn" onClick={() => setSelectedJob(job)}>
                               {translate('jobs.viewRole', 'View role')}
+                            </button>
+                            <button 
+                              type="button" 
+                              className="ssc__ghost-btn ssc__map-btn" 
+                              onClick={() => {
+                                setMapFocusJobId(job.id);
+                                setActiveTab('map');
+                                // Scroll to map section
+                                setTimeout(() => {
+                                  const mapSection = document.querySelector('[data-tab="map"]');
+                                  if (mapSection) {
+                                    mapSection.scrollIntoView({ behavior: 'smooth' });
+                                  }
+                                }, 100);
+                              }}
+                              title={translate('jobs.showOnMap', 'Show this job on the map')}
+                            >
+                              <MapPin size={16} />
+                              {translate('jobs.showOnMap', 'Show on map')}
                             </button>
                             {canApply ? (
                             <button
@@ -11751,6 +12034,142 @@ const SwissStartupConnect = () => {
                 <span className="ssc__job-note">{applyRestrictionMessage}</span>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {eventModalOpen && (
+        <div className="ssc__modal-overlay" onClick={closeEventModal}>
+          <div className="ssc__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="ssc__modal-header">
+              <h2>{translate('events.postEvent', 'Post Event')}</h2>
+              <button type="button" className="ssc__modal-close" onClick={closeEventModal}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleEventSubmit} className="ssc__modal-form">
+              <div className="ssc__form-group">
+                <label htmlFor="event-title">{translate('events.form.title', 'Event Title')} *</label>
+                <input
+                  id="event-title"
+                  type="text"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
+                  required
+                  placeholder={translate('events.form.titlePlaceholder', 'Enter event title')}
+                />
+              </div>
+
+              <div className="ssc__form-group">
+                <label htmlFor="event-description">{translate('events.form.description', 'Description')}</label>
+                <textarea
+                  id="event-description"
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                  placeholder={translate('events.form.descriptionPlaceholder', 'Describe your event')}
+                />
+              </div>
+
+              <div className="ssc__form-row">
+                <div className="ssc__form-group">
+                  <label htmlFor="event-date">{translate('events.form.date', 'Date')} *</label>
+                  <input
+                    id="event-date"
+                    type="date"
+                    value={eventForm.event_date}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, event_date: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="ssc__form-group">
+                  <label htmlFor="event-time">{translate('events.form.time', 'Time')}</label>
+                  <input
+                    id="event-time"
+                    type="time"
+                    value={eventForm.event_time}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, event_time: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="ssc__form-group">
+                <label htmlFor="event-location">{translate('events.form.location', 'Location Name')} *</label>
+                <input
+                  id="event-location"
+                  type="text"
+                  value={eventForm.location}
+                  onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
+                  required
+                  placeholder={translate('events.form.locationPlaceholder', 'e.g., Zurich Convention Center')}
+                />
+              </div>
+
+              <div className="ssc__form-group">
+                <label htmlFor="event-street">{translate('events.form.street', 'Street Address')} *</label>
+                <input
+                  id="event-street"
+                  type="text"
+                  value={eventForm.street_address}
+                  onChange={(e) => setEventForm(prev => ({ ...prev, street_address: e.target.value }))}
+                  required
+                  placeholder={translate('events.form.streetPlaceholder', 'e.g., Messeplatz 1')}
+                />
+              </div>
+
+              <div className="ssc__form-row">
+                <div className="ssc__form-group">
+                  <label htmlFor="event-city">{translate('events.form.city', 'City')} *</label>
+                  <input
+                    id="event-city"
+                    type="text"
+                    value={eventForm.city}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, city: e.target.value }))}
+                    required
+                    placeholder={translate('events.form.cityPlaceholder', 'e.g., Zurich')}
+                  />
+                </div>
+                <div className="ssc__form-group">
+                  <label htmlFor="event-postal">{translate('events.form.postal', 'Postal Code')} *</label>
+                  <input
+                    id="event-postal"
+                    type="text"
+                    value={eventForm.postal_code}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, postal_code: e.target.value }))}
+                    required
+                    placeholder={translate('events.form.postalPlaceholder', 'e.g., 8005')}
+                  />
+                </div>
+              </div>
+
+              <div className="ssc__form-group">
+                <label htmlFor="event-poster">{translate('events.form.poster', 'Event Poster')}</label>
+                <input
+                  id="event-poster"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setEventForm(prev => ({ ...prev, poster_file: e.target.files[0] }))}
+                />
+                <small className="ssc__form-help">
+                  {translate('events.form.posterHelp', 'Upload an image for your event poster')}
+                </small>
+              </div>
+
+              <div className="ssc__modal-actions">
+                <button type="button" className="ssc__ghost-btn" onClick={closeEventModal}>
+                  {translate('events.form.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="ssc__primary-btn"
+                  disabled={eventFormSaving}
+                >
+                  {eventFormSaving
+                    ? translate('events.form.posting', 'Posting...')
+                    : translate('events.form.post', 'Post Event')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

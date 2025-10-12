@@ -4215,3 +4215,513 @@
     gap: 0.4rem;
   }
 }
+
+/* Map Components */
+.ssc__map-view {
+  width: 100%;
+}
+
+.ssc__map-header {
+  margin-bottom: 16px;
+}
+
+.ssc__map-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.ssc__map-description {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.ssc__map-container {
+  display: flex;
+  gap: 16px;
+  height: 384px; /* h-96 equivalent */
+}
+
+.ssc__map-wrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.ssc__map-wrapper--panel-open {
+  width: 50%;
+}
+
+.ssc__map-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.ssc__map {
+  height: 100%;
+  width: 100%;
+}
+
+.ssc__map .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.ssc__map-container .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ssc__map-container .leaflet-popup-content {
+  margin: 8px;
+  font-family: inherit;
+}
+
+.ssc__city-marker {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ssc__city-marker:hover {
+  transform: scale(1.1);
+}
+
+.ssc__job-panel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ssc__job-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.ssc__job-panel-title {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ssc__job-panel-count {
+  margin-left: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.ssc__job-panel-close {
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.ssc__job-panel-close:hover {
+  background: #e5e7eb;
+}
+
+.ssc__job-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ssc__job-item {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ssc__job-item:hover {
+  background: #f9fafb;
+}
+
+.ssc__job-item:last-child {
+  border-bottom: none;
+}
+
+.ssc__job-item-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.ssc__job-item-main {
+  flex: 1;
+}
+
+.ssc__job-item-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+  transition: color 0.2s;
+}
+
+.ssc__job-item:hover .ssc__job-item-title {
+  color: #2563eb;
+}
+
+.ssc__job-item-company {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.ssc__job-item-details {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.ssc__job-item-detail {
+  display: flex;
+  align-items: center;
+}
+
+.ssc__job-item-salary {
+  font-size: 14px;
+  font-weight: 500;
+  color: #059669;
+  margin-bottom: 8px;
+}
+
+.ssc__job-item-description {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ssc__job-item-arrow {
+  margin-left: 16px;
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+.ssc__job-panel-footer {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  text-align: center;
+}
+
+.ssc__job-panel-footer-text {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.ssc__map-legend {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.ssc__map-legend-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.ssc__map-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.ssc__map-legend-item {
+  display: flex;
+  align-items: center;
+}
+
+.ssc__map-legend-circle {
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.ssc__map-legend-circle--few {
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+}
+
+.ssc__map-legend-circle--some {
+  width: 16px;
+  height: 16px;
+  background: #eab308;
+}
+
+.ssc__map-legend-circle--many {
+  width: 20px;
+  height: 20px;
+  background: #f97316;
+}
+
+.ssc__map-legend-circle--lots {
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+}
+
+/* Dark mode styles */
+.ssc--dark .ssc__job-panel {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.ssc--dark .ssc__job-panel-header {
+  background: #111827;
+  border-color: #374151;
+}
+
+.ssc--dark .ssc__job-panel-title {
+  color: #f9fafb;
+}
+
+.ssc--dark .ssc__job-panel-count {
+  color: #9ca3af;
+}
+
+.ssc--dark .ssc__job-panel-close:hover {
+  background: #374151;
+}
+
+.ssc--dark .ssc__job-item {
+  border-color: #374151;
+}
+
+.ssc--dark .ssc__job-item:hover {
+  background: #111827;
+}
+
+.ssc--dark .ssc__job-item-title {
+  color: #f9fafb;
+}
+
+.ssc--dark .ssc__job-item:hover .ssc__job-item-title {
+  color: #60a5fa;
+}
+
+.ssc--dark .ssc__job-item-company,
+.ssc--dark .ssc__job-item-details,
+.ssc--dark .ssc__job-item-description,
+.ssc--dark .ssc__job-panel-footer-text {
+  color: #9ca3af;
+}
+
+.ssc--dark .ssc__job-item-arrow {
+  color: #6b7280;
+}
+
+.ssc--dark .ssc__job-panel-footer {
+  background: #111827;
+  border-color: #374151;
+}
+
+.ssc--dark .ssc__map-legend {
+  background: #111827;
+}
+
+.ssc--dark .ssc__map-legend-title {
+  color: #f9fafb;
+}
+
+/* Dark mode for map components */
+.ssc--dark .ssc__map-title {
+  color: #f9fafb;
+}
+
+.ssc--dark .ssc__map-description {
+  color: #9ca3af;
+}
+
+.ssc--dark .ssc__map-loading {
+  background: #374151;
+  color: #9ca3af;
+}
+
+/* Show on Map Button */
+.ssc__map-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.ssc__map-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #1f2937;
+}
+
+.ssc__map-btn svg {
+  color: #6b7280;
+}
+
+.ssc__map-btn:hover svg {
+  color: #374151;
+}
+
+/* Dark mode for map button */
+.ssc--dark .ssc__map-btn {
+  border-color: #4b5563;
+  background: #374151;
+  color: #d1d5db;
+}
+
+.ssc--dark .ssc__map-btn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #f3f4f6;
+}
+
+.ssc--dark .ssc__map-btn svg {
+  color: #9ca3af;
+}
+
+.ssc--dark .ssc__map-btn:hover svg {
+  color: #d1d5db;
+}
+
+/* Event Components */
+.ssc__event-card {
+  background: var(--ssc-surface);
+  border: 1px solid var(--ssc-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.ssc__event-card:hover {
+  box-shadow: var(--ssc-glow-primary);
+  transform: translateY(-2px);
+}
+
+.ssc__event-poster {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: var(--ssc-background-mid);
+}
+
+.ssc__event-poster-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ssc__event-content {
+  padding: 20px;
+}
+
+.ssc__event-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ssc-ink);
+  margin-bottom: 12px;
+}
+
+.ssc__event-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ssc__event-date,
+.ssc__event-time,
+.ssc__event-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ssc-muted);
+}
+
+.ssc__event-date svg,
+.ssc__event-time svg,
+.ssc__event-location svg {
+  color: var(--ssc-accent);
+}
+
+.ssc__event-description {
+  color: var(--ssc-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ssc__form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ssc__form-help {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ssc-muted);
+}
+
+/* Dark mode for events */
+.ssc--dark .ssc__event-card {
+  background: var(--ssc-surface);
+  border-color: var(--ssc-border);
+}
+
+.ssc--dark .ssc__event-poster {
+  background: var(--ssc-background-mid);
+}
+
+.ssc--dark .ssc__event-header h3 {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__event-date,
+.ssc--dark .ssc__event-time,
+.ssc--dark .ssc__event-location {
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__event-description {
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__form-help {
+  color: var(--ssc-muted);
+}
