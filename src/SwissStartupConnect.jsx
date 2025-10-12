@@ -9147,9 +9147,6 @@ const SwissStartupConnect = () => {
     if (user?.type === 'student') {
       baseTabs.push('messages');
     }
-    if (user?.type !== 'student') {
-      baseTabs.push('saved');
-    }
     return baseTabs;
   }, [user?.type]);
 
