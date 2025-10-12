@@ -11297,7 +11297,6 @@ const SwissStartupConnect = () => {
                 events={events}
                 onJobClick={(job) => {
                   setSelectedJob(job);
-                  setShowJobModal(true);
                 }}
                 translate={translate}
                 focusJobId={mapFocusJobId}

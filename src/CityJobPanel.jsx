@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { X, MapPin, Briefcase, Clock, Building2, ArrowRight } from 'lucide-react';
 
 const CityJobPanel = ({
@@ -14,6 +14,15 @@ const CityJobPanel = ({
   }
 
   const displayCity = selectedCityLabel || selectedCity;
+
+  const arrangementLabels = useMemo(
+    () => ({
+      on_site: translate('jobs.arrangements.onSite', 'On-site'),
+      hybrid: translate('jobs.arrangements.hybrid', 'Hybrid'),
+      remote: translate('jobs.arrangements.remote', 'Remote'),
+    }),
+    [translate]
+  );
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -95,7 +104,7 @@ const CityJobPanel = ({
                   {job.work_arrangement && (
                     <div className="flex items-center">
                       <Briefcase className="w-4 h-4 mr-1" />
-                      <span>{job.work_arrangement}</span>
+                      <span>{arrangementLabels[job.work_arrangement] || job.work_arrangement}</span>
                     </div>
                   )}
                   {job.created_at && (

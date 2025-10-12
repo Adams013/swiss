@@ -221,24 +221,22 @@ const JobMapView = ({
         </h4>
         <div className="ssc__map-legend-items">
           <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--few"></div>
-            <span>{translate('map.legend.few', '1-4 jobs')}</span>
-          </div>
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--some"></div>
-            <span>{translate('map.legend.some', '5-9 jobs')}</span>
-          </div>
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--many"></div>
-            <span>{translate('map.legend.many', '10-19 jobs')}</span>
-          </div>
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--lots"></div>
-            <span>{translate('map.legend.lots', '20+ jobs')}</span>
+            <div
+              className="ssc__map-legend-marker ssc__map-legend-marker--jobs"
+              aria-hidden="true"
+            >
+              12
+            </div>
+            <span>{translate('map.legend.jobs', 'Jobs')}</span>
           </div>
           {showEvents && (
             <div className="ssc__map-legend-item">
-              <div className="ssc__map-legend-circle ssc__map-legend-circle--events"></div>
+              <div
+                className="ssc__map-legend-marker ssc__map-legend-marker--events"
+                aria-hidden="true"
+              >
+                3
+              </div>
               <span>{translate('map.legend.events', 'Events')}</span>
             </div>
           )}

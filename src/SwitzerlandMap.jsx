@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Briefcase, Calendar } from 'lucide-react';
@@ -125,8 +125,24 @@ export const resolveCityKeyForJob = (job) => {
   return null;
 };
 
-const EVENT_MARKER_OUTLINE = '#7c3aed';
-const EVENT_MARKER_FILL = '#a855f7';
+const MARKER_SIZE = 44;
+
+const buildMarkerIcon = (count, variant, isSelected = false) => {
+  const safeCount = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  const classes = ['ssc__map-marker', `ssc__map-marker--${variant}`];
+
+  if (variant === 'jobs' && isSelected) {
+    classes.push('ssc__map-marker--selected');
+  }
+
+  return L.divIcon({
+    html: `<div class="${classes.join(' ')}"><span>${safeCount}</span></div>`,
+    className: 'ssc__map-marker-container',
+    iconSize: [MARKER_SIZE, MARKER_SIZE],
+    iconAnchor: [MARKER_SIZE / 2, MARKER_SIZE / 2],
+    popupAnchor: [0, -(MARKER_SIZE / 2) + 6],
+  });
+};
 
 export const resolveCityKeyForEvent = (event) => {
   if (!event) {
@@ -245,37 +261,24 @@ const SwitzerlandMap = ({
     if (!showJobs) {
       return [];
     }
-    const getColor = (count) => {
-      if (count >= 20) return '#ef4444'; // red
-      if (count >= 10) return '#f97316'; // orange
-      if (count >= 5) return '#eab308'; // yellow
-      return '#22c55e'; // green
-    };
 
-    return Object.entries(SWISS_CITIES)
-      .map(([cityName, coords]) => {
-        const cityJobs = jobsByCity[cityName] || [];
+    return Object.entries(jobsByCity)
+      .map(([cityName, cityJobs]) => {
+        const coords = SWISS_CITIES[cityName];
+        if (!coords) {
+          return null;
+        }
+
         const jobCount = cityJobs.length;
-
-        if (jobCount === 0) return null;
-
-        // Calculate circle size based on job count
-        const baseRadius = 8;
-        const maxRadius = 25;
-        const radius = Math.min(baseRadius + jobCount * 2, maxRadius);
-        const isSelected = cityName === selectedCity;
-        const color = isSelected ? '#2563eb' : getColor(jobCount);
-        const fill = isSelected ? '#3b82f6' : getColor(jobCount);
+        if (jobCount === 0) {
+          return null;
+        }
 
         return (
-          <CircleMarker
-            key={cityName}
-            center={[coords.lat, coords.lng]}
-            radius={radius}
-            color={color}
-            fillColor={fill}
-            fillOpacity={0.7}
-            weight={isSelected ? 4 : 2}
+          <Marker
+            key={`jobs-${cityName}`}
+            position={[coords.lat, coords.lng]}
+            icon={buildMarkerIcon(jobCount, 'jobs', cityName === selectedCity)}
             eventHandlers={{
               click: () => onCityClick(cityName, cityJobs),
             }}
@@ -284,7 +287,7 @@ const SwitzerlandMap = ({
               <div className="text-center p-2">
                 <div className="flex items-center justify-center mb-2">
                   <MapPin className="w-4 h-4 mr-1" />
-                  <span className="font-semibold">{cityName}</span>
+                  <span className="font-semibold">{SWISS_CITIES[cityName]?.name || cityName}</span>
                 </div>
                 <div className="flex items-center justify-center">
                   <Briefcase className="w-4 h-4 mr-1" />
@@ -294,7 +297,7 @@ const SwitzerlandMap = ({
                 </div>
               </div>
             </Popup>
-          </CircleMarker>
+          </Marker>
         );
       })
       .filter(Boolean);
@@ -317,21 +320,15 @@ const SwitzerlandMap = ({
           return null;
         }
 
-        const baseRadius = 6;
-        const maxRadius = 22;
-        const radius = Math.min(baseRadius + eventCount * 2, maxRadius);
         const previewEvents = cityEvents.slice(0, 3);
         const remainingCount = Math.max(eventCount - previewEvents.length, 0);
 
         return (
-          <CircleMarker
+          <Marker
             key={`event-${cityName}`}
-            center={[coords.lat, coords.lng]}
-            radius={radius}
-            color={EVENT_MARKER_OUTLINE}
-            fillColor={EVENT_MARKER_FILL}
-            fillOpacity={0.65}
-            weight={3}
+            position={[coords.lat, coords.lng]}
+            icon={buildMarkerIcon(eventCount, 'events')}
+            zIndexOffset={400}
           >
             <Popup>
               <div className="text-center p-2">
@@ -366,7 +363,7 @@ const SwitzerlandMap = ({
                 </ul>
               </div>
             </Popup>
-          </CircleMarker>
+          </Marker>
         );
       })
       .filter(Boolean);
