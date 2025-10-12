@@ -131,7 +131,7 @@ const buildMarkerIcon = (count, variant, isSelected = false) => {
   const safeCount = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
   const classes = ['ssc__map-marker', `ssc__map-marker--${variant}`];
 
-  if (variant === 'jobs' && isSelected) {
+  if (isSelected) {
     classes.push('ssc__map-marker--selected');
   }
 
@@ -195,9 +195,11 @@ export const resolveCityKeyForEvent = (event) => {
 const SwitzerlandMap = ({
   jobs = [],
   events = [],
-  onCityClick,
-  selectedCity,
-  showJobPanel,
+  onJobCityClick,
+  onEventCityClick,
+  selectedJobCity,
+  selectedEventCity,
+  panelOpen = false,
   visibleLayer = 'jobs',
 }) => {
   const [mapCenter] = useState([46.8182, 8.2275]); // Center of Switzerland
@@ -278,9 +280,9 @@ const SwitzerlandMap = ({
           <Marker
             key={`jobs-${cityName}`}
             position={[coords.lat, coords.lng]}
-            icon={buildMarkerIcon(jobCount, 'jobs', cityName === selectedCity)}
+            icon={buildMarkerIcon(jobCount, 'jobs', cityName === selectedJobCity)}
             eventHandlers={{
-              click: () => onCityClick(cityName, cityJobs),
+              click: () => onJobCityClick && onJobCityClick(cityName, cityJobs),
             }}
           >
             <Popup>
@@ -301,7 +303,7 @@ const SwitzerlandMap = ({
         );
       })
       .filter(Boolean);
-  }, [jobsByCity, onCityClick, selectedCity, showJobs]);
+    }, [jobsByCity, onJobCityClick, selectedJobCity, showJobs]);
 
   const eventMarkers = useMemo(() => {
     if (!showEvents) {
@@ -327,8 +329,11 @@ const SwitzerlandMap = ({
           <Marker
             key={`event-${cityName}`}
             position={[coords.lat, coords.lng]}
-            icon={buildMarkerIcon(eventCount, 'events')}
+            icon={buildMarkerIcon(eventCount, 'events', cityName === selectedEventCity)}
             zIndexOffset={400}
+            eventHandlers={{
+              click: () => onEventCityClick && onEventCityClick(cityName, cityEvents),
+            }}
           >
             <Popup>
               <div className="text-center p-2">
@@ -367,30 +372,42 @@ const SwitzerlandMap = ({
         );
       })
       .filter(Boolean);
-  }, [eventsByCity, showEvents]);
+    }, [eventsByCity, onEventCityClick, selectedEventCity, showEvents]);
 
   useEffect(() => {
-    if (!showJobs || !selectedCity || !mapRef.current) {
+    if (!showJobs || !selectedJobCity || !mapRef.current) {
       return;
     }
-    const cityMeta = SWISS_CITIES[selectedCity];
+    const cityMeta = SWISS_CITIES[selectedJobCity];
     if (!cityMeta) {
       return;
     }
     const targetZoom = Math.max(mapRef.current.getZoom(), 9);
     mapRef.current.flyTo([cityMeta.lat, cityMeta.lng], targetZoom, { duration: 0.6 });
-  }, [selectedCity, showJobs]);
+  }, [selectedJobCity, showJobs]);
+
+  useEffect(() => {
+    if (!showEvents || !selectedEventCity || !mapRef.current) {
+      return;
+    }
+    const cityMeta = SWISS_CITIES[selectedEventCity];
+    if (!cityMeta) {
+      return;
+    }
+    const targetZoom = Math.max(mapRef.current.getZoom(), 9);
+    mapRef.current.flyTo([cityMeta.lat, cityMeta.lng], targetZoom, { duration: 0.6 });
+  }, [selectedEventCity, showEvents]);
 
   if (!mapLoaded) {
     return (
-      <div className={`ssc__map-wrapper ${showJobPanel ? 'ssc__map-wrapper--panel-open' : ''}`}>
+      <div className={`ssc__map-wrapper ${panelOpen ? 'ssc__map-wrapper--panel-open' : ''}`}>
         <div className="ssc__map-loading">Loading map...</div>
       </div>
     );
   }
 
   return (
-    <div className={`ssc__map-wrapper ${showJobPanel ? 'ssc__map-wrapper--panel-open' : ''}`}>
+    <div className={`ssc__map-wrapper ${panelOpen ? 'ssc__map-wrapper--panel-open' : ''}`}>
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
