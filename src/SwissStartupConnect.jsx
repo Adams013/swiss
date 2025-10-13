@@ -9673,7 +9673,7 @@ const SwissStartupConnect = () => {
         </div>
       </header>
 
-      <main>
+      <main className="ssc__main">
         {user && !emailVerified && (
           <div className="ssc__notice">
             <p>
