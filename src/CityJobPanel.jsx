@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { X, MapPin, Briefcase, Clock, Building2, ArrowRight } from 'lucide-react';
 
 const CityJobPanel = ({
@@ -15,13 +15,26 @@ const CityJobPanel = ({
 
   const displayCity = selectedCityLabel || selectedCity;
 
+  const arrangementLabels = useMemo(
+    () => ({
+      on_site: translate('jobs.arrangements.onSite', 'On-site'),
+      hybrid: translate('jobs.arrangements.hybrid', 'Hybrid'),
+      remote: translate('jobs.arrangements.remote', 'Remote'),
+    }),
+    [translate]
+  );
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      const value = new Date(dateString);
+      if (Number.isNaN(value.getTime())) {
+        return '';
+      }
+      return value.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
     } catch {
       return '';
@@ -30,114 +43,139 @@ const CityJobPanel = ({
 
   const formatSalary = (job) => {
     if (!job.salary_min && !job.salary_max) return '';
-    
-    const min = job.salary_min ? `CHF ${job.salary_min.toLocaleString()}` : '';
-    const max = job.salary_max ? `CHF ${job.salary_max.toLocaleString()}` : '';
-    
+
+    const formatValue = (value) => {
+      if (!Number.isFinite(Number(value))) {
+        return '';
+      }
+      return Number(value).toLocaleString(undefined, {
+        style: 'currency',
+        currency: 'CHF',
+        maximumFractionDigits: 0,
+      });
+    };
+
+    const min = job.salary_min ? formatValue(job.salary_min) : '';
+    const max = job.salary_max ? formatValue(job.salary_max) : '';
+
     if (min && max) {
-      return `${min} - ${max}`;
+      return `${min} – ${max}`;
     }
     return min || max;
   };
 
+  const jobsCountLabel = translate(
+    'map.panel.jobsCount',
+    `${cityJobs.length} job${cityJobs.length === 1 ? '' : 's'}`
+  );
+
   return (
-    <div className="w-1/2 h-96 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center">
-          <MapPin className="w-5 h-5 text-blue-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-900">
-            Jobs in {displayCity}
-          </h3>
-          <span className="ml-2 text-sm text-gray-500">
-            ({cityJobs.length} job{cityJobs.length !== 1 ? 's' : ''})
+    <aside
+      className="ssc__map-side-panel ssc__map-side-panel--jobs"
+      aria-label={translate('map.panel.jobsAriaLabel', 'Jobs in selected city')}
+      aria-live="polite"
+    >
+      <header className="ssc__map-side-panel-header">
+        <div className="ssc__map-side-panel-heading">
+          <span className="ssc__map-side-panel-icon ssc__map-side-panel-icon--jobs">
+            <MapPin className="w-4 h-4" aria-hidden="true" />
           </span>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5 text-gray-500" />
-        </button>
-      </div>
-
-      {/* Job List */}
-      <div className="flex-1 overflow-y-auto">
-        {cityJobs.map((job) => (
-          <div
-            key={job.id}
-            className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-            onClick={() => onJobClick(job)}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                {/* Job Title */}
-                <h4 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
-                  {job.title || 'Job Title'}
-                </h4>
-                
-                {/* Company */}
-                <div className="flex items-center mb-2">
-                  <Building2 className="w-4 h-4 text-gray-400 mr-1" />
-                  <span className="text-sm text-gray-600">
-                    {job.company_name || job.startup_name || 'Company Name'}
-                  </span>
-                </div>
-
-                {/* Job Details */}
-                <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                  {job.location && (
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      <span>{job.location}</span>
-                    </div>
-                  )}
-                  {job.work_arrangement && (
-                    <div className="flex items-center">
-                      <Briefcase className="w-4 h-4 mr-1" />
-                      <span>{job.work_arrangement}</span>
-                    </div>
-                  )}
-                  {job.created_at && (
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      <span>{formatDate(job.created_at)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Salary */}
-                {formatSalary(job) && (
-                  <div className="text-sm font-medium text-green-600 mb-2">
-                    {formatSalary(job)}
-                  </div>
-                )}
-
-                {/* Description Preview */}
-                {job.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {job.description.substring(0, 150)}
-                    {job.description.length > 150 && '...'}
-                  </p>
-                )}
-              </div>
-
-              {/* Arrow Icon */}
-              <div className="ml-4 flex-shrink-0">
-                <ArrowRight className="w-5 h-5 text-gray-400" />
-              </div>
-            </div>
+          <div>
+            <p className="ssc__map-side-panel-overline">
+              {translate('map.panel.jobsOverline', 'Opportunities spotlight')}
+            </p>
+            <h3 className="ssc__map-side-panel-title">
+              {translate('map.panel.jobsIn', 'Roles in')}{' '}
+              <span className="ssc__map-side-panel-title-highlight">{displayCity}</span>
+            </h3>
           </div>
-        ))}
+        </div>
+        <div className="ssc__map-side-panel-meta">
+          <span className="ssc__map-side-panel-count">{jobsCountLabel}</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ssc__map-side-panel-close"
+            aria-label={translate('map.panel.close', 'Close panel')}
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
+      <div className="ssc__map-side-panel-body">
+        {cityJobs.map((job) => {
+          const arrangementLabel = job.work_arrangement
+            ? arrangementLabels[job.work_arrangement] || job.work_arrangement
+            : '';
+          const postedAt = formatDate(job.created_at);
+          const salaryRange = formatSalary(job);
+
+          return (
+            <button
+              key={job.id || job.title}
+              type="button"
+              className="ssc__map-job-card"
+              onClick={() => onJobClick(job)}
+            >
+              <div className="ssc__map-card-heading">
+                <div>
+                  <h4 className="ssc__map-job-title">{job.title || translate('map.panel.jobFallbackTitle', 'Job opportunity')}</h4>
+                  <div className="ssc__map-job-company">
+                    <Building2 className="w-4 h-4" aria-hidden="true" />
+                    <span>
+                      {job.company_name || job.startup_name || translate('map.panel.jobFallbackCompany', 'Startup company')}
+                    </span>
+                  </div>
+                </div>
+                <ArrowRight className="ssc__map-card-arrow" aria-hidden="true" />
+              </div>
+
+              <div className="ssc__map-chip-row">
+                {job.location && (
+                  <span className="ssc__map-chip ssc__map-chip--jobs">
+                    <MapPin className="w-3 h-3" aria-hidden="true" />
+                    <span>{job.location}</span>
+                  </span>
+                )}
+                {arrangementLabel && (
+                  <span className="ssc__map-chip ssc__map-chip--jobs">
+                    <Briefcase className="w-3 h-3" aria-hidden="true" />
+                    <span>{arrangementLabel}</span>
+                  </span>
+                )}
+                {postedAt && (
+                  <span className="ssc__map-chip ssc__map-chip--jobs">
+                    <Clock className="w-3 h-3" aria-hidden="true" />
+                    <span>{postedAt}</span>
+                  </span>
+                )}
+              </div>
+
+              {salaryRange && <div className="ssc__map-job-salary">{salaryRange}</div>}
+
+              {job.description && (
+                <p className="ssc__map-job-description">
+                  {job.description.length > 180
+                    ? `${job.description.slice(0, 177)}...`
+                    : job.description}
+                </p>
+              )}
+
+              <span className="ssc__map-job-cta">
+                {translate('map.panel.viewJob', 'View role details')}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">
-          Click on a job to view details
+      <footer className="ssc__map-side-panel-footer">
+        <p className="ssc__map-side-panel-footer-text">
+          {translate('map.panel.jobsFooter', 'Select a role to open the full job description.')}
         </p>
-      </div>
-    </div>
+      </footer>
+    </aside>
   );
 };
 

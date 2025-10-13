@@ -36,6 +36,81 @@ import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 import JobMapView from './JobMapView';
 
+const sortEventsByScheduleStatic = (list) => {
+  if (!Array.isArray(list)) {
+    return [];
+  }
+  return [...list].sort((a, b) => {
+    const buildDateValue = (entry) => {
+      if (!entry || !entry.event_date) {
+        return 0;
+      }
+      const time = entry.event_time ? String(entry.event_time) : '00:00';
+      const formattedTime = time.length > 5 ? time.slice(0, 8) : time;
+      const composed = `${entry.event_date}T${formattedTime}`;
+      const value = new Date(composed).getTime();
+      return Number.isFinite(value) ? value : 0;
+    };
+
+    return buildDateValue(a) - buildDateValue(b);
+  });
+};
+
+const MOCK_EVENTS = sortEventsByScheduleStatic([
+  {
+    id: 'mock-event-1',
+    title: 'Zurich HealthTech Meetup',
+    description:
+      'Join health innovators and startup founders for an evening of demos and networking focused on patient-centric care.',
+    location: 'Impact Hub Zurich - Colab',
+    street_address: 'Sihlquai 131',
+    city: 'Zurich',
+    postal_code: '8005',
+    event_date: '2024-09-12',
+    event_time: '18:30',
+    poster_url: null,
+  },
+  {
+    id: 'mock-event-2',
+    title: 'Geneva Climate Tech Roundtable',
+    description:
+      'Founders, researchers, and investors explore climate resilience projects and opportunities for collaboration.',
+    location: 'Campus Biotech Conference Hall',
+    street_address: 'Chemin des Mines 9',
+    city: 'Geneva',
+    postal_code: '1202',
+    event_date: '2024-09-19',
+    event_time: '17:45',
+    poster_url: null,
+  },
+  {
+    id: 'mock-event-3',
+    title: 'Lausanne AI in Manufacturing Lab Tour',
+    description:
+      'Discover how robotics startups are transforming Swiss manufacturing during a guided tour and founder Q&A session.',
+    location: 'EPFL Innovation Park - Building C',
+    street_address: 'Route Cantonale 1C',
+    city: 'Lausanne',
+    postal_code: '1015',
+    event_date: '2024-09-26',
+    event_time: '16:00',
+    poster_url: null,
+  },
+  {
+    id: 'mock-event-4',
+    title: 'Bern GovTech Breakfast Briefing',
+    description:
+      'Discuss digital public services with municipal leaders and startups over coffee and tactical breakout sessions.',
+    location: 'Stadthaus Bern - Forum Room',
+    street_address: 'Junkerngasse 47',
+    city: 'Bern',
+    postal_code: '3000',
+    event_date: '2024-10-03',
+    event_time: '08:30',
+    poster_url: null,
+  },
+]);
+
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English', shortLabel: 'EN' },
   { value: 'fr', label: 'Français', shortLabel: 'FR' },
@@ -4455,7 +4530,7 @@ const SwissStartupConnect = () => {
   const [passwordResetSaving, setPasswordResetSaving] = useState(false);
 
   // Events state
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState(() => sortEventsByScheduleStatic(MOCK_EVENTS));
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [eventForm, setEventForm] = useState({
@@ -4471,6 +4546,7 @@ const SwissStartupConnect = () => {
     poster_file: null,
   });
   const [eventFormSaving, setEventFormSaving] = useState(false);
+  const sortEventsBySchedule = useCallback(sortEventsByScheduleStatic, []);
 
   const localizedSelectedJob = useMemo(() => {
     if (!selectedJob) {
@@ -5448,20 +5524,25 @@ const SwissStartupConnect = () => {
 
         if (error) {
           console.error('Events load error', error);
-          setEvents([]);
+          setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
         } else {
-          setEvents(data || []);
+          const sortedEvents = sortEventsBySchedule(data || []);
+          if (sortedEvents.length > 0) {
+            setEvents(sortedEvents);
+          } else {
+            setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
+          }
         }
       } catch (error) {
         console.error('Events load error', error);
-        setEvents([]);
+        setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
       } finally {
         setEventsLoading(false);
       }
     };
 
     fetchEvents();
-  }, []);
+  }, [sortEventsBySchedule]);
 
   const addFilter = (filterId) => {
     setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
@@ -8921,6 +9002,34 @@ const SwissStartupConnect = () => {
 
     setEventFormSaving(true);
     try {
+      const trimmedTitle = eventForm.title.trim();
+      const trimmedLocation = eventForm.location.trim();
+      const trimmedStreet = eventForm.street_address.trim();
+      const trimmedCity = eventForm.city.trim();
+      const trimmedPostal = eventForm.postal_code.trim();
+      const trimmedTime = (eventForm.event_time || '').trim();
+
+      if (!/\d/.test(trimmedStreet)) {
+        setFeedback({
+          type: 'error',
+          message: translate(
+            'events.form.streetNumberError',
+            'Street address must include a building number.'
+          ),
+        });
+        setEventFormSaving(false);
+        return;
+      }
+
+      if (!trimmedTime) {
+        setFeedback({
+          type: 'error',
+          message: translate('events.form.timeRequired', 'Please add a start time for the event.'),
+        });
+        setEventFormSaving(false);
+        return;
+      }
+
       let posterUrl = eventForm.poster_url;
 
       // Upload poster if file is provided
@@ -8947,14 +9056,14 @@ const SwissStartupConnect = () => {
 
       const payload = {
         startup_id: startupProfile.id,
-        title: eventForm.title.trim(),
+        title: trimmedTitle,
         description: eventForm.description.trim(),
-        location: eventForm.location.trim(),
-        street_address: eventForm.street_address.trim(),
-        city: eventForm.city.trim(),
-        postal_code: eventForm.postal_code.trim(),
+        location: trimmedLocation,
+        street_address: trimmedStreet,
+        city: trimmedCity,
+        postal_code: trimmedPostal,
         event_date: eventForm.event_date,
-        event_time: eventForm.event_time,
+        event_time: trimmedTime,
         poster_url: posterUrl,
       };
 
@@ -8972,7 +9081,12 @@ const SwissStartupConnect = () => {
         .from('events')
         .select('*')
         .order('event_date', { ascending: true });
-      setEvents(data || []);
+      const sortedEvents = sortEventsBySchedule(data || []);
+      if (sortedEvents.length > 0) {
+        setEvents(sortedEvents);
+      } else {
+        setEvents(sortEventsByScheduleStatic(MOCK_EVENTS));
+      }
     } catch (error) {
       setFeedback({ type: 'error', message: error.message });
     } finally {
@@ -9026,14 +9140,13 @@ const SwissStartupConnect = () => {
   };
 
   const navTabs = useMemo(() => {
-    const baseTabs = ['general', 'jobs', 'companies', 'map'];
+    const baseTabs = ['general', 'jobs', 'companies', 'map', 'events'];
     if (user?.type === 'startup') {
-      baseTabs.push('my-jobs', 'applications', 'events');
+      baseTabs.push('my-jobs', 'applications');
     }
     if (user?.type === 'student') {
       baseTabs.push('messages');
     }
-    baseTabs.push('saved');
     return baseTabs;
   }, [user?.type]);
 
@@ -9066,6 +9179,8 @@ const SwissStartupConnect = () => {
   const languageMenuId = 'ssc-language-menu';
 
   const isStudent = user?.type === 'student';
+  const isStartupUser = user?.type === 'startup';
+  const canPostEvents = isStartupUser && Boolean(startupProfile?.id);
   const isLoggedIn = Boolean(user);
   const canApply = isLoggedIn && isStudent;
   const canSaveJobs = isLoggedIn && isStudent;
@@ -9329,31 +9444,33 @@ const SwissStartupConnect = () => {
       )}
       <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
         <div className="ssc__max ssc__header-inner">
-          <button
-            type="button"
-            className="ssc__brand"
-            onClick={handleBrandClick}
-            aria-label={brandHomeLabel}
-            title={brandHomeLabel}
-          >
-            <div className="ssc__brand-badge">⌁</div>
-            <div className="ssc__brand-text">
-              <span className="ssc__brand-name">SwissStartup Connect</span>
-            </div>
-          </button>
+          <div className="ssc__header-left">
+            <button
+              type="button"
+              className="ssc__brand"
+              onClick={handleBrandClick}
+              aria-label={brandHomeLabel}
+              title={brandHomeLabel}
+            >
+              <div className="ssc__brand-badge">⌁</div>
+              <div className="ssc__brand-text">
+                <span className="ssc__brand-name">SwissStartup Connect</span>
+              </div>
+            </button>
 
-          <nav className="ssc__nav">
-            {navTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
-              >
-                {navLabels[tab]}
-              </button>
-            ))}
-          </nav>
+            <nav className="ssc__nav">
+              {navTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`ssc__nav-button ${activeTab === tab ? 'is-active' : ''}`}
+                >
+                  {navLabels[tab]}
+                </button>
+              ))}
+            </nav>
+          </div>
 
           <div className="ssc__header-controls">
             <button
@@ -9511,6 +9628,17 @@ const SwissStartupConnect = () => {
                       >
                         {translate('accountMenu.security', 'Privacy & security')}
                       </button>
+                      {user.type === 'student' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('saved');
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          {translate('accountMenu.savedRoles', 'Saved roles')}
+                        </button>
+                      )}
                       {user.type === 'startup' && (
                         <>
                           <button type="button" onClick={() => { setActiveTab('my-jobs'); setShowUserMenu(false); }}>
@@ -11178,9 +11306,9 @@ const SwissStartupConnect = () => {
             <div className="ssc__max">
               <JobMapView
                 jobs={normalizedJobs}
+                events={events}
                 onJobClick={(job) => {
                   setSelectedJob(job);
-                  setShowJobModal(true);
                 }}
                 translate={translate}
                 focusJobId={mapFocusJobId}
@@ -11190,7 +11318,7 @@ const SwissStartupConnect = () => {
           </section>
         )}
 
-        {activeTab === 'events' && user?.type === 'startup' && (
+        {activeTab === 'events' && (
           <section className="ssc__section">
             <div className="ssc__max">
               <div className="ssc__section-header">
@@ -11203,13 +11331,50 @@ const SwissStartupConnect = () => {
                     )}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="ssc__primary-btn"
-                  onClick={() => setEventModalOpen(true)}
-                >
-                  {translate('events.postEvent', 'Post Event')}
-                </button>
+                <div className="ssc__section-header-actions">
+                  {canPostEvents ? (
+                    <button
+                      type="button"
+                      className="ssc__primary-btn"
+                      onClick={() => setEventModalOpen(true)}
+                    >
+                      {translate('events.postEvent', 'Post Event')}
+                    </button>
+                  ) : !isLoggedIn ? (
+                    <>
+                      <span className="ssc__info">
+                        {translate(
+                          'events.signInNotice',
+                          'Sign in with your startup account to post an event.'
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        className="ssc__ghost-btn"
+                        onClick={() => {
+                          setIsRegistering(false);
+                          setShowLoginModal(true);
+                        }}
+                      >
+                        {translate('events.signInCta', 'Sign in')}
+                      </button>
+                    </>
+                  ) : isStartupUser ? (
+                    <span className="ssc__info">
+                      {translate(
+                        'events.completeProfileHint',
+                        'Complete your startup profile to post events.'
+                      )}
+                    </span>
+                  ) : (
+                    <span className="ssc__info">
+                      {translate(
+                        'events.startupOnlyPosting',
+                        'Only startup accounts can post events.'
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {eventsLoading ? (
@@ -11218,22 +11383,27 @@ const SwissStartupConnect = () => {
                 <div className="ssc__grid">
                   {events.map((event) => {
                     const eventDate = event.event_date ? new Date(event.event_date) : null;
+                    const dateLocale =
+                      language === 'fr' ? 'fr-CH' : language === 'de' ? 'de-CH' : 'en-GB';
                     const formattedDate = eventDate
-                      ? eventDate.toLocaleDateString('en-US', {
+                      ? eventDate.toLocaleDateString(dateLocale, {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
                         })
                       : '';
-                    const formattedTime = event.event_time || '';
-                    const fullAddress = [
+                    const timeValue = event.event_time ? String(event.event_time) : '';
+                    const formattedTime = timeValue
+                      ? timeValue.length > 5
+                        ? timeValue.slice(0, 5)
+                        : timeValue
+                      : '';
+                    const fullAddressSegments = [
                       event.street_address,
-                      event.postal_code,
-                      event.city,
-                    ]
-                      .filter(Boolean)
-                      .join(', ');
+                      [event.postal_code, event.city].filter(Boolean).join(' '),
+                    ].filter(Boolean);
+                    const fullAddress = fullAddressSegments.join(', ');
 
                     return (
                       <article key={event.id} className="ssc__event-card">
@@ -11250,6 +11420,12 @@ const SwissStartupConnect = () => {
                           <div className="ssc__event-header">
                             <h3>{event.title}</h3>
                             <div className="ssc__event-meta">
+                              {event.location && (
+                                <div className="ssc__event-venue">
+                                  <Building2 size={16} />
+                                  <span>{event.location}</span>
+                                </div>
+                              )}
                               <div className="ssc__event-date">
                                 <Calendar size={16} />
                                 <span>{formattedDate}</span>
@@ -11260,10 +11436,12 @@ const SwissStartupConnect = () => {
                                   <span>{formattedTime}</span>
                                 </div>
                               )}
-                              <div className="ssc__event-location">
-                                <MapPin size={16} />
-                                <span>{fullAddress}</span>
-                              </div>
+                              {fullAddress && (
+                                <div className="ssc__event-location">
+                                  <MapPin size={16} />
+                                  <span>{fullAddress}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           {event.description && (
@@ -12038,7 +12216,7 @@ const SwissStartupConnect = () => {
         </div>
       )}
 
-      {eventModalOpen && (
+      {eventModalOpen && canPostEvents && (
         <div className="ssc__modal-overlay" onClick={closeEventModal}>
           <div className="ssc__modal" onClick={(e) => e.stopPropagation()}>
             <div className="ssc__modal-header">
@@ -12089,6 +12267,7 @@ const SwissStartupConnect = () => {
                     type="time"
                     value={eventForm.event_time}
                     onChange={(e) => setEventForm(prev => ({ ...prev, event_time: e.target.value }))}
+                    required
                   />
                 </div>
               </div>
