@@ -207,8 +207,8 @@ const SwitzerlandMap = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
 
-  const showJobs = visibleLayer === 'jobs' || visibleLayer === 'both';
-  const showEvents = visibleLayer === 'events' || visibleLayer === 'both';
+  const showJobs = visibleLayer === 'jobs';
+  const showEvents = visibleLayer === 'events';
 
   useEffect(() => {
     // Set map as loaded immediately since CSS is imported statically

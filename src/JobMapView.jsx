@@ -22,14 +22,13 @@ const JobMapView = ({
   const [eventCityEntries, setEventCityEntries] = useState([]);
   const [activePanel, setActivePanel] = useState(null); // 'jobs' | 'events' | null
 
-  const showJobs = mapLayer === 'jobs' || mapLayer === 'both';
-  const showEvents = mapLayer === 'events' || mapLayer === 'both';
+  const showJobs = mapLayer === 'jobs';
+  const showEvents = mapLayer === 'events';
 
   const mapLayerOptions = useMemo(
     () => [
       { value: 'jobs', label: translate('map.toggle.jobs', 'Job opportunities') },
       { value: 'events', label: translate('map.toggle.events', 'Events') },
-      { value: 'both', label: translate('map.toggle.both', 'Both') },
     ],
     [translate]
   );
@@ -254,9 +253,6 @@ const JobMapView = ({
     if (mapLayer === 'events') {
       return translate('map.title.events', 'Events across Switzerland');
     }
-    if (mapLayer === 'both') {
-      return translate('map.title.both', 'Jobs and events across Switzerland');
-    }
     return translate('map.title.jobs', translate('map.title', 'Job Locations in Switzerland'));
   }, [mapLayer, translate]);
 
@@ -265,12 +261,6 @@ const JobMapView = ({
       return translate(
         'map.description.events',
         'Browse upcoming startup community events in Swiss cities.'
-      );
-    }
-    if (mapLayer === 'both') {
-      return translate(
-        'map.description.both',
-        'See where opportunities and events overlap to plan your next visit.'
       );
     }
     return translate(
@@ -350,15 +340,17 @@ const JobMapView = ({
           {translate('map.legend', 'Legend')}
         </h4>
         <div className="ssc__map-legend-items">
-          <div className="ssc__map-legend-item">
-            <div
-              className="ssc__map-legend-marker ssc__map-legend-marker--jobs"
-              aria-hidden="true"
-            >
-              12
+          {showJobs && (
+            <div className="ssc__map-legend-item">
+              <div
+                className="ssc__map-legend-marker ssc__map-legend-marker--jobs"
+                aria-hidden="true"
+              >
+                12
+              </div>
+              <span>{translate('map.legend.jobs', 'Jobs')}</span>
             </div>
-            <span>{translate('map.legend.jobs', 'Jobs')}</span>
-          </div>
+          )}
           {showEvents && (
             <div className="ssc__map-legend-item">
               <div
