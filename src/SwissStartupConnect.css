@@ -160,10 +160,36 @@
   text-decoration: underline;
 }
 
+.ssc__main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.ssc__main > * {
+  width: 100%;
+}
+
 .ssc__max {
-  width: min(1100px, 100%);
+  width: 100%;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 0 clamp(1rem, 4vw, 1.75rem);
+  padding-inline: clamp(1.1rem, 4vw, 2.25rem);
+  padding-block: 0;
+}
+
+@media (min-width: 1280px) {
+  .ssc__max {
+    padding-inline: 2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .ssc__max {
+    padding-inline: clamp(1rem, 5vw, 1.5rem);
+  }
 }
 
 .ssc__header {
@@ -185,6 +211,7 @@
   min-height: 72px;
   padding: 0.75rem 0;
   transition: min-height 0.3s ease, padding 0.3s ease;
+  width: 100%;
 }
 
 .ssc__header-left {
@@ -469,21 +496,19 @@
 }
 
 @media (max-width: 1100px) {
-  .ssc__nav {
-    flex-wrap: wrap;
-  }
-
   .ssc__header-inner {
     flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.85rem 1.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
   }
 
   .ssc__header-left {
     flex: 1 1 100%;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 0.5rem 1rem;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
   }
 
   .ssc__brand {
@@ -491,20 +516,21 @@
     text-align: left;
   }
 
-  .ssc__header-left .ssc__nav {
-    flex: 1 1 100%;
-    justify-content: flex-start;
-    margin-right: 0;
+  .ssc__nav {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
   }
 
   .ssc__header-controls {
     flex: 1 1 100%;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 0.75rem 1rem;
   }
 
   .ssc__actions {
-    justify-content: flex-end;
+    justify-content: center;
     flex-wrap: wrap;
   }
 }
@@ -4325,6 +4351,7 @@
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(191, 219, 254, 0.08) 100%);
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-height: 320px;
 }
 
 .ssc__map-wrapper:hover {
@@ -4478,6 +4505,10 @@
   padding: 6px 14px;
   border-radius: 999px;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .ssc__map-side-panel-close {
@@ -4715,7 +4746,7 @@
   }
 
   .ssc__map-wrapper {
-    min-height: 320px;
+    height: clamp(320px, 55vh, 520px);
   }
 
   .ssc__map-side-panel {

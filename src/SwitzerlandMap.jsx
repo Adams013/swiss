@@ -206,14 +206,85 @@ const SwitzerlandMap = ({
   const [mapZoom] = useState(8);
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
+  const wrapperRef = useRef(null);
 
-  const showJobs = visibleLayer === 'jobs' || visibleLayer === 'both';
-  const showEvents = visibleLayer === 'events' || visibleLayer === 'both';
+  const showJobs = visibleLayer === 'jobs';
+  const showEvents = visibleLayer === 'events';
 
   useEffect(() => {
     // Set map as loaded immediately since CSS is imported statically
     setMapLoaded(true);
   }, []);
+
+  useEffect(() => {
+    let frameId;
+    const handleResize = () => {
+      if (!mapRef.current) {
+        return;
+      }
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+      frameId = requestAnimationFrame(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return undefined;
+    }
+
+    let frameId;
+    const observer = new ResizeObserver(() => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+      frameId = requestAnimationFrame(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      });
+    });
+
+    observer.observe(wrapper);
+
+    return () => {
+      observer.disconnect();
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    });
+  }, [mapLoaded, panelOpen, visibleLayer]);
 
   // Group jobs by city
   const jobsByCity = useMemo(() => {
@@ -407,7 +478,10 @@ const SwitzerlandMap = ({
   }
 
   return (
-    <div className={`ssc__map-wrapper ${panelOpen ? 'ssc__map-wrapper--panel-open' : ''}`}>
+    <div
+      ref={wrapperRef}
+      className={`ssc__map-wrapper ${panelOpen ? 'ssc__map-wrapper--panel-open' : ''}`}
+    >
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
