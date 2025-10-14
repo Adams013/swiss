@@ -42,26 +42,67 @@ const CityJobPanel = ({
   };
 
   const formatSalary = (job) => {
-    if (!job.salary_min && !job.salary_max) return '';
+    const salaryText = typeof job.salary === 'string' ? job.salary.trim() : '';
+    if (salaryText) {
+      return salaryText;
+    }
+
+    const parseValue = (primary, fallback) => {
+      if (Number.isFinite(primary)) {
+        return primary;
+      }
+
+      if (Number.isFinite(fallback)) {
+        return fallback;
+      }
+
+      if (typeof fallback === 'string') {
+        const match = fallback.trim().toLowerCase().match(/(-?\d+(?:[.,]\d+)?)(k|m)?/);
+        if (!match) {
+          return null;
+        }
+
+        let numeric = Number.parseFloat(match[1].replace(',', '.'));
+        if (!Number.isFinite(numeric)) {
+          return null;
+        }
+
+        if (match[2] === 'm') numeric *= 1_000_000;
+        if (match[2] === 'k') numeric *= 1_000;
+        return numeric;
+      }
+
+      return null;
+    };
+
+    const minValue = parseValue(job.salary_min_value, job.salary_min);
+    const maxValue = parseValue(job.salary_max_value, job.salary_max);
+
+    if (!Number.isFinite(minValue) && !Number.isFinite(maxValue)) {
+      return '';
+    }
 
     const formatValue = (value) => {
-      if (!Number.isFinite(Number(value))) {
+      if (!Number.isFinite(value) || value <= 0) {
         return '';
       }
-      return Number(value).toLocaleString(undefined, {
+
+      const rounded = Math.round(value);
+      return rounded.toLocaleString(undefined, {
         style: 'currency',
         currency: 'CHF',
         maximumFractionDigits: 0,
       });
     };
 
-    const min = job.salary_min ? formatValue(job.salary_min) : '';
-    const max = job.salary_max ? formatValue(job.salary_max) : '';
+    const min = formatValue(minValue);
+    const max = formatValue(maxValue);
 
     if (min && max) {
       return `${min} – ${max}`;
     }
-    return min || max;
+
+    return min || max || '';
   };
 
   const jobsCountLabel = translate(
