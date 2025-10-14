@@ -57,18 +57,64 @@ const CityJobPanel = ({
       }
 
       if (typeof fallback === 'string') {
-        const match = fallback.trim().toLowerCase().match(/(-?\d+(?:[.,]\d+)?)(k|m)?/);
+        const match = fallback
+          .trim()
+          .toLowerCase()
+          .match(/(-?[\d\s.,'’`´]+)(k|m)?/);
         if (!match) {
           return null;
         }
 
-        let numeric = Number.parseFloat(match[1].replace(',', '.'));
+        const parseLocalizedNumber = (value) => {
+          if (!value) return null;
+
+          const stripGroupingSeparators = (numeric) => {
+            const cleaned = numeric.replace(/[\s\u00A0\u202F'’`´]/g, '');
+            const hasComma = cleaned.includes(',');
+            const hasDot = cleaned.includes('.');
+
+            if (hasComma && hasDot) {
+              const lastComma = cleaned.lastIndexOf(',');
+              const lastDot = cleaned.lastIndexOf('.');
+              const decimalSeparator = lastComma > lastDot ? ',' : '.';
+              const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+              const withoutThousands = cleaned.replace(new RegExp(`\\${thousandsSeparator}`, 'g'), '');
+              return withoutThousands.replace(new RegExp(`\\${decimalSeparator}`, 'g'), '.');
+            }
+
+            const thousandsPattern = /^-?\d{1,3}([,.]\d{3})+$/;
+
+            if (hasComma) {
+              if (thousandsPattern.test(cleaned.replace(/\./g, ''))) {
+                return cleaned.replace(/,/g, '');
+              }
+              return cleaned.replace(/,/g, '.');
+            }
+
+            if (hasDot) {
+              if (thousandsPattern.test(cleaned.replace(/,/g, ''))) {
+                return cleaned.replace(/\./g, '');
+              }
+              return cleaned;
+            }
+
+            return cleaned;
+          };
+
+          const normalized = stripGroupingSeparators(value);
+          if (!normalized) return null;
+
+          const numericValue = Number.parseFloat(normalized);
+          return Number.isFinite(numericValue) ? numericValue : null;
+        };
+
+        const numeric = parseLocalizedNumber(match[1]);
         if (!Number.isFinite(numeric)) {
           return null;
         }
 
-        if (match[2] === 'm') numeric *= 1_000_000;
-        if (match[2] === 'k') numeric *= 1_000;
+        if (match[2] === 'm') return numeric * 1_000_000;
+        if (match[2] === 'k') return numeric * 1_000;
         return numeric;
       }
 
