@@ -246,6 +246,8 @@ const SwitzerlandMap = ({
       }
 
       pendingFrameRef.current = requestAnimationFrame(() => {
+        pendingFrameRef.current = null;
+
         if (!mapRef.current) {
           return;
         }
@@ -308,6 +310,30 @@ const SwitzerlandMap = ({
 
     const observer = new ResizeObserver(() => {
       scheduleInvalidateSize();
+    });
+
+    observer.observe(wrapper);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [scheduleInvalidateSize]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') {
+      return undefined;
+    }
+
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      const isVisible = entries.some((entry) => entry.isIntersecting);
+      if (isVisible) {
+        scheduleInvalidateSize();
+      }
     });
 
     observer.observe(wrapper);
