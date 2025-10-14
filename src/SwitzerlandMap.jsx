@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -207,9 +207,63 @@ const SwitzerlandMap = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
   const wrapperRef = useRef(null);
+  const pendingFrameRef = useRef(null);
+  const pendingTimeoutRef = useRef(null);
 
   const showJobs = visibleLayer === 'jobs';
   const showEvents = visibleLayer === 'events';
+
+  const clearScheduledInvalidation = useCallback(() => {
+    if (pendingFrameRef.current !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(pendingFrameRef.current);
+      pendingFrameRef.current = null;
+    }
+    if (pendingTimeoutRef.current !== null) {
+      clearTimeout(pendingTimeoutRef.current);
+      pendingTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleInvalidateSize = useCallback(
+    (withTrailingDelay = true) => {
+      if (!mapRef.current) {
+        return;
+      }
+
+      clearScheduledInvalidation();
+
+      if (typeof requestAnimationFrame !== 'function') {
+        mapRef.current.invalidateSize();
+        if (withTrailingDelay) {
+          pendingTimeoutRef.current = setTimeout(() => {
+            pendingTimeoutRef.current = null;
+            if (mapRef.current) {
+              mapRef.current.invalidateSize();
+            }
+          }, 200);
+        }
+        return;
+      }
+
+      pendingFrameRef.current = requestAnimationFrame(() => {
+        if (!mapRef.current) {
+          return;
+        }
+
+        mapRef.current.invalidateSize();
+
+        if (withTrailingDelay) {
+          pendingTimeoutRef.current = setTimeout(() => {
+            pendingTimeoutRef.current = null;
+            if (mapRef.current) {
+              mapRef.current.invalidateSize();
+            }
+          }, 200);
+        }
+      });
+    },
+    [clearScheduledInvalidation]
+  );
 
   useEffect(() => {
     // Set map as loaded immediately since CSS is imported statically
@@ -217,30 +271,30 @@ const SwitzerlandMap = ({
   }, []);
 
   useEffect(() => {
-    let frameId;
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
     const handleResize = () => {
-      if (!mapRef.current) {
-        return;
-      }
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
-      frameId = requestAnimationFrame(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
-        }
-      });
+      scheduleInvalidateSize();
     };
 
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    const viewport = window.visualViewport;
+    if (viewport) {
+      viewport.addEventListener('resize', handleResize);
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (frameId) {
-        cancelAnimationFrame(frameId);
+      window.removeEventListener('orientationchange', handleResize);
+      if (viewport) {
+        viewport.removeEventListener('resize', handleResize);
       }
     };
-  }, []);
+  }, [scheduleInvalidateSize]);
 
   useEffect(() => {
     if (typeof ResizeObserver === 'undefined') {
@@ -252,39 +306,56 @@ const SwitzerlandMap = ({
       return undefined;
     }
 
-    let frameId;
     const observer = new ResizeObserver(() => {
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
-      frameId = requestAnimationFrame(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
-        }
-      });
+      scheduleInvalidateSize();
     });
 
     observer.observe(wrapper);
 
     return () => {
       observer.disconnect();
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
     };
-  }, []);
+  }, [scheduleInvalidateSize]);
 
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) {
       return;
     }
 
-    requestAnimationFrame(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
+    scheduleInvalidateSize();
+
+    const timeoutId = setTimeout(() => {
+      scheduleInvalidateSize(false);
+    }, 250);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [mapLoaded, panelOpen, scheduleInvalidateSize, visibleLayer]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        scheduleInvalidateSize();
       }
-    });
-  }, [mapLoaded, panelOpen, visibleLayer]);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [scheduleInvalidateSize]);
+
+  useEffect(() => {
+    return () => {
+      clearScheduledInvalidation();
+    };
+  }, [clearScheduledInvalidation]);
 
   // Group jobs by city
   const jobsByCity = useMemo(() => {
@@ -489,10 +560,10 @@ const SwitzerlandMap = ({
         className="ssc__map"
         whenCreated={(map) => {
           mapRef.current = map;
-          // Ensure map is properly initialized
+          scheduleInvalidateSize();
           setTimeout(() => {
-            map.invalidateSize();
-          }, 100);
+            scheduleInvalidateSize();
+          }, 120);
         }}
       >
         <TileLayer
