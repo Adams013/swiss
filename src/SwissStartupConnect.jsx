@@ -27,7 +27,6 @@ import {
   Trophy,
   Users,
   X,
-  Upload,
   MessageCircle,
   CheckCircle2,
   Star,
