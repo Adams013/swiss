@@ -4375,6 +4375,7 @@
 .ssc__map {
   height: 100%;
   width: 100%;
+  min-height: 320px;
 }
 
 .ssc__map .leaflet-container {
@@ -4747,6 +4748,10 @@
 
   .ssc__map-wrapper {
     height: clamp(320px, 55vh, 520px);
+  }
+
+  .ssc__map {
+    min-height: clamp(320px, 55vh, 520px);
   }
 
   .ssc__map-side-panel {
