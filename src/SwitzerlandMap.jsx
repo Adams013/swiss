@@ -208,7 +208,7 @@ const SwitzerlandMap = ({
   const mapRef = useRef(null);
   const wrapperRef = useRef(null);
   const pendingFrameRef = useRef(null);
-  const pendingTimeoutRef = useRef(null);
+  const pendingTimeoutsRef = useRef(new Set());
 
   const showJobs = visibleLayer === 'jobs';
   const showEvents = visibleLayer === 'events';
@@ -218,50 +218,56 @@ const SwitzerlandMap = ({
       cancelAnimationFrame(pendingFrameRef.current);
       pendingFrameRef.current = null;
     }
-    if (pendingTimeoutRef.current !== null) {
-      clearTimeout(pendingTimeoutRef.current);
-      pendingTimeoutRef.current = null;
+    if (pendingTimeoutsRef.current.size > 0) {
+      pendingTimeoutsRef.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      pendingTimeoutsRef.current.clear();
     }
   }, []);
 
   const scheduleInvalidateSize = useCallback(
-    (withTrailingDelay = true) => {
+    (options = true) => {
       if (!mapRef.current) {
         return;
       }
 
+      const resolvedOptions =
+        typeof options === 'boolean'
+          ? { immediate: true, trailingDelays: options ? [160, 360, 720] : [] }
+          : {
+              immediate: true,
+              trailingDelays: [160, 360, 720],
+              ...options,
+            };
+
       clearScheduledInvalidation();
 
-      if (typeof requestAnimationFrame !== 'function') {
-        mapRef.current.invalidateSize();
-        if (withTrailingDelay) {
-          pendingTimeoutRef.current = setTimeout(() => {
-            pendingTimeoutRef.current = null;
-            if (mapRef.current) {
-              mapRef.current.invalidateSize();
-            }
-          }, 200);
+      const invalidate = () => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize({ animate: false });
         }
-        return;
+      };
+
+      if (resolvedOptions.immediate) {
+        invalidate();
       }
 
-      pendingFrameRef.current = requestAnimationFrame(() => {
-        pendingFrameRef.current = null;
+      if (typeof requestAnimationFrame === 'function') {
+        pendingFrameRef.current = requestAnimationFrame(() => {
+          pendingFrameRef.current = null;
+          invalidate();
+        });
+      } else {
+        invalidate();
+      }
 
-        if (!mapRef.current) {
-          return;
-        }
-
-        mapRef.current.invalidateSize();
-
-        if (withTrailingDelay) {
-          pendingTimeoutRef.current = setTimeout(() => {
-            pendingTimeoutRef.current = null;
-            if (mapRef.current) {
-              mapRef.current.invalidateSize();
-            }
-          }, 200);
-        }
+      resolvedOptions.trailingDelays.forEach((delay) => {
+        const timeoutId = setTimeout(() => {
+          pendingTimeoutsRef.current.delete(timeoutId);
+          invalidate();
+        }, delay);
+        pendingTimeoutsRef.current.add(timeoutId);
       });
     },
     [clearScheduledInvalidation]
