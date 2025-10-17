@@ -36,6 +36,8 @@ import { supabase } from './supabaseClient';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
+import CompanyProfilePage from './components/CompanyProfilePage';
+import { companyProfiles, mockCompanies, companyProfilesById } from './data/companyProfiles';
 
 const sortEventsByScheduleStatic = (list) => {
   if (!Array.isArray(list)) {
@@ -2586,96 +2588,6 @@ const mockJobs = [
   },
 ];
 
-const mockCompanies = [
-  {
-    id: 'mock-company-1',
-    name: 'TechFlow AG',
-    tagline: 'Liquidity intelligence for Swiss SMEs',
-    location: 'Zurich',
-    industry: 'Fintech',
-    team: '65 people',
-    fundraising: 'CHF 28M raised',
-    culture: 'Product-driven, hybrid-first, carbon neutral operations.',
-    website: 'https://techflow.example',
-    verification_status: 'verified',
-    created_at: '2024-01-12T10:00:00Z',
-    translations: {
-      fr: {
-        tagline: 'Intelligence de liquidité pour les PME suisses',
-        industry: 'Fintech',
-        team: '65 personnes',
-        fundraising: 'CHF 28M levés',
-        culture: 'Axé produit, hybride par défaut, opérations neutres en carbone.',
-      },
-      de: {
-        tagline: 'Liquiditätsintelligenz für Schweizer KMU',
-        industry: 'Fintech',
-        team: '65 Personen',
-        fundraising: 'CHF 28 Mio. aufgenommen',
-        culture: 'Produktgetrieben, hybrid-first, CO₂-neutrale Abläufe.',
-      },
-    },
-  },
-  {
-    id: 'mock-company-2',
-    name: 'Alpine Health',
-    tagline: 'Digital care pathways for clinics & telehealth',
-    location: 'Geneva',
-    industry: 'Healthtech',
-    team: '32 people',
-    fundraising: 'CHF 12M raised',
-    culture: 'Human-centred, clinically informed, data trusted.',
-    website: 'https://alpinehealth.example',
-    verification_status: 'pending',
-    created_at: '2024-01-08T09:30:00Z',
-    translations: {
-      fr: {
-        tagline: 'Parcours de soins numériques pour cliniques et télésanté',
-        industry: 'Healthtech',
-        team: '32 personnes',
-        fundraising: 'CHF 12M levés',
-        culture: 'Humain, informé par la clinique, confiance dans les données.',
-      },
-      de: {
-        tagline: 'Digitale Versorgungspfade für Kliniken und Telemedizin',
-        industry: 'Healthtech',
-        team: '32 Personen',
-        fundraising: 'CHF 12 Mio. aufgenommen',
-        culture: 'Menschenzentriert, klinisch fundiert, datenbasiertes Vertrauen.',
-      },
-    },
-  },
-  {
-    id: 'mock-company-3',
-    name: 'Cognivia Labs',
-    tagline: 'ML tooling for scientific breakthroughs',
-    location: 'Lausanne',
-    industry: 'Deep Tech',
-    team: '48 people',
-    fundraising: 'CHF 35M raised',
-    culture: 'Research-rooted, humble experts, fast experimentation.',
-    website: 'https://cognivia.example',
-    verification_status: 'verified',
-    created_at: '2024-01-18T14:45:00Z',
-    translations: {
-      fr: {
-        tagline: 'Outils ML pour des percées scientifiques',
-        industry: 'Deep Tech',
-        team: '48 personnes',
-        fundraising: 'CHF 35M levés',
-        culture: 'Ancrée dans la recherche, expert·e·s humbles, expérimentation rapide.',
-      },
-      de: {
-        tagline: 'ML-Tools für wissenschaftliche Durchbrüche',
-        industry: 'Deep Tech',
-        team: '48 Personen',
-        fundraising: 'CHF 35 Mio. aufgenommen',
-        culture: 'Forschungsbasiert, bodenständige Expert:innen, schnelle Experimente.',
-      },
-    },
-  },
-];
-
 const collectLanguageKeys = (value, accumulator) => {
   if (!value) {
     return;
@@ -4315,6 +4227,7 @@ const SwissStartupConnect = () => {
   const [applicationColumnPresence, setApplicationColumnPresence] = useState({});
   const [jobsLoading, setJobsLoading] = useState(false);
   const [companies, setCompanies] = useState(mockCompanies);
+  const [activeCompanyProfile, setActiveCompanyProfile] = useState(null);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const upsertCompanyFromStartup = useCallback(
     (startupRecord) => {
@@ -9099,6 +9012,70 @@ const SwissStartupConnect = () => {
     });
   };
 
+  const resolveCompanyProfile = (company) => {
+    if (!company) {
+      return null;
+    }
+
+    const idKey = company.id != null ? String(company.id) : '';
+    const normalizedName =
+      typeof company.name === 'string' ? company.name.trim().toLowerCase() : '';
+
+    const catalogMatch =
+      (idKey && companyProfilesById[idKey]) ||
+      (normalizedName
+        ? companyProfiles.find((entry) =>
+            entry.name && entry.name.trim().toLowerCase() === normalizedName
+          )
+        : null);
+
+    if (catalogMatch) {
+      return {
+        ...catalogMatch,
+        ...company,
+        profile: {
+          ...(catalogMatch.profile || {}),
+          ...(company.profile || {}),
+        },
+      };
+    }
+
+    const fallbackProfile = {
+      hero: {
+        headline: company.tagline || '',
+        subheadline: company.culture || '',
+        imageUrl: company.cover_image || company.hero_image || '',
+      },
+      about:
+        company.description ||
+        company.summary ||
+        company.culture ||
+        company.tagline ||
+        '',
+      metrics: [],
+      openRoles: [],
+      team: [],
+      updates: [],
+      ...(company.profile || {}),
+    };
+
+    return {
+      ...company,
+      profile: fallbackProfile,
+    };
+  };
+
+  const openCompanyProfile = (company) => {
+    const resolved = resolveCompanyProfile(company);
+    if (resolved) {
+      setActiveCompanyProfile(resolved);
+    }
+  };
+
+  const closeCompanyProfile = () => {
+    setActiveCompanyProfile(null);
+  };
+
   const closeResourceModal = () => setResourceModal(null);
   const closeReviewsModal = () => setReviewsModal(null);
   const closeEventModal = () => {
@@ -10528,6 +10505,13 @@ const SwissStartupConnect = () => {
                                 {isFollowed
                                   ? translate('companies.following', 'Following')
                                   : translate('companies.follow', 'Follow')}
+                              </button>
+                              <button
+                                type="button"
+                                className="ssc__outline-btn"
+                                onClick={() => openCompanyProfile(company)}
+                              >
+                                {translate('companies.viewProfile', 'View profile')}
                               </button>
                               {company.website && (
                                 <a
@@ -13541,6 +13525,14 @@ const SwissStartupConnect = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {activeCompanyProfile && (
+        <CompanyProfilePage
+          company={activeCompanyProfile}
+          onClose={closeCompanyProfile}
+          translate={translate}
+        />
       )}
 
       {loadingSpinner && <div className="ssc__loading" aria-hidden="true" />}
