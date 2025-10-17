@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
+  "packageManager": "yarn@4.9.4",
   "resolutions": {
     "tailwindcss": "4.1.13"
   },
