@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
+import { fetchJobs } from './services/supabaseJobs';
+import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
 
 const sortEventsByScheduleStatic = (list) => {
@@ -5312,33 +5314,21 @@ const SwissStartupConnect = () => {
   }, [authLoading, loadProfile, loadStartupProfile, user]);
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    const loadJobs = async () => {
       setJobsLoading(true);
       try {
-        const { data, error } = await supabase.from('jobs').select('*');
+        const { jobs: nextJobs, error, fallbackUsed, columnPresenceData } = await fetchJobs({
+          fallbackJobs: mockJobs,
+        });
 
         if (error) {
-          console.info('Falling back to mock jobs', error.message);
-          setJobs(mockJobs);
-          setJobColumnPresence(deriveColumnPresence(mockJobs));
-        } else if (data && data.length > 0) {
-          const mapped = data.map((job) => ({
-            ...job,
-            applicants: job.applicants ?? 0,
-            tags: job.tags ?? [],
-            requirements: job.requirements ?? [],
-            benefits: job.benefits ?? [],
-            posted: job.posted || 'Recently posted',
-            motivational_letter_required: job.motivational_letter_required ?? false,
-          }));
-          const supabaseIds = new Set(mapped.map((job) => job.id));
-          const mergedJobs = [...mapped, ...mockJobs.filter((job) => !supabaseIds.has(job.id))];
-          setJobs(mergedJobs);
-          setJobColumnPresence(deriveColumnPresence(data));
-        } else {
-          setJobs(mockJobs);
-          setJobColumnPresence(deriveColumnPresence(mockJobs));
+          console.error('Job load error', error);
+        } else if (fallbackUsed) {
+          console.info('Using fallback jobs dataset');
         }
+
+        setJobs(nextJobs);
+        setJobColumnPresence(deriveColumnPresence(columnPresenceData));
       } catch (error) {
         console.error('Job load error', error);
         setJobs(mockJobs);
@@ -5348,36 +5338,25 @@ const SwissStartupConnect = () => {
       }
     };
 
-    fetchJobs();
+    loadJobs();
   }, [jobsVersion]);
 
   useEffect(() => {
-    const fetchCompanies = async () => {
+    const loadCompanies = async () => {
       setCompaniesLoading(true);
       try {
-        const { data, error } = await supabase.from('startups').select('*');
+        const { companies: nextCompanies, error, fallbackUsed } = await fetchCompanies({
+          fallbackCompanies: mockCompanies,
+          mapStartupToCompany,
+        });
 
         if (error) {
-          console.info('Falling back to mock companies', error.message);
-          setCompanies(mockCompanies);
-        } else if (data && data.length > 0) {
-          const mapped = data.map((company) => mapStartupToCompany(company)).filter(Boolean);
-          const supabaseIds = new Set(
-            mapped
-              .map((company) => (company.id != null ? String(company.id) : ''))
-              .filter(Boolean)
-          );
-          const merged = [
-            ...mapped,
-            ...mockCompanies.filter((company) => {
-              const idKey = company.id != null ? String(company.id) : '';
-              return idKey ? !supabaseIds.has(idKey) : true;
-            }),
-          ];
-          setCompanies(merged);
-        } else {
-          setCompanies(mockCompanies);
+          console.error('Company load error', error);
+        } else if (fallbackUsed) {
+          console.info('Using fallback companies dataset');
         }
+
+        setCompanies(nextCompanies);
       } catch (error) {
         console.error('Company load error', error);
         setCompanies(mockCompanies);
@@ -5386,7 +5365,7 @@ const SwissStartupConnect = () => {
       }
     };
 
-    fetchCompanies();
+    loadCompanies();
   }, []);
 
   useEffect(() => {
