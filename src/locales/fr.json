@@ -396,6 +396,7 @@
   },
   "accountMenu": {
     "profile": "Profil",
+    "messages": "Messages",
     "security": "Confidentialité & sécurité",
     "logout": "Se déconnecter",
     "myJobs": "Mes offres",

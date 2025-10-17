@@ -20,6 +20,8 @@
   --ssc-glow-accent: rgba(210, 123, 75, 0.2);
   --ssc-glow-alt: rgba(79, 163, 165, 0.24);
   --ssc-ivory-rgb: 253, 250, 243;
+  --ssc-applications-header-bg: rgba(var(--ssc-ink-rgb), 0.04);
+  --ssc-applications-panel-bg: rgba(var(--ssc-ink-rgb), 0.015);
 }
 
 .ssc--dark {
@@ -42,6 +44,8 @@
   --ssc-glow-accent: rgba(246, 184, 146, 0.24);
   --ssc-glow-alt: rgba(140, 232, 221, 0.24);
   --ssc-ivory-rgb: 46, 62, 90;
+  --ssc-applications-header-bg: rgba(30, 45, 72, 0.82);
+  --ssc-applications-panel-bg: rgba(30, 45, 72, 0.6);
 }
 
 .ssc {
@@ -3306,7 +3310,7 @@
   letter-spacing: 0.08em;
   font-weight: 600;
   color: var(--ssc-muted);
-  background: rgba(var(--ssc-ink-rgb), 0.04);
+  background: var(--ssc-applications-header-bg);
 }
 
 .ssc__applications-header span:last-child {
@@ -3400,7 +3404,7 @@
 
 .ssc__applications-panel {
   padding: 0 1.5rem 1.5rem;
-  background: rgba(var(--ssc-ink-rgb), 0.015);
+  background: var(--ssc-applications-panel-bg);
 }
 
 .ssc__applications-panel[hidden] {

@@ -7746,6 +7746,17 @@ const SwissStartupConnect = () => {
                       <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
                         {translate('accountMenu.profile', 'Profile')}
                       </button>
+                      {user.type === 'student' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('messages');
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          {translate('accountMenu.messages', 'Messages')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
