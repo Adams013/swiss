@@ -1,103 +1,44 @@
-# Getting Started with Create React App
+# Swiss Startup Connect
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Environment configuration
 
-## Resolving "This branch has conflicts" in GitHub
+This project now requires explicit Supabase credentials at build time. Copy the sample file and fill in the values provided by your Supabase project:
 
-When GitHub shows a banner that says **"This branch has conflicts that must be resolved"** it means
-changes on your feature branch and the base branch touch the same parts of a file. GitHub will not
-let you merge until the conflicts are addressed locally. To resolve them:
+```bash
+cp .env.example .env.local
+```
 
-1. Pull the latest changes from the base branch (usually `main`):
+Then edit `.env.local` and provide values for:
 
-   ```bash
-   git fetch origin
-   git checkout work
-   git merge origin/main
-   ```
+- `REACT_APP_SUPABASE_URL`
+- `REACT_APP_SUPABASE_ANON_KEY`
 
-2. Git will mark the conflicted files. Open each file and keep the desired code, removing the
-   `<<<<<<<`, `=======`, and `>>>>>>>` markers that Git adds around the conflicting sections.
+These variables are loaded automatically for development (`yarn start`) and production builds (`yarn build`). When they are missing the application falls back to a disabled Supabase client that logs helpful warnings but does not perform any remote operations.
 
-3. Stage the resolved files and complete the merge:
+## Available scripts
 
-   ```bash
-   git add src/SwissStartupConnect.jsx
-   git commit
-   ```
+All scripts are managed through `yarn`.
 
-4. Finally, push the updated branch so the pull request reflects the conflict resolution:
+### `yarn start`
 
-   ```bash
-   git push origin work
-   ```
+Runs the development server after confirming the Supabase environment variables are available. The check will fail with a descriptive message if the configuration is incomplete.
 
-After the push, the warning banner disappears and the pull request can proceed with reviews and the
-final merge.
+### `yarn build`
 
-## Available Scripts
+Creates an optimized production build. The same Supabase environment validation runs before the build starts to avoid incomplete deployments.
 
-In the project directory, you can run:
+### `yarn test`
 
-### `npm start`
+Launches the test runner. Provide the Supabase variables in your environment (for example `REACT_APP_SUPABASE_URL=... REACT_APP_SUPABASE_ANON_KEY=... yarn test --watchAll=false`) if you want to run tests outside of Create React App's default `.env` handling.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### `yarn check-env`
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Runs the Supabase environment validation directly. This is useful for verifying CI/CD configuration.
 
-### `npm test`
+## Deployment
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Deployments must provide the Supabase environment variables as part of their configuration. Refer to your hosting platform's documentation for setting environment variables securely.
 
-### `npm run build`
+## Resolving merge conflicts on GitHub
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+When GitHub reports that "This branch has conflicts that must be resolved", pull the latest changes from the base branch and resolve the conflicts locally. After fixing the conflicts (`<<<<<<<`, `=======`, `>>>>>>>`) stage the files, create a commit, and push the branch again so the pull request can be merged.
