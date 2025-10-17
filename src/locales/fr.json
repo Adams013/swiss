@@ -1,0 +1,867 @@
+{
+  "common": {
+    "errors": {
+      "unknown": "Erreur inconnue"
+    },
+    "dismiss": "Fermer la notification"
+  },
+  "nav": {
+    "general": "Général",
+    "jobs": "Opportunités",
+    "companies": "Startups",
+    "myJobs": "Mes offres",
+    "applications": "Candidatures",
+    "messages": "Messages",
+    "saved": "Favoris",
+    "join": "Rejoindre",
+    "signIn": "Se connecter",
+    "language": "Langue"
+  },
+  "hero": {
+    "badge": "Plébiscité par les startups et universités suisses",
+    "title": "Devenez l’artisan du prochain succès start-up suisse",
+    "subtitle": "Découvrez des stages rémunérés, des postes à temps partiel et des opportunités pour diplômés avec des fondateurs qui vous veulent dès le premier jour.",
+    "searchPlaceholder": "Rechercher une startup, un poste ou une compétence",
+    "searchButton": "Trouver des correspondances",
+    "scrollAria": "Faire défiler vers les filtres"
+  },
+  "stats": {
+    "startups": {
+      "label": "Startups suisses qui recrutent",
+      "detail": "Fintech, santé, climat, deep tech, grand public et bien plus encore.",
+      "value": "2,3k"
+    },
+    "offerTime": {
+      "label": "Délai moyen jusqu'à l'offre",
+      "detail": "Du premier échange à la signature pour les profils étudiants.",
+      "value": "12 jours"
+    },
+    "founders": {
+      "label": "Fondateurs étudiants accompagnés",
+      "detail": "Des étudiants ayant lancé leur projet via notre réseau de partenaires.",
+      "value": "780+"
+    },
+    "time-to-offer": {
+      "label": "Délai moyen jusqu'à l'offre",
+      "detail": "Du premier échange à la signature pour les profils étudiants.",
+      "value": "12 jours"
+    },
+    "student-founders": {
+      "label": "Fondateurs étudiants accompagnés",
+      "detail": "Des étudiants ayant lancé leur projet via notre réseau de partenaires.",
+      "value": "780+"
+    }
+  },
+  "filters": {
+    "title": "Affinez vos résultats",
+    "subtitle": "Choisissez les villes actives, les domaines et la rémunération qui vous correspondent.",
+    "clear": "Réinitialiser",
+    "activeCities": "Villes actives",
+    "roleFocus": "Axes de poste",
+    "salaryRange": "Fourchette salariale",
+    "salaryHelper": {
+      "hour": "CHF horaire",
+      "week": "CHF hebdomadaire",
+      "month": "CHF mensuel (par défaut)",
+      "year": "CHF annuel / total",
+      "fallback": "CHF mensuel"
+    },
+    "salaryCadence": {
+      "hour": "Horaire",
+      "week": "Hebdomadaire",
+      "month": "Mensuel",
+      "year": "Annuel / total"
+    },
+    "salaryCadenceLabel": {
+      "hour": "horaire",
+      "week": "hebdomadaire",
+      "month": "mensuel",
+      "year": "annuel"
+    },
+    "activeCityOptions": {
+      "zurich": "Zurich",
+      "geneva": "Genève",
+      "lausanne": "Lausanne"
+    },
+    "roleFocusOptions": {
+      "engineering": "Ingénierie",
+      "product": "Produit",
+      "growth": "Croissance",
+      "climate": "Climat"
+    },
+    "locations": {
+      "zurich": "Zurich",
+      "geneva": "Genève",
+      "basel": "Bâle",
+      "bern": "Berne",
+      "lausanne": "Lausanne",
+      "lugano": "Lugano",
+      "lucerne": "Lucerne",
+      "stgallen": "Saint-Gall",
+      "fribourg": "Fribourg",
+      "neuchatel": "Neuchâtel",
+      "winterthur": "Winterthour",
+      "zug": "Zoug",
+      "sion": "Sion",
+      "chur": "Coire",
+      "biel": "Bienne",
+      "schaffhausen": "Schaffhouse",
+      "thun": "Thoune",
+      "laChauxDeFonds": "La Chaux-de-Fonds",
+      "locarno": "Locarno",
+      "bellinzona": "Bellinzone",
+      "aarau": "Aarau",
+      "stMoritz": "Saint-Moritz",
+      "cantonZurich": "Canton de Zurich",
+      "cantonBern": "Canton de Berne",
+      "cantonLucerne": "Canton de Lucerne",
+      "cantonUri": "Canton d’Uri",
+      "cantonSchwyz": "Canton de Schwytz",
+      "cantonObwalden": "Canton d’Obwald",
+      "cantonNidwalden": "Canton de Nidwald",
+      "cantonGlarus": "Canton de Glaris",
+      "cantonVaud": "Canton de Vaud",
+      "cantonValais": "Canton du Valais",
+      "cantonNeuchatel": "Canton de Neuchâtel",
+      "cantonGeneva": "Canton de Genève",
+      "cantonJura": "Canton du Jura",
+      "cantonZug": "Canton de Zoug",
+      "cantonFribourg": "Canton de Fribourg",
+      "cantonSolothurn": "Canton de Soleure",
+      "cantonBaselStadt": "Canton de Bâle-Ville",
+      "cantonBaselLandschaft": "Canton de Bâle-Campagne",
+      "cantonSchaffhausen": "Canton de Schaffhouse",
+      "cantonAppenzellAusserrhoden": "Canton d’Appenzell Rhodes-Extérieures",
+      "cantonAppenzellInnerrhoden": "Canton d’Appenzell Rhodes-Intérieures",
+      "cantonStGallen": "Canton de Saint-Gall",
+      "cantonGraubunden": "Canton des Grisons",
+      "cantonAargau": "Canton d’Argovie",
+      "cantonThurgau": "Canton de Thurgovie",
+      "cantonTicino": "Canton du Tessin",
+      "remoteSwitzerland": "Télétravail en Suisse",
+      "hybridZurich": "Hybride – Zurich",
+      "hybridGeneva": "Hybride – Genève",
+      "hybridLausanne": "Hybride – Lausanne",
+      "hybridBasel": "Hybride – Bâle",
+      "acrossSwitzerland": "Partout en Suisse"
+    },
+    "min": "Min",
+    "max": "Max",
+    "salaryAriaGroup": "Rythme salarial",
+    "salaryAriaMin": "Salaire {{cadence}} minimum",
+    "salaryAriaMax": "Salaire {{cadence}} maximum",
+    "salaryAriaMinCurrency": "Salaire {{cadence}} minimum en francs suisses",
+    "salaryAriaMaxCurrency": "Salaire {{cadence}} maximum en francs suisses",
+    "equityRange": "Part en capital",
+    "equityHelper": "Pourcentage de participation",
+    "equityAriaMin": "Équité minimale",
+    "equityAriaMax": "Équité maximale"
+  },
+  "jobs": {
+    "heading": "Offres ouvertes",
+    "subheading": "Des rôles triés sur le volet dans des startups suisses qui accueillent les talents étudiants et débutants.",
+    "rolesCount": "{{count}} offre{{plural}}",
+    "sortLabel": "Trier par",
+    "sort": {
+      "recent": "Plus récentes",
+      "salary": "Salaire le plus élevé",
+      "equity": "Équité la plus élevée"
+    },
+    "applicants": "{{count}} candidat{{plural}}",
+    "viewRole": "Voir le poste",
+    "apply": "Postuler",
+    "applied": "Déjà postulé",
+    "saveRemove": "Retirer des favoris",
+    "saveAdd": "Enregistrer le poste",
+    "saveTooltip": "Connectez-vous avec un compte étudiant pour enregistrer des offres",
+    "thirteenth": "13e salaire",
+    "motivationalTag": "Lettre de motivation",
+    "arrangements": {
+      "onSite": "Sur site",
+      "hybrid": "Hybride",
+      "remote": "Télétravail"
+    },
+    "languagesLabel": "Langues requises",
+    "requirementsHeading": "Pré-requis",
+    "benefitsHeading": "Avantages",
+    "saveForLater": "Enregistrer pour plus tard",
+    "savedLabel": "Enregistré",
+    "applyNow": "Postuler maintenant",
+    "alreadyApplied": "Vous avez déjà postulé pour ce poste.",
+    "companyInfoLink": "Voir l’équipe et les fonds levés",
+    "savedHeading": "Postes enregistrés",
+    "savedSubheading": "Gardez un œil sur les opportunités à revisiter ou à candidater plus tard.",
+    "savedCount": "{{count}} favori{{plural}}",
+    "savedOnlyStudents": "Réservé aux comptes étudiants",
+    "savedSwitch": "Passez sur un compte étudiant pour enregistrer des rôles.",
+    "savedSignInPrompt": "Connectez-vous avec votre compte étudiant pour enregistrer des opportunités pour plus tard.",
+    "savedEmptyTitle": "Aucun favori pour le moment",
+    "savedEmptyDescription": "Touchez le cœur d’une offre pour la garder ici.",
+    "noJobsTitle": "Aucune offre publiée",
+    "noJobsVerified": "Partagez votre première opportunité pour rencontrer des candidats.",
+    "noJobsUnverified": "Faites vérifier votre startup pour publier des offres et attirer des talents.",
+    "postFirstRole": "Publier un premier poste",
+    "applicantsTabHeading": "Candidatures",
+    "viewApplicants": "Voir les candidats",
+    "applyRestrictionStudent": "Réservé aux candidatures étudiantes.",
+    "applyRestrictionSignIn": "Connectez-vous avec un compte étudiant pour postuler.",
+    "applyPromptLogin": "Créez un profil pour postuler.",
+    "applyPromptStudent": "Passez sur un compte étudiant pour postuler.",
+    "applyPromptVerify": "Veuillez vérifier votre adresse e-mail avant de postuler.",
+    "feedbackRemoved": "Retiré de vos favoris.",
+    "feedbackAdded": "Ajouté à vos favoris.",
+    "seeMoreHeading": "Voir plus d’opportunités",
+    "seeMoreBody": "Parcourez les {{count}} postes ouverts sur la page Opportunités.",
+    "seeMoreButton": "Explorer les rôles",
+    "noMatchesTitle": "Aucun résultat",
+    "noMatchesBody": "Retirez un filtre ou élargissez votre fourchette salariale."
+  },
+  "jobForm": {
+    "labels": {
+      "title": "Intitulé du poste",
+      "location": "Ville ou canton",
+      "workArrangement": "Mode de travail",
+      "employmentType": "Type de contrat",
+      "weeklyHours": "Heures hebdomadaires",
+      "internshipLength": "Durée du stage (mois)",
+      "salaryCadence": "Rythme salarial",
+      "languages": "Langues requises",
+      "equity": "Équité (%)",
+      "salaryRange": "Fourchette salariale",
+      "salary": "Salaire",
+      "salaryAmount": "Montant",
+      "salaryMin": "Min",
+      "salaryMax": "Max",
+      "description": "Description du poste",
+      "requirements": "Exigences (une par ligne)",
+      "benefits": "Avantages (un par ligne)",
+      "tags": "Étiquettes (séparées par des virgules)",
+      "motivationalLetter": "Lettre de motivation requise pour ce poste"
+    },
+    "options": {
+      "employmentType": {
+        "fullTime": "Temps plein",
+        "partTime": "Temps partiel",
+        "internship": "Stage",
+        "contract": "Contrat"
+      },
+      "workArrangement": {
+        "select": "Sélectionner un mode",
+        "onSite": "Sur site",
+        "hybrid": "Hybride",
+        "remote": "Télétravail"
+      },
+      "salaryCadence": {
+        "select": "Sélectionner un rythme",
+        "hour": "Horaire",
+        "week": "Hebdomadaire",
+        "month": "Mensuel",
+        "year": "Annuel / total"
+      },
+      "languages": {
+        "english": "Anglais",
+        "french": "Français",
+        "german": "Allemand",
+        "italian": "Italien"
+      }
+    },
+    "placeholders": {
+      "location": "Sélectionnez une localisation en Suisse",
+      "weeklyHours": "ex. 24",
+      "internshipMonths": "ex. 6",
+      "equity": "Optionnel (ex. 0,5)",
+      "salaryExample": "ex. {{example}}",
+      "salarySelect": "Sélectionnez d’abord un rythme",
+      "description": "Sur quoi travaillera la personne ?",
+      "tags": "React, Growth, Fintech"
+    },
+    "notes": {
+      "weeklyHours": "Utilisé pour convertir les salaires mensuels et annuels. Maximum 40 h/semaine.",
+      "internshipLength": "Les stages doivent durer entre 1 et 12 mois.",
+      "equityRange": "Plage autorisée : 0,1 – 100. Laissez vide si aucun.",
+      "languages": "Sélectionnez chaque langue que les candidat·e·s doivent maîtriser."
+    },
+    "salary": {
+      "toggle": "Afficher une fourchette salariale",
+      "helper": {
+        "single": "Saisissez un montant {{cadence}} en CHF (minimum {{minimum}} CHF).{{extra}}",
+        "bracket": "Saisissez des montants {{cadence}} en CHF pour votre fourchette (minimum {{minimum}} CHF).{{extra}}",
+        "partTimeHours": "Les calculs utiliseront {{hours}}.",
+        "partTimeMissing": "Ajoutez des heures hebdomadaires pour convertir le temps partiel.",
+        "chooseCadence": "Choisissez d’abord un rythme salarial avant de saisir les montants."
+      },
+      "preview": {
+        "fullTime": "Équivalent temps plein : {{value}}",
+        "partTime": "Approximation : {{value}}"
+      },
+      "cadence": {
+        "hour": "horaire",
+        "week": "hebdomadaire",
+        "month": "mensuel",
+        "year": "annuel"
+      },
+      "types": {
+        "single": "montant",
+        "bracket": "montants pour votre fourchette"
+      },
+      "placeholder": {
+        "example": "ex. {{example}}",
+        "fallback": "Sélectionnez d’abord un rythme"
+      }
+    },
+    "errors": {
+      "startupProfileIncomplete": "Complétez votre profil startup avant de publier une offre.",
+      "verificationRequired": "Seules les startups vérifiées peuvent publier des offres.",
+      "locationInvalid": "Choisissez une ville, un canton ou une option télétravail en Suisse dans la liste.",
+      "salaryCadenceMissing": "Sélectionnez si le salaire est horaire, hebdomadaire, mensuel ou annuel.",
+      "workArrangementMissing": "Choisissez si le poste est sur site, hybride ou en télétravail.",
+      "salaryMinMissing": "Indiquez le salaire minimum avant de publier l’offre.",
+      "salaryMinBelowMinimum": "Le salaire {{cadence}} doit être au minimum de {{minimum}} CHF.",
+      "salaryMaxMissing": "Indiquez le salaire maximum de la fourchette.",
+      "salaryMaxLessThanMin": "Le salaire maximum ne peut pas être inférieur au salaire minimum.",
+      "salaryMaxBelowMinimum": "Le salaire {{cadence}} doit être au minimum de {{minimum}} CHF.",
+      "weeklyHoursMissing": "Indiquez le nombre d’heures hebdomadaires pour les postes à temps partiel.",
+      "internshipDurationMissing": "Précisez la durée du stage en mois.",
+      "internshipDurationTooLong": "Les stages peuvent durer au maximum 12 mois.",
+      "salaryConversionFailed": "Impossible de convertir le salaire en CHF avec ce rythme.",
+      "equityRange": "L’équité doit être un nombre entre 0,1 et 100.",
+      "languagesMissing": "Sélectionnez au moins une langue demandée pour le poste."
+    },
+    "info": {
+      "partTimeAutoFullTime": "Les postes à temps partiel dépassant 40 h/semaine passent automatiquement à temps plein.",
+      "postedAsFullTime": "Offre publiée en temps plein car elle dépasse 40 heures par semaine."
+    },
+    "actions": {
+      "cancel": "Annuler",
+      "submit": "Publier l’offre",
+      "posting": "Publication…"
+    },
+    "toast": {
+      "published": "Offre publiée avec succès !"
+    },
+    "feedback": {
+      "publishedFullTime": "Offre publiée avec succès ! Publiée en temps plein car elle dépasse 40 heures par semaine."
+    },
+    "modal": {
+      "title": "Publier une nouvelle offre",
+      "subtitle": "Partagez les informations clés pour que les étudiant·e·s comprennent l’opportunité."
+    }
+  },
+  "calculator": {
+    "toggleLabel": "Afficher/masquer le calculateur de salaire",
+    "closeLabel": "Fermer le calculateur de salaire",
+    "chip": "Analyse de la rémunération",
+    "title": "Calculateur de salaire",
+    "empty": "Aucun poste à convertir pour le moment.",
+    "company": "Startup",
+    "role": "Poste",
+    "noRoles": "Aucun poste disponible",
+    "currency": "CHF",
+    "notDisclosed": "Non communiqué",
+    "duration": {
+      "one": "{{count}} mois",
+      "other": "{{count}} mois"
+    },
+    "rows": {
+      "hour": {
+        "label": "Horaire",
+        "suffix": " / heure"
+      },
+      "week": {
+        "label": "Hebdomadaire",
+        "suffix": " / semaine"
+      },
+      "month": {
+        "label": "Mensuel",
+        "suffix": " / mois"
+      },
+      "year": {
+        "label": "Annuel",
+        "suffix": " / an"
+      },
+      "total": {
+        "label": "Total",
+        "durationSuffix": " ({{duration}})",
+        "value": "{{value}} au total{{suffix}}"
+      },
+      "valueWithSuffix": "{{value}}{{suffix}}"
+    },
+    "hoursFallback": "{{hours}} h/semaine",
+    "note": {
+      "base": "Basé sur la fourchette de salaire publiée",
+      "converted": "Converti avec {{hours}}",
+      "contract": "Contrat d’une durée de {{duration}}",
+      "thirteenth": "Les montants annuels incluent un 13e salaire"
+    }
+  },
+  "accountMenu": {
+    "profile": "Profil",
+    "security": "Confidentialité & sécurité",
+    "logout": "Se déconnecter",
+    "myJobs": "Mes offres",
+    "companyProfile": "Profil startup",
+    "postVacancy": "Publier une offre",
+    "viewApplicants": "Voir les candidats",
+    "memberFallback": "Membre"
+  },
+  "security": {
+    "passwordReset": {
+      "fields": {
+        "newPassword": "Nouveau mot de passe",
+        "confirmPassword": "Confirmer le mot de passe"
+      },
+      "buttons": {
+        "submit": "Mettre à jour le mot de passe",
+        "submitting": "Mise à jour…"
+      }
+    },
+    "modal": {
+      "title": "Confidentialité & sécurité",
+      "description": "Gardez votre e-mail de contact à jour et changez régulièrement votre mot de passe pour plus de sécurité.",
+      "sections": {
+        "email": "Modifier l’e-mail",
+        "password": "Modifier le mot de passe"
+      },
+      "fields": {
+        "email": "E-mail",
+        "currentPassword": "Mot de passe actuel",
+        "newPassword": "Nouveau mot de passe",
+        "confirmNewPassword": "Confirmer le nouveau mot de passe"
+      },
+      "buttons": {
+        "saveEmail": "Enregistrer l’e-mail",
+        "savingEmail": "Enregistrement…",
+        "savePassword": "Enregistrer le mot de passe",
+        "savingPassword": "Mise à jour…"
+      }
+    }
+  },
+  "profileModal": {
+    "title": "Mettez à jour votre profil",
+    "subtitle": "Tenez les startups informées de vos derniers projets, études et documents.",
+    "avatarAlt": "Avatar du profil",
+    "fields": {
+      "fullName": "Nom complet",
+      "school": "Université ou école",
+      "program": "Programme",
+      "experience": "Points forts de votre expérience",
+      "bio": "Mini bio",
+      "portfolio": "Portfolio ou LinkedIn",
+      "schoolOptional": "École / université (facultatif)",
+      "role": "Rôle dans cette startup",
+      "hobbies": "Compétences & loisirs (facultatif)",
+      "photo": "Télécharger une photo de profil",
+      "cv": "Télécharger le CV"
+    },
+    "placeholders": {
+      "school": "ETH Zurich, EPFL, HSG, ZHAW…",
+      "program": "BSc Informatique",
+      "experience": "Stage chez AlpTech — dashboards supply; Projet étudiant : Routeur d’énergie intelligent…",
+      "bio": "Décrivez ce qui vous passionne et l’équipe dans laquelle vous vous épanouissez.",
+      "portfolio": "https://",
+      "schoolOptional": "Où avez-vous étudié ?",
+      "role": "Fondateur·rice & CEO, Head of Growth…",
+      "hobbies": "Design sprints, ski, storytelling produit…"
+    },
+    "cvAccepted": "Formats acceptés : PDF, Word (.doc/.docx), TeX.",
+    "viewCurrentCv": "Voir le CV actuel",
+    "cvVisibilityOn": "CV visible par les startups",
+    "cvVisibilityOff": "Garder le CV privé jusqu’à la candidature",
+    "cvStatus": {
+      "empty": "Aucun CV enregistré pour le moment.",
+      "ready": "CV prêt — enregistrez votre profil pour le conserver.",
+      "uploading": "Téléversement en cours…"
+    },
+    "cvActions": {
+      "upload": "Sélectionner un CV",
+      "replace": "Remplacer le CV",
+      "remove": "Supprimer"
+    },
+    "feedback": {
+      "avatarSuccess": "Photo de profil téléversée. Enregistrez votre profil pour la conserver.",
+      "cvSuccess": "CV téléversé. Enregistrez votre profil pour le garder à jour.",
+      "cvRemoved": "CV supprimé. Enregistrez votre profil pour mettre à jour."
+    },
+    "errors": {
+      "save": "Impossible d’enregistrer le profil : {{message}}",
+      "photoNoUrl": "Le téléversement de la photo de profil n’a renvoyé aucune URL.",
+      "photoUpload": "Échec du téléversement de l’avatar : {{message}}",
+      "cvInvalidType": "Téléversez le CV en .pdf, .doc, .docx ou .tex uniquement.",
+      "cvNoUrl": "Le téléversement du CV n’a renvoyé aucune URL.",
+      "cvRowLevelSecurity": "Échec du téléversement du CV : votre compte n’est pas autorisé à stocker des documents dans ce dossier. Réessayez ou mettez à jour le CV de votre profil.",
+      "cvUpload": "Échec du téléversement du CV : {{message}}",
+      "cvStudentOnly": "Seuls les comptes étudiants peuvent téléverser un CV.",
+      "logoNoUrl": "Le téléversement du logo n’a renvoyé aucune URL.",
+      "logoUpload": "Échec du téléversement du logo : {{message}}"
+    },
+    "buttons": {
+      "cancel": "Annuler",
+      "save": "Enregistrer le profil",
+      "saving": "Enregistrement…"
+    }
+  },
+  "startupModal": {
+    "title": "Profil de votre startup",
+    "subtitle": "Partagez des informations officielles pour rassurer les étudiants sur votre équipe.",
+    "fields": {
+      "companyName": "Nom de l’entreprise",
+      "registryId": "Identifiant au registre du commerce",
+      "website": "Site web",
+      "description": "Description",
+      "logo": "Télécharger le logo",
+      "teamSize": "Taille de l’équipe",
+      "fundraising": "Montant levé",
+      "infoLink": "Lien vers plus d’infos"
+    },
+    "placeholders": {
+      "registryId": "CHE-123.456.789",
+      "website": "https://",
+      "description": "Expliquez votre produit, votre traction, vos priorités de recrutement et ce que les talents apprendront.",
+      "teamSize": "ex. 12 personnes",
+      "fundraising": "CHF 2M pré-amorçage, CHF 5M série A…",
+      "infoLink": "https://linkedin.com/company/votrestartup"
+    },
+    "notes": {
+      "infoLink": "Partagez une page publique avec des infos sur l’équipe ou le financement (LinkedIn, Crunchbase…)."
+    },
+    "verification": {
+      "label": "Statut de vérification :",
+      "note": "Indiquez un identifiant officiel et un lien vers un document. Notre équipe vérifie les demandes chaque semaine.",
+      "statuses": {
+        "verified": "Vérifiée",
+        "pending": "En cours de vérification",
+        "unverified": "Non vérifiée"
+      }
+    },
+    "buttons": {
+      "cancel": "Annuler",
+      "save": "Enregistrer le profil startup",
+      "submitting": "Envoi…"
+    },
+    "feedback": {
+      "saved": "Enregistré avec succès ! Les mises à jour de vérification apparaîtront ici.",
+      "submitted": "Profil startup envoyé. Les mises à jour de vérification apparaîtront ici."
+    },
+    "errors": {
+      "save": "Impossible d’enregistrer le profil startup : {{message}}"
+    },
+    "logoAlt": "Logo de la startup"
+  },
+  "toasts": {
+    "saved": "Enregistré avec succès !"
+  },
+  "uploads": {
+    "errors": {
+      "authRequired": "Connectez-vous pour téléverser des fichiers avant de réessayer.",
+      "noPublicUrl": "Le téléversement n’a renvoyé aucune URL publique."
+    }
+  },
+  "authModal": {
+    "titleRegister": "Créez votre profil",
+    "titleLogin": "Bon retour",
+    "bodyRegister": "Parlez-nous de vous afin de vous proposer les bonnes opportunités.",
+    "bodyLogin": "Connectez-vous pour accéder à vos favoris, candidatures et profil.",
+    "fields": {
+      "fullName": "Nom complet",
+      "type": "Je suis",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe"
+    },
+    "typeOptions": {
+      "student": "Étudiant·e",
+      "startup": "Startup"
+    },
+    "actions": {
+      "hide": "Masquer",
+      "show": "Afficher",
+      "forgotPassword": "Mot de passe oublié ?",
+      "createAccount": "Créer un compte",
+      "signIn": "Se connecter"
+    },
+    "switch": {
+      "haveAccount": "Vous avez déjà un compte ?",
+      "newHere": "Nouveau sur SwissStartup Connect ?",
+      "signInInstead": "Se connecter",
+      "createProfile": "Créer un profil"
+    },
+    "errors": {
+      "missingEmail": "Saisissez votre e-mail ci-dessus pour recevoir les instructions de réinitialisation."
+    },
+    "forgot": {
+      "sending": "Envoi de l’e-mail de réinitialisation…",
+      "failed": "Échec de la réinitialisation : {{message}}",
+      "success": "Consultez votre boîte mail pour le lien de réinitialisation."
+    },
+    "feedback": {
+      "verificationSent": "E-mail de vérification envoyé. Vérifiez votre boîte de réception et vos spams.",
+      "confirmEmail": "Confirmez votre e-mail pour débloquer toutes les fonctionnalités.",
+      "welcome": "Bon retour, {{name}} !"
+    },
+    "notice": {
+      "confirmEmail": "Confirmez votre adresse e-mail pour débloquer toutes les fonctionnalités. Une fois confirmé, rafraîchissez la page pour postuler.",
+      "sending": "Envoi…",
+      "resend": "Renvoyer l’e-mail de vérification"
+    }
+  },
+  "companies": {
+    "sort": {
+      "recent": "Plus récentes",
+      "roles": "Plus d’offres"
+    },
+    "followPrompt": "Connectez-vous pour suivre des startups.",
+    "postingsCount": "{{count}} offre{{plural}} active{{plural}}",
+    "postVacancy": "Publier une offre",
+    "verificationRequired": "Vérification requise",
+    "verifyPrompt": "Faites vérifier votre startup pour publier des offres. Ajoutez votre numéro IDE et votre logo.",
+    "completeVerification": "Compléter la vérification",
+    "recentlyPosted": "Publication récente",
+    "applicantsSubheading": "Suivez l’avancement, consultez les lettres de motivation et gérez votre pipeline de recrutement.",
+    "follow": "Suivre",
+    "following": "Suivi",
+    "visitWebsite": "Voir le site",
+    "moreInfo": "Plus d’infos",
+    "reviews": "Avis",
+    "verifiedBadge": "Vérifiée",
+    "defaultName": "Startup vérifiée",
+    "jobCount": {
+      "one": "1 poste ouvert",
+      "other": "{{count}} postes ouverts"
+    },
+    "heading": "Startups à découvrir",
+    "subheading": "Rencontrez les fondateurs qui bâtissent la prochaine génération d’entreprises suisses.",
+    "sortAria": "Trier les startups",
+    "sortLabel": "Trier par",
+    "count": "{{count}} startup{{plural}}",
+    "emptyTitle": "Aucune startup pour le moment",
+    "emptyDescription": "Revenez bientôt pour découvrir les nouvelles équipes qui recrutent sur SwissStartup Connect."
+  },
+  "applications": {
+    "viewCv": "Voir le CV",
+    "noCv": "Aucun CV fourni",
+    "motivationalHeading": "Lettre de motivation",
+    "downloadLetter": "Télécharger la lettre de motivation",
+    "appliedOn": "Candidature du {{date}}",
+    "emptyTitle": "Pas encore de candidatures",
+    "emptyBody": "Partagez votre offre ou publiez un nouveau poste pour recevoir des candidatures.",
+    "statusLabel": "Statut",
+    "status": {
+      "submitted": "Reçue",
+      "in_review": "En cours d’examen",
+      "interviewing": "Entretiens",
+      "offer": "Offre",
+      "hired": "Embauché·e",
+      "rejected": "Refusé·e"
+    },
+    "listHeaders": {
+      "name": "Candidat·e",
+      "university": "Université",
+      "status": "Statut",
+      "applied": "Date"
+    },
+    "statusFeedback": "Candidature marquée comme {{status}}.",
+    "candidateFallback": "Candidat·e",
+    "candidateInitialFallback": "C",
+    "universityFallback": "Université non renseignée",
+    "programFallback": "Programme non renseigné",
+    "appliedDateUnknown": "Date indisponible",
+    "threadTitle": "Communication et planification",
+    "threadEmpty": "Aucun message pour le moment. Lancez la conversation ci-dessous.",
+    "threadPlaceholder": "Partager une mise à jour, confirmer un entretien ou ajouter une note interne…",
+    "threadSubmit": "Ajouter au fil",
+    "threadTypeLabel": "Type d’entrée",
+    "threadTypes": {
+      "message": "Message",
+      "interview": "Entretien",
+      "note": "Note interne"
+    },
+    "threadScheduleLabel": "Date et heure",
+    "threadScheduleHelper": "Indiquez un créneau proposé ou confirmé.",
+    "threadValidation": "Ajoutez un message avant de l’enregistrer.",
+    "threadScheduledFor": "Prévu le {{date}}",
+    "threadMessageLabel": "Message",
+    "threadAuthor": {
+      "you": "Vous",
+      "student": "Candidat·e",
+      "startup": "Équipe startup"
+    },
+    "studentInboxTitle": "Messages",
+    "studentInboxSubtitle": "Les startups vous écriront ici après avoir consulté votre candidature.",
+    "studentInboxEmptyTitle": "Pas encore de messages",
+    "studentInboxEmptyDescription": "Postulez à des rôles et surveillez cette rubrique pour les réponses des startups.",
+    "studentInboxCount": "{{count}} conversation{{plural}}",
+    "studentInboxJobFallback": "Opportunité",
+    "studentInboxCompanyFallback": "Startup",
+    "studentReplyPlaceholder": "Écrivez votre réponse…",
+    "studentReplyCta": "Envoyer la réponse",
+    "studentReplyLocked": "Les startups enverront le premier message. Vous pourrez répondre dès qu’elles vous contactent.",
+    "feedback": {
+      "submitted": "Candidature envoyée ! 🎉",
+      "submittedFallback": "Candidature enregistrée ! 🎉 Nous la synchroniserons dès que les autorisations seront mises à jour."
+    },
+    "errors": {
+      "submit": "Impossible d’envoyer la candidature. Veuillez réessayer."
+    },
+    "acknowledge": "En postulant, vous acceptez que la startup voie vos informations de profil, votre CV, votre lettre de motivation et votre photo de profil."
+  },
+  "featured": {
+    "heading": "Startups mises en avant",
+    "viewAll": "Tout voir",
+    "follow": "Suivre",
+    "following": "Suivi",
+    "singleRole": "1 poste ouvert",
+    "multipleRoles": "{{count}} postes ouverts",
+    "empty": "De nouvelles startups arrivent — revenez bientôt."
+  },
+  "community": {
+    "heading": "Histoires de notre communauté"
+  },
+  "testimonials": {
+    "1": {
+      "quote": "SwissStartup Connect a rendu la découverte des startups alignées avec mes valeurs très simple. J’ai livré du code en production dès la deuxième semaine.",
+      "role": "ETH Zurich, étudiante en ingénierie logicielle"
+    },
+    "2": {
+      "quote": "Nous avons pourvu deux postes growth en un temps record. Les candidats maîtrisaient déjà le marché suisse et étaient prêts à expérimenter.",
+      "role": "Co-fondateur, Helvetia Mobility"
+    }
+  },
+  "steps": {
+    "heading": "Comment ça marche",
+    "description": "Six étapes pour décrocher un poste dans une startup suisse alignée avec vos ambitions.",
+    "items": {
+      "1": {
+        "title": "Créez un profil percutant",
+        "description": "Mettez en avant vos compétences, projets et vos prochaines envies d’apprentissage."
+      },
+      "2": {
+        "title": "Trouvez les startups qui vous correspondent",
+        "description": "Recevez des offres sélectionnées selon vos objectifs, disponibilités et envies."
+      },
+      "3": {
+        "title": "Échangez avec les fondateurs",
+        "description": "Accédez à des introductions ciblées et découvrez ce qu’implique la réussite dès les 90 premiers jours."
+      },
+      "4": {
+        "title": "Planifiez votre trajectoire",
+        "description": "Comparez salaires, équité et modalités via notre calculateur intégré."
+      },
+      "5": {
+        "title": "Lancez la collaboration",
+        "description": "Passez du premier échange à l’offre signée en moins de trois semaines."
+      },
+      "6": {
+        "title": "Célébrez la réussite",
+        "description": "Participez aux sessions alumni pour partager des conseils et préparer votre premier jour."
+      }
+    }
+  },
+  "tips": {
+    "heading": "Conseils carrière startup",
+    "description": "Boostez votre recherche avec les recommandations que les fondateurs donnent le plus souvent.",
+    "items": {
+      "equity": {
+        "title": "L'équité compte",
+        "description": "Demandez les parts proposées — elles peuvent valoir plus que le salaire !"
+      },
+      "growth": {
+        "title": "Potentiel de croissance",
+        "description": "Les startups offrent une progression rapide et des missions variées."
+      },
+      "learn": {
+        "title": "Apprendre vite",
+        "description": "Plongez au cœur de toutes les fonctions et développez une vision globale."
+      }
+    }
+  },
+  "resources": {
+    "heading": "Ressources pour bien démarrer",
+    "description": "Modèles, repères et guides conçus avec des fondateurs suisses.",
+    "visitSite": "Consulter le site officiel",
+    "viewDetails": "Voir les détails",
+    "items": {
+      "1": {
+        "title": "Guide de rémunération des stages en Suisse",
+        "description": "Salaire mensuel médian et remarques sur le coût de la vie pour chaque canton."
+      },
+      "2": {
+        "title": "Modèle de CV prêt pour les fondateurs",
+        "description": "Trois modèles éprouvés et des conseils de rédaction plébiscités par les fondateurs."
+      },
+      "3": {
+        "title": "Liste de contrôle visa & permis",
+        "description": "Guide officiel étape par étape pour étudier et travailler en Suisse."
+      }
+    }
+  },
+  "cta": {
+    "heading": "Prêt·e à co-créer le prochain succès suisse ?",
+    "description": "Rejoignez une communauté sélectionnée de fondateurs, d’opérationnels et d’étudiants qui construisent partout en Suisse.",
+    "primary": "Créer mon profil",
+    "secondary": "Explorer les startups"
+  },
+  "footer": {
+    "madeIn": "© {{year}} SwissStartup Connect. Conçu en Suisse.",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "contact": "Contact"
+  },
+  "modals": {
+    "compensation": {
+      "title": "Salaire médian de stage par canton",
+      "subtitle": "Source : baromètre des stages swissuniversities 2024 + offres publiques (janvier 2025). Montants médians pour des stages de 3 à 12 mois.",
+      "table": {
+        "canton": "Canton",
+        "median": "Indemnité médiane",
+        "expectation": "À quoi vous attendre"
+      },
+      "notes": {
+        "Zürich (ZH)": "Les pôles finance, pharma et big tech offrent les gratifications les plus élevées.",
+        "Bern (BE)": "Les offices fédéraux et les medtech assurent une rémunération stable.",
+        "Luzern (LU)": "Clusters tourisme et santé ; le logement reste accessible.",
+        "Uri (UR)": "Les PME industrielles incluent souvent une participation aux transports.",
+        "Schwyz (SZ)": "La finance et l’automatisation industrielle se disputent les talents.",
+        "Obwalden (OW)": "Les petites entreprises prévoient des indemnités repas ou logement.",
+        "Nidwalden (NW)": "Les fournisseurs aéronautiques s’alignent sur les moyennes nationales.",
+        "Glarus (GL)": "Les stages industriels intègrent un soutien pour le logement.",
+        "Zug (ZG)": "Les scale-ups crypto et matières premières rehaussent les barèmes.",
+        "Fribourg (FR)": "Marché bilingue ; stages de recherche cofinancés par les universités.",
+        "Solothurn (SO)": "Microtech de précision avec indemnités de transport.",
+        "Basel-Stadt (BS)": "Les sciences de la vie alignent les gratifications sur les salaires juniors.",
+        "Basel-Landschaft (BL)": "Chimie et logistique suivent les références bâloises.",
+        "Schaffhausen (SH)": "Les sièges industriels internationaux complètent avec cartes repas.",
+        "Appenzell Ausserrhoden (AR)": "Les entreprises familiales ajoutent transport ou logement.",
+        "Appenzell Innerrhoden (AI)": "Petit bassin ; le coût de vie modéré compense.",
+        "St. Gallen (SG)": "Les labs fintech/textile recrutent auprès de la HSG et de l’OST.",
+        "Graubünden (GR)": "Tourisme et marques outdoor offrent des avantages saisonniers.",
+        "Aargau (AG)": "Énergie et automation proposent des gratifications compétitives.",
+        "Thurgau (TG)": "Agroalimentaire et medtech financent les déplacements.",
+        "Ticino (TI)": "Entreprises transfrontalières mêlent repères lombards et suisses.",
+        "Vaud (VD)": "L’écosystème EPFL et les scale-ups medtech tirent la demande.",
+        "Valais (VS)": "Énergie et tourisme incluent des logements saisonniers.",
+        "Neuchâtel (NE)": "Horlogerie et microtech offrent une rémunération stable.",
+        "Geneva (GE)": "Les organisations internationales ajoutent repas et transports.",
+        "Jura (JU)": "L’industrie de précision investit dans des bonus de montée en compétences."
+      },
+      "footnote": "Les entreprises peuvent ajouter un abonnement de transport, une indemnité repas ou un logement. Vérifiez toujours l’offre finale avant de signer."
+    },
+    "cv": {
+      "title": "Modèles de CV prêts pour les fondateurs",
+      "subtitle": "Commencez avec ces formats recommandés par les recruteurs suisses, puis personnalisez-les grâce aux conseils ci-dessous.",
+      "tipsTitle": "Comment rendre votre CV incontournable",
+      "footnote": "Astuce : exportez au format PDF nommé <code>prenom-nom-cv.pdf</code>. Gardez des versions en anglais et dans la langue locale du canton ciblé (français, allemand ou italien).",
+      "templates": {
+        "europass": "Des sections standardisées qui facilitent la comparaison rapide des profils ; version bilingue prête pour les candidatures en français / allemand.",
+        "novoresume": "Mise en page épurée plébiscitée par les scale-ups suisses pour les étudiants et jeunes diplômés.",
+        "google": "Recommandé par le Career Center de l’ETH pour les rôles tech ; facile à copier et localiser."
+      },
+      "tips": [
+        "Commencez par trois lignes résumant votre poste ciblé, vos compétences clés et ce que vous voulez construire ensuite.",
+        "Utilisez des puces avec des verbes d’action et des résultats chiffrés (ex. « réduction du temps d’onboarding de 30 % »).",
+        "Gardez un bloc dédié aux compétences/outils — les fondateurs et CTO vérifient d’abord la stack.",
+        "Ajoutez des signaux entrepreneuriaux : projets personnels, hackathons, programmes venture ou rôles de leadership.",
+        "Limitez-vous à une page tant que vous avez moins de trois ans d’expérience ; développez en entretien."
+      ]
+    }
+  }
+}
