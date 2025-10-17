@@ -20,12 +20,12 @@
   --ssc-glow-accent: rgba(210, 123, 75, 0.2);
   --ssc-glow-alt: rgba(79, 163, 165, 0.24);
   --ssc-ivory-rgb: 253, 250, 243;
-  --ssc-radius-sm: 5px;
-  --ssc-radius-md: 8px;
-  --ssc-radius-lg: 11px;
-  --ssc-radius-xl: 15px;
-  --ssc-radius-xxl: 18px;
-  --ssc-radius-pill: 11px;
+  --ssc-radius-sm: 0px;
+  --ssc-radius-md: 0px;
+  --ssc-radius-lg: 0px;
+  --ssc-radius-xl: 0px;
+  --ssc-radius-xxl: 0px;
+  --ssc-radius-pill: 0px;
 }
 
 .ssc--dark {
@@ -616,7 +616,7 @@
 .ssc__avatar {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1111,7 +1111,7 @@
 
 .ssc__filter-group--salary {
   position: relative;
-  border-radius: calc(var(--ssc-radius-xxl) + 2px);
+  border-radius: 0;
   border: 1px solid rgba(var(--ssc-primary-rgb), 0.18);
   padding: 1.45rem 1.55rem 1.5rem;
   background: linear-gradient(
@@ -1381,7 +1381,7 @@
   pointer-events: auto;
   height: 26px;
   width: 26px;
-  border-radius: 50%;
+  border-radius: 0;
   border: 3px solid var(--ssc-primary);
   background: var(--ssc-surface);
   box-shadow: 0 10px 26px rgba(var(--ssc-primary-rgb), 0.25);
@@ -1394,7 +1394,7 @@
   pointer-events: auto;
   height: 26px;
   width: 26px;
-  border-radius: 50%;
+  border-radius: 0;
   border: 3px solid var(--ssc-primary);
   background: var(--ssc-surface);
   box-shadow: 0 10px 26px rgba(var(--ssc-primary-rgb), 0.25);
@@ -1727,7 +1727,7 @@
 .ssc__save-btn {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
+  border-radius: 0;
   border: none;
   background: rgba(var(--ssc-ink-rgb), 0.06);
   color: var(--ssc-muted);
@@ -2038,7 +2038,7 @@
   width: 340px;
   max-width: calc(100vw - 3rem);
   background: linear-gradient(170deg, rgba(255, 247, 236, 0.98) 0%, rgba(244, 236, 226, 0.98) 100%);
-  border-radius: calc(var(--ssc-radius-xxl) + 2px);
+  border-radius: 0;
   border: 1px solid rgba(148, 163, 184, 0.25);
   box-shadow: 0 30px 60px rgba(var(--ssc-ink-rgb), 0.22);
   padding: 1.5rem 1.75rem 1.65rem;
@@ -2850,7 +2850,7 @@
 .ssc__cta-inner {
   background: linear-gradient(135deg, var(--ssc-primary), var(--ssc-accent));
   color: #fff;
-  border-radius: calc(var(--ssc-radius-xxl) + 2px);
+  border-radius: 0;
   padding: 2.75rem;
   display: flex;
   flex-direction: column;
@@ -2895,7 +2895,7 @@
 .ssc__avatar-small {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 0;
   background: rgba(var(--ssc-primary-rgb), 0.18);
   color: var(--ssc-primary);
   display: flex;
@@ -3017,7 +3017,7 @@
 .ssc__review-avatar {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 0;
   background: rgba(var(--ssc-primary-rgb), 0.15);
   display: flex;
   align-items: center;
@@ -3296,7 +3296,7 @@
 
 .ssc__applications-grid {
   border: 1px solid var(--ssc-border);
-  border-radius: calc(var(--ssc-radius-xxl) + 2px);
+  border-radius: 0;
   background: var(--ssc-surface);
   box-shadow: 0 20px 40px rgba(var(--ssc-ink-rgb), 0.08);
   overflow: hidden;
@@ -3852,7 +3852,7 @@
   right: 1rem;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 0;
   border: none;
   background: rgba(var(--ssc-ink-rgb), 0.06);
   display: flex;
@@ -4308,7 +4308,7 @@
   gap: 4px;
   background: #f3f4f6;
   padding: 4px;
-  border-radius: 9999px;
+  border-radius: 0;
   align-self: flex-start;
 }
 
@@ -4317,7 +4317,7 @@
   background: transparent;
   color: #4b5563;
   padding: 6px 14px;
-  border-radius: 9999px;
+  border-radius: 0;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -4413,7 +4413,7 @@
   width: 360px;
   max-width: 420px;
   height: 100%;
-  border-radius: calc(var(--ssc-radius-xxl) + 2px);
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -4523,7 +4523,7 @@
   background: rgba(255, 255, 255, 0.6);
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4803,7 +4803,7 @@
 .ssc__map-marker {
   width: 44px;
   height: 44px;
-  border-radius: 9999px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4871,7 +4871,7 @@
 .ssc__map-legend-marker {
   width: 40px;
   height: 40px;
-  border-radius: 9999px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5313,7 +5313,7 @@
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
   background: var(--ssc-surface);
-  border-radius: calc(var(--ssc-radius-xxl) + 2px);
+  border-radius: 0;
   box-shadow: 0 30px 80px rgba(15, 23, 42, 0.3);
   padding: 2.5rem 3rem;
   z-index: 1;
@@ -5473,7 +5473,7 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 0;
   background: rgba(59, 130, 246, 0.12);
   color: var(--ssc-primary);
   font-weight: 600;
@@ -5579,14 +5579,14 @@
 .ssc__company-profile-team-card img {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: 0;
   object-fit: cover;
 }
 
 .ssc__company-profile-avatar-fallback {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: 0;
   background: rgba(15, 23, 42, 0.12);
   display: flex;
   align-items: center;
