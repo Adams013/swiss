@@ -45,7 +45,7 @@ if (missing.length > 0) {
     `\n[checkSupabaseEnv] Missing required Supabase environment variables: ${missing.join(', ')}.`,
   );
   console.error(
-    'Create a .env.local file (you can start from .env.example) and populate the variables before running this command.\n',
+    'Create a .env.local file (you can start from .env.example or .env.local.example) and populate the variables before running this command.\n',
   );
   process.exit(1);
 }
