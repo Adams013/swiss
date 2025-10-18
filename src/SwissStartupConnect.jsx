@@ -38,6 +38,7 @@ import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
 import CvFootnote from './components/CvFootnote';
+import Modal from './components/Modal';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -168,6 +169,21 @@ const LANGUAGE_VALUE_TO_CANONICAL = {
 const STARTUP_TEAM_FIELDS = ['team', 'team_size', 'employees', 'headcount'];
 const STARTUP_FUNDRAISING_FIELDS = ['fundraising', 'total_funding', 'total_raised', 'funding'];
 const STARTUP_INFO_FIELDS = ['info_link', 'profile_link', 'external_profile', 'external_profile_url'];
+
+const MODAL_TITLE_IDS = {
+  compensation: 'ssc-modal-compensation-title',
+  cvTemplates: 'ssc-modal-cv-templates-title',
+  reviews: 'ssc-modal-reviews-title',
+  jobDetails: 'ssc-modal-job-details-title',
+  postEvent: 'ssc-modal-post-event-title',
+  application: 'ssc-modal-application-title',
+  profile: 'ssc-modal-profile-title',
+  startup: 'ssc-modal-startup-title',
+  postJob: 'ssc-modal-post-job-title',
+  auth: 'ssc-modal-auth-title',
+  resetPassword: 'ssc-modal-reset-password-title',
+  security: 'ssc-modal-security-title',
+};
 
 const getJobIdKey = (value) => {
   if (value == null) {
@@ -10037,208 +10053,219 @@ const SwissStartupConnect = () => {
         </div>
       </footer>
 
-      {resourceModal === 'compensation' && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
-              <X size={18} />
-            </button>
-            <header className="ssc__modal-header">
-              <h2>{translate('modals.compensation.title', 'Median internship pay by canton')}</h2>
-              <p>
-                {translate(
-                  'modals.compensation.subtitle',
-                  'Source: swissuniversities internship barometer 2024 + public salary postings (January 2025). Figures are midpoints for internships lasting 3–12 months.'
-                )}
-              </p>
-            </header>
-            <div className="ssc__modal-body">
-              <div className="ssc__table-wrapper">
-                <table className="ssc__table">
-                  <thead>
-                    <tr>
-                      <th>{translate('modals.compensation.table.canton', 'Canton')}</th>
-                      <th>{translate('modals.compensation.table.median', 'Median stipend')}</th>
-                      <th>{translate('modals.compensation.table.expectation', 'What to expect')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cantonInternshipSalaries.map((entry) => (
-                      <tr key={entry.canton}>
-                        <td>{entry.canton}</td>
-                        <td>{entry.median}</td>
-                        <td>{translate(`modals.compensation.notes.${entry.canton}`, entry.note)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="ssc__modal-footnote">
-                {translate(
-                  'modals.compensation.footnote',
-                  'Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest package with the startup before signing the agreement.'
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {resourceModal === 'cvTemplates' && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
-              <X size={18} />
-            </button>
-            <header className="ssc__modal-header">
-              <h2>{translate('modals.cv.title', 'Founder-ready CV templates')}</h2>
-              <p>
-                {translate(
-                  'modals.cv.subtitle',
-                  'Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.'
-                )}
-              </p>
-            </header>
-            <div className="ssc__modal-body">
-              <ul className="ssc__link-list">
-                {cvTemplates.map((template) => (
-                  <li key={template.name}>
-                    <a href={template.url} target="_blank" rel="noreferrer">
-                      {template.name}
-                    </a>
-                    <span>{translate(`modals.cv.templates.${template.id}`, template.reason)}</span>
-                  </li>
+      <Modal
+        isOpen={resourceModal === 'compensation'}
+        onRequestClose={closeResourceModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.compensation}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.compensation}>
+            {translate('modals.compensation.title', 'Median internship pay by canton')}
+          </h2>
+          <p>
+            {translate(
+              'modals.compensation.subtitle',
+              'Source: swissuniversities internship barometer 2024 + public salary postings (January 2025). Figures are midpoints for internships lasting 3–12 months.'
+            )}
+          </p>
+        </header>
+        <div className="ssc__modal-body">
+          <div className="ssc__table-wrapper">
+            <table className="ssc__table">
+              <thead>
+                <tr>
+                  <th>{translate('modals.compensation.table.canton', 'Canton')}</th>
+                  <th>{translate('modals.compensation.table.median', 'Median stipend')}</th>
+                  <th>{translate('modals.compensation.table.expectation', 'What to expect')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cantonInternshipSalaries.map((entry) => (
+                  <tr key={entry.canton}>
+                    <td>{entry.canton}</td>
+                    <td>{entry.median}</td>
+                    <td>{translate(`modals.compensation.notes.${entry.canton}`, entry.note)}</td>
+                  </tr>
                 ))}
-              </ul>
-
-              <h3 className="ssc__modal-subtitle">
-                {translate('modals.cv.tipsTitle', 'How to make your CV stand out')}
-              </h3>
-              <ul className="ssc__bullet-list">
-                {localizedCvTips.map((tip, index) => (
-                  <li key={index}>{tip}</li>
-                ))}
-              </ul>
-              <p className="ssc__modal-footnote">
-                <CvFootnote
-                  text={translate(
-                    'modals.cv.footnote',
-                    'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
-                  )}
-                />
-              </p>
-            </div>
+              </tbody>
+            </table>
           </div>
+          <p className="ssc__modal-footnote">
+            {translate(
+              'modals.compensation.footnote',
+              'Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest package with the startup before signing the agreement.'
+            )}
+          </p>
         </div>
-      )}
+      </Modal>
 
-      {reviewsModal && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={closeReviewsModal}>
-              <X size={18} />
-            </button>
-            <header className="ssc__modal-header">
-              <h2>{reviewsModal.name} · Reviews</h2>
-              <p>Hear from verified team members about culture, learning pace, and hiring experience.</p>
-            </header>
-            <div className="ssc__modal-body">
-              {reviewsLoading ? (
-                <p>Loading reviews…</p>
-              ) : reviews.length > 0 ? (
-                <div className="ssc__reviews">
-                  {reviews.map((review) => {
-                    const reviewerName = review.profiles?.full_name?.trim() ||
-                      translate('accountMenu.memberFallback', 'Member');
-                    const reviewerInitial = reviewerName.charAt(0).toUpperCase();
-                    return (
-                      <article key={review.id} className="ssc__review-card">
-                        <div className="ssc__review-heading">
-                          <div className="ssc__review-avatar">
-                            {review.profiles?.avatar_url ? (
-                              <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
-                            ) : (
-                              <span>{reviewerInitial}</span>
-                            )}
-                          </div>
-                          <div>
-                            <strong>{review.title}</strong>
-                            <div className="ssc__review-meta">
-                              <span>{reviewerName}</span>
-                              <span>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
-                                ))}
-                              </span>
-                            </div>
-                          </div>
+      <Modal
+        isOpen={resourceModal === 'cvTemplates'}
+        onRequestClose={closeResourceModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.cvTemplates}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.cvTemplates}>
+            {translate('modals.cv.title', 'Founder-ready CV templates')}
+          </h2>
+          <p>
+            {translate(
+              'modals.cv.subtitle',
+              'Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.'
+            )}
+          </p>
+        </header>
+        <div className="ssc__modal-body">
+          <ul className="ssc__link-list">
+            {cvTemplates.map((template) => (
+              <li key={template.name}>
+                <a href={template.url} target="_blank" rel="noreferrer">
+                  {template.name}
+                </a>
+                <span>{translate(`modals.cv.templates.${template.id}`, template.reason)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="ssc__modal-subtitle">
+            {translate('modals.cv.tipsTitle', 'How to make your CV stand out')}
+          </h3>
+          <ul className="ssc__bullet-list">
+            {localizedCvTips.map((tip, index) => (
+              <li key={index}>{tip}</li>
+            ))}
+          </ul>
+          <p className="ssc__modal-footnote">
+            <CvFootnote
+              text={translate(
+                'modals.cv.footnote',
+                'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
+              )}
+            />
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(reviewsModal)}
+        onRequestClose={closeReviewsModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.reviews}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeReviewsModal}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.reviews}>{reviewsModal?.name} · Reviews</h2>
+          <p>Hear from verified team members about culture, learning pace, and hiring experience.</p>
+        </header>
+        <div className="ssc__modal-body">
+          {reviewsLoading ? (
+            <p>Loading reviews…</p>
+          ) : reviews.length > 0 ? (
+            <div className="ssc__reviews">
+              {reviews.map((review) => {
+                const reviewerName = review.profiles?.full_name?.trim() ||
+                  translate('accountMenu.memberFallback', 'Member');
+                const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+                return (
+                  <article key={review.id} className="ssc__review-card">
+                    <div className="ssc__review-heading">
+                      <div className="ssc__review-avatar">
+                        {review.profiles?.avatar_url ? (
+                          <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
+                        ) : (
+                          <span>{reviewerInitial}</span>
+                        )}
+                      </div>
+                      <div>
+                        <strong>{review.title}</strong>
+                        <div className="ssc__review-meta">
+                          <span>{reviewerName}</span>
+                          <span>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
+                            ))}
+                          </span>
                         </div>
-                        <p>{review.body}</p>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p>No reviews yet. Be the first to share your experience.</p>
-              )}
-
-              {canReview ? (
-                <form className="ssc__form" onSubmit={submitReview}>
-                  <h3 className="ssc__modal-subtitle">Share your experience</h3>
-                  <label className="ssc__field">
-                    <span>Rating</span>
-                    <select
-                      value={reviewForm.rating}
-                      onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))}
-                    >
-                      {[5, 4, 3, 2, 1].map((rating) => (
-                        <option key={rating} value={rating}>
-                          {rating} ★
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="ssc__field">
-                    <span>Headline</span>
-                    <input
-                      type="text"
-                      value={reviewForm.title}
-                      onChange={(event) => setReviewForm((prev) => ({ ...prev, title: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <label className="ssc__field">
-                    <span>What made the culture unique?</span>
-                    <textarea
-                      rows={4}
-                      value={reviewForm.body}
-                      onChange={(event) => setReviewForm((prev) => ({ ...prev, body: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <button type="submit" className="ssc__primary-btn">
-                    Submit review
-                  </button>
-                </form>
-              ) : (
-                <p className="ssc__modal-footnote">
-                  Only verified current or former team members can leave reviews. Ask your founder or admin to mark you as
-                  verified in the startup dashboard.
-                </p>
-              )}
+                      </div>
+                    </div>
+                    <p>{review.body}</p>
+                  </article>
+                );
+              })}
             </div>
-          </div>
-        </div>
-      )}
+          ) : (
+            <p>No reviews yet. Be the first to share your experience.</p>
+          )}
 
-      {localizedSelectedJob && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal">
+          {canReview ? (
+            <form className="ssc__form" onSubmit={submitReview}>
+              <h3 className="ssc__modal-subtitle">Share your experience</h3>
+              <label className="ssc__field">
+                <span>Rating</span>
+                <select
+                  value={reviewForm.rating}
+                  onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))}
+                >
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <option key={rating} value={rating}>
+                      {rating} ★
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="ssc__field">
+                <span>Headline</span>
+                <input
+                  type="text"
+                  value={reviewForm.title}
+                  onChange={(event) => setReviewForm((prev) => ({ ...prev, title: event.target.value }))}
+                  required
+                />
+              </label>
+              <label className="ssc__field">
+                <span>What made the culture unique?</span>
+                <textarea
+                  rows={4}
+                  value={reviewForm.body}
+                  onChange={(event) => setReviewForm((prev) => ({ ...prev, body: event.target.value }))}
+                  required
+                />
+              </label>
+              <button type="submit" className="ssc__primary-btn">
+                Submit review
+              </button>
+            </form>
+          ) : (
+            <p className="ssc__modal-footnote">
+              Only verified current or former team members can leave reviews. Ask your founder or admin to mark you as
+              verified in the startup dashboard.
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(localizedSelectedJob)}
+        onRequestClose={() => setSelectedJob(null)}
+        aria-labelledby={MODAL_TITLE_IDS.jobDetails}
+      >
+        {localizedSelectedJob && (
+          <>
             <button type="button" className="ssc__modal-close" onClick={() => setSelectedJob(null)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{localizedSelectedJob.localizedTitle}</h2>
+              <h2 id={MODAL_TITLE_IDS.jobDetails}>{localizedSelectedJob.localizedTitle}</h2>
               <p>{localizedSelectedJob.company_name}</p>
               <div className="ssc__modal-meta">
                 <span>
@@ -10355,155 +10382,157 @@ const SwissStartupConnect = () => {
                 <span className="ssc__job-note">{applyRestrictionMessage}</span>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
-      {eventModalOpen && canPostEvents && (
-        <div className="ssc__modal-overlay" onClick={closeEventModal}>
-          <div className="ssc__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="ssc__modal-header">
-              <h2>{translate('events.postEvent', 'Post Event')}</h2>
-              <button type="button" className="ssc__modal-close" onClick={closeEventModal}>
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={eventModalOpen && canPostEvents}
+        onRequestClose={closeEventModal}
+        overlayClassName="ssc__modal-overlay"
+        aria-labelledby={MODAL_TITLE_IDS.postEvent}
+      >
+        <div className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.postEvent}>{translate('events.postEvent', 'Post Event')}</h2>
+          <button type="button" className="ssc__modal-close" onClick={closeEventModal}>
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleEventSubmit} className="ssc__modal-form">
+          <div className="ssc__form-group">
+            <label htmlFor="event-title">{translate('events.form.title', 'Event Title')} *</label>
+            <input
+              id="event-title"
+              type="text"
+              value={eventForm.title}
+              onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
+              required
+              placeholder={translate('events.form.titlePlaceholder', 'Enter event title')}
+            />
+          </div>
+
+          <div className="ssc__form-group">
+            <label htmlFor="event-description">{translate('events.form.description', 'Description')}</label>
+            <textarea
+              id="event-description"
+              value={eventForm.description}
+              onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
+              rows={4}
+              placeholder={translate('events.form.descriptionPlaceholder', 'Describe your event')}
+            />
+          </div>
+
+          <div className="ssc__form-row">
+            <div className="ssc__form-group">
+              <label htmlFor="event-date">{translate('events.form.date', 'Date')} *</label>
+              <input
+                id="event-date"
+                type="date"
+                value={eventForm.event_date}
+                onChange={(e) => setEventForm(prev => ({ ...prev, event_date: e.target.value }))}
+                required
+              />
             </div>
-            <form onSubmit={handleEventSubmit} className="ssc__modal-form">
-              <div className="ssc__form-group">
-                <label htmlFor="event-title">{translate('events.form.title', 'Event Title')} *</label>
-                <input
-                  id="event-title"
-                  type="text"
-                  value={eventForm.title}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                  required
-                  placeholder={translate('events.form.titlePlaceholder', 'Enter event title')}
-                />
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-description">{translate('events.form.description', 'Description')}</label>
-                <textarea
-                  id="event-description"
-                  value={eventForm.description}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
-                  rows={4}
-                  placeholder={translate('events.form.descriptionPlaceholder', 'Describe your event')}
-                />
-              </div>
-
-              <div className="ssc__form-row">
-                <div className="ssc__form-group">
-                  <label htmlFor="event-date">{translate('events.form.date', 'Date')} *</label>
-                  <input
-                    id="event-date"
-                    type="date"
-                    value={eventForm.event_date}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, event_date: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="ssc__form-group">
-                  <label htmlFor="event-time">{translate('events.form.time', 'Time')}</label>
-                  <input
-                    id="event-time"
-                    type="time"
-                    value={eventForm.event_time}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, event_time: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-location">{translate('events.form.location', 'Location Name')} *</label>
-                <input
-                  id="event-location"
-                  type="text"
-                  value={eventForm.location}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                  required
-                  placeholder={translate('events.form.locationPlaceholder', 'e.g., Zurich Convention Center')}
-                />
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-street">{translate('events.form.street', 'Street Address')} *</label>
-                <input
-                  id="event-street"
-                  type="text"
-                  value={eventForm.street_address}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, street_address: e.target.value }))}
-                  required
-                  placeholder={translate('events.form.streetPlaceholder', 'e.g., Messeplatz 1')}
-                />
-              </div>
-
-              <div className="ssc__form-row">
-                <div className="ssc__form-group">
-                  <label htmlFor="event-city">{translate('events.form.city', 'City')} *</label>
-                  <input
-                    id="event-city"
-                    type="text"
-                    value={eventForm.city}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, city: e.target.value }))}
-                    required
-                    placeholder={translate('events.form.cityPlaceholder', 'e.g., Zurich')}
-                  />
-                </div>
-                <div className="ssc__form-group">
-                  <label htmlFor="event-postal">{translate('events.form.postal', 'Postal Code')} *</label>
-                  <input
-                    id="event-postal"
-                    type="text"
-                    value={eventForm.postal_code}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, postal_code: e.target.value }))}
-                    required
-                    placeholder={translate('events.form.postalPlaceholder', 'e.g., 8005')}
-                  />
-                </div>
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-poster">{translate('events.form.poster', 'Event Poster')}</label>
-                <input
-                  id="event-poster"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setEventForm(prev => ({ ...prev, poster_file: e.target.files[0] }))}
-                />
-                <small className="ssc__form-help">
-                  {translate('events.form.posterHelp', 'Upload an image for your event poster')}
-                </small>
-              </div>
-
-              <div className="ssc__modal-actions">
-                <button type="button" className="ssc__ghost-btn" onClick={closeEventModal}>
-                  {translate('events.form.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="submit"
-                  className="ssc__primary-btn"
-                  disabled={eventFormSaving}
-                >
-                  {eventFormSaving
-                    ? translate('events.form.posting', 'Posting...')
-                    : translate('events.form.post', 'Post Event')}
-                </button>
-              </div>
-            </form>
+            <div className="ssc__form-group">
+              <label htmlFor="event-time">{translate('events.form.time', 'Time')}</label>
+              <input
+                id="event-time"
+                type="time"
+                value={eventForm.event_time}
+                onChange={(e) => setEventForm(prev => ({ ...prev, event_time: e.target.value }))}
+                required
+              />
+            </div>
           </div>
-        </div>
-      )}
 
-      {localizedApplicationModal && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
+          <div className="ssc__form-group">
+            <label htmlFor="event-location">{translate('events.form.location', 'Location Name')} *</label>
+            <input
+              id="event-location"
+              type="text"
+              value={eventForm.location}
+              onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
+              required
+              placeholder={translate('events.form.locationPlaceholder', 'e.g., Zurich Convention Center')}
+            />
+          </div>
+
+          <div className="ssc__form-group">
+            <label htmlFor="event-street">{translate('events.form.street', 'Street Address')} *</label>
+            <input
+              id="event-street"
+              type="text"
+              value={eventForm.street_address}
+              onChange={(e) => setEventForm(prev => ({ ...prev, street_address: e.target.value }))}
+              required
+              placeholder={translate('events.form.streetPlaceholder', 'e.g., Messeplatz 1')}
+            />
+          </div>
+
+          <div className="ssc__form-row">
+            <div className="ssc__form-group">
+              <label htmlFor="event-city">{translate('events.form.city', 'City')} *</label>
+              <input
+                id="event-city"
+                type="text"
+                value={eventForm.city}
+                onChange={(e) => setEventForm(prev => ({ ...prev, city: e.target.value }))}
+                required
+                placeholder={translate('events.form.cityPlaceholder', 'e.g., Zurich')}
+              />
+            </div>
+            <div className="ssc__form-group">
+              <label htmlFor="event-postal">{translate('events.form.postal', 'Postal Code')} *</label>
+              <input
+                id="event-postal"
+                type="text"
+                value={eventForm.postal_code}
+                onChange={(e) => setEventForm(prev => ({ ...prev, postal_code: e.target.value }))}
+                required
+                placeholder={translate('events.form.postalPlaceholder', 'e.g., 8005')}
+              />
+            </div>
+          </div>
+
+          <div className="ssc__form-group">
+            <label htmlFor="event-poster">{translate('events.form.poster', 'Event Poster')}</label>
+            <input
+              id="event-poster"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setEventForm(prev => ({ ...prev, poster_file: e.target.files[0] }))}
+            />
+            <small className="ssc__form-help">
+              {translate('events.form.posterHelp', 'Upload an image for your event poster')}
+            </small>
+          </div>
+
+          <div className="ssc__modal-actions">
+            <button type="button" className="ssc__ghost-btn" onClick={closeEventModal}>
+              {translate('events.form.cancel', 'Cancel')}
+            </button>
+            <button type="submit" className="ssc__primary-btn" disabled={eventFormSaving}>
+              {eventFormSaving
+                ? translate('events.form.posting', 'Posting...')
+                : translate('events.form.post', 'Post Event')}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(localizedApplicationModal)}
+        onRequestClose={closeApplicationModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.application}
+      >
+        {localizedApplicationModal && (
+          <>
             <button type="button" className="ssc__modal-close" onClick={closeApplicationModal}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Submit your application</h2>
+              <h2 id={MODAL_TITLE_IDS.application}>Submit your application</h2>
               <p>
                 {localizedApplicationModal.localizedTitle} · {localizedApplicationModal.company_name}
               </p>
@@ -10631,18 +10660,21 @@ const SwissStartupConnect = () => {
                 {applicationSaving ? 'Submitting…' : 'Confirm application'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
-      {profileModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
+      <Modal
+        isOpen={profileModalOpen}
+        onRequestClose={() => setProfileModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.profile}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{translate('profileModal.title', 'Update your profile')}</h2>
+              <h2 id={MODAL_TITLE_IDS.profile}>{translate('profileModal.title', 'Update your profile')}</h2>
               <p>
                 {translate(
                   'profileModal.subtitle',
@@ -10884,18 +10916,19 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {startupModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={() => setStartupModalOpen(false)}>
+      <Modal
+        isOpen={startupModalOpen}
+        onRequestClose={() => setStartupModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.startup}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setStartupModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{translate('startupModal.title', 'Your startup profile')}</h2>
+              <h2 id={MODAL_TITLE_IDS.startup}>{translate('startupModal.title', 'Your startup profile')}</h2>
               <p>
                 {translate(
                   'startupModal.subtitle',
@@ -11020,18 +11053,19 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {postJobModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={() => setPostJobModalOpen(false)}>
+      <Modal
+        isOpen={postJobModalOpen}
+        onRequestClose={() => setPostJobModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.postJob}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setPostJobModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{translate('jobForm.modal.title', 'Post a new vacancy')}</h2>
+              <h2 id={MODAL_TITLE_IDS.postJob}>{translate('jobForm.modal.title', 'Post a new vacancy')}</h2>
               <p>{translate('jobForm.modal.subtitle', 'Share the essentials so students and graduates understand the opportunity.')}</p>
             </header>
             <form className="ssc__modal-body" onSubmit={handlePostJobSubmit}>
@@ -11381,24 +11415,28 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {showLoginModal && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--auth">
-            <button
-              type="button"
-              className="ssc__modal-close"
-              onClick={() => {
-                setShowLoginModal(false);
-                setForgotPasswordMessage('');
-              }}
-            >
+      <Modal
+        isOpen={showLoginModal}
+        onRequestClose={() => {
+          setShowLoginModal(false);
+          setForgotPasswordMessage('');
+        }}
+        dialogClassName="ssc__modal--auth"
+        aria-labelledby={MODAL_TITLE_IDS.auth}
+      >
+        <button
+          type="button"
+          className="ssc__modal-close"
+          onClick={() => {
+            setShowLoginModal(false);
+            setForgotPasswordMessage('');
+          }}
+        >
               <X size={18} />
             </button>
-            <h2>
+            <h2 id={MODAL_TITLE_IDS.auth}>
               {isRegistering
                 ? translate('authModal.titleRegister', 'Create your profile')
                 : translate('authModal.titleLogin', 'Welcome back')}
@@ -11550,17 +11588,18 @@ const SwissStartupConnect = () => {
                   : translate('authModal.switch.createProfile', 'Create a profile')}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {resetPasswordModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--auth">
-            <button type="button" className="ssc__modal-close" onClick={closeResetPasswordModal}>
+      <Modal
+        isOpen={resetPasswordModalOpen}
+        onRequestClose={closeResetPasswordModal}
+        dialogClassName="ssc__modal--auth"
+        aria-labelledby={MODAL_TITLE_IDS.resetPassword}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeResetPasswordModal}>
               <X size={18} />
             </button>
-            <h2>Set a new password</h2>
+            <h2 id={MODAL_TITLE_IDS.resetPassword}>Set a new password</h2>
             <p>Enter and confirm your new password to complete the reset.</p>
 
             {passwordResetError && <div className="ssc__alert">{passwordResetError}</div>}
@@ -11594,17 +11633,18 @@ const SwissStartupConnect = () => {
                   : translate('security.passwordReset.buttons.submit', 'Update password')}
               </button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {securityModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--auth">
-            <button type="button" className="ssc__modal-close" onClick={closeSecurityModal}>
+      <Modal
+        isOpen={securityModalOpen}
+        onRequestClose={closeSecurityModal}
+        dialogClassName="ssc__modal--auth"
+        aria-labelledby={MODAL_TITLE_IDS.security}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeSecurityModal}>
               <X size={18} />
             </button>
-            <h2>{translate('security.modal.title', 'Privacy & security')}</h2>
+            <h2 id={MODAL_TITLE_IDS.security}>{translate('security.modal.title', 'Privacy & security')}</h2>
             <p>
               {translate(
                 'security.modal.description',
@@ -11704,9 +11744,7 @@ const SwissStartupConnect = () => {
                   : translate('security.modal.buttons.savePassword', 'Save password')}
               </button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {activeCompanyProfile && (
         <CompanyProfilePage
