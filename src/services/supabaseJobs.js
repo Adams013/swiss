@@ -232,7 +232,27 @@ const normalizeJob = (job) => ({
   motivational_letter_required: job?.motivational_letter_required ?? false,
 });
 
-const escapeIlikeValue = (value) => value.replace(/[%_]/g, (match) => `\\${match}`);
+const escapeIlikeValue = (value) =>
+  typeof value === 'string'
+    ? value
+        .trim()
+        .replace(/[%_]/g, (match) => `\\${match}`)
+    : '';
+
+const buildIlikeConditions = (columns, values) => {
+  const conditions = new Set();
+
+  values
+    .filter((value) => typeof value === 'string' && value.trim())
+    .forEach((value) => {
+      const escaped = escapeIlikeValue(value);
+      columns.forEach((column) => {
+        conditions.add(`${column}.ilike.%${escaped}%`);
+      });
+    });
+
+  return Array.from(conditions);
+};
 
 const applyJobFilters = (query, filters = {}) => {
   if (!filters || typeof filters !== 'object') {
@@ -241,14 +261,30 @@ const applyJobFilters = (query, filters = {}) => {
 
   const { searchTerm, locations, workArrangements, employmentTypes } = filters;
 
-  if (Array.isArray(locations) && locations.length > 0) {
-    const ilikeConditions = locations
-      .filter((location) => typeof location === 'string' && location.trim())
-      .map((location) => `location.ilike.%${escapeIlikeValue(location.trim())}%`);
+  const locationConditions = Array.isArray(locations)
+    ? buildIlikeConditions(['location', 'location_city'], locations)
+    : [];
 
-    if (ilikeConditions.length > 0) {
-      query = query.or(ilikeConditions.join(','));
-    }
+  const searchConditions = typeof searchTerm === 'string' && searchTerm.trim()
+    ? buildIlikeConditions(['title', 'company_name', 'location', 'location_city'], [searchTerm])
+    : [];
+
+  const orConditions = [];
+
+  if (locationConditions.length > 0 && searchConditions.length > 0) {
+    locationConditions.forEach((locationCondition) => {
+      searchConditions.forEach((searchCondition) => {
+        orConditions.push(`and(${locationCondition},${searchCondition})`);
+      });
+    });
+  } else if (locationConditions.length > 0) {
+    orConditions.push(...locationConditions);
+  } else if (searchConditions.length > 0) {
+    orConditions.push(...searchConditions);
+  }
+
+  if (orConditions.length > 0) {
+    query = query.or(Array.from(new Set(orConditions)).join(','));
   }
 
   if (Array.isArray(workArrangements) && workArrangements.length > 0) {
@@ -257,17 +293,6 @@ const applyJobFilters = (query, filters = {}) => {
 
   if (Array.isArray(employmentTypes) && employmentTypes.length > 0) {
     query = query.in('employment_type', employmentTypes);
-  }
-
-  if (typeof searchTerm === 'string' && searchTerm.trim()) {
-    const escaped = escapeIlikeValue(searchTerm.trim());
-    query = query.or(
-      [
-        `title.ilike.%${escaped}%`,
-        `company_name.ilike.%${escaped}%`,
-        `location.ilike.%${escaped}%`,
-      ].join(',')
-    );
   }
 
   return query;

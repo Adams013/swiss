@@ -34,6 +34,28 @@ const COMPANY_COLUMN_CONFIG = [
   { key: 'profile', optional: true },
 ];
 
+const escapeIlikeValue = (value) =>
+  typeof value === 'string'
+    ? value
+        .trim()
+        .replace(/[%_]/g, (match) => `\\${match}`)
+    : '';
+
+const buildIlikeConditions = (columns, values) => {
+  const conditions = new Set();
+
+  values
+    .filter((value) => typeof value === 'string' && value.trim())
+    .forEach((value) => {
+      const escaped = escapeIlikeValue(value);
+      columns.forEach((column) => {
+        conditions.add(`${column}.ilike.%${escaped}%`);
+      });
+    });
+
+  return Array.from(conditions);
+};
+
 const detectMissingColumn = (message, table) => {
   if (!message) {
     return null;
@@ -135,31 +157,34 @@ const applyCompanyFilters = (query, filters = {}) => {
 
   const { searchTerm, locations, verificationStatuses } = filters;
 
-  if (Array.isArray(locations) && locations.length > 0) {
-    const ilikeConditions = locations
-      .filter((location) => typeof location === 'string' && location.trim())
-      .map((location) => `location.ilike.%${location.trim().replace(/[%_]/g, (match) => `\\${match}`)}%`);
+  const locationConditions = Array.isArray(locations)
+    ? buildIlikeConditions(['location'], locations)
+    : [];
 
-    if (ilikeConditions.length > 0) {
-      query = query.or(ilikeConditions.join(','));
-    }
+  const searchConditions = typeof searchTerm === 'string' && searchTerm.trim()
+    ? buildIlikeConditions(['name', 'company_name', 'tagline', 'description', 'location'], [searchTerm])
+    : [];
+
+  const orConditions = [];
+
+  if (locationConditions.length > 0 && searchConditions.length > 0) {
+    locationConditions.forEach((locationCondition) => {
+      searchConditions.forEach((searchCondition) => {
+        orConditions.push(`and(${locationCondition},${searchCondition})`);
+      });
+    });
+  } else if (locationConditions.length > 0) {
+    orConditions.push(...locationConditions);
+  } else if (searchConditions.length > 0) {
+    orConditions.push(...searchConditions);
+  }
+
+  if (orConditions.length > 0) {
+    query = query.or(Array.from(new Set(orConditions)).join(','));
   }
 
   if (Array.isArray(verificationStatuses) && verificationStatuses.length > 0) {
     query = query.in('verification_status', verificationStatuses);
-  }
-
-  if (typeof searchTerm === 'string' && searchTerm.trim()) {
-    const escaped = searchTerm.trim().replace(/[%_]/g, (match) => `\\${match}`);
-    query = query.or(
-      [
-        `name.ilike.%${escaped}%`,
-        `company_name.ilike.%${escaped}%`,
-        `tagline.ilike.%${escaped}%`,
-        `description.ilike.%${escaped}%`,
-        `location.ilike.%${escaped}%`,
-      ].join(',')
-    );
   }
 
   return query;
