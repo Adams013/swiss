@@ -33,8 +33,8 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
-import { fetchJobs } from './services/supabaseJobs';
-import { fetchCompanies } from './services/supabaseCompanies';
+import { fetchJobs, DEFAULT_JOB_PAGE_SIZE } from './services/supabaseJobs';
+import { fetchCompanies, DEFAULT_COMPANY_PAGE_SIZE } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
 import CvFootnote from './components/CvFootnote';
@@ -86,6 +86,11 @@ const LANGUAGE_TAG_PREFIX = '__lang:';
 const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
 const LOCAL_APPLICATION_STORAGE_KEY = 'ssc_local_applications_v1';
 const THEME_STORAGE_KEY = 'ssc_theme_preference';
+
+const JOBS_PAGE_SIZE = DEFAULT_JOB_PAGE_SIZE;
+const COMPANIES_PAGE_SIZE = DEFAULT_COMPANY_PAGE_SIZE;
+const MAX_INITIAL_JOB_PAGES = 3;
+const MAX_INITIAL_COMPANY_PAGES = 3;
 
 const readCachedProfile = (userId) => {
   if (typeof window === 'undefined' || !userId) {
@@ -2253,6 +2258,24 @@ const SwissStartupConnect = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const jobFilters = useMemo(() => {
+    const normalizedSearch = typeof searchTerm === 'string' ? searchTerm.trim() : '';
+    const locationSelections = selectedFilters
+      .map((filterId) => {
+        const match = activeCityFilters.find((filter) => filter.id === filterId);
+        return match ? match.label : null;
+      })
+      .filter(Boolean)
+      .map((label) => label.trim())
+      .filter(Boolean);
+
+    const uniqueLocations = Array.from(new Set(locationSelections));
+
+    return {
+      searchTerm: normalizedSearch,
+      locations: uniqueLocations,
+    };
+  }, [searchTerm, selectedFilters]);
   const [salaryRange, setSalaryRange] = useState(() => [...SALARY_FALLBACK_RANGE]);
   const [salaryBounds, setSalaryBounds] = useState(() => [...SALARY_FALLBACK_RANGE]);
   const [salaryRangeDirty, setSalaryRangeDirty] = useState(false);
@@ -2291,7 +2314,23 @@ const SwissStartupConnect = () => {
   const [companyCatalogById, setCompanyCatalogById] = useState({});
   const fallbackJobsRef = useRef([]);
   const fallbackCompaniesRef = useRef([]);
+  const supabaseJobPagesRef = useRef([]);
+  const supabaseCompanyPagesRef = useRef([]);
+  const [supabaseJobPages, setSupabaseJobPages] = useState([]);
+  const [supabaseCompanyPages, setSupabaseCompanyPages] = useState([]);
+  const [jobPageRequest, setJobPageRequest] = useState(1);
+  const [companyPageRequest, setCompanyPageRequest] = useState(1);
+  const [jobHasMorePages, setJobHasMorePages] = useState(false);
+  const [_companyHasMorePages, setCompanyHasMorePages] = useState(false);
   const fallbackEventsRef = useRef([]);
+
+  useEffect(() => {
+    supabaseJobPagesRef.current = supabaseJobPages;
+  }, [supabaseJobPages]);
+
+  useEffect(() => {
+    supabaseCompanyPagesRef.current = supabaseCompanyPages;
+  }, [supabaseCompanyPages]);
   const upsertCompanyFromStartup = useCallback(
     (startupRecord) => {
       const mapped = mapStartupToCompany(startupRecord);
@@ -2681,6 +2720,13 @@ const SwissStartupConnect = () => {
   const [showNewConfirm, setShowNewConfirm] = useState(false);
 
   const [jobsVersion, setJobsVersion] = useState(0);
+
+  useEffect(() => {
+    setSupabaseJobPages([]);
+    supabaseJobPagesRef.current = [];
+    setJobHasMorePages(false);
+    setJobPageRequest(1);
+  }, [jobFilters, jobsVersion]);
   const [postJobModalOpen, setPostJobModalOpen] = useState(false);
   const [postingJob, setPostingJob] = useState(false);
   const [postJobError, setPostJobError] = useState('');
@@ -3357,75 +3403,263 @@ const SwissStartupConnect = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     const loadJobs = async () => {
+      if (jobPageRequest <= supabaseJobPagesRef.current.length) {
+        return;
+      }
+
       setJobsLoading(true);
+
       try {
-        const fallbackJobs =
+        let fallbackJobs =
           fallbackJobsRef.current.length > 0
             ? fallbackJobsRef.current
             : await loadMockJobs();
-        const { jobs: nextJobs, error, fallbackUsed, columnPresenceData } = await fetchJobs({
-          fallbackJobs,
-        });
 
-        if (error) {
-          console.error('Job load error', error);
-        } else if (fallbackUsed) {
-          console.info('Using fallback jobs dataset');
+        if (!Array.isArray(fallbackJobs)) {
+          fallbackJobs = [];
         }
 
-        setJobs(nextJobs);
-        setJobColumnPresence(deriveColumnPresence(columnPresenceData));
+        if (!cancelled && fallbackJobsRef.current.length === 0) {
+          fallbackJobsRef.current = fallbackJobs;
+        }
+
+        while (!cancelled && supabaseJobPagesRef.current.length < jobPageRequest) {
+          const pageNumber = supabaseJobPagesRef.current.length + 1;
+          const response = await fetchJobs({
+            fallbackJobs,
+            page: pageNumber,
+            pageSize: JOBS_PAGE_SIZE,
+            filters: jobFilters,
+            signal: controller.signal,
+          });
+
+          if (cancelled) {
+            return;
+          }
+
+          if (response.error) {
+            console.error('Job load error', response.error);
+          } else if (response.fallbackUsed) {
+            console.info('Using fallback jobs dataset');
+          }
+
+          if (response.fallbackUsed) {
+            const fallbackResult = Array.isArray(response.jobs) ? response.jobs : [];
+            setJobs(fallbackResult);
+            setJobColumnPresence(deriveColumnPresence(response.columnPresenceData));
+            supabaseJobPagesRef.current = [];
+            setSupabaseJobPages([]);
+            setJobHasMorePages(false);
+            break;
+          }
+
+          const pageData = Array.isArray(response.jobs) ? response.jobs : [];
+          const nextPages = [...supabaseJobPagesRef.current, pageData];
+          supabaseJobPagesRef.current = nextPages;
+          setSupabaseJobPages(nextPages);
+          setJobHasMorePages(response.hasMore);
+
+          if (Array.isArray(response.columnPresenceData) && response.columnPresenceData.length > 0) {
+            setJobColumnPresence((previous) => ({
+              ...previous,
+              ...deriveColumnPresence(response.columnPresenceData),
+            }));
+          }
+
+          const supabaseFlattened = nextPages.flat();
+          const supabaseIdSet = new Set(
+            supabaseFlattened
+              .map((job) => getJobIdKey(job?.id))
+              .filter(Boolean)
+          );
+          const fallbackUnique = fallbackJobs.filter(
+            (job) => !supabaseIdSet.has(getJobIdKey(job?.id))
+          );
+          setJobs([...supabaseFlattened, ...fallbackUnique]);
+
+          if (response.hasMore && pageNumber < MAX_INITIAL_JOB_PAGES) {
+            setJobPageRequest((previous) =>
+              previous < pageNumber + 1 ? pageNumber + 1 : previous
+            );
+          }
+
+          if (!response.hasMore) {
+            break;
+          }
+        }
       } catch (error) {
+        if (cancelled || error?.name === 'AbortError') {
+          return;
+        }
+
         console.error('Job load error', error);
-        const fallbackJobs =
+
+        let fallbackJobs =
           fallbackJobsRef.current.length > 0
             ? fallbackJobsRef.current
-            : await loadMockJobs();
+            : [];
+
+        if (fallbackJobs.length === 0) {
+          try {
+            const loaded = await loadMockJobs();
+            fallbackJobs = Array.isArray(loaded) ? loaded : [];
+            fallbackJobsRef.current = fallbackJobs;
+          } catch (fallbackError) {
+            console.error('Fallback jobs load error', fallbackError);
+            fallbackJobs = [];
+          }
+        }
+
         setJobs(fallbackJobs);
         setJobColumnPresence(deriveColumnPresence(fallbackJobs));
+        supabaseJobPagesRef.current = [];
+        setSupabaseJobPages([]);
+        setJobHasMorePages(false);
       } finally {
-        setJobsLoading(false);
+        if (!cancelled) {
+          setJobsLoading(false);
+        }
       }
     };
 
     loadJobs();
-  }, [jobsVersion]);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [jobPageRequest, jobFilters, jobsVersion]);
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     const loadCompanies = async () => {
+      if (companyPageRequest <= supabaseCompanyPagesRef.current.length) {
+        return;
+      }
+
       setCompaniesLoading(true);
+
       try {
-        const fallbackCompanies =
+        let fallbackCompanies =
           fallbackCompaniesRef.current.length > 0
             ? fallbackCompaniesRef.current
             : await loadMockCompanies();
-        const { companies: nextCompanies, error, fallbackUsed } = await fetchCompanies({
-          fallbackCompanies,
-          mapStartupToCompany,
-        });
 
-        if (error) {
-          console.error('Company load error', error);
-        } else if (fallbackUsed) {
-          console.info('Using fallback companies dataset');
+        if (!Array.isArray(fallbackCompanies)) {
+          fallbackCompanies = [];
         }
 
-        setCompanies(nextCompanies);
+        if (!cancelled && fallbackCompaniesRef.current.length === 0) {
+          fallbackCompaniesRef.current = fallbackCompanies;
+        }
+
+        while (
+          !cancelled &&
+          supabaseCompanyPagesRef.current.length < companyPageRequest
+        ) {
+          const pageNumber = supabaseCompanyPagesRef.current.length + 1;
+          const response = await fetchCompanies({
+            fallbackCompanies,
+            mapStartupToCompany,
+            page: pageNumber,
+            pageSize: COMPANIES_PAGE_SIZE,
+            filters: {},
+            signal: controller.signal,
+          });
+
+          if (cancelled) {
+            return;
+          }
+
+          if (response.error) {
+            console.error('Company load error', response.error);
+          } else if (response.fallbackUsed) {
+            console.info('Using fallback companies dataset');
+          }
+
+          if (response.fallbackUsed) {
+            setCompanies(response.companies);
+            supabaseCompanyPagesRef.current = [];
+            setSupabaseCompanyPages([]);
+            setCompanyHasMorePages(false);
+            break;
+          }
+
+          const pageData = Array.isArray(response.companies) ? response.companies : [];
+          const nextPages = [...supabaseCompanyPagesRef.current, pageData];
+          supabaseCompanyPagesRef.current = nextPages;
+          setSupabaseCompanyPages(nextPages);
+          setCompanyHasMorePages(response.hasMore);
+
+          const supabaseFlattened = nextPages.flat();
+          const supabaseIdSet = new Set(
+            supabaseFlattened
+              .map((company) => (company?.id != null ? String(company.id) : ''))
+              .filter(Boolean)
+          );
+          const fallbackUnique = fallbackCompanies.filter((company) => {
+            const idKey = company?.id != null ? String(company.id) : '';
+            return idKey ? !supabaseIdSet.has(idKey) : true;
+          });
+          setCompanies([...supabaseFlattened, ...fallbackUnique]);
+
+          if (response.hasMore && pageNumber < MAX_INITIAL_COMPANY_PAGES) {
+            setCompanyPageRequest((previous) =>
+              previous < pageNumber + 1 ? pageNumber + 1 : previous
+            );
+          }
+
+          if (!response.hasMore) {
+            break;
+          }
+        }
       } catch (error) {
+        if (cancelled || error?.name === 'AbortError') {
+          return;
+        }
+
         console.error('Company load error', error);
-        const fallbackCompanies =
+
+        let fallbackCompanies =
           fallbackCompaniesRef.current.length > 0
             ? fallbackCompaniesRef.current
-            : await loadMockCompanies();
+            : [];
+
+        if (fallbackCompanies.length === 0) {
+          try {
+            const loaded = await loadMockCompanies();
+            fallbackCompanies = Array.isArray(loaded) ? loaded : [];
+            fallbackCompaniesRef.current = fallbackCompanies;
+          } catch (fallbackError) {
+            console.error('Fallback companies load error', fallbackError);
+            fallbackCompanies = [];
+          }
+        }
+
         setCompanies(fallbackCompanies);
+        supabaseCompanyPagesRef.current = [];
+        setSupabaseCompanyPages([]);
+        setCompanyHasMorePages(false);
       } finally {
-        setCompaniesLoading(false);
+        if (!cancelled) {
+          setCompaniesLoading(false);
+        }
       }
     };
 
     loadCompanies();
-  }, []);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [companyPageRequest, mapStartupToCompany]);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -4762,7 +4996,8 @@ const SwissStartupConnect = () => {
     return sortedFilteredJobs.slice(0, 5);
   }, [activeTab, sortedFilteredJobs]);
 
-  const showSeeMoreOpportunities = activeTab === 'general' && sortedFilteredJobs.length > jobsForDisplay.length;
+  const showSeeMoreOpportunities =
+    activeTab === 'general' && (sortedFilteredJobs.length > jobsForDisplay.length || jobHasMorePages);
 
   const savedJobList = useMemo(() => {
     if (!user || user.type !== 'student') {

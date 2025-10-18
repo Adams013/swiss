@@ -151,11 +151,19 @@ const setupSupabaseSuccess = () => {
     error: null,
     fallbackUsed: false,
     columnPresenceData: [supabaseJob],
+    page: 1,
+    pageSize: 50,
+    hasMore: false,
+    totalCount: 1,
   });
   fetchCompanies.mockResolvedValue({
     companies: [supabaseCompany],
     error: null,
     fallbackUsed: false,
+    page: 1,
+    pageSize: 50,
+    hasMore: false,
+    totalCount: 1,
   });
 };
 
@@ -166,11 +174,19 @@ const setupFallbackScenario = () => {
     error: new Error('network error'),
     fallbackUsed: true,
     columnPresenceData: [fallbackJob],
+    page: 1,
+    pageSize: 50,
+    hasMore: false,
+    totalCount: 1,
   });
   fetchCompanies.mockResolvedValue({
     companies: [fallbackCompany],
     error: new Error('network error'),
     fallbackUsed: true,
+    page: 1,
+    pageSize: 50,
+    hasMore: false,
+    totalCount: 1,
   });
 };
 
