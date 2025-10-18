@@ -3982,6 +3982,19 @@
   color: var(--ssc-ink);
 }
 
+.ssc__modal-highlight {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__modal-subtext {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--ssc-muted);
+}
+
 .ssc__modal-languages {
   margin: 0;
   font-weight: 600;
