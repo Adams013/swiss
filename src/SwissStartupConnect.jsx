@@ -37,6 +37,7 @@ import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
+import CvFootnote from './components/CvFootnote';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -10119,13 +10120,11 @@ const SwissStartupConnect = () => {
                 ))}
               </ul>
               <p className="ssc__modal-footnote">
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: translate(
-                      'modals.cv.footnote',
-                      'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
-                    ),
-                  }}
+                <CvFootnote
+                  text={translate(
+                    'modals.cv.footnote',
+                    'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
+                  )}
                 />
               </p>
             </div>
