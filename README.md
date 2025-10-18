@@ -2,6 +2,31 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Supabase configuration
+
+This project requires Supabase credentials at build time. Copy the sample file and provide the
+credentials from your Supabase project (these values should **never** be committed to git):
+
+```bash
+cp .env.example .env.local
+```
+
+If you prefer to start from the hosted Supabase instance that powers this app, copy the
+project-specific `.env.local.example` instead:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Then edit `.env.local` (or use environment variables in your shell/CI) and define:
+
+- `REACT_APP_SUPABASE_URL`
+- `REACT_APP_SUPABASE_ANON_KEY`
+
+The development (`npm start`/`yarn start`) and production (`npm run build`/`yarn build`) workflows
+validate that these variables are present before running. When they are missing the application falls
+back to a disabled Supabase client that logs a warning instead of reaching the network.
+
 ## Resolving "This branch has conflicts" in GitHub
 
 When GitHub shows a banner that says **"This branch has conflicts that must be resolved"** it means

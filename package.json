@@ -22,8 +22,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
+    "check-env": "node scripts/checkSupabaseEnv.js",
+    "start": "node scripts/checkSupabaseEnv.js && craco start",
+    "build": "node scripts/checkSupabaseEnv.js && craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
     "predeploy": "yarn build",
@@ -38,6 +39,7 @@
     "@types/node": "^24.7.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
+    "dotenv": "^16.4.5",
     "gh-pages": "^6.3.0",
     "identity-obj-proxy": "^3.0.0",
     "jest-transform-stub": "^2.0.0",
