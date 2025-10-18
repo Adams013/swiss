@@ -23,8 +23,8 @@
   },
   "scripts": {
     "check-env": "node scripts/checkSupabaseEnv.js",
-    "start": "yarn check-env && craco start",
-    "build": "yarn check-env && craco build",
+    "start": "node scripts/checkSupabaseEnv.js && craco start",
+    "build": "node scripts/checkSupabaseEnv.js && craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
     "predeploy": "yarn build",

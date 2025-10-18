@@ -16,9 +16,9 @@ Then edit `.env.local` (or use environment variables in your shell/CI) and defin
 - `REACT_APP_SUPABASE_URL`
 - `REACT_APP_SUPABASE_ANON_KEY`
 
-The development (`yarn start`) and production (`yarn build`) workflows validate that these variables
-are present before running. When they are missing the application falls back to a disabled Supabase
-client that logs a warning instead of reaching the network.
+The development (`npm start`/`yarn start`) and production (`npm run build`/`yarn build`) workflows
+validate that these variables are present before running. When they are missing the application falls
+back to a disabled Supabase client that logs a warning instead of reaching the network.
 
 ## Resolving "This branch has conflicts" in GitHub
 
