@@ -8,13 +8,22 @@ const readEnv = (key) => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const missingVars = REQUIRED_ENV_VARS.filter((key) => !readEnv(key));
+const envValues = REQUIRED_ENV_VARS.reduce((accumulator, key) => {
+  const value = readEnv(key);
+  if (value) {
+    accumulator[key] = value;
+  }
+  return accumulator;
+}, {});
+
+const missingVars = REQUIRED_ENV_VARS.filter((key) => !envValues[key]);
 
 const createSupabaseConfigError = (message) => ({
   message,
   code: 'SUPABASE_CONFIG_MISSING',
   details: null,
-  hint: 'Provide REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY via your environment.',
+  hint:
+    'Provide REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY via your environment. See the README for instructions or copy .env.local.example to .env.local to reuse the hosted credentials.',
 });
 
 const createDisabledQuery = (errorMessage) => {
@@ -122,7 +131,7 @@ const createDisabledSupabaseClient = (errorMessage) => {
 };
 
 const supabase = missingVars.length === 0
-  ? createClient(readEnv('REACT_APP_SUPABASE_URL'), readEnv('REACT_APP_SUPABASE_ANON_KEY'))
+  ? createClient(envValues.REACT_APP_SUPABASE_URL, envValues.REACT_APP_SUPABASE_ANON_KEY)
   : createDisabledSupabaseClient(
       `Missing Supabase configuration. Set the following environment variables: ${missingVars.join(', ')}.`,
     );
@@ -136,3 +145,4 @@ if (missingVars.length > 0 && typeof console !== 'undefined' && process.env.NODE
 
 export { supabase };
 export const isSupabaseConfigured = missingVars.length === 0;
+export default supabase;
