@@ -5,7 +5,7 @@
 import '@testing-library/jest-dom';
 
 jest.mock('./supabaseClient', () => {
-  const createQuery = (result = { data: null, error: { message: 'Mocked Supabase call' } }) => {
+  const createQuery = (result = { data: [], error: null }) => {
     const query = {};
 
     query.select = () => createQuery();

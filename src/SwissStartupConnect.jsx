@@ -7274,9 +7274,6 @@ const SwissStartupConnect = () => {
     if (user?.type === 'startup') {
       baseTabs.push('my-jobs', 'applications');
     }
-    if (user?.type === 'student') {
-      baseTabs.push('messages');
-    }
     return baseTabs;
   }, [user?.type]);
 
@@ -7287,7 +7284,6 @@ const SwissStartupConnect = () => {
       companies: translate('nav.companies', 'Startups'),
       'my-jobs': translate('nav.myJobs', 'My jobs'),
       applications: translate('nav.applications', 'Applicants'),
-      messages: translate('nav.messages', 'Messages'),
       map: translate('nav.map', 'Map'),
       events: translate('nav.events', 'Events'),
       saved: translate('nav.saved', 'Saved'),
@@ -7746,6 +7742,17 @@ const SwissStartupConnect = () => {
                       <button type="button" onClick={() => { setProfileModalOpen(true); setShowUserMenu(false); }}>
                         {translate('accountMenu.profile', 'Profile')}
                       </button>
+                      {user.type === 'student' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('messages');
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          {translate('accountMenu.messages', 'Messages')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
