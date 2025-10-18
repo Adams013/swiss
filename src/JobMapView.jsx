@@ -17,9 +17,7 @@ const JobMapView = ({
 }) => {
   const [mapLayer, setMapLayer] = useState('jobs');
   const [selectedJobCity, setSelectedJobCity] = useState(null);
-  const [jobCityEntries, setJobCityEntries] = useState([]);
   const [selectedEventCity, setSelectedEventCity] = useState(null);
-  const [eventCityEntries, setEventCityEntries] = useState([]);
   const [activePanel, setActivePanel] = useState(null); // 'jobs' | 'events' | null
 
   const showJobs = mapLayer === 'jobs';
@@ -73,36 +71,54 @@ const JobMapView = ({
     setActivePanel(null);
     setSelectedJobCity(null);
     setSelectedEventCity(null);
-    setJobCityEntries([]);
-    setEventCityEntries([]);
   }, []);
 
   const openJobPanel = useCallback(
-    (cityName, jobsInCity) => {
+    (cityName) => {
       if (!showJobs) {
         return;
       }
+
+      if (!cityName) {
+        closePanel();
+        return;
+      }
+
+      const entries = jobsByCity[cityName] || [];
+      if (entries.length === 0) {
+        closePanel();
+        return;
+      }
+
       setSelectedJobCity(cityName);
-      setJobCityEntries(jobsInCity);
       setActivePanel('jobs');
       setSelectedEventCity(null);
-      setEventCityEntries([]);
     },
-    [showJobs]
+    [closePanel, jobsByCity, showJobs]
   );
 
   const openEventPanel = useCallback(
-    (cityName, eventsInCity) => {
+    (cityName) => {
       if (!showEvents) {
         return;
       }
+
+      if (!cityName) {
+        closePanel();
+        return;
+      }
+
+      const entries = eventsByCity[cityName] || [];
+      if (entries.length === 0) {
+        closePanel();
+        return;
+      }
+
       setSelectedEventCity(cityName);
-      setEventCityEntries(eventsInCity);
       setActivePanel('events');
       setSelectedJobCity(null);
-      setJobCityEntries([]);
     },
-    [showEvents]
+    [closePanel, eventsByCity, showEvents]
   );
 
   const handleJobClick = useCallback(
@@ -113,66 +129,6 @@ const JobMapView = ({
     },
     [onJobClick]
   );
-
-  useEffect(() => {
-    if (activePanel !== 'jobs') {
-      return;
-    }
-    if (!selectedJobCity || !showJobs) {
-      setJobCityEntries([]);
-      if (!showJobs) {
-        setActivePanel(null);
-        setSelectedJobCity(null);
-      }
-      return;
-    }
-    const nextJobs = jobsByCity[selectedJobCity] || [];
-    if (nextJobs.length === 0) {
-      setActivePanel(null);
-      setSelectedJobCity(null);
-      setJobCityEntries([]);
-      return;
-    }
-    setJobCityEntries((previous) => {
-      if (
-        previous.length === nextJobs.length &&
-        previous.every((entry, index) => entry.id === nextJobs[index]?.id)
-      ) {
-        return previous;
-      }
-      return nextJobs;
-    });
-  }, [activePanel, jobsByCity, selectedJobCity, showJobs]);
-
-  useEffect(() => {
-    if (activePanel !== 'events') {
-      return;
-    }
-    if (!selectedEventCity || !showEvents) {
-      setEventCityEntries([]);
-      if (!showEvents) {
-        setActivePanel(null);
-        setSelectedEventCity(null);
-      }
-      return;
-    }
-    const nextEvents = eventsByCity[selectedEventCity] || [];
-    if (nextEvents.length === 0) {
-      setActivePanel(null);
-      setSelectedEventCity(null);
-      setEventCityEntries([]);
-      return;
-    }
-    setEventCityEntries((previous) => {
-      if (
-        previous.length === nextEvents.length &&
-        previous.every((entry, index) => entry.id === nextEvents[index]?.id)
-      ) {
-        return previous;
-      }
-      return nextEvents;
-    });
-  }, [activePanel, eventsByCity, selectedEventCity, showEvents]);
 
   useEffect(() => {
     if (!focusJobId) {
@@ -202,11 +158,17 @@ const JobMapView = ({
     }
 
     const jobsInCity = jobsByCity[cityKey] || [];
+    if (jobsInCity.length === 0) {
+      closePanel();
+      if (onFocusHandled) {
+        onFocusHandled();
+      }
+      return;
+    }
+
     setSelectedJobCity(cityKey);
-    setJobCityEntries(jobsInCity);
     setActivePanel('jobs');
     setSelectedEventCity(null);
-    setEventCityEntries([]);
 
     if (onFocusHandled) {
       onFocusHandled();
@@ -219,6 +181,36 @@ const JobMapView = ({
     onFocusHandled,
     showJobs,
   ]);
+
+  const jobPanelEntries = useMemo(() => {
+    if (!showJobs || !selectedJobCity) {
+      return [];
+    }
+    return jobsByCity[selectedJobCity] || [];
+  }, [jobsByCity, selectedJobCity, showJobs]);
+
+  const eventPanelEntries = useMemo(() => {
+    if (!showEvents || !selectedEventCity) {
+      return [];
+    }
+    return eventsByCity[selectedEventCity] || [];
+  }, [eventsByCity, selectedEventCity, showEvents]);
+
+  useEffect(() => {
+    if (activePanel === 'jobs') {
+      if (!showJobs || !selectedJobCity || jobPanelEntries.length === 0) {
+        closePanel();
+      }
+    }
+  }, [activePanel, closePanel, jobPanelEntries.length, selectedJobCity, showJobs]);
+
+  useEffect(() => {
+    if (activePanel === 'events') {
+      if (!showEvents || !selectedEventCity || eventPanelEntries.length === 0) {
+        closePanel();
+      }
+    }
+  }, [activePanel, closePanel, eventPanelEntries.length, selectedEventCity, showEvents]);
 
   useEffect(() => {
     if (!showJobs && activePanel === 'jobs') {
@@ -270,9 +262,9 @@ const JobMapView = ({
   }, [mapLayer, translate]);
 
   const shouldShowJobPanel =
-    activePanel === 'jobs' && showJobs && selectedJobCity && jobCityEntries.length > 0;
+    activePanel === 'jobs' && showJobs && selectedJobCity && jobPanelEntries.length > 0;
   const shouldShowEventPanel =
-    activePanel === 'events' && showEvents && selectedEventCity && eventCityEntries.length > 0;
+    activePanel === 'events' && showEvents && selectedEventCity && eventPanelEntries.length > 0;
   const isPanelOpen = shouldShowJobPanel || shouldShowEventPanel;
 
   return (
@@ -317,7 +309,7 @@ const JobMapView = ({
           <CityJobPanel
             selectedCity={selectedJobCity}
             selectedCityLabel={selectedJobCityLabel}
-            cityJobs={jobCityEntries}
+            cityJobs={jobPanelEntries}
             onClose={closePanel}
             onJobClick={handleJobClick}
             translate={translate}
@@ -328,7 +320,7 @@ const JobMapView = ({
           <CityEventPanel
             selectedCity={selectedEventCity}
             selectedCityLabel={selectedEventCityLabel}
-            cityEvents={eventCityEntries}
+            cityEvents={eventPanelEntries}
             onClose={closePanel}
             translate={translate}
           />

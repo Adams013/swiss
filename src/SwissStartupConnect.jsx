@@ -33,2141 +33,158 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
-import { fetchJobs } from './services/supabaseJobs';
-import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
+import CvFootnote from './components/CvFootnote';
+import Modal from './components/Modal';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
   loadCompanyProfilesById,
 } from './data/companyProfiles';
-import { loadMockJobs } from './data/mockJobs';
 import { loadMockEvents } from './data/mockEvents';
-
-const sortEventsByScheduleStatic = (list) => {
-  if (!Array.isArray(list)) {
-    return [];
-  }
-  return [...list].sort((a, b) => {
-    const buildDateValue = (entry) => {
-      if (!entry || !entry.event_date) {
-        return 0;
-      }
-      const time = entry.event_time ? String(entry.event_time) : '00:00';
-      const formattedTime = time.length > 5 ? time.slice(0, 8) : time;
-      const composed = `${entry.event_date}T${formattedTime}`;
-      const value = new Date(composed).getTime();
-      return Number.isFinite(value) ? value : 0;
-    };
-
-    return buildDateValue(a) - buildDateValue(b);
-  });
-};
-
-const TRANSLATION_LOADERS = {
-  fr: () => import('./locales/fr.json'),
-  de: () => import('./locales/de.json'),
-};
-
-const translationCache = new Map();
-const translationPromiseCache = new Map();
-
-const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English', shortLabel: 'EN' },
-  { value: 'fr', label: 'Français', shortLabel: 'FR' },
-  { value: 'de', label: 'Deutsch', shortLabel: 'DE' },
-];
-
-const LANGUAGE_TAG_PREFIX = '__lang:';
-
-const LOCAL_PROFILE_CACHE_KEY = 'ssc_profile_cache_v1';
-const LOCAL_APPLICATION_STORAGE_KEY = 'ssc_local_applications_v1';
-const THEME_STORAGE_KEY = 'ssc_theme_preference';
-
-const readCachedProfile = (userId) => {
-  if (typeof window === 'undefined' || !userId) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') {
-      return null;
-    }
-
-    const cached = parsed[userId];
-    if (!cached || typeof cached !== 'object') {
-      return null;
-    }
-
-    return cached;
-  } catch (error) {
-    console.error('Failed to read cached profile', error);
-    return null;
-  }
-};
-
-const writeCachedProfile = (userId, profile) => {
-  if (typeof window === 'undefined' || !userId || !profile) {
-    return;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    const next = parsed && typeof parsed === 'object' ? { ...parsed } : {};
-    next[userId] = { ...profile };
-    window.localStorage.setItem(LOCAL_PROFILE_CACHE_KEY, JSON.stringify(next));
-  } catch (error) {
-    console.error('Failed to cache profile', error);
-  }
-};
-
-const removeCachedProfile = (userId) => {
-  if (typeof window === 'undefined' || !userId) {
-    return;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(LOCAL_PROFILE_CACHE_KEY);
-    if (!raw) {
-      return;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || !parsed[userId]) {
-      return;
-    }
-
-    const next = { ...parsed };
-    delete next[userId];
-
-    if (Object.keys(next).length === 0) {
-      window.localStorage.removeItem(LOCAL_PROFILE_CACHE_KEY);
-    } else {
-      window.localStorage.setItem(LOCAL_PROFILE_CACHE_KEY, JSON.stringify(next));
-    }
-  } catch (error) {
-    console.error('Failed to remove cached profile', error);
-  }
-};
-
-const LANGUAGE_VALUE_TO_CANONICAL = {
-  en: 'english',
-  fr: 'french',
-  de: 'german',
-};
-
-const STARTUP_TEAM_FIELDS = ['team', 'team_size', 'employees', 'headcount'];
-const STARTUP_FUNDRAISING_FIELDS = ['fundraising', 'total_funding', 'total_raised', 'funding'];
-const STARTUP_INFO_FIELDS = ['info_link', 'profile_link', 'external_profile', 'external_profile_url'];
-
-const getJobIdKey = (value) => {
-  if (value == null) {
-    return '';
-  }
-
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? String(value) : '';
-  }
-
-  return String(value);
-};
-
-const sanitizeIdArray = (value) => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const unique = new Set();
-  value.forEach((entry) => {
-    const key = getJobIdKey(entry);
-    if (key) {
-      unique.add(key);
-    }
-  });
-
-  return Array.from(unique);
-};
-
-const readLocalApplications = () => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(LOCAL_APPLICATION_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    console.error('Failed to read local applications', error);
-    return [];
-  }
-};
-
-const writeLocalApplications = (entries) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(LOCAL_APPLICATION_STORAGE_KEY, JSON.stringify(entries));
-  } catch (error) {
-    console.error('Failed to write local applications', error);
-  }
-};
-
-const normalizeApplicationKey = (jobId, profileId) => {
-  const jobKey = getJobIdKey(jobId);
-  const profileKey = getJobIdKey(profileId);
-  return `${jobKey}::${profileKey}`;
-};
-
-const normalizeThreadStateValue = (value) => {
-  if (Array.isArray(value)) {
-    return { entries: value, meta: null };
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Array.isArray(value.entries) ? value.entries : [];
-    const meta = value.meta && typeof value.meta === 'object' ? value.meta : null;
-    return { entries, meta };
-  }
-
-  return { entries: [], meta: null };
-};
-
-const pickThreadValue = (store, primaryKey, fallbackKey) => {
-  if (!store || typeof store !== 'object') {
-    return undefined;
-  }
-
-  if (primaryKey && Object.prototype.hasOwnProperty.call(store, primaryKey)) {
-    return store[primaryKey];
-  }
-
-  if (fallbackKey && Object.prototype.hasOwnProperty.call(store, fallbackKey)) {
-    return store[fallbackKey];
-  }
-
-  return undefined;
-};
-
-const removeThreadKeys = (store, keys = []) => {
-  if (!store || typeof store !== 'object' || !Array.isArray(keys) || keys.length === 0) {
-    return store;
-  }
-
-  let next = store;
-  let mutated = false;
-
-  keys.forEach((key) => {
-    if (!key) {
-      return;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(next, key)) {
-      if (!mutated) {
-        next = { ...next };
-        mutated = true;
-      }
-      delete next[key];
-    }
-  });
-
-  return mutated ? next : store;
-};
-
-const parseThreadKey = (key) => {
-  if (typeof key !== 'string') {
-    return { jobId: '', profileId: '' };
-  }
-
-  const [jobId = '', profileId = ''] = key.split('::');
-  return { jobId: jobId || '', profileId: profileId || '' };
-};
-
-const upsertLocalApplication = (entry) => {
-  if (!entry) {
-    return null;
-  }
-
-  const stored = readLocalApplications();
-  const targetKey = normalizeApplicationKey(entry.job_id, entry.profile_id);
-  const filtered = stored.filter((existing) => {
-    const existingKey = normalizeApplicationKey(existing.job_id, existing.profile_id);
-    return existingKey !== targetKey;
-  });
-  const nextEntries = [...filtered, entry];
-  writeLocalApplications(nextEntries);
-  return entry;
-};
-
-const loadLocalApplicationsForStartup = (startupId, remoteApplications = []) => {
-  const stored = readLocalApplications();
-  const remoteKeys = new Set(
-    Array.isArray(remoteApplications)
-      ? remoteApplications.map((application) => normalizeApplicationKey(application.job_id, application.profile_id))
-      : []
-  );
-
-  let changed = false;
-  const filtered = stored.filter((entry) => {
-    const key = normalizeApplicationKey(entry.job_id, entry.profile_id);
-    if (remoteKeys.has(key)) {
-      changed = true;
-      return false;
-    }
-    return true;
-  });
-
-  if (changed) {
-    writeLocalApplications(filtered);
-  }
-
-  const normalizedStartupId = getJobIdKey(startupId);
-
-  return filtered
-    .filter((entry) => {
-      if (!normalizedStartupId) {
-        return true;
-      }
-      return getJobIdKey(entry.startup_id) === normalizedStartupId;
-    })
-    .map((entry) => ({ ...entry, isLocal: true }));
-};
-
-const updateStoredLocalApplication = (applicationId, updater) => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const stored = readLocalApplications();
-    let changed = false;
-    const updated = stored
-      .map((entry) => {
-        if (entry.id !== applicationId) {
-          return entry;
-        }
-
-        const next = updater ? updater(entry) : entry;
-        if (next === entry) {
-          return entry;
-        }
-
-        changed = true;
-        return next;
-      })
-      .filter(Boolean);
-
-    if (changed) {
-      writeLocalApplications(updated);
-    }
-
-    return updated.find((entry) => entry.id === applicationId) || null;
-  } catch (error) {
-    console.error('Failed to update local application', error);
-    return null;
-  }
-};
-
-const firstNonEmpty = (...candidates) => {
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate;
-    }
-  }
-  return '';
-};
-
-const mapLanguageValueToCanonical = (value) => {
-  if (!value || typeof value !== 'string') {
-    return '';
-  }
-
-  const normalized = value.trim().toLowerCase();
-  return LANGUAGE_VALUE_TO_CANONICAL[normalized] || normalized;
-};
-
-const filterLanguageTags = (tags) => {
-  if (!Array.isArray(tags)) {
-    return [];
-  }
-
-  return tags.filter((tag) => {
-    if (typeof tag !== 'string') {
-      return false;
-    }
-
-    return !tag.toLowerCase().startsWith(LANGUAGE_TAG_PREFIX);
-  });
-};
-
-const JOB_LANGUAGE_LABELS = {
-  en: {
-    english: 'English',
-    french: 'French',
-    german: 'German',
-    italian: 'Italian',
-  },
-  fr: {
-    english: 'Anglais',
-    french: 'Français',
-    german: 'Allemand',
-    italian: 'Italien',
-  },
-  de: {
-    english: 'Englisch',
-    french: 'Französisch',
-    german: 'Deutsch',
-    italian: 'Italienisch',
-  },
-};
-
-const JOB_LANGUAGE_ALIASES = {
-  english: 'english',
-  anglais: 'english',
-  anglaise: 'english',
-  englisch: 'english',
-  german: 'german',
-  deutsch: 'german',
-  germanophone: 'german',
-  allemand: 'german',
-  french: 'french',
-  francais: 'french',
-  français: 'french',
-  franzoesisch: 'french',
-  italien: 'italian',
-  italian: 'italian',
-  italiano: 'italian',
-  italienisch: 'italian',
-};
+import {
+  sortEventsByScheduleStatic,
+  getJobIdKey,
+  sanitizeIdArray,
+  firstNonEmpty,
+  DOCUMENT_EXTENSIONS,
+  getFileExtension,
+  getFileNameFromUrl,
+  isAllowedDocumentFile,
+  sanitizeDecimalInput,
+} from './features/swissStartupConnect/utils';
+import {
+  THEME_STORAGE_KEY,
+  APPLICATION_THREAD_STORAGE_KEY,
+  readCachedProfile,
+  writeCachedProfile,
+  removeCachedProfile,
+  normalizeApplicationKey,
+  normalizeThreadStateValue,
+  pickThreadValue,
+  removeThreadKeys,
+  parseThreadKey,
+  upsertLocalApplication,
+  loadLocalApplicationsForStartup,
+  updateStoredLocalApplication,
+  getInitialTheme,
+} from './features/swissStartupConnect/storage';
+import {
+  STARTUP_TEAM_FIELDS,
+  STARTUP_FUNDRAISING_FIELDS,
+  STARTUP_INFO_FIELDS,
+  MODAL_TITLE_IDS,
+  SWISS_LOCATION_OPTIONS,
+  WORK_ARRANGEMENT_OPTIONS,
+  WORK_ARRANGEMENT_VALUES,
+  WORK_ARRANGEMENT_LABEL_MAP,
+  buildWorkArrangementLabel,
+  steps,
+  stats,
+  testimonials,
+  resourceLinks,
+  careerTips,
+  cantonInternshipSalaries,
+  cvTemplates,
+  cvWritingTips,
+  applicationStatuses,
+  formatStatusKeyLabel,
+  activeCityFilters,
+  roleFocusFilters,
+  quickFilters,
+  filterPredicates,
+  normalizeLocationValue,
+  isAllowedSwissLocation,
+} from './features/swissStartupConnect/constants';
+import useTranslations from './features/swissStartupConnect/hooks/useTranslations';
+import useSupabaseJobs from './features/swissStartupConnect/hooks/useSupabaseJobs';
+import useSupabaseCompanies from './features/swissStartupConnect/hooks/useSupabaseCompanies';
+import {
+  SALARY_MIN_FIELDS,
+  SALARY_MAX_FIELDS,
+  INTERNSHIP_DURATION_FIELDS,
+  WEEKLY_HOURS_VALUE_FIELDS,
+  WEEKLY_HOURS_LABEL_FIELDS,
+  EQUITY_MIN_FIELDS,
+  EQUITY_MAX_FIELDS,
+  WEEKLY_HOURS_FIELDS,
+  SALARY_PERIOD_FIELDS,
+  SALARY_FALLBACK_RANGE,
+  SALARY_STEP,
+  EQUITY_FALLBACK_RANGE,
+  EQUITY_STEP,
+  FULL_TIME_WEEKLY_HOURS,
+  FULL_TIME_WORKING_DAYS,
+  WEEKS_PER_MONTH,
+  THIRTEENTH_MONTHS_PER_YEAR,
+  SALARY_MINIMUMS_BY_CADENCE,
+  SALARY_PLACEHOLDER_BY_CADENCE,
+  SALARY_FILTER_HELPERS,
+  SALARY_FILTER_CADENCE_OPTIONS,
+  SALARY_CADENCE_OPTIONS,
+  SALARY_CADENCE_LABELS,
+  clamp,
+  alignToStep,
+  roundToStep,
+  roundDownToStep,
+  roundUpToStep,
+  formatSalaryDisplayValue,
+  formatEquityValue,
+  formatEquityDisplay,
+  parseDurationMonths,
+  formatDurationLabel,
+  buildTimingText,
+  formatCalculatorCurrency,
+  normalizeSalaryCadence,
+  convertCadenceValueToMonthly,
+  convertMonthlyValueToCadence,
+  formatSalaryValue,
+  formatSalaryDisplay,
+  formatRangeLabel,
+  composeSalaryDisplay,
+  convertToMonthly,
+  detectSalaryPeriod,
+  computeSalaryRange,
+  computeEquityRange,
+  deriveSalaryBoundsFromJobs,
+  deriveEquityBoundsFromJobs,
+  inferThirteenthSalary,
+  getWeeklyHoursMeta,
+  formatWeeklyHoursLabel,
+  resolveWeeklyHours,
+  parseWeeklyHoursValue,
+} from './features/swissStartupConnect/salary';
+import {
+  mapStartupToCompany,
+  detectMissingColumn,
+  deriveColumnPresence,
+  mapSupabaseUser,
+} from './features/swissStartupConnect/supabase';
 
 const APPLICATION_THREAD_TYPES = ['message', 'interview', 'note'];
-const APPLICATION_THREAD_STORAGE_KEY = 'ssc_applicationThreads';
-
-const mapStartupToCompany = (startup) => {
-  if (!startup || typeof startup !== 'object') {
-    return null;
-  }
-
-  const name = firstNonEmpty(startup.name, startup.company_name, '');
-  const teamLabel = firstNonEmpty(
-    startup.team,
-    startup.team_size,
-    startup.employees,
-    startup.headcount,
-    startup.team_label
-  );
-  const fundraisingLabel = firstNonEmpty(
-    startup.fundraising,
-    startup.total_funding,
-    startup.total_raised,
-    startup.funding
-  );
-  const cultureLabel = firstNonEmpty(startup.culture, startup.values, startup.mission);
-  const infoLink = firstNonEmpty(
-    startup.info_link,
-    startup.profile_link,
-    startup.external_profile,
-    startup.external_profile_url
-  );
-
-  return {
-    id: startup.id,
-    name: name || 'Verified startup',
-    tagline: firstNonEmpty(startup.tagline, startup.short_description, startup.description),
-    location: firstNonEmpty(startup.location, startup.city, startup.region),
-    industry: firstNonEmpty(startup.industry, startup.vertical, startup.sector),
-    team: teamLabel,
-    fundraising: fundraisingLabel,
-    culture: cultureLabel,
-    website: firstNonEmpty(startup.website, startup.site_url, startup.url),
-    info_link: infoLink,
-    verification_status: startup.verification_status || 'unverified',
-    created_at: startup.created_at,
-  };
-};
-
-const loadTranslationsForLanguage = async (language) => {
-  if (!language || language === 'en') {
-    return null;
-  }
-
-  if (translationCache.has(language)) {
-    return translationCache.get(language);
-  }
-
-  if (translationPromiseCache.has(language)) {
-    return translationPromiseCache.get(language);
-  }
-
-  const loader = TRANSLATION_LOADERS[language];
-  if (!loader) {
-    const resolved = Promise.resolve(null);
-    translationPromiseCache.set(language, resolved);
-    return resolved;
-  }
-
-  const promise = loader()
-    .then((module) => {
-      const dictionary = module?.default ?? module;
-      if (dictionary) {
-        translationCache.set(language, dictionary);
-      }
-      return dictionary || null;
-    })
-    .catch((error) => {
-      console.error(`Failed to load ${language} translations`, error);
-      return null;
-    })
-    .finally(() => {
-      translationPromiseCache.delete(language);
-    });
-
-  translationPromiseCache.set(language, promise);
-  return promise;
-};
-
-
-
-const applyReplacements = (value, replacements) => {
-  if (!replacements) {
-    return value;
-  }
-
-  return value.replace(/\{\{(.*?)\}\}/g, (_, token) => {
-    const trimmed = token.trim();
-    return Object.prototype.hasOwnProperty.call(replacements, trimmed)
-      ? String(replacements[trimmed])
-      : '';
-  });
-};
-
-const getInitialLanguage = () => {
-  if (typeof window === 'undefined') {
-    return 'en';
-  }
-
-  const stored = window.localStorage.getItem('ssc_language');
-  if (stored && LANGUAGE_OPTIONS.some((option) => option.value === stored)) {
-    return stored;
-  }
-  return 'en';
-};
-
-const getInitialTheme = () => {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'dark' || stored === 'light') {
-    return stored;
-  }
-
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-
-  return 'light';
-};
-
-
-
-const collectLanguageKeys = (value, accumulator) => {
-  if (!value) {
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((entry) => collectLanguageKeys(entry, accumulator));
-    return;
-  }
-
-  if (typeof value === 'object') {
-    Object.values(value).forEach((entry) => collectLanguageKeys(entry, accumulator));
-    return;
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-    const tokens = normalized.split(/[^a-z]+/).filter(Boolean);
-    let matched = false;
-
-    tokens.forEach((token) => {
-      const canonical = JOB_LANGUAGE_ALIASES[token];
-      if (canonical && !accumulator.includes(canonical)) {
-        accumulator.push(canonical);
-        matched = true;
-      }
-    });
-
-    if (!matched) {
-      const trimmed = value.trim();
-      if (trimmed && !accumulator.includes(trimmed)) {
-        accumulator.push(trimmed);
-      }
-    }
-  }
-};
-
-const resolveJobLanguageLabels = (job) => {
-  if (job?.language_labels && typeof job.language_labels === 'object') {
-    const englishLabels = Array.isArray(job.language_labels.en) ? job.language_labels.en : [];
-    const keys = [];
-    englishLabels.forEach((label) => collectLanguageKeys(label, keys));
-    const normalizedKeys = keys.length > 0 ? keys : ['english'];
-    const labels = {};
-    Object.entries(JOB_LANGUAGE_LABELS).forEach(([locale, mapping]) => {
-      if (Array.isArray(job.language_labels[locale]) && job.language_labels[locale].length > 0) {
-        labels[locale] = job.language_labels[locale];
-      } else {
-        labels[locale] = normalizedKeys.map((key) => mapping[key] || key);
-      }
-    });
-    return { keys: normalizedKeys, labels };
-  }
-
-  const keys = [];
-  const candidates = [
-    job?.language_requirements,
-    job?.languages_required,
-    job?.languages,
-    job?.language,
-  ];
-
-  candidates.forEach((value) => collectLanguageKeys(value, keys));
-
-  if (Array.isArray(job?.tags)) {
-    job.tags.forEach((tag) => {
-      if (typeof tag !== 'string') {
-        return;
-      }
-
-      if (!tag.toLowerCase().startsWith(LANGUAGE_TAG_PREFIX)) {
-        return;
-      }
-
-      const canonical = tag.slice(LANGUAGE_TAG_PREFIX.length).trim().toLowerCase();
-      if (canonical && !keys.includes(canonical)) {
-        keys.push(canonical);
-      }
-    });
-  }
-
-  if (keys.length === 0 && job?.translations) {
-    Object.values(job.translations).forEach((translation) => {
-      if (translation && typeof translation === 'object') {
-        collectLanguageKeys(translation.languages, keys);
-      }
-    });
-  }
-
-  if (keys.length === 0) {
-    keys.push('english');
-  }
-
-  const labels = {};
-  Object.entries(JOB_LANGUAGE_LABELS).forEach(([locale, mapping]) => {
-    labels[locale] = keys.map((key) => mapping[key] || key);
-  });
-
-  return { keys, labels };
-};
-
-const SWISS_LOCATION_OPTIONS = [
-  ['Zurich, Switzerland', 'Zurich', 'filters.locations.zurich'],
-  ['Geneva, Switzerland', 'Geneva', 'filters.locations.geneva'],
-  ['Basel, Switzerland', 'Basel', 'filters.locations.basel'],
-  ['Bern, Switzerland', 'Bern', 'filters.locations.bern'],
-  ['Lausanne, Switzerland', 'Lausanne', 'filters.locations.lausanne'],
-  ['Lugano, Switzerland', 'Lugano', 'filters.locations.lugano'],
-  ['Lucerne, Switzerland', 'Lucerne', 'filters.locations.lucerne'],
-  ['St. Gallen, Switzerland', 'St. Gallen', 'filters.locations.stgallen'],
-  ['Fribourg, Switzerland', 'Fribourg', 'filters.locations.fribourg'],
-  ['Neuchâtel, Switzerland', 'Neuchâtel', 'filters.locations.neuchatel'],
-  ['Winterthur, Switzerland', 'Winterthur', 'filters.locations.winterthur'],
-  ['Zug, Switzerland', 'Zug', 'filters.locations.zug'],
-  ['Sion, Switzerland', 'Sion', 'filters.locations.sion'],
-  ['Chur, Switzerland', 'Chur', 'filters.locations.chur'],
-  ['Biel/Bienne, Switzerland', 'Biel/Bienne', 'filters.locations.biel'],
-  ['Schaffhausen, Switzerland', 'Schaffhausen', 'filters.locations.schaffhausen'],
-  ['Thun, Switzerland', 'Thun', 'filters.locations.thun'],
-  ['La Chaux-de-Fonds, Switzerland', 'La Chaux-de-Fonds', 'filters.locations.laChauxDeFonds'],
-  ['Locarno, Switzerland', 'Locarno', 'filters.locations.locarno'],
-  ['Bellinzona, Switzerland', 'Bellinzona', 'filters.locations.bellinzona'],
-  ['Aarau, Switzerland', 'Aarau', 'filters.locations.aarau'],
-  ['St. Moritz, Switzerland', 'St. Moritz', 'filters.locations.stMoritz'],
-  ['Canton of Zurich', 'Canton of Zurich', 'filters.locations.cantonZurich'],
-  ['Canton of Bern', 'Canton of Bern', 'filters.locations.cantonBern'],
-  ['Canton of Lucerne', 'Canton of Lucerne', 'filters.locations.cantonLucerne'],
-  ['Canton of Uri', 'Canton of Uri', 'filters.locations.cantonUri'],
-  ['Canton of Schwyz', 'Canton of Schwyz', 'filters.locations.cantonSchwyz'],
-  ['Canton of Obwalden', 'Canton of Obwalden', 'filters.locations.cantonObwalden'],
-  ['Canton of Nidwalden', 'Canton of Nidwalden', 'filters.locations.cantonNidwalden'],
-  ['Canton of Glarus', 'Canton of Glarus', 'filters.locations.cantonGlarus'],
-  ['Canton of Zug', 'Canton of Zug', 'filters.locations.cantonZug'],
-  ['Canton of Fribourg', 'Canton of Fribourg', 'filters.locations.cantonFribourg'],
-  ['Canton of Solothurn', 'Canton of Solothurn', 'filters.locations.cantonSolothurn'],
-  ['Canton of Basel-Stadt', 'Canton of Basel-Stadt', 'filters.locations.cantonBaselStadt'],
-  ['Canton of Basel-Landschaft', 'Canton of Basel-Landschaft', 'filters.locations.cantonBaselLandschaft'],
-  ['Canton of Schaffhausen', 'Canton of Schaffhausen', 'filters.locations.cantonSchaffhausen'],
-  ['Canton of Appenzell Ausserrhoden', 'Canton of Appenzell Ausserrhoden', 'filters.locations.cantonAppenzellAusserrhoden'],
-  ['Canton of Appenzell Innerrhoden', 'Canton of Appenzell Innerrhoden', 'filters.locations.cantonAppenzellInnerrhoden'],
-  ['Canton of St. Gallen', 'Canton of St. Gallen', 'filters.locations.cantonStGallen'],
-  ['Canton of Graubünden', 'Canton of Graubünden', 'filters.locations.cantonGraubunden'],
-  ['Canton of Aargau', 'Canton of Aargau', 'filters.locations.cantonAargau'],
-  ['Canton of Thurgau', 'Canton of Thurgau', 'filters.locations.cantonThurgau'],
-  ['Canton of Ticino', 'Canton of Ticino', 'filters.locations.cantonTicino'],
-  ['Canton of Vaud', 'Canton of Vaud', 'filters.locations.cantonVaud'],
-  ['Canton of Valais', 'Canton of Valais', 'filters.locations.cantonValais'],
-  ['Canton of Neuchâtel', 'Canton of Neuchâtel', 'filters.locations.cantonNeuchatel'],
-  ['Canton of Geneva', 'Canton of Geneva', 'filters.locations.cantonGeneva'],
-  ['Canton of Jura', 'Canton of Jura', 'filters.locations.cantonJura'],
-  ['Remote within Switzerland', 'Remote within Switzerland', 'filters.locations.remoteSwitzerland'],
-  ['Hybrid (Zurich)', 'Hybrid – Zurich', 'filters.locations.hybridZurich'],
-  ['Hybrid (Geneva)', 'Hybrid – Geneva', 'filters.locations.hybridGeneva'],
-  ['Hybrid (Lausanne)', 'Hybrid – Lausanne', 'filters.locations.hybridLausanne'],
-  ['Hybrid (Basel)', 'Hybrid – Basel', 'filters.locations.hybridBasel'],
-  ['Across Switzerland', 'Across Switzerland', 'filters.locations.acrossSwitzerland'],
-].map(([value, label, translationKey]) => ({ value, label, translationKey }));
-
-const WORK_ARRANGEMENT_OPTIONS = [
-  { value: 'on_site', label: 'On-site', translationKey: 'onSite' },
-  { value: 'hybrid', label: 'Hybrid', translationKey: 'hybrid' },
-  { value: 'remote', label: 'Remote', translationKey: 'remote' },
-];
-
-const WORK_ARRANGEMENT_VALUES = new Set(WORK_ARRANGEMENT_OPTIONS.map((option) => option.value));
-
-const WORK_ARRANGEMENT_LABEL_MAP = WORK_ARRANGEMENT_OPTIONS.reduce((accumulator, option) => {
-  accumulator[option.value] = option;
-  return accumulator;
-}, {});
-
-const ALLOWED_SWISS_LOCATIONS = new Set(
-  SWISS_LOCATION_OPTIONS.map((option) =>
-    option.value
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase(),
-  ),
-);
-
-const buildWorkArrangementLabel = (translate, arrangement) => {
-  if (!arrangement || typeof arrangement !== 'string') {
-    return '';
-  }
-
-  const normalized = arrangement.trim();
-  const option = WORK_ARRANGEMENT_LABEL_MAP[normalized];
-  if (!option) {
-    return '';
-  }
-
-  return translate(`jobs.arrangements.${option.translationKey}`, option.label);
-};
-
-const steps = [
-  {
-    id: 1,
-    title: 'Create a standout profile',
-    description: 'Showcase your skills, projects, and what you want to learn next.',
-    icon: GraduationCap,
-  },
-  {
-    id: 2,
-    title: 'Match with aligned startups',
-    description: 'Get curated roles based on your focus, availability, and goals.',
-    icon: Layers,
-  },
-  {
-    id: 3,
-    title: 'Connect with founders',
-    description: 'Join tailored intros and learn what success looks like in the first 90 days.',
-    icon: Handshake,
-  },
-  {
-    id: 4,
-    title: 'Plan your runway',
-    description: 'Compare salary, equity, and contract details with our built-in calculator.',
-    icon: ClipboardList,
-  },
-  {
-    id: 5,
-    title: 'Launch together',
-    description: 'Go from first intro to signed offer in under three weeks on average.',
-    icon: Rocket,
-  },
-  {
-    id: 6,
-    title: 'Celebrate the win',
-    description: 'Join alumni sessions to swap tips and prepare for your first day.',
-    icon: Trophy,
-  },
-];
-
-const stats = [
-  {
-    id: 'startups',
-    value: '2.3k',
-    label: 'Swiss startups hiring',
-    detail: 'Fintech, health, climate, deep tech, consumer, and more.',
-  },
-  {
-    id: 'time-to-offer',
-    value: '12 days',
-    label: 'Average time to offer',
-    detail: 'From first conversation to signed offer for student matches.',
-  },
-  {
-    id: 'student-founders',
-    value: '780+',
-    label: 'Student founders onboard',
-    detail: 'Students who launched ventures through our partner network.',
-  },
-];
-
-const testimonials = [
-  {
-    id: 1,
-    quote:
-      'SwissStartup Connect made it effortless to discover startups that matched my values. I shipped production code in week two.',
-    name: 'Lina H.',
-    role: 'ETH Zürich, Software Engineering Student',
-  },
-  {
-    id: 2,
-    quote:
-      'We filled two growth roles in record time. The candidates already understood the Swiss market and came ready to experiment.',
-    name: 'Marco B.',
-    role: 'Co-founder, Helvetia Mobility',
-  },
-];
-
-const resourceLinks = [
-  {
-    id: 1,
-    title: 'Swiss internship compensation guide',
-    description: 'Median monthly pay and cost-of-living notes for every canton.',
-    action: 'modal',
-    modalId: 'compensation',
-  },
-  {
-    id: 2,
-    title: 'Founder-ready CV template',
-    description: 'Three proven templates plus writing tips founders recommend.',
-    action: 'modal',
-    modalId: 'cvTemplates',
-  },
-  {
-    id: 3,
-    title: 'Visa & permit checklist',
-    description: 'Official step-by-step guidance for studying and working in Switzerland.',
-    action: 'external',
-    href: 'https://www.ch.ch/en/entering-switzerland-visa/',
-  },
-];
-
-const careerTips = [
-  {
-    id: 'equity',
-    title: 'Equity Matters',
-    description: 'Ask about equity packages—they can be worth more than salary!',
-  },
-  {
-    id: 'growth',
-    title: 'Growth Opportunity',
-    description: 'Startups offer rapid career advancement and diverse experience.',
-  },
-  {
-    id: 'learn',
-    title: 'Learn Fast',
-    description: 'Direct exposure to all aspects of business operations.',
-  },
-];
-
-const cantonInternshipSalaries = [
-  { canton: 'Zürich (ZH)', median: 'CHF 2,450', note: 'Finance, pharma, and big-tech hubs offer the highest stipends.' },
-  { canton: 'Bern (BE)', median: 'CHF 2,150', note: 'Federal agencies and med-tech firms provide steady pay.' },
-  { canton: 'Luzern (LU)', median: 'CHF 2,050', note: 'Tourism + health clusters; accommodation remains accessible.' },
-  { canton: 'Uri (UR)', median: 'CHF 1,850', note: 'Engineering SMEs often bundle travel support.' },
-  { canton: 'Schwyz (SZ)', median: 'CHF 2,050', note: 'Finance and industrial automation compete for talent.' },
-  { canton: 'Obwalden (OW)', median: 'CHF 1,950', note: 'Smaller firms provide meal or housing allowances.' },
-  { canton: 'Nidwalden (NW)', median: 'CHF 2,000', note: 'Aviation suppliers benchmark against national averages.' },
-  { canton: 'Glarus (GL)', median: 'CHF 1,950', note: 'Manufacturing internships pair pay with housing support.' },
-  { canton: 'Zug (ZG)', median: 'CHF 2,600', note: 'Crypto and commodity scale-ups raise the bar.' },
-  { canton: 'Fribourg (FR)', median: 'CHF 2,000', note: 'Bilingual market; research internships co-funded by universities.' },
-  { canton: 'Solothurn (SO)', median: 'CHF 2,000', note: 'Precision engineering with transport stipends.' },
-  { canton: 'Basel-Stadt (BS)', median: 'CHF 2,450', note: 'Life sciences keep stipends close to junior salaries.' },
-  { canton: 'Basel-Landschaft (BL)', median: 'CHF 2,150', note: 'Chemical industry and logistics follow city benchmarks.' },
-  { canton: 'Schaffhausen (SH)', median: 'CHF 2,050', note: 'International manufacturing HQs top up with meal cards.' },
-  { canton: 'Appenzell Ausserrhoden (AR)', median: 'CHF 1,900', note: 'Family-owned firms add transport or housing support.' },
-  { canton: 'Appenzell Innerrhoden (AI)', median: 'CHF 1,850', note: 'Smaller cohort, lower living costs balance pay.' },
-  { canton: 'St. Gallen (SG)', median: 'CHF 2,100', note: 'Fintech/textile innovation labs recruit from HSG & OST.' },
-  { canton: 'Graubünden (GR)', median: 'CHF 1,850', note: 'Tourism and outdoor brands include seasonal benefits.' },
-  { canton: 'Aargau (AG)', median: 'CHF 2,100', note: 'Energy and industrial automation pay competitive stipends.' },
-  { canton: 'Thurgau (TG)', median: 'CHF 1,950', note: 'Agri-food & med-tech add commuting aid.' },
-  { canton: 'Ticino (TI)', median: 'CHF 1,900', note: 'Cross-border firms blend Lombardy and Swiss benchmarks.' },
-  { canton: 'Vaud (VD)', median: 'CHF 2,250', note: 'EPFL ecosystem and med-tech scale-ups drive demand.' },
-  { canton: 'Valais (VS)', median: 'CHF 1,900', note: 'Energy & tourism include seasonal housing offers.' },
-  { canton: 'Neuchâtel (NE)', median: 'CHF 2,000', note: 'Watchmaking and microtech provide steady pay.' },
-  { canton: 'Geneva (GE)', median: 'CHF 2,350', note: 'International organisations add lunch/travel subsidies.' },
-  { canton: 'Jura (JU)', median: 'CHF 1,850', note: 'Advanced manufacturing focuses on skill development bonuses.' },
-];
-
-const cvTemplates = [
-  {
-    id: 'europass',
-    name: 'Europass Classic',
-    url: 'https://europa.eu/europass/en/create-europass-cv',
-    reason:
-      'Standardised sections help recruiters compare profiles quickly; bilingual version ready for French/German submissions.',
-  },
-  {
-    id: 'novoresume',
-    name: 'Novorésumé Basic (Free)',
-    url: 'https://novoresume.com/resume-templates',
-    reason: 'Clean single-page layout praised by Swiss scale-ups for student and graduate applications.',
-  },
-  {
-    id: 'google',
-    name: 'Google Docs – Swiss Minimal',
-    url: 'https://docs.google.com/document/d/1dxJ4SWI2Pa3uFY6uhAT0t5gE_zp0oGOPbsT_t-jSfo0/preview',
-    reason: 'Recommended by ETH Career Center for tech roles; easy to copy and localise.',
-  },
-];
-
-const cvWritingTips = [
-  'Open with a three-line summary that states your target role, your strongest skills, and what you want to build next.',
-  'Use bullet points that start with strong verbs and quantify results (e.g. “reduced onboarding time by 30%”).',
-  'Keep a dedicated skills/tools block—founders and CTOs skim for stack alignment first.',
-  'Add entrepreneurial signals: side projects, hackathons, venture labs, or leadership roles.',
-  'Stick to one page until you have 3+ years experience; save the detail for the interview.',
-];
-
-const applicationStatuses = ['submitted', 'in_review', 'interviewing', 'offer', 'hired', 'rejected'];
-
-const formatStatusKeyLabel = (statusKey) => {
-  if (!statusKey || typeof statusKey !== 'string') {
-    return '';
-  }
-
-  return statusKey
-    .split('_')
-    .filter(Boolean)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(' ');
-};
-
-const activeCityFilters = [
-  {
-    id: 'city-zurich',
-    label: 'Zurich',
-    labelKey: 'filters.activeCityOptions.zurich',
-    category: 'Active cities',
-    test: (job) => job.location?.toLowerCase().includes('zurich'),
-  },
-  {
-    id: 'city-geneva',
-    label: 'Geneva',
-    labelKey: 'filters.activeCityOptions.geneva',
-    category: 'Active cities',
-    test: (job) => job.location?.toLowerCase().includes('geneva'),
-  },
-  {
-    id: 'city-lausanne',
-    label: 'Lausanne',
-    labelKey: 'filters.activeCityOptions.lausanne',
-    category: 'Active cities',
-    test: (job) => job.location?.toLowerCase().includes('lausanne'),
-  },
-];
-
-const roleFocusFilters = [
-  {
-    id: 'focus-engineering',
-    label: 'Engineering',
-    labelKey: 'filters.roleFocusOptions.engineering',
-    category: 'Role focus',
-    test: (job) => job.tags?.some((tag) => ['react', 'ai/ml', 'python', 'backend'].includes(tag.toLowerCase())),
-  },
-  {
-    id: 'focus-product',
-    label: 'Product',
-    labelKey: 'filters.roleFocusOptions.product',
-    category: 'Role focus',
-    test: (job) => job.tags?.some((tag) => ['product', 'ux', 'research'].includes(tag.toLowerCase())),
-  },
-  {
-    id: 'focus-growth',
-    label: 'Growth',
-    labelKey: 'filters.roleFocusOptions.growth',
-    category: 'Role focus',
-    test: (job) => job.tags?.some((tag) => ['growth', 'marketing'].includes(tag.toLowerCase())),
-  },
-  {
-    id: 'focus-climate',
-    label: 'Climate',
-    labelKey: 'filters.roleFocusOptions.climate',
-    category: 'Role focus',
-    test: (job) => job.stage?.toLowerCase().includes('climate') || job.tags?.some((tag) => tag.toLowerCase().includes('climate')),
-  },
-];
-
-const quickFilters = [...activeCityFilters, ...roleFocusFilters];
-
-const filterPredicates = quickFilters.reduce((acc, filter) => {
-  acc[filter.id] = filter.test;
-  return acc;
-}, {});
-
-const normalizeLocationValue = (value) => {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  return value
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-};
-
-const isAllowedSwissLocation = (value) => {
-  if (!value) {
-    return false;
-  }
-
-  const normalized = normalizeLocationValue(value);
-  if (ALLOWED_SWISS_LOCATIONS.has(normalized)) {
-    return true;
-  }
-
-  // Allow values that include a known location keyword even if prefixed with descriptors (e.g., "Hybrid (Zurich)").
-  return Array.from(ALLOWED_SWISS_LOCATIONS).some((candidate) => {
-    return normalized.includes(candidate);
-  });
-};
-
-const SALARY_MIN_FIELDS = [
-  'salary_min',
-  'salary_min_chf',
-  'salary_minimum',
-  'salary_range_min',
-  'salary_lower',
-  'salary_floor',
-  'salary_low',
-  'salary_from',
-  'compensation_min',
-  'pay_min',
-];
-
-const SALARY_MAX_FIELDS = [
-  'salary_max',
-  'salary_max_chf',
-  'salary_maximum',
-  'salary_range_max',
-  'salary_upper',
-  'salary_ceiling',
-  'salary_high',
-  'salary_to',
-  'compensation_max',
-  'pay_max',
-];
-
-const INTERNSHIP_DURATION_FIELDS = ['internship_duration_months', 'duration_months'];
-const WEEKLY_HOURS_VALUE_FIELDS = ['weekly_hours_value', 'hours_per_week', 'hoursWeekly'];
-const WEEKLY_HOURS_LABEL_FIELDS = ['weekly_hours', 'weekly_hours_label', 'hours_week', 'work_hours', 'weeklyHours'];
-
-const EQUITY_MIN_FIELDS = [
-  'equity_min',
-  'equity_min_percentage',
-  'equity_percentage',
-  'equity_value',
-  'equity_floor',
-  'equity_low',
-];
-const EQUITY_MAX_FIELDS = [
-  'equity_max',
-  'equity_max_percentage',
-  'equity_percentage',
-  'equity_value',
-  'equity_ceiling',
-  'equity_high',
-];
-const WEEKLY_HOURS_FIELDS = [
-  'weekly_hours_value',
-  'weekly_hours',
-  'weekly_hours_label',
-  'hours_per_week',
-  'work_hours',
-  'hours_week',
-  'hours',
-  'hoursWeekly',
-  'weeklyHours',
-];
-
-const SALARY_PERIOD_FIELDS = [
-  'salary_period',
-  'salary_interval',
-  'salary_frequency',
-  'salary_unit',
-  'salary_timeframe',
-  'salary_basis',
-  'pay_period',
-  'salary_cadence',
-];
-
-const SALARY_FALLBACK_RANGE = [2000, 12000];
-const SALARY_STEP = 1;
-const EQUITY_FALLBACK_RANGE = [0, 5];
-const EQUITY_STEP = 0.01;
-const FULL_TIME_WEEKLY_HOURS = 42;
-const FULL_TIME_WORKING_DAYS = 5;
-const WEEKS_PER_MONTH = 4.345;
-const THIRTEENTH_MONTHS_PER_YEAR = 13;
-const SALARY_MINIMUMS_BY_CADENCE = {
-  hour: 10,
-  week: 100,
-  month: 1000,
-  year: 10000,
-};
-const SALARY_PLACEHOLDER_BY_CADENCE = {
-  hour: '10',
-  week: '100',
-  month: '1000',
-  year: '10000',
-};
-const SALARY_FILTER_HELPERS = {
-  hour: 'CHF hourly',
-  week: 'CHF weekly',
-  month: 'CHF monthly (default)',
-  year: 'CHF yearly / total',
-};
-const SALARY_FILTER_CADENCE_OPTIONS = [
-  { value: 'hour', label: 'Hourly' },
-  { value: 'week', label: 'Weekly' },
-  { value: 'month', label: 'Monthly' },
-  { value: 'year', label: 'Yearly / total' },
-];
-
-const SALARY_CADENCE_OPTIONS = SALARY_FILTER_CADENCE_OPTIONS;
-
-const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'tex'];
-
 const SALARY_CALCULATOR_PANEL_ID = 'ssc-salary-calculator';
 const SALARY_CALCULATOR_TRANSITION_MS = 250;
 
-const THIRTEENTH_SALARY_PATTERN = /\b(?:13(?:th)?|thirteenth)\b/i;
-
-const parseExplicitBoolean = (value) => {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'number') {
-    if (Number.isNaN(value)) {
-      return null;
-    }
-    if (value > 0) {
-      return true;
-    }
-    if (value === 0) {
-      return false;
-    }
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) {
-      return null;
-    }
-
-    if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) {
-      return true;
-    }
-
-    if (['false', '0', 'no', 'n', 'off'].includes(normalized)) {
-      return false;
-    }
-  }
-
-  return null;
-};
-
-const textMentionsThirteenthSalary = (value) =>
-  typeof value === 'string' && THIRTEENTH_SALARY_PATTERN.test(value);
-
-const listMentionsThirteenthSalary = (list) =>
-  Array.isArray(list) && list.some((item) => textMentionsThirteenthSalary(item));
-
-const inferThirteenthSalary = (job) => {
-  if (!job) {
-    return false;
-  }
-
-  const explicitHasThirteenth = parseExplicitBoolean(job.has_thirteenth_salary);
-  if (explicitHasThirteenth != null) {
-    return explicitHasThirteenth;
-  }
-
-  const explicitIncludesThirteenth = parseExplicitBoolean(job.includes_thirteenth_salary);
-  if (explicitIncludesThirteenth != null) {
-    return explicitIncludesThirteenth;
-  }
-
-  const textSources = [
-    job.salary,
-    job.salary_note,
-    job.compensation_note,
-    job.compensation_details,
-    job.description,
-  ];
-
-  if (textSources.some((value) => textMentionsThirteenthSalary(value))) {
-    return true;
-  }
-
-  const listSources = [job.benefits, job.perks, job.compensation_breakdown];
-  return listSources.some((value) => listMentionsThirteenthSalary(value));
-};
-
-const getFileExtension = (fileName) => {
-  if (!fileName) return '';
-  const parts = fileName.split('.');
-  if (parts.length < 2) return '';
-  return parts.pop().toLowerCase();
-};
-
-const getFileNameFromUrl = (url) => {
-  if (typeof url !== 'string') {
-    return '';
-  }
-
-  try {
-    const trimmed = url.trim();
-    if (!trimmed) {
-      return '';
-    }
-
-    const withoutQuery = trimmed.split('?')[0];
-    const segments = withoutQuery.split('/').filter(Boolean);
-    if (!segments.length) {
-      return '';
-    }
-
-    const lastSegment = segments[segments.length - 1];
-    return decodeURIComponent(lastSegment);
-  } catch (error) {
-    console.error('Failed to derive file name from URL', error);
-    return '';
-  }
-};
-
-const isAllowedDocumentFile = (file) => {
-  if (!file) return false;
-  const extension = getFileExtension(file.name);
-  return DOCUMENT_EXTENSIONS.includes(extension);
-};
-
-const SALARY_CADENCE_LABELS = {
-  hour: 'hourly',
-  hourly: 'hourly',
-  week: 'weekly',
-  weekly: 'weekly',
-  month: 'monthly',
-  monthly: 'monthly',
-  year: 'yearly',
-  yearly: 'yearly',
-};
-
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-const getStepFactor = (step) => {
-  if (!Number.isFinite(step) || step <= 0) {
-    return 1;
-  }
-  return Math.pow(10, Math.max(0, Math.ceil(-Math.log10(step))));
-};
-
-const alignToStep = (value, step, strategy) => {
-  if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) {
-    return value;
-  }
-  const factor = getStepFactor(step);
-  const scaled = strategy(value / step);
-  const rounded = Math.round(scaled * step * factor) / factor;
-  return Object.is(rounded, -0) ? 0 : rounded;
-};
-
-const roundToStep = (value, step) => alignToStep(value, step, Math.round);
-
-const roundDownToStep = (value, step) => alignToStep(value, step, Math.floor);
-
-const roundUpToStep = (value, step) => alignToStep(value, step, Math.ceil);
-
-const formatSalaryDisplayValue = (value) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return null;
-  }
-
-  if (value >= 1000) {
-    const shortened = value / 1000;
-    const precision = shortened >= 10 ? 0 : shortened >= 1 ? 1 : 2;
-    const formatted = shortened.toFixed(precision).replace(/\.0+$/, '');
-    return `${formatted}k`;
-  }
-
-  return String(Math.round(value));
-};
-
-const formatEquityValue = (value) => {
-  if (!Number.isFinite(value)) {
-    return '';
-  }
-
-  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
-  return rounded
-    .toFixed(2)
-    .replace(/\.00$/, '')
-    .replace(/(\.\d+?)0+$/, '$1');
-};
-
-const formatEquityDisplay = (min, max) => {
-  const hasMin = Number.isFinite(min) && min > 0;
-  const hasMax = Number.isFinite(max) && max > 0;
-
-  if (!hasMin && !hasMax) {
-    if (Number.isFinite(min) || Number.isFinite(max)) {
-      const value = formatEquityValue(min ?? max ?? 0);
-      return value ? `${value}% equity` : 'Equity available';
-    }
-    return 'No equity disclosed';
-  }
-
-  const formattedMin = hasMin ? formatEquityValue(min) : null;
-  const formattedMax = hasMax ? formatEquityValue(max) : null;
-
-  if (formattedMin && formattedMax) {
-    if (formattedMin === formattedMax) {
-      return `${formattedMin}% equity`;
-    }
-    return `${formattedMin}% – ${formattedMax}% equity`;
-  }
-
-  const single = formattedMin || formattedMax;
-  return single ? `${single}% equity` : 'Equity available';
-};
-
-const sanitizeDecimalInput = (value) => {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  const cleaned = value.replace(/[^0-9.,]/g, '');
-  const separatorIndex = cleaned.search(/[.,]/);
-
-  if (separatorIndex === -1) {
-    return cleaned;
-  }
-
-  const before = cleaned.slice(0, separatorIndex + 1);
-  const after = cleaned
-    .slice(separatorIndex + 1)
-    .replace(/[.,]/g, '');
-
-  return `${before}${after}`;
-};
-
-const parseDurationMonths = (value) => {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
-  }
-
-  if (typeof value === 'string') {
-    const match = value.match(/\d+/);
-    if (!match) {
-      return null;
-    }
-    const parsed = Number.parseInt(match[0], 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  }
-
-  return null;
-};
-
-const formatDurationLabel = (months) => {
-  if (!Number.isFinite(months) || months <= 0) {
-    return '';
-  }
-  const rounded = Math.round(months);
-  const unit = rounded === 1 ? 'month' : 'months';
-  return `${rounded} ${unit}`;
-};
-
-const buildTimingText = (job) => {
-  if (!job) {
-    return '';
-  }
-
-  const segments = [
-    job.employment_type,
-    job.internship_duration_label || job.duration_label,
-    job.weekly_hours_label,
-  ].filter(Boolean);
-
-  const withPosted = [...segments, job.posted].filter(Boolean);
-  return withPosted.join(' • ');
-};
-
-const formatCalculatorCurrency = (value, cadence) => {
-  if (!Number.isFinite(value)) {
-    return null;
-  }
-
-  if (cadence === 'hour') {
-    const rounded = Math.round(value * 100) / 100;
-    return rounded
-      .toFixed(2)
-      .replace(/\.00$/, '')
-      .replace(/(\.\d)0$/, '$1');
-  }
-
-  return formatSalaryDisplayValue(value) ?? `${Math.round(value)}`;
-};
-
-const parseNumericValue = (value) => {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const trimmed = value.trim().toLowerCase();
-  if (!trimmed) {
-    return null;
-  }
-
-  const match = trimmed.match(/-?\d+(?:[.,]\d+)?/);
-  if (!match) {
-    return null;
-  }
-
-  let numeric = Number.parseFloat(match[0].replace(',', '.'));
-  if (!Number.isFinite(numeric)) {
-    return null;
-  }
-
-  if (trimmed.includes('m')) {
-    numeric *= 1_000_000;
-  } else if (trimmed.includes('k')) {
-    numeric *= 1_000;
-  }
-
-  return numeric;
-};
-
-const parsePercentageValue = (value) => {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const match = value.match(/-?\d+(?:[.,]\d+)?/);
-  if (!match) {
-    return null;
-  }
-
-  const numeric = Number.parseFloat(match[0].replace(',', '.'));
-  return Number.isFinite(numeric) ? numeric : null;
-};
-
-const parseWeeklyHoursValue = (value) => {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) && value > 0 ? value : null;
-  }
-
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const match = value.match(/(\d+(?:[.,]\d+)?)/);
-  if (!match) {
-    return null;
-  }
-
-  const numeric = Number.parseFloat(match[1].replace(',', '.'));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-};
-
-const formatWeeklyHoursLabel = (value) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return '';
-  }
-
-  const rounded = Number.isInteger(value) ? value : Number(value.toFixed(1));
-  return `${rounded}h/week`;
-};
-
-const resolveWeeklyHours = (value) => {
-  return Number.isFinite(value) && value > 0 ? value : FULL_TIME_WEEKLY_HOURS;
-};
-
-const getWeeklyHoursMeta = (job) => {
-  if (!job) {
-    return { value: null, label: '' };
-  }
-
-  if (Number.isFinite(job.weekly_hours_value) && job.weekly_hours_value > 0) {
-    return {
-      value: job.weekly_hours_value,
-      label: formatWeeklyHoursLabel(job.weekly_hours_value),
-    };
-  }
-
-  for (const field of WEEKLY_HOURS_FIELDS) {
-    const raw = job?.[field];
-    if (raw == null) {
-      continue;
-    }
-
-    const parsed = parseWeeklyHoursValue(raw);
-    if (Number.isFinite(parsed)) {
-      return {
-        value: parsed,
-        label: formatWeeklyHoursLabel(parsed),
-      };
-    }
-
-    if (typeof raw === 'string' && raw.trim()) {
-      return {
-        value: null,
-        label: raw.trim(),
-      };
-    }
-  }
-
-  return { value: null, label: '' };
-};
-
-const detectSalaryPeriod = (job, salaryText) => {
-  const baseText = [
-    salaryText ?? '',
-    ...SALARY_PERIOD_FIELDS.map((field) => job?.[field] ?? ''),
-  ]
-    .join(' ')
-    .toLowerCase();
-
-  if (baseText.includes('monthly')) return 'month';
-  if (baseText.includes('weekly')) return 'week';
-  if (baseText.includes('yearly')) return 'year';
-  if (baseText.includes('hourly')) return 'hour';
-  if (baseText.includes('month')) return 'month';
-  if (baseText.includes('week')) return 'week';
-  if (baseText.includes('day')) return 'day';
-  if (baseText.includes('hour')) return 'hour';
-  if (baseText.includes('year') || baseText.includes('annual') || baseText.includes('annum')) return 'year';
-  return null;
-};
-
-const normalizeSalaryCadence = (value) => {
-  if (!value) {
-    return null;
-  }
-
-  const lowered = String(value).toLowerCase();
-
-  if (lowered.includes('hour')) return 'hour';
-  if (lowered.includes('week')) return 'week';
-  if (lowered.includes('month')) return 'month';
-  if (lowered.includes('year') || lowered.includes('annual')) return 'year';
-  return null;
-};
-
-const convertCadenceValueToMonthly = (value, cadence, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
-  if (!Number.isFinite(value)) {
-    return null;
-  }
-
-  const normalized = normalizeSalaryCadence(cadence);
-  const lowered = cadence ? String(cadence).toLowerCase() : '';
-  const hoursPerWeek = resolveWeeklyHours(weeklyHours);
-
-  if (!normalized && lowered.includes('day')) {
-    return value * FULL_TIME_WORKING_DAYS * WEEKS_PER_MONTH;
-  }
-
-  switch (normalized) {
-    case 'hour':
-      return value * hoursPerWeek * WEEKS_PER_MONTH;
-    case 'week':
-      return value * WEEKS_PER_MONTH;
-    case 'year':
-      return value / THIRTEENTH_MONTHS_PER_YEAR;
-    case 'month':
-    default:
-      return value;
-  }
-};
-
-const convertMonthlyValueToCadence = (value, cadence, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
-  if (!Number.isFinite(value)) {
-    return null;
-  }
-
-  const normalized = normalizeSalaryCadence(cadence);
-  const lowered = cadence ? String(cadence).toLowerCase() : '';
-  const hoursPerWeek = resolveWeeklyHours(weeklyHours);
-
-  if (!normalized && lowered.includes('day')) {
-    return value / (FULL_TIME_WORKING_DAYS * WEEKS_PER_MONTH);
-  }
-
-  switch (normalized) {
-    case 'hour':
-      return value / (hoursPerWeek * WEEKS_PER_MONTH);
-    case 'week':
-      return value / WEEKS_PER_MONTH;
-    case 'year':
-      return value * THIRTEENTH_MONTHS_PER_YEAR;
-    case 'month':
-    default:
-      return value;
-  }
-};
-
-const formatSalaryValue = (value, cadence = 'month', weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
-  if (!Number.isFinite(value)) {
-    return '';
-  }
-
-  const converted = convertMonthlyValueToCadence(value, cadence, weeklyHours);
-
-  if (!Number.isFinite(converted)) {
-    return '';
-  }
-
-  const decimals = normalizeSalaryCadence(cadence) === 'hour' ? 2 : 0;
-  const formatted = converted.toFixed(decimals);
-  return formatted.replace(/\.00$/, '').replace(/(\.\d*?)0+$/, '$1');
-};
-
-const formatSalaryDisplay = (min, max, cadence, fallbackText = '') => {
-  const formattedMin = formatSalaryDisplayValue(min);
-  const formattedMax = formatSalaryDisplayValue(max);
-  const cadenceKey = normalizeSalaryCadence(cadence);
-  const cadenceLabel = cadenceKey ? SALARY_CADENCE_LABELS[cadenceKey] : null;
-
-  if (!formattedMin && !formattedMax) {
-    const fallback = fallbackText.trim();
-    return fallback || 'Compensation undisclosed';
-  }
-
-  let range = formattedMin || formattedMax || '';
-
-  if (formattedMin && formattedMax) {
-    range = formattedMin === formattedMax ? formattedMin : `${formattedMin} – ${formattedMax}`;
-  }
-
-  const cadenceSuffix = cadenceLabel ? ` · ${cadenceLabel}` : '';
-  return `${range} CHF${cadenceSuffix}`.trim();
-};
-
-const formatRangeLabel = (min, max, suffix) => {
-  const hasMin = Number.isFinite(min);
-  const hasMax = Number.isFinite(max);
-
-  if (!hasMin && !hasMax) {
-    return '';
-  }
-
-  const formattedMin = hasMin ? formatSalaryDisplayValue(min) : null;
-  const formattedMax = hasMax ? formatSalaryDisplayValue(max) : null;
-
-  if (formattedMin && formattedMax) {
-    const range = formattedMin === formattedMax ? formattedMin : `${formattedMin} – ${formattedMax}`;
-    return `${range} ${suffix}`;
-  }
-
-  const single = formattedMin || formattedMax;
-  return single ? `${single} ${suffix}` : '';
-};
-
-const composeSalaryDisplay = ({ baseMin, baseMax, cadence, fallbackText = '' }) => {
-  const cadenceKey = normalizeSalaryCadence(cadence);
-  const hasBase = Number.isFinite(baseMin) || Number.isFinite(baseMax);
-
-  if (!hasBase) {
-    const fallback = fallbackText?.trim();
-    return fallback || 'Compensation undisclosed';
-  }
-
-  return formatSalaryDisplay(baseMin, baseMax, cadenceKey, fallbackText);
-};
-
-const convertToMonthly = (value, period, salaryText, weeklyHours = FULL_TIME_WEEKLY_HOURS) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return null;
-  }
-
-  let resolvedPeriod = period;
-  if (!resolvedPeriod) {
-    const reference = salaryText?.toLowerCase() ?? '';
-    if (reference.includes('per month') || reference.includes('/ month')) {
-      resolvedPeriod = 'month';
-    } else if (reference.includes('per week') || reference.includes('/ week')) {
-      resolvedPeriod = 'week';
-    } else if (reference.includes('per day') || reference.includes('/ day')) {
-      resolvedPeriod = 'day';
-    } else if (reference.includes('per hour') || reference.includes('/ hour')) {
-      resolvedPeriod = 'hour';
-    } else if (value > 20000) {
-      resolvedPeriod = 'year';
-    } else {
-      resolvedPeriod = 'month';
-    }
-  }
-
-  const converted = convertCadenceValueToMonthly(value, resolvedPeriod, weeklyHours);
-  return Number.isFinite(converted) ? converted : value;
-};
-
-const computeSalaryRange = (job) => {
-  const salaryText = job?.salary ?? '';
-  const period = detectSalaryPeriod(job, salaryText);
-  const { value: weeklyHoursValue } = getWeeklyHoursMeta(job);
-  const hoursForConversion = resolveWeeklyHours(weeklyHoursValue);
-
-  const minCandidate = SALARY_MIN_FIELDS.map((field) => parseNumericValue(job?.[field]))
-    .find((value) => value != null);
-  const maxCandidate = SALARY_MAX_FIELDS.map((field) => parseNumericValue(job?.[field]))
-    .find((value) => value != null);
-
-  const directValues = [minCandidate, maxCandidate]
-    .filter((value) => value != null)
-    .map((value) => convertToMonthly(value, period, salaryText, hoursForConversion))
-    .filter((value) => Number.isFinite(value));
-
-  const parsedFromString = Array.from(
-    String(salaryText)
-      .toLowerCase()
-      .matchAll(/(\d+(?:[.,]\d+)?)\s*(k|m)?/g)
-  )
-    .map((match) => {
-      let numeric = Number.parseFloat(match[1].replace(',', '.'));
-      if (!Number.isFinite(numeric)) {
-        return null;
-      }
-      if (match[2] === 'm') numeric *= 1_000_000;
-      if (match[2] === 'k') numeric *= 1_000;
-      return convertToMonthly(numeric, period, salaryText, hoursForConversion);
-    })
-    .filter((value) => Number.isFinite(value));
-
-  const values = [...directValues, ...parsedFromString].filter((value) => Number.isFinite(value) && value > 0);
-
-  if (values.length === 0) {
-    return [null, null];
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  return [Math.round(min), Math.round(max)];
-};
-
-const detectMissingColumn = (message, tableName = '') => {
-  if (typeof message !== 'string') {
-    return null;
-  }
-
-  const normalizedTable = tableName ? tableName.replace(/["'`]/g, '') : '';
-
-  const tableSpecificPatterns = normalizedTable
-    ? [
-        new RegExp(`column "([^"\\s]+)" of relation "${normalizedTable}" does not exist`, 'i'),
-        new RegExp(`could not find the '([^']+)' column of '${normalizedTable}'`, 'i'),
-        new RegExp(`'([^']+)' column of '${normalizedTable}'`, 'i'),
-        new RegExp(`column "([^"\\s]+)" of table "${normalizedTable}" does not exist`, 'i'),
-      ]
-    : [];
-
-  const genericPatterns = [
-    /missing column "?([^\s"']+)"?/i,
-    /unknown column "?([^\s"']+)"?/i,
-  ];
-
-  for (const pattern of [...tableSpecificPatterns, ...genericPatterns]) {
-    const match = message.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-
-  return null;
-};
-
-const deriveColumnPresence = (records) => {
-  if (!Array.isArray(records)) {
-    return {};
-  }
-
-  return records.reduce((accumulator, record) => {
-    if (record && typeof record === 'object' && !Array.isArray(record)) {
-      Object.keys(record).forEach((key) => {
-        accumulator[key] = true;
-      });
-    }
-    return accumulator;
-  }, {});
-};
-
-const deriveSalaryBoundsFromJobs = (jobs) => {
-  let min = Infinity;
-  let max = 0;
-
-  jobs.forEach((job) => {
-    const baseMin = Number.isFinite(job.salary_min_value) ? job.salary_min_value : null;
-    const baseMax = Number.isFinite(job.salary_max_value) ? job.salary_max_value : null;
-    let jobMin = baseMin;
-    let jobMax = baseMax;
-
-    if (jobMin == null || jobMax == null) {
-      const [derivedMin, derivedMax] = computeSalaryRange(job);
-      if (jobMin == null) jobMin = derivedMin;
-      if (jobMax == null) jobMax = derivedMax;
-    }
-
-    if (Number.isFinite(jobMin)) {
-      min = Math.min(min, jobMin);
-    }
-    if (Number.isFinite(jobMax)) {
-      max = Math.max(max, jobMax);
-    }
-  });
-
-  if (!Number.isFinite(min) || !Number.isFinite(max) || min === Infinity || max === 0) {
-    return [...SALARY_FALLBACK_RANGE];
-  }
-
-  if (min === max) {
-    const buffer = Math.max(min * 0.2, 500);
-    return [Math.max(0, Math.floor(min - buffer)), Math.ceil(max + buffer)];
-  }
-
-  return [Math.floor(min), Math.ceil(max)];
-};
-
-const computeEquityRange = (job) => {
-  const equityText = job?.equity ?? '';
-
-  const minCandidate = EQUITY_MIN_FIELDS.map((field) => parsePercentageValue(job?.[field]))
-    .find((value) => value != null);
-  const maxCandidate = EQUITY_MAX_FIELDS.map((field) => parsePercentageValue(job?.[field]))
-    .find((value) => value != null);
-
-  const parsedFromString = Array.from(String(equityText).toLowerCase().matchAll(/(\d+(?:[.,]\d+)?)\s*%?/g))
-    .map((match) => Number.parseFloat(match[1].replace(',', '.')))
-    .filter((value) => Number.isFinite(value));
-
-  const values = [minCandidate, maxCandidate, ...parsedFromString]
-    .filter((value) => Number.isFinite(value) && value >= 0);
-
-  if (values.length === 0) {
-    return [null, null];
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  return [roundToStep(min, EQUITY_STEP), roundToStep(max, EQUITY_STEP)];
-};
-
-const deriveEquityBoundsFromJobs = (jobs) => {
-  let min = Infinity;
-  let max = 0;
-
-  jobs.forEach((job) => {
-    const baseMin = Number.isFinite(job.equity_min_value) ? job.equity_min_value : null;
-    const baseMax = Number.isFinite(job.equity_max_value) ? job.equity_max_value : null;
-    let jobMin = baseMin;
-    let jobMax = baseMax;
-
-    if (jobMin == null || jobMax == null) {
-      const [derivedMin, derivedMax] = computeEquityRange(job);
-      if (jobMin == null) jobMin = derivedMin;
-      if (jobMax == null) jobMax = derivedMax;
-    }
-
-    if (Number.isFinite(jobMin)) {
-      min = Math.min(min, jobMin);
-    }
-    if (Number.isFinite(jobMax)) {
-      max = Math.max(max, jobMax);
-    }
-  });
-
-  if (!Number.isFinite(min) || !Number.isFinite(max) || min === Infinity) {
-    return [...EQUITY_FALLBACK_RANGE];
-  }
-
-  const lowerBound = Math.max(0, Math.min(min, 0));
-  const upperBound = Math.max(max, lowerBound);
-
-  if (lowerBound === upperBound) {
-    const buffer = Math.max(upperBound * 0.4, 0.2);
-    const lower = Math.max(0, upperBound - buffer);
-    const upper = upperBound + buffer;
-    return [roundDownToStep(lower, EQUITY_STEP), roundUpToStep(upper, EQUITY_STEP)];
-  }
-
-  return [roundDownToStep(lowerBound, EQUITY_STEP), roundUpToStep(upperBound, EQUITY_STEP)];
-};
-
-
-const mapSupabaseUser = (supabaseUser) => {
-  if (!supabaseUser) return null;
-
-  const rawType = supabaseUser.user_metadata?.type;
-  const normalizedType =
-    typeof rawType === 'string' && rawType.trim()
-      ? rawType.trim().toLowerCase()
-      : '';
-
-  return {
-    id: supabaseUser.id,
-    email: supabaseUser.email ?? '',
-    name:
-      supabaseUser.user_metadata?.name ||
-      supabaseUser.email?.split('@')[0] ||
-      'Member',
-    type: normalizedType === 'startup' ? 'startup' : 'student',
-    avatar_url: supabaseUser.user_metadata?.avatar_url || '',
-  };
-};
-
 const SwissStartupConnect = () => {
-  const [language, setLanguage] = useState(getInitialLanguage);
-  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
-  const [loadedTranslations, setLoadedTranslations] = useState(() => {
-    const initial = {};
-    translationCache.forEach((value, key) => {
-      initial[key] = value;
-    });
-    return initial;
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (language === 'en') {
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const cached = translationCache.get(language);
-    if (cached) {
-      setLoadedTranslations((previous) => {
-        if (previous[language]) {
-          return previous;
-        }
-        return { ...previous, [language]: cached };
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    loadTranslationsForLanguage(language)
-      .then((dictionary) => {
-        if (cancelled || !dictionary) {
-          return;
-        }
-        setLoadedTranslations((previous) => ({ ...previous, [language]: dictionary }));
-      })
-      .catch((error) => {
-        console.error(`Failed to resolve ${language} translations`, error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [language]);
-  const translate = useCallback(
-    (key, fallback = '', replacements) => {
-      const apply = (template) => {
-        const base = template || fallback || key;
-        return applyReplacements(base, replacements);
-      };
-
-      if (language === 'en') {
-        return apply(fallback);
-      }
-
-      const dictionary = loadedTranslations[language];
-      if (!dictionary) {
-        return apply(fallback);
-      }
-
-      const segments = key.split('.');
-      let current = dictionary;
-      for (const segment of segments) {
-        if (current && Object.prototype.hasOwnProperty.call(current, segment)) {
-          current = current[segment];
-        } else {
-          current = null;
-          break;
-        }
-      }
-
-      if (typeof current === 'string') {
-        return apply(current);
-      }
-
-      if (Array.isArray(current)) {
-        return current.map((item) => apply(typeof item === 'string' ? item : ''));
-      }
-
-      return apply(fallback);
-    },
-    [language, loadedTranslations]
-  );
-
-  const getLocalizedJobText = useCallback(
-    (job, field) => {
-      if (!job) {
-        return '';
-      }
-
-      if (language !== 'en') {
-        const localized = job?.translations?.[language]?.[field];
-        if (typeof localized === 'string' && localized.trim()) {
-          return localized;
-        }
-      }
-
-      const original = job?.[field];
-      return typeof original === 'string' ? original : '';
-    },
-    [language]
-  );
-
-  const getLocalizedJobList = useCallback(
-    (job, field) => {
-      if (!job) {
-        return [];
-      }
-
-      if (language !== 'en') {
-        const localized = job?.translations?.[language]?.[field];
-        if (Array.isArray(localized) && localized.length > 0) {
-          return localized;
-        }
-      }
-
-      const original = job?.[field];
-      if (Array.isArray(original)) {
-        return original;
-      }
-      if (typeof original === 'string' && original.trim()) {
-        return [original];
-      }
-      return [];
-    },
-    [language]
-  );
-
-  const getLocalizedCompanyText = useCallback(
-    (company, field) => {
-      if (!company) {
-        return '';
-      }
-
-      if (language !== 'en') {
-        const localized = company?.translations?.[language]?.[field];
-        if (typeof localized === 'string' && localized.trim()) {
-          return localized;
-        }
-      }
-
-      const original = company?.[field];
-      return typeof original === 'string' ? original : '';
-    },
-    [language]
-  );
-
-  const getJobLanguages = useCallback(
-    (job) => {
-      if (!job) {
-        return [];
-      }
-
-      if (job.language_labels && typeof job.language_labels === 'object') {
-        const localized = job.language_labels[language];
-        if (Array.isArray(localized) && localized.length > 0) {
-          return localized;
-        }
-        if (Array.isArray(job.language_labels.en) && job.language_labels.en.length > 0) {
-          return job.language_labels.en;
-        }
-      }
-
-      const resolved = resolveJobLanguageLabels(job);
-      return resolved.labels[language] || resolved.labels.en || [];
-    },
-    [language]
-  );
-
-  const acknowledgeMessage = translate(
-    'applications.acknowledge',
-    'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.'
-  );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    window.localStorage.setItem('ssc_language', language);
-  }, [language]);
+  const {
+    language,
+    setLanguage,
+    isLanguageMenuOpen,
+    setIsLanguageMenuOpen,
+    translate,
+    getLocalizedJobText,
+    getLocalizedJobList,
+    getLocalizedCompanyText,
+    getJobLanguages,
+    buildPluralSuffix,
+    acknowledgeMessage,
+    LANGUAGE_OPTIONS,
+    LANGUAGE_TAG_PREFIX,
+    filterLanguageTags,
+    mapLanguageValueToCanonical,
+    resolveJobLanguageLabels,
+  } = useTranslations();
 
   const [theme, setTheme] = useState(getInitialTheme);
   const isDarkMode = theme === 'dark';
@@ -2185,19 +202,6 @@ const SwissStartupConnect = () => {
     setTheme((previous) => (previous === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  const buildPluralSuffix = useCallback(
-    (count, overrides = {}) => {
-      const defaults = {
-        en: ['', 's'],
-        fr: ['', 's'],
-        de: ['', 'n'],
-      };
-      const mapping = { ...defaults, ...overrides };
-      const [singular, plural] = mapping[language] || mapping.en;
-      return count === 1 ? singular : plural;
-    },
-    [language]
-  );
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
@@ -2236,6 +240,24 @@ const SwissStartupConnect = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const jobFilters = useMemo(() => {
+    const normalizedSearch = typeof searchTerm === 'string' ? searchTerm.trim() : '';
+    const locationSelections = selectedFilters
+      .map((filterId) => {
+        const match = activeCityFilters.find((filter) => filter.id === filterId);
+        return match ? match.label : null;
+      })
+      .filter(Boolean)
+      .map((label) => label.trim())
+      .filter(Boolean);
+
+    const uniqueLocations = Array.from(new Set(locationSelections));
+
+    return {
+      searchTerm: normalizedSearch,
+      locations: uniqueLocations,
+    };
+  }, [searchTerm, selectedFilters]);
   const [salaryRange, setSalaryRange] = useState(() => [...SALARY_FALLBACK_RANGE]);
   const [salaryBounds, setSalaryBounds] = useState(() => [...SALARY_FALLBACK_RANGE]);
   const [salaryRangeDirty, setSalaryRangeDirty] = useState(false);
@@ -2263,17 +285,26 @@ const SwissStartupConnect = () => {
   const [salaryMin, salaryMax] = salaryRange;
   const [equityMin, equityMax] = equityRange;
 
-  const [jobs, setJobs] = useState([]);
-  const [jobColumnPresence, setJobColumnPresence] = useState({});
+  const [jobsVersion, setJobsVersion] = useState(0);
+
+  const {
+    jobs,
+    setJobs,
+    jobColumnPresence,
+    setJobColumnPresence,
+    jobsLoading,
+    jobHasMorePages,
+  } = useSupabaseJobs({ filters: jobFilters, jobsVersion });
+  const {
+    companies,
+    setCompanies,
+    companiesLoading,
+    setFallbackCompanies,
+  } = useSupabaseCompanies({ mapStartupToCompany });
   const [applicationColumnPresence, setApplicationColumnPresence] = useState({});
-  const [jobsLoading, setJobsLoading] = useState(false);
-  const [companies, setCompanies] = useState([]);
   const [activeCompanyProfile, setActiveCompanyProfile] = useState(null);
-  const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companyCatalog, setCompanyCatalog] = useState([]);
   const [companyCatalogById, setCompanyCatalogById] = useState({});
-  const fallbackJobsRef = useRef([]);
-  const fallbackCompaniesRef = useRef([]);
   const fallbackEventsRef = useRef([]);
   const upsertCompanyFromStartup = useCallback(
     (startupRecord) => {
@@ -2662,8 +693,6 @@ const SwissStartupConnect = () => {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showNewConfirm, setShowNewConfirm] = useState(false);
-
-  const [jobsVersion, setJobsVersion] = useState(0);
   const [postJobModalOpen, setPostJobModalOpen] = useState(false);
   const [postingJob, setPostingJob] = useState(false);
   const [postJobError, setPostJobError] = useState('');
@@ -3275,37 +1304,6 @@ const SwissStartupConnect = () => {
   useEffect(() => {
     let cancelled = false;
 
-    loadMockJobs()
-      .then((fallback) => {
-        if (cancelled || !Array.isArray(fallback)) {
-          return;
-        }
-        fallbackJobsRef.current = fallback;
-        setJobs((previous) => {
-          if (previous.length > 0) {
-            return previous;
-          }
-          return fallback;
-        });
-        setJobColumnPresence((previous) => {
-          if (previous && Object.keys(previous).length > 0) {
-            return previous;
-          }
-          return deriveColumnPresence(fallback);
-        });
-      })
-      .catch((error) => {
-        console.error('Fallback jobs load error', error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
     const hydrateCompanies = async () => {
       try {
         const [profiles, byId, fallback] = await Promise.all([
@@ -3320,7 +1318,7 @@ const SwissStartupConnect = () => {
 
         setCompanyCatalog(profiles);
         setCompanyCatalogById(byId);
-        fallbackCompaniesRef.current = fallback;
+        setFallbackCompanies(fallback);
         setCompanies((previous) => {
           if (previous.length > 0) {
             return previous;
@@ -3337,78 +1335,7 @@ const SwissStartupConnect = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    const loadJobs = async () => {
-      setJobsLoading(true);
-      try {
-        const fallbackJobs =
-          fallbackJobsRef.current.length > 0
-            ? fallbackJobsRef.current
-            : await loadMockJobs();
-        const { jobs: nextJobs, error, fallbackUsed, columnPresenceData } = await fetchJobs({
-          fallbackJobs,
-        });
-
-        if (error) {
-          console.error('Job load error', error);
-        } else if (fallbackUsed) {
-          console.info('Using fallback jobs dataset');
-        }
-
-        setJobs(nextJobs);
-        setJobColumnPresence(deriveColumnPresence(columnPresenceData));
-      } catch (error) {
-        console.error('Job load error', error);
-        const fallbackJobs =
-          fallbackJobsRef.current.length > 0
-            ? fallbackJobsRef.current
-            : await loadMockJobs();
-        setJobs(fallbackJobs);
-        setJobColumnPresence(deriveColumnPresence(fallbackJobs));
-      } finally {
-        setJobsLoading(false);
-      }
-    };
-
-    loadJobs();
-  }, [jobsVersion]);
-
-  useEffect(() => {
-    const loadCompanies = async () => {
-      setCompaniesLoading(true);
-      try {
-        const fallbackCompanies =
-          fallbackCompaniesRef.current.length > 0
-            ? fallbackCompaniesRef.current
-            : await loadMockCompanies();
-        const { companies: nextCompanies, error, fallbackUsed } = await fetchCompanies({
-          fallbackCompanies,
-          mapStartupToCompany,
-        });
-
-        if (error) {
-          console.error('Company load error', error);
-        } else if (fallbackUsed) {
-          console.info('Using fallback companies dataset');
-        }
-
-        setCompanies(nextCompanies);
-      } catch (error) {
-        console.error('Company load error', error);
-        const fallbackCompanies =
-          fallbackCompaniesRef.current.length > 0
-            ? fallbackCompaniesRef.current
-            : await loadMockCompanies();
-        setCompanies(fallbackCompanies);
-      } finally {
-        setCompaniesLoading(false);
-      }
-    };
-
-    loadCompanies();
-  }, []);
+  }, [setFallbackCompanies]);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -4745,7 +2672,8 @@ const SwissStartupConnect = () => {
     return sortedFilteredJobs.slice(0, 5);
   }, [activeTab, sortedFilteredJobs]);
 
-  const showSeeMoreOpportunities = activeTab === 'general' && sortedFilteredJobs.length > jobsForDisplay.length;
+  const showSeeMoreOpportunities =
+    activeTab === 'general' && (sortedFilteredJobs.length > jobsForDisplay.length || jobHasMorePages);
 
   const savedJobList = useMemo(() => {
     if (!user || user.type !== 'student') {
@@ -10036,210 +7964,219 @@ const SwissStartupConnect = () => {
         </div>
       </footer>
 
-      {resourceModal === 'compensation' && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
-              <X size={18} />
-            </button>
-            <header className="ssc__modal-header">
-              <h2>{translate('modals.compensation.title', 'Median internship pay by canton')}</h2>
-              <p>
-                {translate(
-                  'modals.compensation.subtitle',
-                  'Source: swissuniversities internship barometer 2024 + public salary postings (January 2025). Figures are midpoints for internships lasting 3–12 months.'
-                )}
-              </p>
-            </header>
-            <div className="ssc__modal-body">
-              <div className="ssc__table-wrapper">
-                <table className="ssc__table">
-                  <thead>
-                    <tr>
-                      <th>{translate('modals.compensation.table.canton', 'Canton')}</th>
-                      <th>{translate('modals.compensation.table.median', 'Median stipend')}</th>
-                      <th>{translate('modals.compensation.table.expectation', 'What to expect')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cantonInternshipSalaries.map((entry) => (
-                      <tr key={entry.canton}>
-                        <td>{entry.canton}</td>
-                        <td>{entry.median}</td>
-                        <td>{translate(`modals.compensation.notes.${entry.canton}`, entry.note)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="ssc__modal-footnote">
-                {translate(
-                  'modals.compensation.footnote',
-                  'Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest package with the startup before signing the agreement.'
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {resourceModal === 'cvTemplates' && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
-              <X size={18} />
-            </button>
-            <header className="ssc__modal-header">
-              <h2>{translate('modals.cv.title', 'Founder-ready CV templates')}</h2>
-              <p>
-                {translate(
-                  'modals.cv.subtitle',
-                  'Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.'
-                )}
-              </p>
-            </header>
-            <div className="ssc__modal-body">
-              <ul className="ssc__link-list">
-                {cvTemplates.map((template) => (
-                  <li key={template.name}>
-                    <a href={template.url} target="_blank" rel="noreferrer">
-                      {template.name}
-                    </a>
-                    <span>{translate(`modals.cv.templates.${template.id}`, template.reason)}</span>
-                  </li>
+      <Modal
+        isOpen={resourceModal === 'compensation'}
+        onRequestClose={closeResourceModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.compensation}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.compensation}>
+            {translate('modals.compensation.title', 'Median internship pay by canton')}
+          </h2>
+          <p>
+            {translate(
+              'modals.compensation.subtitle',
+              'Source: swissuniversities internship barometer 2024 + public salary postings (January 2025). Figures are midpoints for internships lasting 3–12 months.'
+            )}
+          </p>
+        </header>
+        <div className="ssc__modal-body">
+          <div className="ssc__table-wrapper">
+            <table className="ssc__table">
+              <thead>
+                <tr>
+                  <th>{translate('modals.compensation.table.canton', 'Canton')}</th>
+                  <th>{translate('modals.compensation.table.median', 'Median stipend')}</th>
+                  <th>{translate('modals.compensation.table.expectation', 'What to expect')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cantonInternshipSalaries.map((entry) => (
+                  <tr key={entry.canton}>
+                    <td>{entry.canton}</td>
+                    <td>{entry.median}</td>
+                    <td>{translate(`modals.compensation.notes.${entry.canton}`, entry.note)}</td>
+                  </tr>
                 ))}
-              </ul>
-
-              <h3 className="ssc__modal-subtitle">
-                {translate('modals.cv.tipsTitle', 'How to make your CV stand out')}
-              </h3>
-              <ul className="ssc__bullet-list">
-                {localizedCvTips.map((tip, index) => (
-                  <li key={index}>{tip}</li>
-                ))}
-              </ul>
-              <p className="ssc__modal-footnote">
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: translate(
-                      'modals.cv.footnote',
-                      'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
-                    ),
-                  }}
-                />
-              </p>
-            </div>
+              </tbody>
+            </table>
           </div>
+          <p className="ssc__modal-footnote">
+            {translate(
+              'modals.compensation.footnote',
+              'Companies may add transport passes, lunch stipends, or housing support. Always confirm the latest package with the startup before signing the agreement.'
+            )}
+          </p>
         </div>
-      )}
+      </Modal>
 
-      {reviewsModal && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={closeReviewsModal}>
-              <X size={18} />
-            </button>
-            <header className="ssc__modal-header">
-              <h2>{reviewsModal.name} · Reviews</h2>
-              <p>Hear from verified team members about culture, learning pace, and hiring experience.</p>
-            </header>
-            <div className="ssc__modal-body">
-              {reviewsLoading ? (
-                <p>Loading reviews…</p>
-              ) : reviews.length > 0 ? (
-                <div className="ssc__reviews">
-                  {reviews.map((review) => {
-                    const reviewerName = review.profiles?.full_name?.trim() ||
-                      translate('accountMenu.memberFallback', 'Member');
-                    const reviewerInitial = reviewerName.charAt(0).toUpperCase();
-                    return (
-                      <article key={review.id} className="ssc__review-card">
-                        <div className="ssc__review-heading">
-                          <div className="ssc__review-avatar">
-                            {review.profiles?.avatar_url ? (
-                              <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
-                            ) : (
-                              <span>{reviewerInitial}</span>
-                            )}
-                          </div>
-                          <div>
-                            <strong>{review.title}</strong>
-                            <div className="ssc__review-meta">
-                              <span>{reviewerName}</span>
-                              <span>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
-                                ))}
-                              </span>
-                            </div>
-                          </div>
+      <Modal
+        isOpen={resourceModal === 'cvTemplates'}
+        onRequestClose={closeResourceModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.cvTemplates}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeResourceModal}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.cvTemplates}>
+            {translate('modals.cv.title', 'Founder-ready CV templates')}
+          </h2>
+          <p>
+            {translate(
+              'modals.cv.subtitle',
+              'Start with these layouts that Swiss hiring teams recommend, then tailor them with the tips below.'
+            )}
+          </p>
+        </header>
+        <div className="ssc__modal-body">
+          <ul className="ssc__link-list">
+            {cvTemplates.map((template) => (
+              <li key={template.name}>
+                <a href={template.url} target="_blank" rel="noreferrer">
+                  {template.name}
+                </a>
+                <span>{translate(`modals.cv.templates.${template.id}`, template.reason)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="ssc__modal-subtitle">
+            {translate('modals.cv.tipsTitle', 'How to make your CV stand out')}
+          </h3>
+          <ul className="ssc__bullet-list">
+            {localizedCvTips.map((tip, index) => (
+              <li key={index}>{tip}</li>
+            ))}
+          </ul>
+          <p className="ssc__modal-footnote">
+            <CvFootnote
+              text={translate(
+                'modals.cv.footnote',
+                'Pro tip: export as PDF named <code>firstname-lastname-cv.pdf</code>. Keep versions in English and the local language of the canton you target (French, German, or Italian) to speed up interviews.'
+              )}
+            />
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(reviewsModal)}
+        onRequestClose={closeReviewsModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.reviews}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeReviewsModal}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.reviews}>{reviewsModal?.name} · Reviews</h2>
+          <p>Hear from verified team members about culture, learning pace, and hiring experience.</p>
+        </header>
+        <div className="ssc__modal-body">
+          {reviewsLoading ? (
+            <p>Loading reviews…</p>
+          ) : reviews.length > 0 ? (
+            <div className="ssc__reviews">
+              {reviews.map((review) => {
+                const reviewerName = review.profiles?.full_name?.trim() ||
+                  translate('accountMenu.memberFallback', 'Member');
+                const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+                return (
+                  <article key={review.id} className="ssc__review-card">
+                    <div className="ssc__review-heading">
+                      <div className="ssc__review-avatar">
+                        {review.profiles?.avatar_url ? (
+                          <img src={review.profiles.avatar_url} alt={review.profiles.full_name} />
+                        ) : (
+                          <span>{reviewerInitial}</span>
+                        )}
+                      </div>
+                      <div>
+                        <strong>{review.title}</strong>
+                        <div className="ssc__review-meta">
+                          <span>{reviewerName}</span>
+                          <span>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star key={star} size={14} className={star <= review.rating ? 'is-filled' : ''} />
+                            ))}
+                          </span>
                         </div>
-                        <p>{review.body}</p>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p>No reviews yet. Be the first to share your experience.</p>
-              )}
-
-              {canReview ? (
-                <form className="ssc__form" onSubmit={submitReview}>
-                  <h3 className="ssc__modal-subtitle">Share your experience</h3>
-                  <label className="ssc__field">
-                    <span>Rating</span>
-                    <select
-                      value={reviewForm.rating}
-                      onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))}
-                    >
-                      {[5, 4, 3, 2, 1].map((rating) => (
-                        <option key={rating} value={rating}>
-                          {rating} ★
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="ssc__field">
-                    <span>Headline</span>
-                    <input
-                      type="text"
-                      value={reviewForm.title}
-                      onChange={(event) => setReviewForm((prev) => ({ ...prev, title: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <label className="ssc__field">
-                    <span>What made the culture unique?</span>
-                    <textarea
-                      rows={4}
-                      value={reviewForm.body}
-                      onChange={(event) => setReviewForm((prev) => ({ ...prev, body: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <button type="submit" className="ssc__primary-btn">
-                    Submit review
-                  </button>
-                </form>
-              ) : (
-                <p className="ssc__modal-footnote">
-                  Only verified current or former team members can leave reviews. Ask your founder or admin to mark you as
-                  verified in the startup dashboard.
-                </p>
-              )}
+                      </div>
+                    </div>
+                    <p>{review.body}</p>
+                  </article>
+                );
+              })}
             </div>
-          </div>
-        </div>
-      )}
+          ) : (
+            <p>No reviews yet. Be the first to share your experience.</p>
+          )}
 
-      {localizedSelectedJob && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal">
+          {canReview ? (
+            <form className="ssc__form" onSubmit={submitReview}>
+              <h3 className="ssc__modal-subtitle">Share your experience</h3>
+              <label className="ssc__field">
+                <span>Rating</span>
+                <select
+                  value={reviewForm.rating}
+                  onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))}
+                >
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <option key={rating} value={rating}>
+                      {rating} ★
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="ssc__field">
+                <span>Headline</span>
+                <input
+                  type="text"
+                  value={reviewForm.title}
+                  onChange={(event) => setReviewForm((prev) => ({ ...prev, title: event.target.value }))}
+                  required
+                />
+              </label>
+              <label className="ssc__field">
+                <span>What made the culture unique?</span>
+                <textarea
+                  rows={4}
+                  value={reviewForm.body}
+                  onChange={(event) => setReviewForm((prev) => ({ ...prev, body: event.target.value }))}
+                  required
+                />
+              </label>
+              <button type="submit" className="ssc__primary-btn">
+                Submit review
+              </button>
+            </form>
+          ) : (
+            <p className="ssc__modal-footnote">
+              Only verified current or former team members can leave reviews. Ask your founder or admin to mark you as
+              verified in the startup dashboard.
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(localizedSelectedJob)}
+        onRequestClose={() => setSelectedJob(null)}
+        aria-labelledby={MODAL_TITLE_IDS.jobDetails}
+      >
+        {localizedSelectedJob && (
+          <>
             <button type="button" className="ssc__modal-close" onClick={() => setSelectedJob(null)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{localizedSelectedJob.localizedTitle}</h2>
+              <h2 id={MODAL_TITLE_IDS.jobDetails}>{localizedSelectedJob.localizedTitle}</h2>
               <p>{localizedSelectedJob.company_name}</p>
               <div className="ssc__modal-meta">
                 <span>
@@ -10356,155 +8293,157 @@ const SwissStartupConnect = () => {
                 <span className="ssc__job-note">{applyRestrictionMessage}</span>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
-      {eventModalOpen && canPostEvents && (
-        <div className="ssc__modal-overlay" onClick={closeEventModal}>
-          <div className="ssc__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="ssc__modal-header">
-              <h2>{translate('events.postEvent', 'Post Event')}</h2>
-              <button type="button" className="ssc__modal-close" onClick={closeEventModal}>
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={eventModalOpen && canPostEvents}
+        onRequestClose={closeEventModal}
+        overlayClassName="ssc__modal-overlay"
+        aria-labelledby={MODAL_TITLE_IDS.postEvent}
+      >
+        <div className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.postEvent}>{translate('events.postEvent', 'Post Event')}</h2>
+          <button type="button" className="ssc__modal-close" onClick={closeEventModal}>
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleEventSubmit} className="ssc__modal-form">
+          <div className="ssc__form-group">
+            <label htmlFor="event-title">{translate('events.form.title', 'Event Title')} *</label>
+            <input
+              id="event-title"
+              type="text"
+              value={eventForm.title}
+              onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
+              required
+              placeholder={translate('events.form.titlePlaceholder', 'Enter event title')}
+            />
+          </div>
+
+          <div className="ssc__form-group">
+            <label htmlFor="event-description">{translate('events.form.description', 'Description')}</label>
+            <textarea
+              id="event-description"
+              value={eventForm.description}
+              onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
+              rows={4}
+              placeholder={translate('events.form.descriptionPlaceholder', 'Describe your event')}
+            />
+          </div>
+
+          <div className="ssc__form-row">
+            <div className="ssc__form-group">
+              <label htmlFor="event-date">{translate('events.form.date', 'Date')} *</label>
+              <input
+                id="event-date"
+                type="date"
+                value={eventForm.event_date}
+                onChange={(e) => setEventForm(prev => ({ ...prev, event_date: e.target.value }))}
+                required
+              />
             </div>
-            <form onSubmit={handleEventSubmit} className="ssc__modal-form">
-              <div className="ssc__form-group">
-                <label htmlFor="event-title">{translate('events.form.title', 'Event Title')} *</label>
-                <input
-                  id="event-title"
-                  type="text"
-                  value={eventForm.title}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                  required
-                  placeholder={translate('events.form.titlePlaceholder', 'Enter event title')}
-                />
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-description">{translate('events.form.description', 'Description')}</label>
-                <textarea
-                  id="event-description"
-                  value={eventForm.description}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
-                  rows={4}
-                  placeholder={translate('events.form.descriptionPlaceholder', 'Describe your event')}
-                />
-              </div>
-
-              <div className="ssc__form-row">
-                <div className="ssc__form-group">
-                  <label htmlFor="event-date">{translate('events.form.date', 'Date')} *</label>
-                  <input
-                    id="event-date"
-                    type="date"
-                    value={eventForm.event_date}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, event_date: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="ssc__form-group">
-                  <label htmlFor="event-time">{translate('events.form.time', 'Time')}</label>
-                  <input
-                    id="event-time"
-                    type="time"
-                    value={eventForm.event_time}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, event_time: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-location">{translate('events.form.location', 'Location Name')} *</label>
-                <input
-                  id="event-location"
-                  type="text"
-                  value={eventForm.location}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                  required
-                  placeholder={translate('events.form.locationPlaceholder', 'e.g., Zurich Convention Center')}
-                />
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-street">{translate('events.form.street', 'Street Address')} *</label>
-                <input
-                  id="event-street"
-                  type="text"
-                  value={eventForm.street_address}
-                  onChange={(e) => setEventForm(prev => ({ ...prev, street_address: e.target.value }))}
-                  required
-                  placeholder={translate('events.form.streetPlaceholder', 'e.g., Messeplatz 1')}
-                />
-              </div>
-
-              <div className="ssc__form-row">
-                <div className="ssc__form-group">
-                  <label htmlFor="event-city">{translate('events.form.city', 'City')} *</label>
-                  <input
-                    id="event-city"
-                    type="text"
-                    value={eventForm.city}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, city: e.target.value }))}
-                    required
-                    placeholder={translate('events.form.cityPlaceholder', 'e.g., Zurich')}
-                  />
-                </div>
-                <div className="ssc__form-group">
-                  <label htmlFor="event-postal">{translate('events.form.postal', 'Postal Code')} *</label>
-                  <input
-                    id="event-postal"
-                    type="text"
-                    value={eventForm.postal_code}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, postal_code: e.target.value }))}
-                    required
-                    placeholder={translate('events.form.postalPlaceholder', 'e.g., 8005')}
-                  />
-                </div>
-              </div>
-
-              <div className="ssc__form-group">
-                <label htmlFor="event-poster">{translate('events.form.poster', 'Event Poster')}</label>
-                <input
-                  id="event-poster"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setEventForm(prev => ({ ...prev, poster_file: e.target.files[0] }))}
-                />
-                <small className="ssc__form-help">
-                  {translate('events.form.posterHelp', 'Upload an image for your event poster')}
-                </small>
-              </div>
-
-              <div className="ssc__modal-actions">
-                <button type="button" className="ssc__ghost-btn" onClick={closeEventModal}>
-                  {translate('events.form.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="submit"
-                  className="ssc__primary-btn"
-                  disabled={eventFormSaving}
-                >
-                  {eventFormSaving
-                    ? translate('events.form.posting', 'Posting...')
-                    : translate('events.form.post', 'Post Event')}
-                </button>
-              </div>
-            </form>
+            <div className="ssc__form-group">
+              <label htmlFor="event-time">{translate('events.form.time', 'Time')}</label>
+              <input
+                id="event-time"
+                type="time"
+                value={eventForm.event_time}
+                onChange={(e) => setEventForm(prev => ({ ...prev, event_time: e.target.value }))}
+                required
+              />
+            </div>
           </div>
-        </div>
-      )}
 
-      {localizedApplicationModal && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
+          <div className="ssc__form-group">
+            <label htmlFor="event-location">{translate('events.form.location', 'Location Name')} *</label>
+            <input
+              id="event-location"
+              type="text"
+              value={eventForm.location}
+              onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
+              required
+              placeholder={translate('events.form.locationPlaceholder', 'e.g., Zurich Convention Center')}
+            />
+          </div>
+
+          <div className="ssc__form-group">
+            <label htmlFor="event-street">{translate('events.form.street', 'Street Address')} *</label>
+            <input
+              id="event-street"
+              type="text"
+              value={eventForm.street_address}
+              onChange={(e) => setEventForm(prev => ({ ...prev, street_address: e.target.value }))}
+              required
+              placeholder={translate('events.form.streetPlaceholder', 'e.g., Messeplatz 1')}
+            />
+          </div>
+
+          <div className="ssc__form-row">
+            <div className="ssc__form-group">
+              <label htmlFor="event-city">{translate('events.form.city', 'City')} *</label>
+              <input
+                id="event-city"
+                type="text"
+                value={eventForm.city}
+                onChange={(e) => setEventForm(prev => ({ ...prev, city: e.target.value }))}
+                required
+                placeholder={translate('events.form.cityPlaceholder', 'e.g., Zurich')}
+              />
+            </div>
+            <div className="ssc__form-group">
+              <label htmlFor="event-postal">{translate('events.form.postal', 'Postal Code')} *</label>
+              <input
+                id="event-postal"
+                type="text"
+                value={eventForm.postal_code}
+                onChange={(e) => setEventForm(prev => ({ ...prev, postal_code: e.target.value }))}
+                required
+                placeholder={translate('events.form.postalPlaceholder', 'e.g., 8005')}
+              />
+            </div>
+          </div>
+
+          <div className="ssc__form-group">
+            <label htmlFor="event-poster">{translate('events.form.poster', 'Event Poster')}</label>
+            <input
+              id="event-poster"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setEventForm(prev => ({ ...prev, poster_file: e.target.files[0] }))}
+            />
+            <small className="ssc__form-help">
+              {translate('events.form.posterHelp', 'Upload an image for your event poster')}
+            </small>
+          </div>
+
+          <div className="ssc__modal-actions">
+            <button type="button" className="ssc__ghost-btn" onClick={closeEventModal}>
+              {translate('events.form.cancel', 'Cancel')}
+            </button>
+            <button type="submit" className="ssc__primary-btn" disabled={eventFormSaving}>
+              {eventFormSaving
+                ? translate('events.form.posting', 'Posting...')
+                : translate('events.form.post', 'Post Event')}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(localizedApplicationModal)}
+        onRequestClose={closeApplicationModal}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.application}
+      >
+        {localizedApplicationModal && (
+          <>
             <button type="button" className="ssc__modal-close" onClick={closeApplicationModal}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>Submit your application</h2>
+              <h2 id={MODAL_TITLE_IDS.application}>Submit your application</h2>
               <p>
                 {localizedApplicationModal.localizedTitle} · {localizedApplicationModal.company_name}
               </p>
@@ -10632,18 +8571,21 @@ const SwissStartupConnect = () => {
                 {applicationSaving ? 'Submitting…' : 'Confirm application'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
-      {profileModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
+      <Modal
+        isOpen={profileModalOpen}
+        onRequestClose={() => setProfileModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.profile}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{translate('profileModal.title', 'Update your profile')}</h2>
+              <h2 id={MODAL_TITLE_IDS.profile}>{translate('profileModal.title', 'Update your profile')}</h2>
               <p>
                 {translate(
                   'profileModal.subtitle',
@@ -10885,18 +8827,19 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {startupModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={() => setStartupModalOpen(false)}>
+      <Modal
+        isOpen={startupModalOpen}
+        onRequestClose={() => setStartupModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.startup}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setStartupModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{translate('startupModal.title', 'Your startup profile')}</h2>
+              <h2 id={MODAL_TITLE_IDS.startup}>{translate('startupModal.title', 'Your startup profile')}</h2>
               <p>
                 {translate(
                   'startupModal.subtitle',
@@ -11021,18 +8964,19 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {postJobModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--wide">
-            <button type="button" className="ssc__modal-close" onClick={() => setPostJobModalOpen(false)}>
+      <Modal
+        isOpen={postJobModalOpen}
+        onRequestClose={() => setPostJobModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.postJob}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setPostJobModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2>{translate('jobForm.modal.title', 'Post a new vacancy')}</h2>
+              <h2 id={MODAL_TITLE_IDS.postJob}>{translate('jobForm.modal.title', 'Post a new vacancy')}</h2>
               <p>{translate('jobForm.modal.subtitle', 'Share the essentials so students and graduates understand the opportunity.')}</p>
             </header>
             <form className="ssc__modal-body" onSubmit={handlePostJobSubmit}>
@@ -11382,24 +9326,28 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {showLoginModal && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--auth">
-            <button
-              type="button"
-              className="ssc__modal-close"
-              onClick={() => {
-                setShowLoginModal(false);
-                setForgotPasswordMessage('');
-              }}
-            >
+      <Modal
+        isOpen={showLoginModal}
+        onRequestClose={() => {
+          setShowLoginModal(false);
+          setForgotPasswordMessage('');
+        }}
+        dialogClassName="ssc__modal--auth"
+        aria-labelledby={MODAL_TITLE_IDS.auth}
+      >
+        <button
+          type="button"
+          className="ssc__modal-close"
+          onClick={() => {
+            setShowLoginModal(false);
+            setForgotPasswordMessage('');
+          }}
+        >
               <X size={18} />
             </button>
-            <h2>
+            <h2 id={MODAL_TITLE_IDS.auth}>
               {isRegistering
                 ? translate('authModal.titleRegister', 'Create your profile')
                 : translate('authModal.titleLogin', 'Welcome back')}
@@ -11551,17 +9499,18 @@ const SwissStartupConnect = () => {
                   : translate('authModal.switch.createProfile', 'Create a profile')}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {resetPasswordModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--auth">
-            <button type="button" className="ssc__modal-close" onClick={closeResetPasswordModal}>
+      <Modal
+        isOpen={resetPasswordModalOpen}
+        onRequestClose={closeResetPasswordModal}
+        dialogClassName="ssc__modal--auth"
+        aria-labelledby={MODAL_TITLE_IDS.resetPassword}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeResetPasswordModal}>
               <X size={18} />
             </button>
-            <h2>Set a new password</h2>
+            <h2 id={MODAL_TITLE_IDS.resetPassword}>Set a new password</h2>
             <p>Enter and confirm your new password to complete the reset.</p>
 
             {passwordResetError && <div className="ssc__alert">{passwordResetError}</div>}
@@ -11595,17 +9544,18 @@ const SwissStartupConnect = () => {
                   : translate('security.passwordReset.buttons.submit', 'Update password')}
               </button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {securityModalOpen && (
-        <div className="ssc__modal-backdrop" role="dialog" aria-modal="true">
-          <div className="ssc__modal ssc__modal--auth">
-            <button type="button" className="ssc__modal-close" onClick={closeSecurityModal}>
+      <Modal
+        isOpen={securityModalOpen}
+        onRequestClose={closeSecurityModal}
+        dialogClassName="ssc__modal--auth"
+        aria-labelledby={MODAL_TITLE_IDS.security}
+      >
+        <button type="button" className="ssc__modal-close" onClick={closeSecurityModal}>
               <X size={18} />
             </button>
-            <h2>{translate('security.modal.title', 'Privacy & security')}</h2>
+            <h2 id={MODAL_TITLE_IDS.security}>{translate('security.modal.title', 'Privacy & security')}</h2>
             <p>
               {translate(
                 'security.modal.description',
@@ -11705,9 +9655,7 @@ const SwissStartupConnect = () => {
                   : translate('security.modal.buttons.savePassword', 'Save password')}
               </button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {activeCompanyProfile && (
         <CompanyProfilePage
