@@ -303,6 +303,7 @@ const JobMapView = ({
           selectedEventCity={selectedEventCity}
           panelOpen={isPanelOpen}
           visibleLayer={mapLayer}
+          translate={translate}
         />
 
         {shouldShowJobPanel && (

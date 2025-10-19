@@ -60,6 +60,10 @@ const CITY_LOOKUP_BY_LOWER = CITY_KEYS.reduce((accumulator, city) => {
 }, {});
 const REMOTE_MATCHER = /remote|home\s*office/i;
 
+const DEFAULT_MAP_CENTER = Object.freeze([46.8182, 8.2275]);
+const DEFAULT_MAP_ZOOM = 8;
+const FALLBACK_TRANSLATE = (_key, fallback) => fallback;
+
 const collectLocationCandidates = (job) => {
   const values = new Set();
   const addValue = (value) => {
@@ -201,9 +205,8 @@ const SwitzerlandMap = ({
   selectedEventCity,
   panelOpen = false,
   visibleLayer = 'jobs',
+  translate = FALLBACK_TRANSLATE,
 }) => {
-  const [mapCenter] = useState([46.8182, 8.2275]); // Center of Switzerland
-  const [mapZoom] = useState(8);
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -575,7 +578,7 @@ const SwitzerlandMap = ({
   if (!mapLoaded) {
     return (
       <div className={`ssc__map-wrapper ${panelOpen ? 'ssc__map-wrapper--panel-open' : ''}`}>
-        <div className="ssc__map-loading">Loading map...</div>
+        <div className="ssc__map-loading">{translate('map.loading', 'Loading map...')}</div>
       </div>
     );
   }
@@ -586,8 +589,8 @@ const SwitzerlandMap = ({
       className={`ssc__map-wrapper ${panelOpen ? 'ssc__map-wrapper--panel-open' : ''}`}
     >
       <MapContainer
-        center={mapCenter}
-        zoom={mapZoom}
+        center={DEFAULT_MAP_CENTER}
+        zoom={DEFAULT_MAP_ZOOM}
         style={{ height: '100%', width: '100%' }}
         className="ssc__map"
         whenCreated={(map) => {
