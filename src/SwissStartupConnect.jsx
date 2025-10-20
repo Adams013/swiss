@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
+import { tableExists } from './services/supabaseMetadata';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
@@ -1766,6 +1767,24 @@ const SwissStartupConnect = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       setEventsLoading(true);
+      try {
+        const { exists } = await tableExists('events');
+
+        if (exists === false) {
+          setEventsFallbackState(true);
+          const fallbackEvents =
+            fallbackEventsRef.current.length > 0
+              ? fallbackEventsRef.current
+              : await loadMockEvents();
+          setEvents(sortEventsByScheduleMemo(fallbackEvents));
+          return;
+        }
+      } catch (metadataError) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Events metadata lookup failed, attempting Supabase fetch', metadataError);
+        }
+      }
+
       try {
         const { data, error } = await supabase
           .from('events')

@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { getTableMetadata } from './supabaseMetadata';
 
 export const DEFAULT_JOB_PAGE_SIZE = 50;
 
@@ -7,7 +8,7 @@ const JOB_COLUMN_CONFIG = [
   { key: 'title' },
   { key: 'company_name', fallbacks: ['company'] },
   { key: 'startup_id' },
-  { key: 'location', fallbacks: ['city_label'] },
+  { key: 'location', fallbacks: ['city_label', 'city'] },
   { key: 'location_city', fallbacks: ['city', 'city_name'] },
   { key: 'work_arrangement', fallbacks: ['arrangement'] },
   { key: 'employment_type', fallbacks: ['job_type', 'type'] },
@@ -222,6 +223,50 @@ const handleMissingColumn = (config, missingColumn) => {
   return false;
 };
 
+const createColumnMap = (config) =>
+  config.reduce((accumulator, entry) => {
+    if (entry && entry.selected) {
+      accumulator[entry.key] = entry.selected;
+    }
+    return accumulator;
+  }, {});
+
+const gatherColumnCandidates = (columnMap, keys = []) => {
+  const values = new Set();
+
+  keys
+    .filter((key) => typeof key === 'string' && key.trim())
+    .forEach((key) => {
+      const resolved = columnMap[key];
+      if (resolved) {
+        values.add(resolved);
+      }
+    });
+
+  return Array.from(values);
+};
+
+const augmentJobRecord = (job, config) => {
+  if (!job || typeof job !== 'object' || Array.isArray(job)) {
+    return job;
+  }
+
+  return config.reduce((accumulator, entry) => {
+    if (!entry || !entry.selected) {
+      return accumulator;
+    }
+
+    if (entry.selected !== entry.key && !Object.prototype.hasOwnProperty.call(accumulator, entry.key)) {
+      const value = job[entry.selected];
+      if (value !== undefined) {
+        accumulator[entry.key] = value;
+      }
+    }
+
+    return accumulator;
+  }, { ...job });
+};
+
 const normalizeJob = (job) => ({
   ...job,
   applicants: job?.applicants ?? 0,
@@ -234,40 +279,50 @@ const normalizeJob = (job) => ({
 
 const escapeIlikeValue = (value) => value.replace(/[%_]/g, (match) => `\\${match}`);
 
-const applyJobFilters = (query, filters = {}) => {
+const applyJobFilters = (query, filters = {}, columnMap = {}) => {
   if (!filters || typeof filters !== 'object') {
     return query;
   }
 
   const { searchTerm, locations, workArrangements, employmentTypes } = filters;
 
-  if (Array.isArray(locations) && locations.length > 0) {
-    const ilikeConditions = locations
-      .filter((location) => typeof location === 'string' && location.trim())
-      .map((location) => `location.ilike.%${escapeIlikeValue(location.trim())}%`);
+  const locationColumns = gatherColumnCandidates(columnMap, ['location', 'location_city']);
 
-    if (ilikeConditions.length > 0) {
-      query = query.or(ilikeConditions.join(','));
+  if (Array.isArray(locations) && locations.length > 0 && locationColumns.length > 0) {
+    const orConditions = [];
+
+    locations
+      .filter((location) => typeof location === 'string' && location.trim())
+      .forEach((location) => {
+        const escaped = escapeIlikeValue(location.trim());
+        locationColumns.forEach((column) => {
+          orConditions.push(`${column}.ilike.%${escaped}%`);
+        });
+      });
+
+    if (orConditions.length > 0) {
+      query = query.or(orConditions.join(','));
     }
   }
 
-  if (Array.isArray(workArrangements) && workArrangements.length > 0) {
-    query = query.in('work_arrangement', workArrangements);
+  const workArrangementColumn = columnMap.work_arrangement;
+  if (workArrangementColumn && Array.isArray(workArrangements) && workArrangements.length > 0) {
+    query = query.in(workArrangementColumn, workArrangements);
   }
 
-  if (Array.isArray(employmentTypes) && employmentTypes.length > 0) {
-    query = query.in('employment_type', employmentTypes);
+  const employmentTypeColumn = columnMap.employment_type;
+  if (employmentTypeColumn && Array.isArray(employmentTypes) && employmentTypes.length > 0) {
+    query = query.in(employmentTypeColumn, employmentTypes);
   }
 
   if (typeof searchTerm === 'string' && searchTerm.trim()) {
     const escaped = escapeIlikeValue(searchTerm.trim());
-    query = query.or(
-      [
-        `title.ilike.%${escaped}%`,
-        `company_name.ilike.%${escaped}%`,
-        `location.ilike.%${escaped}%`,
-      ].join(',')
-    );
+    const searchColumns = gatherColumnCandidates(columnMap, ['title', 'company_name', 'location', 'location_city']);
+
+    if (searchColumns.length > 0) {
+      const orConditions = searchColumns.map((column) => `${column}.ilike.%${escaped}%`);
+      query = query.or(orConditions.join(','));
+    }
   }
 
   return query;
@@ -307,6 +362,83 @@ export const fetchJobs = async ({
     availableFallbacks: entry.fallbacks ? [...entry.fallbacks] : [],
   }));
 
+  const metadata = await getTableMetadata('jobs');
+
+  if (metadata.exists === false) {
+    return {
+      jobs: fallbackJobs.map(normalizeJob),
+      error:
+        metadata.error ||
+        {
+          message: 'Supabase jobs table is not available. Falling back to bundled dataset.',
+          code: 'TABLE_NOT_FOUND',
+          details: { table: 'jobs' },
+          hint: 'Run the provided Supabase migrations to create the jobs table or disable Supabase integration.',
+        },
+      fallbackUsed: true,
+      columnPresenceData: fallbackJobs,
+      page: safePage,
+      pageSize: safePageSize,
+      hasMore: false,
+      totalCount: null,
+    };
+  }
+
+  if (Array.isArray(metadata.columns) && metadata.columns.length > 0) {
+    const columnLookup = metadata.columns.reduce((accumulator, column) => {
+      if (typeof column === 'string') {
+        accumulator.set(column.toLowerCase(), column);
+      }
+      return accumulator;
+    }, new Map());
+
+    config.forEach((entry) => {
+      if (!entry) {
+        return;
+      }
+
+      const candidates = [entry.key, ...(entry.fallbacks || [])].filter((candidate) => typeof candidate === 'string');
+      const resolved = candidates
+        .map((candidate) => columnLookup.get(candidate.toLowerCase()) || null)
+        .filter(Boolean);
+
+      if (resolved.length > 0) {
+        entry.selected = resolved[0];
+        entry.availableFallbacks = resolved.slice(1);
+      } else if (entry.optional) {
+        entry.selected = null;
+        entry.availableFallbacks = [];
+      } else {
+        entry.selected = null;
+        entry.availableFallbacks = [];
+      }
+    });
+  }
+
+  const missingRequiredColumns = config
+    .filter((entry) => !entry.optional && !entry.selected)
+    .map((entry) => entry.key);
+
+  if (missingRequiredColumns.length > 0) {
+    return {
+      jobs: fallbackJobs.map(normalizeJob),
+      error:
+        metadata.error ||
+        {
+          message: `Supabase jobs table is missing required columns: ${missingRequiredColumns.join(', ')}`,
+          code: 'MISSING_COLUMNS',
+          details: { table: 'jobs', missingColumns: missingRequiredColumns },
+          hint: 'Apply the latest database migrations or adjust the frontend column configuration.',
+        },
+      fallbackUsed: true,
+      columnPresenceData: fallbackJobs,
+      page: safePage,
+      pageSize: safePageSize,
+      hasMore: false,
+      totalCount: null,
+    };
+  }
+
   const attemptSelect = async () => {
     // Attempt to fetch data while swapping out missing columns.
     while (true) {
@@ -316,16 +448,18 @@ export const fetchJobs = async ({
         return { data: [], count: null, error: null };
       }
 
+      const columnMap = createColumnMap(config);
+
       let query = supabase
         .from('jobs')
         .select(selectedColumns.join(', '), { count: 'exact' });
 
-      query = applyJobFilters(query, filters);
+      query = applyJobFilters(query, filters, columnMap);
 
-      if (selectedColumns.includes('created_at')) {
-        query = query.order('created_at', { ascending: false });
-      } else if (selectedColumns.includes('posted')) {
-        query = query.order('posted', { ascending: false });
+      if (columnMap.created_at) {
+        query = query.order(columnMap.created_at, { ascending: false });
+      } else if (columnMap.posted) {
+        query = query.order(columnMap.posted, { ascending: false });
       }
 
       if (typeof query.range === 'function') {
@@ -369,7 +503,9 @@ export const fetchJobs = async ({
       };
     }
 
-    if (!data || data.length === 0) {
+    const supabaseData = Array.isArray(data) ? data : [];
+
+    if (supabaseData.length === 0) {
       if (hasActiveFilters(filters)) {
         return {
           jobs: [],
@@ -395,14 +531,15 @@ export const fetchJobs = async ({
       };
     }
 
-    const normalized = data.map(normalizeJob);
-    const hasMore = count != null ? rangeEnd + 1 < count : data.length === safePageSize;
+    const augmentedData = supabaseData.map((job) => augmentJobRecord(job, config));
+    const normalized = augmentedData.map(normalizeJob);
+    const hasMore = count != null ? rangeEnd + 1 < count : supabaseData.length === safePageSize;
 
     return {
       jobs: normalized,
       error: null,
       fallbackUsed: false,
-      columnPresenceData: data,
+      columnPresenceData: supabaseData,
       page: safePage,
       pageSize: safePageSize,
       hasMore,

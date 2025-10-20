@@ -44,10 +44,12 @@ jest.mock('./supabaseClient', () => {
     location: 'Impact Hub',
   };
 
-  const createQuery = (data = []) => {
+  const createQuery = (data = [], options = {}) => {
+    const { error = null } = options;
+
     const query = {
       select: jest.fn(() => query),
-      order: jest.fn(() => Promise.resolve({ data, error: null })),
+      order: jest.fn(() => Promise.resolve({ data, error })),
       insert: jest.fn(() => Promise.resolve({ data: null, error: null })),
       update: jest.fn(() => Promise.resolve({ data: null, error: null })),
       delete: jest.fn(() => Promise.resolve({ data: null, error: null })),
@@ -57,14 +59,89 @@ jest.mock('./supabaseClient', () => {
       single: jest.fn(() => Promise.resolve({ data: data[0] ?? null, error: null })),
       limit: jest.fn(() => query),
       range: jest.fn(() => query),
+      abortSignal: jest.fn(() => query),
+      then: jest.fn((resolve) => Promise.resolve({ data, error }).then(resolve)),
+      catch: jest.fn((reject) => Promise.resolve({ data, error }).catch(reject)),
+      finally: jest.fn((callback) => Promise.resolve({ data, error }).finally(callback)),
     };
+
+    return query;
+  };
+
+  const metadataColumnsByTable = {
+    jobs: [
+      { column_name: 'id' },
+      { column_name: 'title' },
+      { column_name: 'company_name' },
+      { column_name: 'startup_id' },
+      { column_name: 'location' },
+      { column_name: 'work_arrangement' },
+      { column_name: 'employment_type' },
+      { column_name: 'salary' },
+      { column_name: 'equity' },
+      { column_name: 'description' },
+      { column_name: 'requirements' },
+      { column_name: 'benefits' },
+      { column_name: 'tags' },
+      { column_name: 'posted' },
+      { column_name: 'applicants' },
+      { column_name: 'motivational_letter_required' },
+      { column_name: 'language_requirements' },
+      { column_name: 'translations' },
+      { column_name: 'created_at' },
+    ],
+    events: [
+      { column_name: 'id' },
+    ],
+  };
+
+  const createColumnsQuery = () => {
+    let schemaFilter = null;
+    let tableFilter = null;
+
+    const query = {
+      select: jest.fn(() => query),
+      eq: jest.fn((column, value) => {
+        if (column === 'table_schema') {
+          schemaFilter = value;
+        } else if (column === 'table_name') {
+          tableFilter = value;
+        }
+        return query;
+      }),
+      in: jest.fn(() => query),
+      limit: jest.fn(() => query),
+      range: jest.fn(() => query),
+      order: jest.fn(() => query),
+      abortSignal: jest.fn(() => query),
+      then: jest.fn((resolve) => {
+        const rows =
+          schemaFilter === 'public' && tableFilter
+            ? metadataColumnsByTable[tableFilter] ?? []
+            : [];
+        return Promise.resolve({ data: rows, error: null }).then(resolve);
+      }),
+      catch: jest.fn((reject) => Promise.resolve({ data: [], error: null }).catch(reject)),
+      finally: jest.fn((callback) => Promise.resolve().finally(callback)),
+    };
+
     return query;
   };
 
   const eventsQuery = createQuery([eventRecord]);
   const defaultQuery = createQuery([]);
 
-  const from = jest.fn((table) => (table === 'events' ? eventsQuery : defaultQuery));
+  const from = jest.fn((table) => {
+    if (table === 'events') {
+      return eventsQuery;
+    }
+
+    if (table === 'information_schema.columns') {
+      return createColumnsQuery();
+    }
+
+    return defaultQuery;
+  });
 
   const supabaseMock = {
     auth: {
