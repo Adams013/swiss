@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
+import { tableExists } from './services/supabaseMetadata';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
 import JobMapView from './JobMapView';
@@ -47,9 +48,7 @@ import {
 import { loadMockJobs } from './data/mockJobs';
 import { loadMockEvents } from './data/mockEvents';
 
-import { getCachedTranslations, loadTranslationsForLanguage, applyReplacements, getInitialLanguage } from './swissStartupConnect/utils/i18n';
 import { LANGUAGE_OPTIONS, LANGUAGE_TAG_PREFIX, mapLanguageValueToCanonical, filterLanguageTags, resolveJobLanguageLabels } from './swissStartupConnect/utils/language';
-import { getInitialTheme, persistThemePreference } from './swissStartupConnect/utils/theme';
 import { readCachedProfile, writeCachedProfile, removeCachedProfile } from './swissStartupConnect/utils/profileStorage';
 import { normalizeApplicationKey, upsertLocalApplication, loadLocalApplicationsForStartup, updateStoredLocalApplication } from './swissStartupConnect/utils/applicationStorage';
 import { APPLICATION_THREAD_TYPES, APPLICATION_THREAD_STORAGE_KEY, normalizeThreadStateValue, pickThreadValue, removeThreadKeys, parseThreadKey } from './swissStartupConnect/utils/applicationThreads';
@@ -65,219 +64,25 @@ import { getJobIdKey, sanitizeIdArray } from './swissStartupConnect/utils/identi
 import { JOBS_PAGE_SIZE, COMPANIES_PAGE_SIZE, MAX_INITIAL_JOB_PAGES, MAX_INITIAL_COMPANY_PAGES } from './swissStartupConnect/constants/pagination';
 import { MODAL_TITLE_IDS } from './swissStartupConnect/constants/modals';
 import { mapSupabaseUser } from './swissStartupConnect/utils/supabase';
+import { useI18n } from './swissStartupConnect/hooks/useI18n';
+import { useThemePreference } from './swissStartupConnect/hooks/useThemePreference';
+import { useJobSearchPreferences } from './swissStartupConnect/hooks/useJobSearchPreferences';
 const SwissStartupConnect = () => {
-  const translationsCache = getCachedTranslations();
-  const [language, setLanguage] = useState(getInitialLanguage);
-  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
-  const [loadedTranslations, setLoadedTranslations] = useState(() => {
-    const initial = {};
-    translationsCache.forEach((value, key) => {
-      initial[key] = value;
-    });
-    return initial;
-  });
+  const {
+    language,
+    setLanguage,
+    translate,
+    isLanguageMenuOpen,
+    setIsLanguageMenuOpen,
+    getLocalizedJobText,
+    getLocalizedJobList,
+    getLocalizedCompanyText,
+    getJobLanguages,
+    acknowledgeMessage,
+    buildPluralSuffix,
+  } = useI18n();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    if (language === 'en') {
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const cached = translationsCache.get(language);
-    if (cached) {
-      setLoadedTranslations((previous) => {
-        if (previous[language]) {
-          return previous;
-        }
-        return { ...previous, [language]: cached };
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    loadTranslationsForLanguage(language)
-      .then((dictionary) => {
-        if (cancelled || !dictionary) {
-          return;
-        }
-        setLoadedTranslations((previous) => ({ ...previous, [language]: dictionary }));
-      })
-      .catch((error) => {
-        console.error(`Failed to resolve ${language} translations`, error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [language]);
-  const translate = useCallback(
-    (key, fallback = '', replacements) => {
-      const apply = (template) => {
-        const base = template || fallback || key;
-        return applyReplacements(base, replacements);
-      };
-
-      if (language === 'en') {
-        return apply(fallback);
-      }
-
-      const dictionary = loadedTranslations[language];
-      if (!dictionary) {
-        return apply(fallback);
-      }
-
-      const segments = key.split('.');
-      let current = dictionary;
-      for (const segment of segments) {
-        if (current && Object.prototype.hasOwnProperty.call(current, segment)) {
-          current = current[segment];
-        } else {
-          current = null;
-          break;
-        }
-      }
-
-      if (typeof current === 'string') {
-        return apply(current);
-      }
-
-      if (Array.isArray(current)) {
-        return current.map((item) => apply(typeof item === 'string' ? item : ''));
-      }
-
-      return apply(fallback);
-    },
-    [language, loadedTranslations]
-  );
-
-  const getLocalizedJobText = useCallback(
-    (job, field) => {
-      if (!job) {
-        return '';
-      }
-
-      if (language !== 'en') {
-        const localized = job?.translations?.[language]?.[field];
-        if (typeof localized === 'string' && localized.trim()) {
-          return localized;
-        }
-      }
-
-      const original = job?.[field];
-      return typeof original === 'string' ? original : '';
-    },
-    [language]
-  );
-
-  const getLocalizedJobList = useCallback(
-    (job, field) => {
-      if (!job) {
-        return [];
-      }
-
-      if (language !== 'en') {
-        const localized = job?.translations?.[language]?.[field];
-        if (Array.isArray(localized) && localized.length > 0) {
-          return localized;
-        }
-      }
-
-      const original = job?.[field];
-      if (Array.isArray(original)) {
-        return original;
-      }
-      if (typeof original === 'string' && original.trim()) {
-        return [original];
-      }
-      return [];
-    },
-    [language]
-  );
-
-  const getLocalizedCompanyText = useCallback(
-    (company, field) => {
-      if (!company) {
-        return '';
-      }
-
-      if (language !== 'en') {
-        const localized = company?.translations?.[language]?.[field];
-        if (typeof localized === 'string' && localized.trim()) {
-          return localized;
-        }
-      }
-
-      const original = company?.[field];
-      return typeof original === 'string' ? original : '';
-    },
-    [language]
-  );
-
-  const getJobLanguages = useCallback(
-    (job) => {
-      if (!job) {
-        return [];
-      }
-
-      if (job.language_labels && typeof job.language_labels === 'object') {
-        const localized = job.language_labels[language];
-        if (Array.isArray(localized) && localized.length > 0) {
-          return localized;
-        }
-        if (Array.isArray(job.language_labels.en) && job.language_labels.en.length > 0) {
-          return job.language_labels.en;
-        }
-      }
-
-      const resolved = resolveJobLanguageLabels(job);
-      return resolved.labels[language] || resolved.labels.en || [];
-    },
-    [language]
-  );
-
-  const acknowledgeMessage = translate(
-    'applications.acknowledge',
-    'By applying you agree that the startup will see your profile information, uploaded CV, motivational letter, and profile photo.'
-  );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    window.localStorage.setItem('ssc_language', language);
-  }, [language]);
-
-  const [theme, setTheme] = useState(getInitialTheme);
-  const isDarkMode = theme === 'dark';
-
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
-    }
-    persistThemePreference(theme);
-  }, [isDarkMode, theme]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((previous) => (previous === 'dark' ? 'light' : 'dark'));
-  }, []);
-
-  const buildPluralSuffix = useCallback(
-    (count, overrides = {}) => {
-      const defaults = {
-        en: ['', 's'],
-        fr: ['', 's'],
-        de: ['', 'n'],
-      };
-      const mapping = { ...defaults, ...overrides };
-      const [singular, plural] = mapping[language] || mapping.en;
-      return count === 1 ? singular : plural;
-    },
-    [language]
-  );
+  const { isDarkMode, toggleTheme } = useThemePreference();
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
@@ -314,41 +119,34 @@ const SwissStartupConnect = () => {
     };
   }, [activeTab]);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  const jobFilters = useMemo(() => {
-    const normalizedSearch = typeof searchTerm === 'string' ? searchTerm.trim() : '';
-    const locationSelections = selectedFilters
-      .map((filterId) => {
-        const match = activeCityFilters.find((filter) => filter.id === filterId);
-        return match ? match.label : null;
-      })
-      .filter(Boolean)
-      .map((label) => label.trim())
-      .filter(Boolean);
-
-    const uniqueLocations = Array.from(new Set(locationSelections));
-
-    return {
-      searchTerm: normalizedSearch,
-      locations: uniqueLocations,
-    };
-  }, [searchTerm, selectedFilters]);
-  const [salaryRange, setSalaryRange] = useState(() => [...SALARY_FALLBACK_RANGE]);
-  const [salaryBounds, setSalaryBounds] = useState(() => [...SALARY_FALLBACK_RANGE]);
-  const [salaryRangeDirty, setSalaryRangeDirty] = useState(false);
-  const [salaryFilterCadence, setSalaryFilterCadence] = useState('month');
-  const [salaryInputValues, setSalaryInputValues] = useState(() => ({
-    min: formatSalaryValue(SALARY_FALLBACK_RANGE[0], 'month'),
-    max: formatSalaryValue(SALARY_FALLBACK_RANGE[1], 'month'),
-  }));
-  const [equityRange, setEquityRange] = useState(() => [...EQUITY_FALLBACK_RANGE]);
-  const [equityBounds, setEquityBounds] = useState(() => [...EQUITY_FALLBACK_RANGE]);
-  const [equityRangeDirty, setEquityRangeDirty] = useState(false);
-  const [equityInputValues, setEquityInputValues] = useState(() => ({
-    min: formatEquityValue(EQUITY_FALLBACK_RANGE[0]),
-    max: formatEquityValue(EQUITY_FALLBACK_RANGE[1]),
-  }));
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedFilters,
+    setSelectedFilters,
+    jobFilters,
+    salaryRange,
+    setSalaryRange,
+    salaryBounds,
+    setSalaryBounds,
+    salaryRangeDirty,
+    setSalaryRangeDirty,
+    salaryFilterCadence,
+    setSalaryFilterCadence,
+    salaryInputValues,
+    setSalaryInputValues,
+    equityRange,
+    setEquityRange,
+    equityBounds,
+    setEquityBounds,
+    equityRangeDirty,
+    setEquityRangeDirty,
+    equityInputValues,
+    setEquityInputValues,
+    jobSort,
+    setJobSort,
+    jobSortOptions,
+  } = useJobSearchPreferences({ translate });
 
   const localizedCvTips = useMemo(() => {
     const translated = translate('modals.cv.tips', '');
@@ -421,15 +219,6 @@ const SwissStartupConnect = () => {
     },
     [setCompanies]
   );
-  const [jobSort, setJobSort] = useState('recent');
-  const jobSortOptions = useMemo(
-    () => [
-      { value: 'recent', label: translate('jobs.sort.recent', 'Most recent'), icon: Clock },
-      { value: 'salary_desc', label: translate('jobs.sort.salary', 'Highest salary'), icon: TrendingUp },
-      { value: 'equity_desc', label: translate('jobs.sort.equity', 'Highest equity'), icon: Percent },
-    ],
-    [translate]
-  );
 
   const [savedJobs, setSavedJobs] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -448,6 +237,10 @@ const SwissStartupConnect = () => {
 
   const [feedback, setFeedback] = useState(null);
   const [toast, setToast] = useState(null);
+  const [dataNoticeDismissed, setDataNoticeDismissed] = useState(false);
+  const [jobsFallbackActive, setJobsFallbackActive] = useState(false);
+  const [companiesFallbackActive, setCompaniesFallbackActive] = useState(false);
+  const [eventsFallbackActive, setEventsFallbackActive] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -803,6 +596,69 @@ const SwissStartupConnect = () => {
 
   const [jobsVersion, setJobsVersion] = useState(0);
 
+  const setJobsFallbackState = useCallback(
+    (active) => {
+      setJobsFallbackActive((previous) => {
+        if (previous === active) {
+          return previous;
+        }
+        return active;
+      });
+      if (active) {
+        setDataNoticeDismissed(false);
+      }
+    },
+    []
+  );
+
+  const setCompaniesFallbackState = useCallback(
+    (active) => {
+      setCompaniesFallbackActive((previous) => {
+        if (previous === active) {
+          return previous;
+        }
+        return active;
+      });
+      if (active) {
+        setDataNoticeDismissed(false);
+      }
+    },
+    []
+  );
+
+  const setEventsFallbackState = useCallback(
+    (active) => {
+      setEventsFallbackActive((previous) => {
+        if (previous === active) {
+          return previous;
+        }
+        return active;
+      });
+      if (active) {
+        setDataNoticeDismissed(false);
+      }
+    },
+    []
+  );
+
+  const formatFallbackAreas = useCallback((items) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return '';
+    }
+
+    if (items.length === 1) {
+      return items[0];
+    }
+
+    if (items.length === 2) {
+      return `${items[0]} & ${items[1]}`;
+    }
+
+    const head = items.slice(0, -1).join(', ');
+    const tail = items[items.length - 1];
+    return `${head} & ${tail}`;
+  }, []);
+
   useEffect(() => {
     setSupabaseJobPages([]);
     supabaseJobPagesRef.current = [];
@@ -940,9 +796,12 @@ const SwissStartupConnect = () => {
 
   useEffect(() => {
     const initialiseSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const sessionResponse = await supabase.auth.getSession();
+      const { data, error } = sessionResponse || {};
+      if (error) {
+        console.error('Session load error', error);
+      }
+      const session = data?.session ?? null;
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
       setEmailVerified(!!session?.user?.email_confirmed_at);
@@ -951,9 +810,7 @@ const SwissStartupConnect = () => {
 
     initialiseSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
       const mapped = mapSupabaseUser(session?.user);
       setUser(mapped);
       setEmailVerified(!!session?.user?.email_confirmed_at);
@@ -963,7 +820,13 @@ const SwissStartupConnect = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    const subscription = authListener?.data?.subscription ?? null;
+
+    return () => {
+      if (subscription?.unsubscribe) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -1525,8 +1388,12 @@ const SwissStartupConnect = () => {
 
           if (response.error) {
             console.error('Job load error', response.error);
+            setJobsFallbackState(true);
           } else if (response.fallbackUsed) {
             console.info('Using fallback jobs dataset');
+            setJobsFallbackState(true);
+          } else {
+            setJobsFallbackState(false);
           }
 
           if (response.fallbackUsed) {
@@ -1579,6 +1446,7 @@ const SwissStartupConnect = () => {
         }
 
         console.error('Job load error', error);
+        setJobsFallbackState(true);
 
         let fallbackJobs =
           fallbackJobsRef.current.length > 0
@@ -1614,7 +1482,7 @@ const SwissStartupConnect = () => {
       cancelled = true;
       controller.abort();
     };
-  }, [jobPageRequest, jobFilters, jobsVersion]);
+  }, [jobPageRequest, jobFilters, jobsVersion, setJobsFallbackState]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1661,8 +1529,12 @@ const SwissStartupConnect = () => {
 
           if (response.error) {
             console.error('Company load error', response.error);
+            setCompaniesFallbackState(true);
           } else if (response.fallbackUsed) {
             console.info('Using fallback companies dataset');
+            setCompaniesFallbackState(true);
+          } else {
+            setCompaniesFallbackState(false);
           }
 
           if (response.fallbackUsed) {
@@ -1707,6 +1579,7 @@ const SwissStartupConnect = () => {
         }
 
         console.error('Company load error', error);
+        setCompaniesFallbackState(true);
 
         let fallbackCompanies =
           fallbackCompaniesRef.current.length > 0
@@ -1741,7 +1614,7 @@ const SwissStartupConnect = () => {
       cancelled = true;
       controller.abort();
     };
-  }, [companyPageRequest, mapStartupToCompany]);
+  }, [companyPageRequest, mapStartupToCompany, setCompaniesFallbackState]);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -1895,6 +1768,24 @@ const SwissStartupConnect = () => {
     const fetchEvents = async () => {
       setEventsLoading(true);
       try {
+        const { exists } = await tableExists('events');
+
+        if (exists === false) {
+          setEventsFallbackState(true);
+          const fallbackEvents =
+            fallbackEventsRef.current.length > 0
+              ? fallbackEventsRef.current
+              : await loadMockEvents();
+          setEvents(sortEventsByScheduleMemo(fallbackEvents));
+          return;
+        }
+      } catch (metadataError) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Events metadata lookup failed, attempting Supabase fetch', metadataError);
+        }
+      }
+
+      try {
         const { data, error } = await supabase
           .from('events')
           .select('*')
@@ -1902,6 +1793,7 @@ const SwissStartupConnect = () => {
 
         if (error) {
           console.error('Events load error', error);
+          setEventsFallbackState(true);
           const fallbackEvents =
             fallbackEventsRef.current.length > 0
               ? fallbackEventsRef.current
@@ -1911,16 +1803,19 @@ const SwissStartupConnect = () => {
           const sortedEvents = sortEventsBySchedule(data || []);
           if (sortedEvents.length > 0) {
             setEvents(sortedEvents);
+            setEventsFallbackState(false);
           } else {
             const fallbackEvents =
               fallbackEventsRef.current.length > 0
                 ? fallbackEventsRef.current
                 : await loadMockEvents();
             setEvents(sortEventsByScheduleMemo(fallbackEvents));
+            setEventsFallbackState(true);
           }
         }
       } catch (error) {
         console.error('Events load error', error);
+        setEventsFallbackState(true);
         const fallbackEvents =
           fallbackEventsRef.current.length > 0
             ? fallbackEventsRef.current
@@ -1932,7 +1827,7 @@ const SwissStartupConnect = () => {
     };
 
     fetchEvents();
-  }, [sortEventsBySchedule]);
+  }, [setEventsFallbackState, sortEventsBySchedule]);
 
   const addFilter = (filterId) => {
     setSelectedFilters((prev) => (prev.includes(filterId) ? prev : [...prev, filterId]));
@@ -5888,6 +5783,39 @@ const SwissStartupConnect = () => {
     selectedFilters.length > 0 || !salaryRangeAtDefault || !equityRangeAtDefault;
   const shouldRenderSalaryCalculatorPanel = salaryCalculatorOpen || salaryCalculatorPanelVisible;
 
+  const fallbackNoticeTargets = useMemo(() => {
+    const targets = [];
+    if (jobsFallbackActive) {
+      targets.push(translate('data.notice.jobsLabel', 'jobs'));
+    }
+    if (companiesFallbackActive) {
+      targets.push(translate('data.notice.companiesLabel', 'companies'));
+    }
+    if (eventsFallbackActive) {
+      targets.push(translate('data.notice.eventsLabel', 'events'));
+    }
+    return targets;
+  }, [companiesFallbackActive, eventsFallbackActive, jobsFallbackActive, translate]);
+
+  const fallbackNoticeMessage = useMemo(() => {
+    if (fallbackNoticeTargets.length === 0) {
+      return '';
+    }
+
+    const areas = formatFallbackAreas(fallbackNoticeTargets);
+    if (!areas) {
+      return '';
+    }
+
+    return translate(
+      'data.notice.snapshot',
+      "We're showing {{areas}} from our community snapshot while live data reconnects.",
+      { areas }
+    );
+  }, [fallbackNoticeTargets, formatFallbackAreas, translate]);
+
+  const showFallbackNotice = !dataNoticeDismissed && Boolean(fallbackNoticeMessage);
+
 
   return (
     <div className={`ssc ${isDarkMode ? 'ssc--dark' : ''}`}>
@@ -6152,6 +6080,15 @@ const SwissStartupConnect = () => {
               {resendingEmail
                 ? translate('authModal.notice.sending', 'Sending…')
                 : translate('authModal.notice.resend', 'Resend verification email')}
+            </button>
+          </div>
+        )}
+
+        {showFallbackNotice && (
+          <div className="ssc__notice" role="status" aria-live="polite">
+            <span>{fallbackNoticeMessage}</span>
+            <button type="button" onClick={() => setDataNoticeDismissed(true)}>
+              {translate('data.notice.dismiss', 'Dismiss notice')}
             </button>
           </div>
         )}

@@ -46,6 +46,8 @@ const detectMissingColumn = (message, table) => {
         new RegExp(`could not find the '([^']+)' column of '${normalizedTable}'`, 'i'),
         new RegExp(`'([^']+)' column of '${normalizedTable}'`, 'i'),
         new RegExp(`column "([^"\\s]+)" of table "${normalizedTable}" does not exist`, 'i'),
+        new RegExp(`column ${normalizedTable}\\.([^\\s]+) does not exist`, 'i'),
+        new RegExp(`column ['\"]?${normalizedTable}\\.([^'"\\s]+)['\"]? does not exist`, 'i'),
       ]
     : [];
 
@@ -67,12 +69,14 @@ const detectMissingColumn = (message, table) => {
 const buildColumnSelection = (config) => {
   const seen = new Set();
   return config.reduce((columns, entry) => {
-    if (!entry.selected) {
+    if (!entry || !entry.selected) {
       return columns;
     }
+
     if (seen.has(entry.selected)) {
       return columns;
     }
+
     seen.add(entry.selected);
     columns.push(entry.selected);
     return columns;
@@ -128,41 +132,95 @@ const handleMissingColumn = (config, missingColumn) => {
   return false;
 };
 
-const applyCompanyFilters = (query, filters = {}) => {
+const createColumnMap = (config) =>
+  config.reduce((accumulator, entry) => {
+    if (entry && entry.selected) {
+      accumulator[entry.key] = entry.selected;
+    }
+    return accumulator;
+  }, {});
+
+const gatherColumnCandidates = (columnMap, keys = []) => {
+  const values = new Set();
+
+  keys
+    .filter((key) => typeof key === 'string' && key.trim())
+    .forEach((key) => {
+      const resolved = columnMap[key];
+      if (resolved) {
+        values.add(resolved);
+      }
+    });
+
+  return Array.from(values);
+};
+
+const escapeIlikeValue = (value) => value.replace(/[%_]/g, (match) => `\\${match}`);
+
+const applyCompanyFilters = (query, filters = {}, columnMap = {}) => {
   if (!filters || typeof filters !== 'object') {
     return query;
   }
 
   const { searchTerm, locations, verificationStatuses } = filters;
 
-  if (Array.isArray(locations) && locations.length > 0) {
-    const ilikeConditions = locations
+  const locationColumns = gatherColumnCandidates(columnMap, ['location']);
+
+  if (Array.isArray(locations) && locations.length > 0 && locationColumns.length > 0) {
+    const ilikeConditions = [];
+
+    locations
       .filter((location) => typeof location === 'string' && location.trim())
-      .map((location) => `location.ilike.%${location.trim().replace(/[%_]/g, (match) => `\\${match}`)}%`);
+      .forEach((location) => {
+        const escaped = escapeIlikeValue(location.trim());
+        locationColumns.forEach((column) => {
+          ilikeConditions.push(`${column}.ilike.%${escaped}%`);
+        });
+      });
 
     if (ilikeConditions.length > 0) {
       query = query.or(ilikeConditions.join(','));
     }
   }
 
-  if (Array.isArray(verificationStatuses) && verificationStatuses.length > 0) {
-    query = query.in('verification_status', verificationStatuses);
+  const verificationStatusColumn = columnMap.verification_status;
+
+  if (verificationStatusColumn && Array.isArray(verificationStatuses) && verificationStatuses.length > 0) {
+    query = query.in(verificationStatusColumn, verificationStatuses);
   }
 
   if (typeof searchTerm === 'string' && searchTerm.trim()) {
-    const escaped = searchTerm.trim().replace(/[%_]/g, (match) => `\\${match}`);
-    query = query.or(
-      [
-        `name.ilike.%${escaped}%`,
-        `company_name.ilike.%${escaped}%`,
-        `tagline.ilike.%${escaped}%`,
-        `description.ilike.%${escaped}%`,
-        `location.ilike.%${escaped}%`,
-      ].join(',')
-    );
+    const escaped = escapeIlikeValue(searchTerm.trim());
+    const searchColumns = gatherColumnCandidates(columnMap, ['name', 'tagline', 'description', 'location']);
+
+    if (searchColumns.length > 0) {
+      const predicates = searchColumns.map((column) => `${column}.ilike.%${escaped}%`);
+      query = query.or(predicates.join(','));
+    }
   }
 
   return query;
+};
+
+const augmentCompanyRecord = (company, config) => {
+  if (!company || typeof company !== 'object' || Array.isArray(company)) {
+    return company;
+  }
+
+  return config.reduce((accumulator, entry) => {
+    if (!entry || !entry.selected) {
+      return accumulator;
+    }
+
+    if (entry.selected !== entry.key && !Object.prototype.hasOwnProperty.call(accumulator, entry.key)) {
+      const value = company[entry.selected];
+      if (value !== undefined) {
+        accumulator[entry.key] = value;
+      }
+    }
+
+    return accumulator;
+  }, { ...company });
 };
 
 const normalizeCompany = (company, mapStartupToCompany) => {
@@ -217,14 +275,15 @@ export const fetchCompanies = async ({
         return { data: [], count: null, error: null };
       }
 
+      const columnMap = createColumnMap(config);
       let query = supabase
         .from('startups')
         .select(selectedColumns.join(', '), { count: 'exact' });
 
-      query = applyCompanyFilters(query, filters);
+      query = applyCompanyFilters(query, filters, columnMap);
 
-      if (selectedColumns.includes('created_at')) {
-        query = query.order('created_at', { ascending: false });
+      if (columnMap.created_at) {
+        query = query.order(columnMap.created_at, { ascending: false });
       }
 
       if (typeof query.range === 'function') {
@@ -291,7 +350,8 @@ export const fetchCompanies = async ({
       };
     }
 
-    const mapped = data
+    const augmented = data.map((startup) => augmentCompanyRecord(startup, config));
+    const mapped = augmented
       .map((startup) => normalizeCompany(startup, mapStartupToCompany))
       .filter(Boolean);
 

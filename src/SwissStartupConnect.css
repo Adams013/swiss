@@ -3258,7 +3258,7 @@
 }
 
 .ssc__notice {
-  margin: 1rem auto 0;
+  margin: 1rem auto;
   max-width: 900px;
   padding: 1rem 1.25rem;
   border-radius: 14px;
@@ -3274,10 +3274,11 @@
 .ssc__notice button {
   border: none;
   border-radius: 999px;
-  padding: 0.45rem 1rem;
+  padding: 0.35rem 0.9rem;
   background: linear-gradient(135deg, var(--ssc-primary), var(--ssc-accent));
   color: #fff;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
 }
 

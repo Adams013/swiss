@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
@@ -33,35 +33,188 @@ jest.mock('./data/companyProfiles', () => ({
   loadMockCompanies: jest.fn(),
 }));
 
+jest.mock('./supabaseClient', () => {
+  const eventRecord = {
+    id: 'event-supabase-1',
+    title: 'Supabase Showcase',
+    cityKey: 'Zurich',
+    city: 'Zurich',
+    event_date: '2024-09-01',
+    event_time: '18:00',
+    location: 'Impact Hub',
+  };
+
+  const createQuery = (data = [], options = {}) => {
+    const { error = null } = options;
+
+    const query = {
+      select: jest.fn(() => query),
+      order: jest.fn(() => Promise.resolve({ data, error })),
+      insert: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      update: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      delete: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      eq: jest.fn(() => query),
+      in: jest.fn(() => query),
+      maybeSingle: jest.fn(() => Promise.resolve({ data: data[0] ?? null, error: null })),
+      single: jest.fn(() => Promise.resolve({ data: data[0] ?? null, error: null })),
+      limit: jest.fn(() => query),
+      range: jest.fn(() => query),
+      abortSignal: jest.fn(() => query),
+      then: jest.fn((resolve) => Promise.resolve({ data, error }).then(resolve)),
+      catch: jest.fn((reject) => Promise.resolve({ data, error }).catch(reject)),
+      finally: jest.fn((callback) => Promise.resolve({ data, error }).finally(callback)),
+    };
+
+    return query;
+  };
+
+  const metadataColumnsByTable = {
+    jobs: [
+      { column_name: 'id' },
+      { column_name: 'title' },
+      { column_name: 'company_name' },
+      { column_name: 'startup_id' },
+      { column_name: 'location' },
+      { column_name: 'work_arrangement' },
+      { column_name: 'employment_type' },
+      { column_name: 'salary' },
+      { column_name: 'equity' },
+      { column_name: 'description' },
+      { column_name: 'requirements' },
+      { column_name: 'benefits' },
+      { column_name: 'tags' },
+      { column_name: 'posted' },
+      { column_name: 'applicants' },
+      { column_name: 'motivational_letter_required' },
+      { column_name: 'language_requirements' },
+      { column_name: 'translations' },
+      { column_name: 'created_at' },
+    ],
+    events: [
+      { column_name: 'id' },
+    ],
+  };
+
+  const createColumnsQuery = () => {
+    let schemaFilter = null;
+    let tableFilter = null;
+
+    const query = {
+      select: jest.fn(() => query),
+      eq: jest.fn((column, value) => {
+        if (column === 'table_schema') {
+          schemaFilter = value;
+        } else if (column === 'table_name') {
+          tableFilter = value;
+        }
+        return query;
+      }),
+      in: jest.fn(() => query),
+      limit: jest.fn(() => query),
+      range: jest.fn(() => query),
+      order: jest.fn(() => query),
+      abortSignal: jest.fn(() => query),
+      then: jest.fn((resolve) => {
+        const rows =
+          schemaFilter === 'public' && tableFilter
+            ? metadataColumnsByTable[tableFilter] ?? []
+            : [];
+        return Promise.resolve({ data: rows, error: null }).then(resolve);
+      }),
+      catch: jest.fn((reject) => Promise.resolve({ data: [], error: null }).catch(reject)),
+      finally: jest.fn((callback) => Promise.resolve().finally(callback)),
+    };
+
+    return query;
+  };
+
+  const eventsQuery = createQuery([eventRecord]);
+  const defaultQuery = createQuery([]);
+
+  const from = jest.fn((table) => {
+    if (table === 'events') {
+      return eventsQuery;
+    }
+
+    if (table === 'information_schema.columns') {
+      return createColumnsQuery();
+    }
+
+    return defaultQuery;
+  });
+
+  const supabaseMock = {
+    auth: {
+      getSession: jest.fn(async () => ({ data: { session: null }, error: null })),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+        error: null,
+      })),
+      getUser: jest.fn(async () => ({ data: { user: null }, error: null })),
+    },
+    storage: {
+      from: jest.fn(() => ({
+        upload: jest.fn().mockResolvedValue({ data: null, error: null }),
+        getPublicUrl: jest.fn(() => ({ data: { publicUrl: null }, error: null })),
+      })),
+    },
+    from,
+  };
+
+  return {
+    supabase: supabaseMock,
+    default: supabaseMock,
+    isSupabaseConfigured: true,
+  };
+});
+
 jest.mock('./SwitzerlandMap', () => {
   const React = require('react');
+
+  const groupByCity = (items = [], resolveKey) => {
+    return items.reduce((accumulator, item) => {
+      const key = resolveKey(item);
+      if (!key) {
+        return accumulator;
+      }
+      if (!accumulator[key]) {
+        accumulator[key] = [];
+      }
+      accumulator[key].push(item);
+      return accumulator;
+    }, {});
+  };
 
   const MockMap = ({
     jobs = [],
     events = [],
+    visibleLayer = 'jobs',
     onJobCityClick,
     onEventCityClick,
-    visibleLayer,
   }) => {
+    const jobCities = React.useMemo(() => groupByCity(jobs, (job) => job.cityKey), [jobs]);
+    const eventCities = React.useMemo(() => groupByCity(events, (event) => event.cityKey), [events]);
+
     return (
       <div data-testid="mock-map">
-        {visibleLayer === 'events'
-          ? events.map((event) => (
+        <span data-testid="mock-visible-layer">{visibleLayer}</span>
+        {visibleLayer === 'jobs'
+          ? Object.entries(jobCities).map(([cityKey, cityJobs]) => (
               <button
-                key={`event-${event.id}`}
+                key={`jobs-${cityKey}`}
                 type="button"
-                onClick={() => onEventCityClick(event.cityKey)}
+                onClick={() => onJobCityClick && onJobCityClick(cityKey, cityJobs)}
               >
-                View events in {event.cityKey}
+                View jobs in {cityKey}
               </button>
             ))
-          : jobs.map((job) => (
+          : Object.entries(eventCities).map(([cityKey, cityEvents]) => (
               <button
-                key={`job-${job.id}`}
+                key={`events-${cityKey}`}
                 type="button"
-                onClick={() => onJobCityClick(job.cityKey)}
+                onClick={() => onEventCityClick && onEventCityClick(cityKey, cityEvents)}
               >
-                View jobs in {job.cityKey}
+                View events in {cityKey}
               </button>
             ))}
       </div>
@@ -79,6 +232,11 @@ jest.mock('./SwitzerlandMap', () => {
     resolveCityKeyForEvent: (event) => event.cityKey,
   };
 });
+
+const suppressedConsoleErrorPatterns = [
+  /not wrapped in act\(\)/i,
+  /Events load error/i,
+];
 
 let SwissStartupConnect;
 
@@ -190,6 +348,12 @@ const setupFallbackScenario = () => {
   });
 };
 
+const setupSupabaseErrorScenario = () => {
+  commonMockSetup();
+  fetchJobs.mockRejectedValue(new Error('network down'));
+  fetchCompanies.mockRejectedValue(new Error('network down'));
+};
+
 const renderApp = async () => {
   const user = userEvent.setup();
   render(<SwissStartupConnect />);
@@ -209,12 +373,32 @@ beforeAll(() => {
     removeListener: () => {},
     dispatchEvent: () => false,
   });
+  if (typeof window.requestAnimationFrame !== 'function') {
+    window.requestAnimationFrame = (callback) => setTimeout(callback, 0);
+  }
+  if (typeof window.cancelAnimationFrame !== 'function') {
+    window.cancelAnimationFrame = (id) => clearTimeout(id);
+  }
+  const originalConsoleError = console.error;
+  jest.spyOn(console, 'error').mockImplementation((message, ...rest) => {
+    if (
+      typeof message === 'string' &&
+      suppressedConsoleErrorPatterns.some((pattern) => pattern.test(message))
+    ) {
+      return;
+    }
+    originalConsoleError(message, ...rest);
+  });
   SwissStartupConnect = require('./SwissStartupConnect').default;
 });
 
 beforeEach(() => {
   jest.clearAllMocks();
   window.localStorage.clear();
+});
+
+afterAll(() => {
+  console.error.mockRestore();
 });
 
 it('switches hero copy when changing languages', async () => {
@@ -225,7 +409,9 @@ it('switches hero copy when changing languages', async () => {
 
   const languageGroup = await screen.findByRole('group', { name: /language/i });
   const toggleButton = within(languageGroup).getByRole('button', { name: 'EN' });
-  fireEvent.click(toggleButton);
+  await act(async () => {
+    fireEvent.click(toggleButton);
+  });
 
   const frenchOption = await screen.findByRole('option', { name: 'Français' });
   await user.click(frenchOption);
@@ -240,6 +426,11 @@ it('opens resource modal with fallback data and closes on escape', async () => {
   const user = await renderApp();
 
   expect(await screen.findByText(/Fallback Analyst/i)).toBeInTheDocument();
+
+  const fallbackCopy = await screen.findByText(
+    /We're showing .* from our community snapshot while live data reconnects\./i
+  );
+  expect(fallbackCopy).toBeInTheDocument();
 
   const viewDetailButtons = await screen.findAllByRole('button', { name: /View details/i });
   await user.click(viewDetailButtons[0]);
@@ -257,6 +448,23 @@ it('opens resource modal with fallback data and closes on escape', async () => {
   );
 });
 
+it('displays fallback notice when Supabase requests fail and allows dismissal', async () => {
+  setupSupabaseErrorScenario();
+  const user = await renderApp();
+
+  expect(await screen.findByText(/Fallback Analyst/i)).toBeInTheDocument();
+
+  const noticePattern = /We're showing .* from our community snapshot while live data reconnects\./i;
+
+  const fallbackNotice = await screen.findByText(noticePattern);
+  expect(fallbackNotice).toBeInTheDocument();
+  expect(fallbackNotice.textContent).toMatch(/jobs/i);
+
+  await user.click(screen.getByRole('button', { name: /Dismiss notice/i }));
+
+  await waitFor(() => expect(screen.queryByText(noticePattern)).not.toBeInTheDocument());
+});
+
 it('toggles map layers and reveals city panels', async () => {
   setupSupabaseSuccess();
   const user = await renderApp();
@@ -270,8 +478,8 @@ it('toggles map layers and reveals city panels', async () => {
     expect(screen.getByRole('heading', { name: /Job Locations in Switzerland/i })).toBeInTheDocument()
   );
 
-  const mapButton = await screen.findByRole('button', { name: /View jobs in Zurich/i });
-  await user.click(mapButton);
+  const jobButton = await screen.findByRole('button', { name: /View jobs in Zurich/i });
+  await user.click(jobButton);
 
   expect(await screen.findByRole('heading', { name: /Roles in Zurich/i })).toBeInTheDocument();
 
