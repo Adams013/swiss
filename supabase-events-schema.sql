@@ -33,31 +33,37 @@ CREATE POLICY "Events are viewable by everyone" ON events
 
 -- Only startups can insert events
 CREATE POLICY "Startups can insert events" ON events
-  FOR INSERT WITH CHECK (
+  FOR INSERT
+  WITH CHECK (
     EXISTS (
-      SELECT 1 FROM startups 
-      WHERE startups.id = events.startup_id 
-      AND startups.id = auth.uid()
+      SELECT 1
+      FROM startups
+      WHERE startups.id = events.startup_id
+        AND startups.owner_id = (SELECT auth.uid())
     )
   );
 
 -- Only the event creator can update their events
 CREATE POLICY "Startups can update their own events" ON events
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
     EXISTS (
-      SELECT 1 FROM startups 
-      WHERE startups.id = events.startup_id 
-      AND startups.id = auth.uid()
+      SELECT 1
+      FROM startups
+      WHERE startups.id = events.startup_id
+        AND startups.owner_id = (SELECT auth.uid())
     )
   );
 
 -- Only the event creator can delete their events
 CREATE POLICY "Startups can delete their own events" ON events
-  FOR DELETE USING (
+  FOR DELETE
+  USING (
     EXISTS (
-      SELECT 1 FROM startups 
-      WHERE startups.id = events.startup_id 
-      AND startups.id = auth.uid()
+      SELECT 1
+      FROM startups
+      WHERE startups.id = events.startup_id
+        AND startups.owner_id = (SELECT auth.uid())
     )
   );
 
@@ -71,28 +77,34 @@ CREATE POLICY "Event posters are publicly accessible" ON storage.objects
   FOR SELECT USING (bucket_id = 'event-posters');
 
 CREATE POLICY "Startups can upload event posters" ON storage.objects
-  FOR INSERT WITH CHECK (
-    bucket_id = 'event-posters' AND
-    EXISTS (
-      SELECT 1 FROM startups 
-      WHERE startups.id = auth.uid()
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'event-posters'
+    AND EXISTS (
+      SELECT 1
+      FROM startups
+      WHERE startups.owner_id = (SELECT auth.uid())
     )
   );
 
 CREATE POLICY "Startups can update their event posters" ON storage.objects
-  FOR UPDATE USING (
-    bucket_id = 'event-posters' AND
-    EXISTS (
-      SELECT 1 FROM startups 
-      WHERE startups.id = auth.uid()
+  FOR UPDATE
+  USING (
+    bucket_id = 'event-posters'
+    AND EXISTS (
+      SELECT 1
+      FROM startups
+      WHERE startups.owner_id = (SELECT auth.uid())
     )
   );
 
 CREATE POLICY "Startups can delete their event posters" ON storage.objects
-  FOR DELETE USING (
-    bucket_id = 'event-posters' AND
-    EXISTS (
-      SELECT 1 FROM startups 
-      WHERE startups.id = auth.uid()
+  FOR DELETE
+  USING (
+    bucket_id = 'event-posters'
+    AND EXISTS (
+      SELECT 1
+      FROM startups
+      WHERE startups.owner_id = (SELECT auth.uid())
     )
   );
