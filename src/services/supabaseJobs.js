@@ -141,6 +141,8 @@ const detectMissingColumn = (message, table) => {
         new RegExp(`could not find the '([^']+)' column of '${normalizedTable}'`, 'i'),
         new RegExp(`'([^']+)' column of '${normalizedTable}'`, 'i'),
         new RegExp(`column "([^"\\s]+)" of table "${normalizedTable}" does not exist`, 'i'),
+        new RegExp(`column ${normalizedTable}\\.([^\\s]+) does not exist`, 'i'),
+        new RegExp(`column ['\"]?${normalizedTable}\\.([^'"\\s]+)['\"]? does not exist`, 'i'),
       ]
     : [];
 
