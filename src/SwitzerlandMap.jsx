@@ -130,6 +130,7 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
   const [mapZoom] = useState(8);
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
+  const mapDescriptionId = useRef(`map-desc-${Math.random().toString(36).substr(2, 9)}`).current;
 
   useEffect(() => {
     // Set map as loaded immediately since CSS is imported statically
@@ -179,6 +180,8 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
         const color = isSelected ? '#2563eb' : getColor(jobCount);
         const fill = isSelected ? '#3b82f6' : getColor(jobCount);
 
+        const markerAriaLabel = `${cityName}: ${jobCount} job${jobCount !== 1 ? 's' : ''} available. ${isSelected ? 'Currently selected.' : 'Click to view jobs.'}`;
+        
         return (
           <CircleMarker
             key={cityName}
@@ -191,15 +194,19 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
             eventHandlers={{
               click: () => onCityClick(cityName, cityJobs),
             }}
+            // Accessibility: Add title for hover tooltip
+            title={markerAriaLabel}
+            // Accessibility: Add alt attribute for screen readers
+            alt={markerAriaLabel}
           >
             <Popup>
-              <div className="text-center p-2">
+              <div className="text-center p-2" role="region" aria-label={`Job information for ${cityName}`}>
                 <div className="flex items-center justify-center mb-2">
-                  <MapPin className="w-4 h-4 mr-1" />
+                  <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
                   <span className="font-semibold">{cityName}</span>
                 </div>
                 <div className="flex items-center justify-center">
-                  <Briefcase className="w-4 h-4 mr-1" />
+                  <Briefcase className="w-4 h-4 mr-1" aria-hidden="true" />
                   <span className="text-sm">
                     {jobCount} job{jobCount !== 1 ? 's' : ''}
                   </span>
@@ -234,11 +241,22 @@ const SwitzerlandMap = ({ jobs = [], onCityClick, selectedCity, showJobPanel }) 
 
   return (
     <div className={`ssc__map-wrapper ${showJobPanel ? 'ssc__map-wrapper--panel-open' : ''}`}>
+      {/* Screen reader description */}
+      <div id={mapDescriptionId} className="sr-only">
+        Interactive map showing job locations across Switzerland. Each circle marker represents a city with available jobs.
+        The size and color of markers indicate the number of jobs: green for 1-4 jobs, yellow for 5-9 jobs, 
+        orange for 10-19 jobs, and red for 20 or more jobs. Click on a marker to view jobs in that city.
+        For a text-based alternative, use the list view toggle above the map.
+      </div>
+      
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
         style={{ height: '100%', width: '100%' }}
         className="ssc__map"
+        role="application"
+        aria-label="Interactive job location map of Switzerland"
+        aria-describedby={mapDescriptionId}
         whenCreated={(map) => {
           mapRef.current = map;
           // Ensure map is properly initialized

@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import SwitzerlandMap, { resolveCityKeyForJob, SWISS_CITIES } from './SwitzerlandMap';
 import CityJobPanel from './CityJobPanel';
+import CityListView from './CityListView';
+import { Map, List } from 'lucide-react';
 
 const JobMapView = ({ 
   jobs = [], 
@@ -12,6 +14,7 @@ const JobMapView = ({
   const [selectedCity, setSelectedCity] = useState(null);
   const [cityJobs, setCityJobs] = useState([]);
   const [showJobPanel, setShowJobPanel] = useState(false);
+  const [viewMode, setViewMode] = useState('map'); // 'map' or 'list'
 
   const jobsByCity = useMemo(() => {
     const grouped = {};
@@ -108,58 +111,112 @@ const JobMapView = ({
   return (
     <div className="ssc__map-view">
       <div className="ssc__map-header">
-        <h2 className="ssc__map-title">
-          {translate('map.title', 'Job Locations in Switzerland')}
-        </h2>
-        <p className="ssc__map-description">
-          {translate('map.description', 'Click on a city to see available jobs')}
-        </p>
-      </div>
-
-      <div className="ssc__map-container">
-        <SwitzerlandMap
-          jobs={jobs}
-          onCityClick={handleCityClick}
-          selectedCity={selectedCity}
-          showJobPanel={showJobPanel}
-        />
+        <div className="ssc__map-header-content">
+          <h2 className="ssc__map-title">
+            {translate('map.title', 'Job Locations in Switzerland')}
+          </h2>
+          <p className="ssc__map-description">
+            {translate('map.description', viewMode === 'map' 
+              ? 'Click on a city to see available jobs' 
+              : 'Browse jobs organized by city')}
+          </p>
+        </div>
         
-        {showJobPanel && (
-          <CityJobPanel
-            selectedCity={selectedCity}
-            selectedCityLabel={selectedCityLabel}
-            cityJobs={cityJobs}
-            onClose={handleClosePanel}
-            onJobClick={handleJobClick}
-            translate={translate}
-          />
-        )}
-      </div>
-
-      {/* Legend */}
-      <div className="ssc__map-legend">
-        <h4 className="ssc__map-legend-title">
-          {translate('map.legend', 'Legend')}
-        </h4>
-        <div className="ssc__map-legend-items">
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--few"></div>
-            <span>{translate('map.legend.few', '1-4 jobs')}</span>
-          </div>
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--some"></div>
-            <span>{translate('map.legend.some', '5-9 jobs')}</span>
-          </div>
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--many"></div>
-            <span>{translate('map.legend.many', '10-19 jobs')}</span>
-          </div>
-          <div className="ssc__map-legend-item">
-            <div className="ssc__map-legend-circle ssc__map-legend-circle--lots"></div>
-            <span>{translate('map.legend.lots', '20+ jobs')}</span>
-          </div>
+        {/* View Mode Toggle */}
+        <div className="ssc__map-view-toggle" role="group" aria-label="View mode selection">
+          <button
+            className={`ssc__map-view-toggle-btn ${viewMode === 'map' ? 'ssc__map-view-toggle-btn--active' : ''}`}
+            onClick={() => setViewMode('map')}
+            aria-label={translate('map.viewToggle.map', 'Map view')}
+            aria-pressed={viewMode === 'map'}
+          >
+            <Map className="ssc__map-view-toggle-icon" aria-hidden="true" />
+            <span>{translate('map.viewToggle.mapLabel', 'Map')}</span>
+          </button>
+          <button
+            className={`ssc__map-view-toggle-btn ${viewMode === 'list' ? 'ssc__map-view-toggle-btn--active' : ''}`}
+            onClick={() => setViewMode('list')}
+            aria-label={translate('map.viewToggle.list', 'List view')}
+            aria-pressed={viewMode === 'list'}
+          >
+            <List className="ssc__map-view-toggle-icon" aria-hidden="true" />
+            <span>{translate('map.viewToggle.listLabel', 'List')}</span>
+          </button>
         </div>
       </div>
+
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <>
+          <div className="ssc__map-container">
+            <SwitzerlandMap
+              jobs={jobs}
+              onCityClick={handleCityClick}
+              selectedCity={selectedCity}
+              showJobPanel={showJobPanel}
+            />
+            
+            {showJobPanel && (
+              <CityJobPanel
+                selectedCity={selectedCity}
+                selectedCityLabel={selectedCityLabel}
+                cityJobs={cityJobs}
+                onClose={handleClosePanel}
+                onJobClick={handleJobClick}
+                translate={translate}
+              />
+            )}
+          </div>
+
+          {/* Legend for Map View */}
+          <div className="ssc__map-legend">
+            <h4 className="ssc__map-legend-title">
+              {translate('map.legend', 'Legend')}
+            </h4>
+            <div className="ssc__map-legend-items">
+              <div className="ssc__map-legend-item">
+                <div className="ssc__map-legend-circle ssc__map-legend-circle--few" aria-hidden="true"></div>
+                <span>{translate('map.legend.few', '1-4 jobs')}</span>
+              </div>
+              <div className="ssc__map-legend-item">
+                <div className="ssc__map-legend-circle ssc__map-legend-circle--some" aria-hidden="true"></div>
+                <span>{translate('map.legend.some', '5-9 jobs')}</span>
+              </div>
+              <div className="ssc__map-legend-item">
+                <div className="ssc__map-legend-circle ssc__map-legend-circle--many" aria-hidden="true"></div>
+                <span>{translate('map.legend.many', '10-19 jobs')}</span>
+              </div>
+              <div className="ssc__map-legend-item">
+                <div className="ssc__map-legend-circle ssc__map-legend-circle--lots" aria-hidden="true"></div>
+                <span>{translate('map.legend.lots', '20+ jobs')}</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="ssc__map-list-container">
+          <CityListView
+            jobs={jobs}
+            onCityClick={handleCityClick}
+            selectedCity={selectedCity}
+            translate={translate}
+          />
+          
+          {showJobPanel && (
+            <CityJobPanel
+              selectedCity={selectedCity}
+              selectedCityLabel={selectedCityLabel}
+              cityJobs={cityJobs}
+              onClose={handleClosePanel}
+              onJobClick={handleJobClick}
+              translate={translate}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
