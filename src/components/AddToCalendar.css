@@ -1,0 +1,470 @@
+/* =====================================================
+   Add to Calendar Component Styles
+   ===================================================== */
+
+/* Add to Calendar Dropdown */
+.ssc__add-to-calendar {
+  position: relative;
+  display: inline-block;
+}
+
+.ssc__add-to-calendar__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssc__add-to-calendar__chevron--open {
+  transform: rotate(180deg);
+  transition: transform 0.2s;
+}
+
+/* Backdrop */
+.ssc__add-to-calendar__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+/* Dropdown */
+.ssc__add-to-calendar__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 320px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: dropdownIn 0.2s ease-out;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Event Preview */
+.ssc__add-to-calendar__preview {
+  padding: 16px;
+}
+
+.ssc__add-to-calendar__title {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__add-to-calendar__details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssc__add-to-calendar__detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__add-to-calendar__detail svg {
+  flex-shrink: 0;
+  color: var(--primary-color, #3b82f6);
+}
+
+/* Divider */
+.ssc__add-to-calendar__divider {
+  height: 1px;
+  background: var(--border-color, #e5e7eb);
+}
+
+/* Calendar Options */
+.ssc__add-to-calendar__options {
+  padding: 12px;
+}
+
+.ssc__add-to-calendar__options-title {
+  margin: 0 0 8px 0;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ssc__add-to-calendar__option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-primary, #1f2937);
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ssc__add-to-calendar__option:hover:not(:disabled) {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.ssc__add-to-calendar__option:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ssc__add-to-calendar__option-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.ssc__add-to-calendar__option-label {
+  flex: 1;
+}
+
+.ssc__add-to-calendar__check {
+  flex-shrink: 0;
+  color: var(--success-color, #10b981);
+  animation: checkIn 0.3s ease-out;
+}
+
+@keyframes checkIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =====================================================
+   Calendar Event Card
+   ===================================================== */
+
+.ssc__calendar-event-card {
+  position: relative;
+  max-width: 500px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+.ssc__calendar-event-card__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary, #f9fafb);
+  border: none;
+  border-radius: 50%;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 1;
+}
+
+.ssc__calendar-event-card__close:hover {
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__calendar-event-card__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 24px 24px;
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  text-align: center;
+}
+
+.ssc__calendar-event-card__header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__calendar-event-card__body {
+  padding: 24px;
+}
+
+.ssc__calendar-event-card__description {
+  margin: 0 0 24px 0;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.6;
+}
+
+.ssc__calendar-event-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ssc__calendar-event-card__detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+}
+
+.ssc__calendar-event-card__detail svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary-color, #3b82f6);
+}
+
+.ssc__calendar-event-card__detail strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__calendar-event-card__detail p {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__calendar-event-card__footer {
+  padding: 0 24px 24px;
+}
+
+.ssc__calendar-event-card__footer .ssc__btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* =====================================================
+   Interview Scheduler
+   ===================================================== */
+
+.ssc__interview-scheduler {
+  max-width: 500px;
+  padding: 24px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 16px;
+}
+
+.ssc__interview-scheduler h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__interview-scheduler__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ssc__interview-scheduler__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ssc__interview-scheduler__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssc__interview-scheduler__field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__interview-scheduler__field input,
+.ssc__interview-scheduler__field select,
+.ssc__interview-scheduler__field textarea {
+  padding: 10px 12px;
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  color: var(--text-primary, #1f2937);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.ssc__interview-scheduler__field input:focus,
+.ssc__interview-scheduler__field select:focus,
+.ssc__interview-scheduler__field textarea:focus {
+  background: white;
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ssc__interview-scheduler__field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.ssc__interview-scheduler__field input::placeholder,
+.ssc__interview-scheduler__field textarea::placeholder {
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__interview-scheduler .ssc__btn {
+  margin-top: 8px;
+  justify-content: center;
+}
+
+/* =====================================================
+   Dark Mode Support
+   ===================================================== */
+
+.dark .ssc__add-to-calendar__dropdown,
+.dark .ssc__calendar-event-card,
+.dark .ssc__interview-scheduler {
+  background: var(--card-bg-dark, #1f2937);
+  border-color: var(--border-color-dark, #374151);
+}
+
+.dark .ssc__add-to-calendar__divider {
+  background: var(--border-color-dark, #374151);
+}
+
+.dark .ssc__add-to-calendar__option:hover:not(:disabled) {
+  background: var(--bg-secondary-dark, #111827);
+}
+
+.dark .ssc__calendar-event-card__header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+}
+
+.dark .ssc__calendar-event-card__header h3 {
+  color: white;
+}
+
+.dark .ssc__calendar-event-card__close {
+  background: var(--bg-secondary-dark, #111827);
+  color: var(--text-secondary-dark, #9ca3af);
+}
+
+.dark .ssc__calendar-event-card__close:hover {
+  background: var(--bg-tertiary-dark, #1f2937);
+  color: var(--text-primary-dark, #f9fafb);
+}
+
+.dark .ssc__calendar-event-card__detail {
+  background: var(--bg-secondary-dark, #111827);
+}
+
+.dark .ssc__interview-scheduler__field input,
+.dark .ssc__interview-scheduler__field select,
+.dark .ssc__interview-scheduler__field textarea {
+  background: var(--bg-secondary-dark, #111827);
+  border-color: var(--border-color-dark, #374151);
+  color: var(--text-primary-dark, #f9fafb);
+}
+
+.dark .ssc__interview-scheduler__field input:focus,
+.dark .ssc__interview-scheduler__field select:focus,
+.dark .ssc__interview-scheduler__field textarea:focus {
+  background: var(--bg-tertiary-dark, #1f2937);
+}
+
+/* =====================================================
+   Responsive Design
+   ===================================================== */
+
+@media (max-width: 768px) {
+  .ssc__add-to-calendar__dropdown {
+    right: auto;
+    left: 0;
+    min-width: 280px;
+  }
+
+  .ssc__calendar-event-card {
+    max-width: 100%;
+  }
+
+  .ssc__interview-scheduler {
+    max-width: 100%;
+  }
+
+  .ssc__interview-scheduler__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .ssc__add-to-calendar__dropdown {
+    min-width: 260px;
+  }
+
+  .ssc__calendar-event-card__header,
+  .ssc__calendar-event-card__body,
+  .ssc__calendar-event-card__footer {
+    padding: 20px 16px;
+  }
+
+  .ssc__interview-scheduler {
+    padding: 20px 16px;
+  }
+}
+
+/* =====================================================
+   Accessibility
+   ===================================================== */
+
+.ssc__add-to-calendar__option:focus,
+.ssc__calendar-event-card__close:focus,
+.ssc__interview-scheduler__field input:focus,
+.ssc__interview-scheduler__field select:focus,
+.ssc__interview-scheduler__field textarea:focus {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .ssc__add-to-calendar__dropdown,
+  .ssc__add-to-calendar__chevron--open,
+  .ssc__add-to-calendar__check,
+  .ssc__add-to-calendar__option,
+  .ssc__calendar-event-card__close {
+    animation: none;
+    transition: none;
+  }
+}
+
