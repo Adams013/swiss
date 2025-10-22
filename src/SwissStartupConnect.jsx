@@ -21,6 +21,7 @@ import {
   Rocket,
   Search,
   Send,
+  Settings,
   Sun,
   Sparkles,
   TrendingUp,
@@ -45,6 +46,7 @@ import Modal from './components/Modal';
 import AIChat from './components/AIChat';
 import CalendarView from './components/CalendarView';
 import SubscriptionView from './components/SubscriptionView';
+import EmployerServices from './components/EmployerServices';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -251,7 +253,7 @@ const SwissStartupConnect = () => {
   const [authError, setAuthError] = useState('');
   const [profile, setProfile] = useState(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [profileModalTab, setProfileModalTab] = useState('profile'); // 'profile', 'calendar', 'subscription'
+  const [profileModalTab, setProfileModalTab] = useState('profile'); // 'profile', 'calendar'
   const [profileForm, setProfileForm] = useState({
     full_name: '',
     university: '',
@@ -338,6 +340,9 @@ const SwissStartupConnect = () => {
   });
   const [startupColumnPresence, setStartupColumnPresence] = useState({});
   const [startupSaving, setStartupSaving] = useState(false);
+  
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [settingsModalTab, setSettingsModalTab] = useState('subscription'); // 'subscription' for students, 'services' for startups
 
   const [resourceModal, setResourceModal] = useState(null);
   const [reviewsModal, setReviewsModal] = useState(null);
@@ -6028,6 +6033,18 @@ const SwissStartupConnect = () => {
                       >
                         {translate('accountMenu.security', 'Privacy & security')}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSettingsModalTab(user.type === 'student' ? 'subscription' : 'services');
+                          setSettingsModalOpen(true);
+                          setShowUserMenu(false);
+                        }}
+                      >
+                        {user.type === 'student' 
+                          ? translate('accountMenu.subscription', 'Subscription')
+                          : translate('accountMenu.services', 'Services')}
+                      </button>
                       {user.type === 'student' && (
                         <button
                           type="button"
@@ -8951,7 +8968,7 @@ const SwissStartupConnect = () => {
               <p>
                 {translate(
                   'profileModal.subtitle',
-                  'Manage your profile, calendar, and subscription'
+                  'Manage your profile and calendar'
                 )}
               </p>
             </header>
@@ -8973,16 +8990,6 @@ const SwissStartupConnect = () => {
               >
                 <Calendar size={18} />
                 {translate('profileModal.tabs.calendar', 'Calendar')}
-              </button>
-              <button
-                type="button"
-                className={`ssc__profile-tab ${profileModalTab === 'subscription' ? 'ssc__profile-tab--active' : ''}`}
-                onClick={() => setProfileModalTab('subscription')}
-              >
-                <CreditCard size={18} />
-                {isStudent 
-                  ? translate('profileModal.tabs.subscription', 'Subscription')
-                  : translate('profileModal.tabs.subscriptionServices', 'Subscriptions & Services')}
               </button>
             </div>
 
@@ -9229,13 +9236,6 @@ const SwissStartupConnect = () => {
                 <CalendarView user={user} translate={translate} />
               </div>
             )}
-
-            {/* Subscription Tab */}
-            {profileModalTab === 'subscription' && (
-              <div className="ssc__modal-body">
-                <SubscriptionView user={user} translate={translate} />
-              </div>
-            )}
       </Modal>
 
       <Modal
@@ -9373,6 +9373,44 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
+      </Modal>
+
+      {/* Settings Modal */}
+      <Modal
+        isOpen={settingsModalOpen}
+        onRequestClose={() => {
+          setSettingsModalOpen(false);
+          setSettingsModalTab(user?.type === 'student' ? 'subscription' : 'services');
+        }}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby={MODAL_TITLE_IDS.settings || 'settings-modal'}
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => {
+          setSettingsModalOpen(false);
+          setSettingsModalTab(user?.type === 'student' ? 'subscription' : 'services');
+        }}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id={MODAL_TITLE_IDS.settings || 'settings-modal'}>
+            {user?.type === 'student' 
+              ? translate('settingsModal.title.student', 'Subscription Settings')
+              : translate('settingsModal.title.startup', 'Services & Subscriptions')}
+          </h2>
+          <p>
+            {user?.type === 'student'
+              ? translate('settingsModal.subtitle.student', 'Manage your premium subscription')
+              : translate('settingsModal.subtitle.startup', 'Purchase services to enhance your hiring')}
+          </p>
+        </header>
+
+        <div className="ssc__modal-body">
+          {user?.type === 'student' ? (
+            <SubscriptionView user={user} translate={translate} />
+          ) : (
+            <EmployerServices user={user} translate={translate} />
+          )}
+        </div>
       </Modal>
 
       <Modal
