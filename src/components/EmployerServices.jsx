@@ -11,6 +11,7 @@ import {
   MousePointerClick,
   Users,
   Zap,
+  ArrowRight,
 } from 'lucide-react';
 import { STRIPE_PRODUCTS } from '../config/stripeProducts';
 import TestModeBanner from './TestModeBanner';
@@ -147,11 +148,20 @@ const EmployerServices = ({ user, translate, language = 'en' }) => {
     }
   };
 
-  const formatPrice = (price, currency, interval) => {
-    if (interval === 'one-time') {
-      return `${price.toFixed(2)} ${currency}`;
+  const formatServicePriceLabel = (service) => {
+    if (!service) {
+      return '';
     }
-    return `${price.toFixed(2)} ${currency}/${translate(`services.${interval}`, interval)}`;
+
+    const basePrice = `${service.currency} ${service.price.toFixed(2)}`;
+
+    if (service.interval === 'one-time') {
+      const perPostLabel = translate('services.perPostLabel', 'Per Post');
+      return `${basePrice}/${perPostLabel}`;
+    }
+
+    const monthLabel = translate('services.periodLabel', 'Month');
+    return `${basePrice}/${monthLabel}`;
   };
 
   const services = [
@@ -199,16 +209,13 @@ const EmployerServices = ({ user, translate, language = 'en' }) => {
 
               {/* Service Price */}
               <div className="ssc__service-card__price">
-                <span className="ssc__service-card__amount">
-                  {service.price.toFixed(2)}
+                <span className="ssc__service-card__price-value">
+                  {formatServicePriceLabel(service)}
                 </span>
-                <span className="ssc__service-card__currency">
-                  {service.currency}
-                </span>
-                <span className="ssc__service-card__interval">
+                <span className="ssc__service-card__price-caption">
                   {service.interval === 'one-time'
-                    ? translate('services.perPost', 'per post')
-                    : `/${translate('services.month', 'month')}`}
+                    ? translate('services.oneTimeCaption', 'One-time featured boost')
+                    : translate('services.recurringCaption', 'Billed monthly via secure Stripe checkout')}
                 </span>
               </div>
 
@@ -223,26 +230,37 @@ const EmployerServices = ({ user, translate, language = 'en' }) => {
               </ul>
 
               {/* CTA Button */}
-              <button
-                type="button"
-                className="ssc__btn ssc__btn--primary ssc__service-card__cta"
-                onClick={() => handlePurchaseService(service)}
-                disabled={isProcessingThis}
-              >
-                {isProcessingThis ? (
-                  <>
-                    <div className="ssc__spinner ssc__spinner--small"></div>
-                    {translate('services.processing', 'Processing...')}
-                  </>
-                ) : (
-                  <>
+              <div className="ssc__service-card__actions">
+                <button
+                  type="button"
+                  className="ssc__btn ssc__btn--primary ssc__service-card__cta"
+                  onClick={() => handlePurchaseService(service)}
+                  disabled={isProcessingThis}
+                >
+                  {isProcessingThis ? (
+                    <>
+                      <div className="ssc__spinner ssc__spinner--small"></div>
+                      {translate('services.processing', 'Processing...')}
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRight size={16} />
+                      {translate('services.selectService', 'Select Service')}
+                    </>
+                  )}
+                </button>
+
+                {!isProcessingThis && (
+                  <button
+                    type="button"
+                    className="ssc__btn ssc__btn--link ssc__service-card__link"
+                    onClick={() => handlePurchaseService(service)}
+                  >
                     <ExternalLink size={16} />
-                    {service.interval === 'one-time'
-                      ? translate('services.purchase', 'Purchase Now')
-                      : translate('services.subscribe', 'Subscribe Now')}
-                  </>
+                    {translate('services.checkoutWithStripe', 'Checkout with Stripe')}
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
           );
         })}
