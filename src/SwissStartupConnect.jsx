@@ -5896,9 +5896,9 @@ const SwissStartupConnect = () => {
               aria-label={themeToggleLabel}
               title={themeToggleLabel}
             >
-              <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={16} aria-hidden="true" />
+              <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={14} aria-hidden="true" />
               <span className="ssc__theme-toggle-thumb" aria-hidden="true" />
-              <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={16} aria-hidden="true" />
+              <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={14} aria-hidden="true" />
             </button>
 
             <div
