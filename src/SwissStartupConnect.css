@@ -1981,7 +1981,7 @@
 .ssc__calculator-anchor {
   position: fixed;
   right: clamp(1.25rem, 4vw, 3rem);
-  bottom: clamp(1rem, 4vh, 2.75rem);
+  bottom: clamp(7rem, 12vh, 10rem);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
