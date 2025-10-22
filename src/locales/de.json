@@ -898,12 +898,41 @@
       "badge": "Premium-Vorteile",
       "description": "Wählen Sie die Abrechnungsoption, die am besten zu Ihnen passt, und geniessen Sie alle Premium-Vorteile."
     },
+    "tabs": {
+      "subscribe": "Abonnieren",
+      "benefits": "Vorteile",
+      "manage": "Verwalten",
+      "overview": "Überblick",
+      "billing": "Abrechnung",
+      "profileViews": "Profilaufrufe",
+      "searches": "Suchanfragen"
+    },
     "planTabs": {
-      "label": "Abrechnungsintervall auswählen"
+      "label": "Abrechnungsoption auswählen"
+    },
+    "planSwitcher": {
+      "benefits": "Vorteilsübersicht"
+    },
+    "displayPrice": {
+      "monthly": "CHF 7.90",
+      "quarterly": "CHF 20.00",
+      "yearly": "CHF 75.00",
+      "generic": "CHF {{amount}}"
     },
     "planSubtitle": "Alle Premium-Vorteile mit flexiblem Abonnement geniessen.",
     "planAssurance": "Jederzeit kündbar mit 30 Tagen Geld-zurück-Garantie.",
-    "securePayment": "Sichere Zahlung über Stripe. Ihre Daten bleiben verschlüsselt.",
+    "securePayment": {
+      "label": "Sichere Zahlung über Stripe. Ihre Daten bleiben verschlüsselt.",
+      "title": "Sichere Stripe-Zahlungen",
+      "description": "Alle Pläne werden über Stripe verschlüsselt verarbeitet und sind durch unsere 30-Tage-Garantie abgedeckt."
+    },
+    "benefits": {
+      "eyebrow": "Premium-Vorteile",
+      "title": "Alles, was Premium für Sie freischaltet",
+      "lead": "Premium hält Ihr Profil im Rampenlicht, liefert Insights in Echtzeit und beschleunigt Verbindungen zu Start-ups.",
+      "cta": "Plan auswählen",
+      "backed": "Abgesichert durch den sicheren Stripe-Checkout"
+    },
     "interval": {
       "monthly": "Monatlich",
       "quarterly": "Vierteljährlich",

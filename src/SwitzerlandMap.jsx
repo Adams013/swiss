@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Briefcase, Calendar } from 'lucide-react';
@@ -161,6 +161,24 @@ const SwitzerlandMap = ({
   const pendingFrameRef = useRef(null);
   const pendingTimeoutsRef = useRef(new Set());
 
+  const ensureMapInteractions = useCallback(() => {
+    if (!mapRef.current) {
+      return;
+    }
+
+    const mapInstance = mapRef.current;
+    if (mapInstance.scrollWheelZoom?.enabled()) {
+      return;
+    }
+
+    mapInstance.scrollWheelZoom?.enable();
+    mapInstance.doubleClickZoom?.enable();
+    mapInstance.touchZoom?.enable();
+    mapInstance.boxZoom?.enable();
+    mapInstance.keyboard?.enable();
+    mapInstance.dragging?.enable();
+  }, []);
+
   const showJobs = visibleLayer === 'jobs';
   const showEvents = visibleLayer === 'events';
 
@@ -235,6 +253,12 @@ const SwitzerlandMap = ({
     // Set map as loaded immediately since CSS is imported statically
     setMapLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (mapLoaded) {
+      ensureMapInteractions();
+    }
+  }, [mapLoaded, ensureMapInteractions]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -566,16 +590,27 @@ const SwitzerlandMap = ({
         className="ssc__map"
         whenCreated={(map) => {
           mapRef.current = map;
+          ensureMapInteractions();
           scheduleInvalidateSize();
           setTimeout(() => {
+            ensureMapInteractions();
             scheduleInvalidateSize();
           }, 120);
         }}
+        scrollWheelZoom={true}
+        doubleClickZoom={true}
+        touchZoom={true}
+        zoomControl={false}
+        minZoom={6}
+        maxZoom={12}
+        wheelDebounceTime={120}
+        wheelPxPerZoomLevel={80}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <ZoomControl position="bottomright" />
         {cityMarkers}
         {eventMarkers}
       </MapContainer>

@@ -4447,6 +4447,45 @@
   width: 100%;
 }
 
+.ssc__map .leaflet-control-zoom {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
+  border: none;
+}
+
+.ssc__map .leaflet-control-zoom a {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2937;
+  font-weight: 600;
+  border: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ssc__map .leaflet-control-zoom a:hover,
+.ssc__map .leaflet-control-zoom a:focus {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+.ssc--dark .ssc__map .leaflet-control-zoom {
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.45);
+}
+
+.ssc--dark .ssc__map .leaflet-control-zoom a {
+  background: rgba(30, 41, 59, 0.92);
+  color: #e2e8f0;
+}
+
+.ssc--dark .ssc__map .leaflet-control-zoom a:hover,
+.ssc--dark .ssc__map .leaflet-control-zoom a:focus {
+  background: rgba(59, 130, 246, 0.28);
+  color: #bfdbfe;
+}
+
 .ssc__map-container .leaflet-popup-content-wrapper {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

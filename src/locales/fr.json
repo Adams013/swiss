@@ -898,12 +898,41 @@
       "badge": "Avantages Premium",
       "description": "Choisissez l'option de facturation qui vous convient et profitez de tous les avantages premium."
     },
+    "tabs": {
+      "subscribe": "S'abonner",
+      "benefits": "Avantages",
+      "manage": "Gérer",
+      "overview": "Vue d'ensemble",
+      "billing": "Facturation",
+      "profileViews": "Vues de profil",
+      "searches": "Recherches"
+    },
     "planTabs": {
-      "label": "Choisir une fréquence de facturation"
+      "label": "Choisir une option de facturation"
+    },
+    "planSwitcher": {
+      "benefits": "Vue des avantages"
+    },
+    "displayPrice": {
+      "monthly": "CHF 7.90",
+      "quarterly": "CHF 20.00",
+      "yearly": "CHF 75.00",
+      "generic": "CHF {{amount}}"
     },
     "planSubtitle": "Profitez de tous les avantages premium avec une facturation flexible.",
     "planAssurance": "Résiliation à tout moment avec garantie de remboursement de 30 jours.",
-    "securePayment": "Paiement sécurisé via Stripe. Vos informations restent chiffrées.",
+    "securePayment": {
+      "label": "Paiement sécurisé via Stripe. Vos informations restent chiffrées.",
+      "title": "Paiements Stripe sécurisés",
+      "description": "Chaque formule est traitée via Stripe avec chiffrement et bénéficie de notre garantie de 30 jours."
+    },
+    "benefits": {
+      "eyebrow": "Avantages premium",
+      "title": "Tout ce que le Premium débloque pour vous",
+      "lead": "Premium met votre profil en avant, fournit des insights en temps réel et accélère les connexions avec les start-up.",
+      "cta": "Choisir une formule",
+      "backed": "Sécurisé par le paiement Stripe"
+    },
     "interval": {
       "monthly": "Mensuel",
       "quarterly": "Trimestriel",
