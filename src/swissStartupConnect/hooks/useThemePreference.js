@@ -7,8 +7,15 @@ export const useThemePreference = () => {
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+      const rootElement = document.documentElement;
+      rootElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+      rootElement.classList.toggle('ssc--dark', isDarkMode);
+
+      if (document.body) {
+        document.body.classList.toggle('ssc--dark', isDarkMode);
+      }
     }
+
     persistThemePreference(theme);
   }, [isDarkMode, theme]);
 
