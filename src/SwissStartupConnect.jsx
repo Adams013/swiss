@@ -26,10 +26,12 @@ import {
   TrendingUp,
   Trophy,
   Users,
+  User,
   X,
   MessageCircle,
   CheckCircle2,
   Star,
+  CreditCard,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
@@ -40,6 +42,9 @@ import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
 import CvFootnote from './components/CvFootnote';
 import Modal from './components/Modal';
+import AIChat from './components/AIChat';
+import CalendarView from './components/CalendarView';
+import SubscriptionView from './components/SubscriptionView';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -246,6 +251,7 @@ const SwissStartupConnect = () => {
   const [authError, setAuthError] = useState('');
   const [profile, setProfile] = useState(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileModalTab, setProfileModalTab] = useState('profile'); // 'profile', 'calendar', 'subscription'
   const [profileForm, setProfileForm] = useState({
     full_name: '',
     university: '',
@@ -8927,23 +8933,59 @@ const SwissStartupConnect = () => {
 
       <Modal
         isOpen={profileModalOpen}
-        onRequestClose={() => setProfileModalOpen(false)}
+        onRequestClose={() => {
+          setProfileModalOpen(false);
+          setProfileModalTab('profile');
+        }}
         dialogClassName="ssc__modal--wide"
         aria-labelledby={MODAL_TITLE_IDS.profile}
       >
-        <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
+        <button type="button" className="ssc__modal-close" onClick={() => {
+          setProfileModalOpen(false);
+          setProfileModalTab('profile');
+        }}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
-              <h2 id={MODAL_TITLE_IDS.profile}>{translate('profileModal.title', 'Update your profile')}</h2>
+              <h2 id={MODAL_TITLE_IDS.profile}>{translate('profileModal.title', 'My Account')}</h2>
               <p>
                 {translate(
                   'profileModal.subtitle',
-                  'Keep startups in the loop with your latest projects, studies, and documents.'
+                  'Manage your profile, calendar, and subscription'
                 )}
               </p>
             </header>
-            <form className="ssc__modal-body" onSubmit={handleProfileSubmit}>
+
+            {/* Profile Modal Tabs */}
+            <div className="ssc__profile-tabs">
+              <button
+                type="button"
+                className={`ssc__profile-tab ${profileModalTab === 'profile' ? 'ssc__profile-tab--active' : ''}`}
+                onClick={() => setProfileModalTab('profile')}
+              >
+                <User size={18} />
+                {translate('profileModal.tabs.profile', 'Profile')}
+              </button>
+              <button
+                type="button"
+                className={`ssc__profile-tab ${profileModalTab === 'calendar' ? 'ssc__profile-tab--active' : ''}`}
+                onClick={() => setProfileModalTab('calendar')}
+              >
+                <Calendar size={18} />
+                {translate('profileModal.tabs.calendar', 'Calendar')}
+              </button>
+              <button
+                type="button"
+                className={`ssc__profile-tab ${profileModalTab === 'subscription' ? 'ssc__profile-tab--active' : ''}`}
+                onClick={() => setProfileModalTab('subscription')}
+              >
+                <CreditCard size={18} />
+                {translate('profileModal.tabs.subscription', 'Subscription')}
+              </button>
+            </div>
+
+            {profileModalTab === 'profile' && (
+              <form className="ssc__modal-body" onSubmit={handleProfileSubmit}>
               <div className="ssc__profile-grid">
                 <label className="ssc__field">
                   <span>{translate('profileModal.fields.fullName', 'Full name')}</span>
@@ -9177,6 +9219,21 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
+            )}
+
+            {/* Calendar Tab */}
+            {profileModalTab === 'calendar' && (
+              <div className="ssc__modal-body">
+                <CalendarView user={user} translate={translate} />
+              </div>
+            )}
+
+            {/* Subscription Tab */}
+            {profileModalTab === 'subscription' && (
+              <div className="ssc__modal-body">
+                <SubscriptionView user={user} translate={translate} />
+              </div>
+            )}
       </Modal>
 
       <Modal
@@ -10014,6 +10071,9 @@ const SwissStartupConnect = () => {
           translate={translate}
         />
       )}
+
+      {/* AI Chat Assistant */}
+      <AIChat user={user} translate={translate} />
 
       {loadingSpinner && <div className="ssc__loading" aria-hidden="true" />}
     </div>

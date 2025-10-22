@@ -4718,6 +4718,7 @@
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -5701,5 +5702,527 @@
 
   .ssc__company-profile-cta a {
     justify-content: center;
+  }
+}
+
+/* ============================================
+   Profile Modal Tabs
+   ============================================ */
+
+.ssc__profile-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  border-bottom: 2px solid var(--ssc-border);
+  margin-bottom: 1.5rem;
+}
+
+.ssc__profile-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ssc-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ssc__profile-tab:hover {
+  color: var(--ssc-ink);
+  background: rgba(var(--ssc-primary-rgb), 0.05);
+}
+
+.ssc__profile-tab--active {
+  color: var(--ssc-primary);
+  border-bottom-color: var(--ssc-primary);
+}
+
+.ssc__profile-tab svg {
+  opacity: 0.7;
+}
+
+.ssc__profile-tab--active svg {
+  opacity: 1;
+}
+
+/* ============================================
+   Calendar View
+   ============================================ */
+
+.ssc__calendar-view {
+  padding: 1rem 0;
+}
+
+.ssc__calendar-view--loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__calendar-view__header {
+  margin-bottom: 2rem;
+}
+
+.ssc__calendar-view__header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__calendar-view__subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__calendar-view__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.ssc__calendar-view__empty h3 {
+  margin: 0.5rem 0 0 0;
+  font-size: 1.25rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__calendar-view__empty p {
+  margin: 0;
+  color: var(--ssc-muted);
+  max-width: 400px;
+}
+
+.ssc__calendar-section {
+  margin-bottom: 2rem;
+}
+
+.ssc__calendar-section__title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: var(--ssc-ink);
+  font-weight: 600;
+}
+
+.ssc__calendar-section--past {
+  opacity: 0.7;
+}
+
+.ssc__calendar-events {
+  display: grid;
+  gap: 1rem;
+}
+
+.ssc__calendar-event {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--ssc-surface);
+  border: 1px solid var(--ssc-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.ssc__calendar-event:hover {
+  border-color: var(--ssc-primary);
+  box-shadow: 0 4px 12px rgba(var(--ssc-primary-rgb), 0.1);
+}
+
+.ssc__calendar-event--past {
+  opacity: 0.6;
+}
+
+.ssc__calendar-event__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  background: rgba(var(--ssc-primary-rgb), 0.1);
+  border-radius: 10px;
+  color: var(--ssc-primary);
+}
+
+.ssc__calendar-event__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssc__calendar-event__content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__calendar-event__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ssc__calendar-event__detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__calendar-event__detail svg {
+  flex-shrink: 0;
+}
+
+.ssc__calendar-event__detail a {
+  color: var(--ssc-primary);
+  text-decoration: none;
+}
+
+.ssc__calendar-event__detail a:hover {
+  text-decoration: underline;
+}
+
+.ssc__calendar-event__meta {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: rgba(var(--ssc-primary-rgb), 0.05);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__calendar-event__notes {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: rgba(var(--ssc-accent-rgb), 0.05);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--ssc-muted);
+  font-style: italic;
+}
+
+.ssc__calendar-event__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ssc__calendar-event__dropdown {
+  position: relative;
+}
+
+.ssc__calendar-event__dropdown:hover .ssc__calendar-event__dropdown-menu {
+  display: block;
+}
+
+.ssc__calendar-event__dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  background: var(--ssc-surface);
+  border: 1px solid var(--ssc-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(var(--ssc-ink-rgb), 0.1);
+  z-index: 10;
+  min-width: 200px;
+}
+
+.ssc__calendar-event__dropdown-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--ssc-ink);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ssc__calendar-event__dropdown-menu button:hover {
+  background: rgba(var(--ssc-primary-rgb), 0.05);
+}
+
+.ssc__calendar-event__dropdown-menu button:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.ssc__calendar-event__dropdown-menu button:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+/* ============================================
+   Subscription View
+   ============================================ */
+
+.ssc__subscription-view {
+  padding: 1rem 0;
+}
+
+.ssc__subscription-view--loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__subscription-view__back {
+  margin-bottom: 1rem;
+}
+
+.ssc__subscription-view--no-sub {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ssc__subscription-view__header {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.ssc__subscription-view__header h2 {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.75rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-view__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__subscription-benefits {
+  margin: 2rem 0;
+}
+
+.ssc__subscription-benefits h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  color: var(--ssc-ink);
+  text-align: center;
+}
+
+.ssc__subscription-benefits__list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.ssc__subscription-benefit {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: var(--ssc-surface);
+  border: 1px solid var(--ssc-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.ssc__subscription-benefit:hover {
+  border-color: var(--ssc-primary);
+  box-shadow: 0 4px 12px rgba(var(--ssc-primary-rgb), 0.1);
+}
+
+.ssc__subscription-benefit__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+
+.ssc__subscription-benefit__content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.05rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-benefit__content p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ssc-muted);
+  line-height: 1.5;
+}
+
+.ssc__subscription-pricing-preview {
+  margin: 3rem 0;
+  text-align: center;
+}
+
+.ssc__subscription-pricing-preview h3 {
+  margin: 0 0 2rem 0;
+  font-size: 1.25rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ssc__subscription-pricing-card {
+  padding: 1.5rem;
+  background: var(--ssc-surface);
+  border: 2px solid var(--ssc-border);
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.ssc__subscription-pricing-card--recommended {
+  border-color: var(--ssc-primary);
+  box-shadow: 0 8px 24px rgba(var(--ssc-primary-rgb), 0.15);
+}
+
+.ssc__subscription-pricing-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.375rem 1rem;
+  background: var(--ssc-primary);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ssc__subscription-pricing-card h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-pricing-card__price {
+  margin-bottom: 0.5rem;
+}
+
+.ssc__subscription-pricing-card__amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-pricing-card__period {
+  font-size: 1rem;
+  color: var(--ssc-muted);
+}
+
+.ssc__subscription-pricing-card__billing {
+  font-size: 0.85rem;
+  color: var(--ssc-muted);
+  margin-bottom: 1rem;
+}
+
+.ssc__subscription-pricing-card__features {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ssc__subscription-pricing-card__features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-pricing-card__features svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.ssc__subscription-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  margin-top: 2rem;
+}
+
+.ssc__subscription-guarantee strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--ssc-ink);
+}
+
+.ssc__subscription-guarantee p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ssc-muted);
+}
+
+/* ============================================
+   Responsive Styles
+   ============================================ */
+
+@media (max-width: 768px) {
+  .ssc__profile-tabs {
+    padding: 0 1rem;
+  }
+
+  .ssc__profile-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .ssc__calendar-event {
+    flex-direction: column;
+  }
+
+  .ssc__calendar-event__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .ssc__subscription-pricing-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .ssc__subscription-benefit {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .ssc__subscription-benefit__icon {
+    margin: 0 auto;
   }
 }
