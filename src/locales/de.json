@@ -894,11 +894,16 @@
     }
   },
   "subscription": {
+    "overview": {
+      "badge": "Premium-Vorteile",
+      "description": "Wählen Sie die Abrechnungsoption, die am besten zu Ihnen passt, und geniessen Sie alle Premium-Vorteile."
+    },
     "planTabs": {
       "label": "Abrechnungsintervall auswählen"
     },
     "planSubtitle": "Alle Premium-Vorteile mit flexiblem Abonnement geniessen.",
     "planAssurance": "Jederzeit kündbar mit 30 Tagen Geld-zurück-Garantie.",
+    "securePayment": "Sichere Zahlung über Stripe. Ihre Daten bleiben verschlüsselt.",
     "interval": {
       "monthly": "Monatlich",
       "quarterly": "Vierteljährlich",

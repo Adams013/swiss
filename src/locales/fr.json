@@ -894,11 +894,16 @@
     }
   },
   "subscription": {
+    "overview": {
+      "badge": "Avantages Premium",
+      "description": "Choisissez l'option de facturation qui vous convient et profitez de tous les avantages premium."
+    },
     "planTabs": {
       "label": "Choisir une fréquence de facturation"
     },
     "planSubtitle": "Profitez de tous les avantages premium avec une facturation flexible.",
     "planAssurance": "Résiliation à tout moment avec garantie de remboursement de 30 jours.",
+    "securePayment": "Paiement sécurisé via Stripe. Vos informations restent chiffrées.",
     "interval": {
       "monthly": "Mensuel",
       "quarterly": "Trimestriel",

@@ -221,12 +221,10 @@ const SubscriptionView = ({ user, translate }) => {
       </div>
 
       {/* Tabs */}
-      <div className="ssc__subscription-manager__tabs">
+      <div className="ssc__profile-tabs ssc__subscription-tabs">
         <button
           type="button"
-          className={`ssc__subscription-manager__tab ${
-            activeTab === 'plans' ? 'ssc__subscription-manager__tab--active' : ''
-          }`}
+          className={`ssc__profile-tab ${activeTab === 'plans' ? 'ssc__profile-tab--active' : ''}`}
           onClick={() => setActiveTab('plans')}
         >
           <Crown size={16} />
@@ -234,9 +232,7 @@ const SubscriptionView = ({ user, translate }) => {
         </button>
         <button
           type="button"
-          className={`ssc__subscription-manager__tab ${
-            activeTab === 'benefits' ? 'ssc__subscription-manager__tab--active' : ''
-          }`}
+          className={`ssc__profile-tab ${activeTab === 'benefits' ? 'ssc__profile-tab--active' : ''}`}
           onClick={() => setActiveTab('benefits')}
         >
           <Sparkles size={16} />
@@ -245,9 +241,7 @@ const SubscriptionView = ({ user, translate }) => {
         {subscription && (
           <button
             type="button"
-            className={`ssc__subscription-manager__tab ${
-              activeTab === 'manage' ? 'ssc__subscription-manager__tab--active' : ''
-            }`}
+            className={`ssc__profile-tab ${activeTab === 'manage' ? 'ssc__profile-tab--active' : ''}`}
             onClick={() => setActiveTab('manage')}
           >
             <CreditCard size={16} />
@@ -257,7 +251,7 @@ const SubscriptionView = ({ user, translate }) => {
       </div>
 
       {/* Tab Content */}
-      <div className="ssc__subscription-manager__content">
+      <div className="ssc__subscription-content">
         {/* Plans Tab */}
         {activeTab === 'plans' && (
           <div className="ssc__subscription-plans-tab">
@@ -277,113 +271,141 @@ const SubscriptionView = ({ user, translate }) => {
               </div>
             )}
 
-            {/* Pricing Plans */}
-            <div className="ssc__subscription-plans-grid">
-              <h3 className="ssc__subscription-section-title">
-                {translate('subscription.choosePlan', 'Choose Your Plan')}
-              </h3>
-              
-              {plans.length === 0 ? (
-                <div className="ssc__subscription-no-plans">
-                  <p>{translate('subscription.noPlans', 'No plans available at the moment.')}</p>
-                </div>
-              ) : (
-                <>
-                  <div
-                    className="ssc__subscription-plan-tabs"
-                    role="tablist"
-                    aria-label={translate('subscription.planTabs.label', 'Select a billing interval')}
-                  >
-                    {planGrouping.order.map((interval) => {
-                      const intervalPlans = planGrouping.grouped.get(interval);
-                      if (!intervalPlans || intervalPlans.length === 0) {
-                        return null;
-                      }
-                      const samplePlan = intervalPlans[0];
-                      const monthlyPrice = samplePlan.price_cents / samplePlan.billing_interval;
-                      const savings = getSavingsPercentage(samplePlan);
-                      const isActive = interval === activePlanInterval;
-                      const tabId = `ssc-plan-tab-${interval}`;
-                      const panelId = `ssc-plan-panel-${interval}`;
-                      return (
-                        <button
-                          key={interval}
-                          type="button"
-                          role="tab"
-                          id={tabId}
-                          aria-controls={panelId}
-                          aria-selected={isActive}
-                          className={`ssc__subscription-plan-tab ${isActive ? 'is-active' : ''}`}
-                          onClick={() => setActivePlanInterval(interval)}
-                        >
-                          <span className="ssc__subscription-plan-tab__label">
-                            {getIntervalLabel(interval)}
-                          </span>
-                          <span className="ssc__subscription-plan-tab__price">
-                            {formatPrice(monthlyPrice, samplePlan.currency)}
-                            <span className="ssc__subscription-plan-tab__price-caption">
-                              /{translate('subscription.month', 'month')}
-                            </span>
-                          </span>
-                          {savings > 0 && (
-                            <span className="ssc__subscription-plan-tab__savings">
-                              {translate('subscription.save', 'Save')} {savings}%
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+            <div className="ssc__subscription-layout">
+              <section className="ssc__subscription-overview">
+                <span className="ssc__subscription-overview__badge">
+                  <Sparkles size={16} />
+                  {translate('subscription.overview.badge', 'Premium benefits')}
+                </span>
+                <h3>{translate('subscription.choosePlan', 'Choose Your Plan')}</h3>
+                <p>
+                  {translate(
+                    'subscription.overview.description',
+                    'Pick the billing option that fits you best and enjoy every premium advantage.'
+                  )}
+                </p>
+
+                <ul className="ssc__subscription-overview__list">
+                  <li>
+                    <Check size={18} />
+                    {translate('subscription.feature.allBenefits', 'All premium benefits')}
+                  </li>
+                  <li>
+                    <Check size={18} />
+                    {translate('subscription.feature.cancelAnytime', 'Cancel anytime')}
+                  </li>
+                  <li>
+                    <Check size={18} />
+                    {translate('subscription.feature.moneyBack', '30-day money back')}
+                  </li>
+                </ul>
+
+                <div className="ssc__subscription-overview__footer">
+                  <div className="ssc__subscription-guarantee">
+                    <Check size={20} />
+                    <div>
+                      <strong>{translate('subscription.guarantee.title', '30-Day Money-Back Guarantee')}</strong>
+                      <p>
+                        {translate(
+                          'subscription.guarantee.desc',
+                          "Not satisfied? We'll refund you, no questions asked."
+                        )}
+                      </p>
+                    </div>
                   </div>
+                  <div className="ssc__subscription-secure">
+                    <Shield size={20} />
+                    <span>
+                      {translate(
+                        'subscription.securePayment',
+                        'Secure payment powered by Stripe. Your information stays encrypted.'
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </section>
 
-                  {activePlanInterval && (
+              <section className="ssc__subscription-plan-column">
+                {plans.length === 0 ? (
+                  <div className="ssc__subscription-no-plans">
+                    <p>{translate('subscription.noPlans', 'No plans available at the moment.')}</p>
+                  </div>
+                ) : (
+                  <>
                     <div
-                      className="ssc__subscription-plan-panel"
-                      role="tabpanel"
-                      id={`ssc-plan-panel-${activePlanInterval}`}
-                      aria-labelledby={`ssc-plan-tab-${activePlanInterval}`}
+                      className="ssc__subscription-plan-tabs"
+                      role="tablist"
+                      aria-label={translate('subscription.planTabs.label', 'Select a billing interval')}
                     >
-                      {activePlans.map((plan) => {
-                        const monthlyPrice = plan.price_cents / plan.billing_interval;
-                        const savings = getSavingsPercentage(plan);
-                        const recommended = isPlanRecommended(plan);
-                        const current = isCurrentPlan(plan);
-                        const isRedirecting = redirecting === plan.id;
-                        const intervalLabel = getIntervalLabel(plan.billing_interval);
-
+                      {planGrouping.order.map((interval) => {
+                        const intervalPlans = planGrouping.grouped.get(interval);
+                        if (!intervalPlans || intervalPlans.length === 0) {
+                          return null;
+                        }
+                        const samplePlan = intervalPlans[0];
+                        const monthlyPrice = samplePlan.price_cents / samplePlan.billing_interval;
+                        const savings = getSavingsPercentage(samplePlan);
+                        const isActive = interval === activePlanInterval;
+                        const tabId = `ssc-plan-tab-${interval}`;
+                        const panelId = `ssc-plan-panel-${interval}`;
                         return (
-                          <div
-                            key={plan.id}
-                            className={`ssc__subscription-plan-card ssc__subscription-plan-card--expanded ${
-                              recommended ? 'ssc__subscription-plan-card--recommended' : ''
-                            } ${current ? 'ssc__subscription-plan-card--current' : ''}`}
+                          <button
+                            key={interval}
+                            type="button"
+                            role="tab"
+                            id={tabId}
+                            aria-controls={panelId}
+                            aria-selected={isActive}
+                            className={`ssc__subscription-plan-tab ${isActive ? 'is-active' : ''}`}
+                            onClick={() => setActivePlanInterval(interval)}
                           >
-                            {recommended && !current && (
-                              <div className="ssc__subscription-plan-card__badge">
-                                <Zap size={14} />
-                                {translate('subscription.bestValue', 'Best Value')}
-                              </div>
+                            <span className="ssc__subscription-plan-tab__label">
+                              {getIntervalLabel(interval)}
+                            </span>
+                            <span className="ssc__subscription-plan-tab__price">
+                              {formatPrice(monthlyPrice, samplePlan.currency)}
+                              <span className="ssc__subscription-plan-tab__price-caption">
+                                /{translate('subscription.month', 'month')}
+                              </span>
+                            </span>
+                            {savings > 0 && (
+                              <span className="ssc__subscription-plan-tab__savings">
+                                {translate('subscription.save', 'Save')} {savings}%
+                              </span>
                             )}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                            {current && (
-                              <div className="ssc__subscription-plan-card__current-badge">
-                                <Check size={14} />
-                                {translate('subscription.currentPlan', 'Current Plan')}
-                              </div>
-                            )}
+                    {activePlanInterval && (
+                      <div
+                        className="ssc__subscription-plan-panel"
+                        role="tabpanel"
+                        id={`ssc-plan-panel-${activePlanInterval}`}
+                        aria-labelledby={`ssc-plan-tab-${activePlanInterval}`}
+                      >
+                        {activePlans.map((plan) => {
+                          const monthlyPrice = plan.price_cents / plan.billing_interval;
+                          const savings = getSavingsPercentage(plan);
+                          const recommended = isPlanRecommended(plan);
+                          const current = isCurrentPlan(plan);
+                          const isRedirecting = redirecting === plan.id;
+                          const intervalLabel = getIntervalLabel(plan.billing_interval);
 
-                            <header className="ssc__subscription-plan-card__header">
-                              <span className="ssc__subscription-plan-card__interval">{intervalLabel}</span>
-                              <h4 className="ssc__subscription-plan-card__name">{plan.name}</h4>
-                              <p className="ssc__subscription-plan-card__subtitle">
-                                {translate(
-                                  'subscription.planSubtitle',
-                                  'Enjoy every premium benefit with flexible billing.'
-                                )}
-                              </p>
-                            </header>
+                          return (
+                            <div
+                              key={plan.id}
+                              className={`ssc__subscription-plan-card ${
+                                recommended ? 'ssc__subscription-plan-card--recommended' : ''
+                              } ${current ? 'ssc__subscription-plan-card--current' : ''}`}
+                            >
+                              <header className="ssc__subscription-plan-card__header">
+                                <span className="ssc__subscription-plan-card__interval">{intervalLabel}</span>
+                                <h4 className="ssc__subscription-plan-card__name">{plan.name}</h4>
+                              </header>
 
-                            <div className="ssc__subscription-plan-card__pricing">
-                              <div className="ssc__subscription-plan-card__price">
+                              <div className="ssc__subscription-plan-card__pricing">
                                 <span className="ssc__subscription-plan-card__amount">
                                   {formatPrice(monthlyPrice, plan.currency)}
                                 </span>
@@ -400,54 +422,31 @@ const SubscriptionView = ({ user, translate }) => {
                                     : translate('subscription.perYear', 'per year')}
                                 </div>
                               )}
-                            </div>
 
-                            <div className="ssc__subscription-plan-card__billing">
-                              <Calendar size={16} />
-                              <span>
-                                {translate('subscription.billedEvery', 'Billed every')}{' '}
-                                {plan.billing_interval}{' '}
-                                {plan.billing_interval === 1
-                                  ? translate('subscription.month', 'month')
-                                  : translate('subscription.months', 'months')}
-                              </span>
                               {savings > 0 && (
-                                <span className="ssc__subscription-plan-card__pill">
+                                <span className="ssc__subscription-plan-card__badge">
+                                  <Zap size={14} />
                                   {translate('subscription.save', 'Save')} {savings}%
                                 </span>
                               )}
-                            </div>
 
-                            <ul className="ssc__subscription-plan-card__features">
-                              <li>
-                                <Check size={16} color="#10b981" />
-                                <span>{translate('subscription.feature.allBenefits', 'All premium benefits')}</span>
-                              </li>
-                              <li>
-                                <Check size={16} color="#10b981" />
-                                <span>{translate('subscription.feature.cancelAnytime', 'Cancel anytime')}</span>
-                              </li>
-                              <li>
-                                <Check size={16} color="#10b981" />
-                                <span>{translate('subscription.feature.moneyBack', '30-day money back')}</span>
-                              </li>
-                            </ul>
+                              {current && (
+                                <span className="ssc__subscription-plan-card__badge is-current">
+                                  <Check size={14} />
+                                  {translate('subscription.currentPlan', 'Current Plan')}
+                                </span>
+                              )}
 
-                            <div className="ssc__subscription-plan-card__actions">
                               <button
                                 type="button"
-                                className={`ssc__btn ${
-                                  recommended && !current
-                                    ? 'ssc__btn--primary'
-                                    : 'ssc__btn--secondary'
-                                } ssc__subscription-plan-card__cta`}
+                                className={`ssc__btn ssc__btn--primary ${isRedirecting ? 'is-loading' : ''}`}
                                 onClick={() => handleSelectPlan(plan)}
-                                disabled={isRedirecting || current}
+                                disabled={isRedirecting}
                               >
                                 {isRedirecting ? (
                                   <>
                                     <Loader size={16} className="ssc__spinner-icon" />
-                                    {translate('subscription.redirecting', 'Redirecting to Stripe...')}
+                                    {translate('subscription.redirecting.short', 'Redirecting...')}
                                   </>
                                 ) : current ? (
                                   <>
@@ -456,39 +455,30 @@ const SubscriptionView = ({ user, translate }) => {
                                   </>
                                 ) : (
                                   <>
-                                    <Crown size={16} />
-                                    {subscription
-                                      ? translate('subscription.changePlan', 'Switch to This Plan')
-                                      : translate('subscription.upgrade', 'Upgrade Now')}
                                     <ArrowRight size={16} />
+                                    {translate('subscription.selectPlan', 'Select Plan')}
                                   </>
                                 )}
                               </button>
-                              <p className="ssc__subscription-plan-card__assurance">
-                                {translate(
-                                  'subscription.planAssurance',
-                                  'Cancel anytime with a 30-day money-back guarantee.'
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
 
-            {/* Secure Payment Info */}
-            <div className="ssc__subscription-secure-info">
-              <Shield size={20} color="#10b981" />
-              <p>
-                {translate(
-                  'subscription.secure.info',
-                  'Secure payment powered by Stripe. Your payment information is encrypted and never stored on our servers.'
+                              {!current && (
+                                <button
+                                  type="button"
+                                  className="ssc__btn ssc__btn--link"
+                                  onClick={() => handleSelectPlan(plan)}
+                                >
+                                  <CreditCard size={16} />
+                                  {translate('subscription.payWithStripe', 'Checkout with Stripe')}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
-              </p>
+              </section>
             </div>
           </div>
         )}
