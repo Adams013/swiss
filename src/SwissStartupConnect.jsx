@@ -8373,14 +8373,14 @@ const SwissStartupConnect = () => {
             })}
           </span>
           <div className="ssc__footer-links">
+            <a href="/cookies.html" target="_blank" rel="noreferrer">
+              {translate('footer.cookies', 'Cookies')}
+            </a>
             <a href="/privacy.html" target="_blank" rel="noreferrer">
               {translate('footer.privacy', 'Privacy')}
             </a>
-            <a href="/terms.html" target="_blank" rel="noreferrer">
-              {translate('footer.terms', 'Terms')}
-            </a>
-            <a href="/contact.html" target="_blank" rel="noreferrer">
-              {translate('footer.contact', 'Contact')}
+            <a href="/impressum.html" target="_blank" rel="noreferrer">
+              {translate('footer.impressum', 'Impressum')}
             </a>
           </div>
         </div>

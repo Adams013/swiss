@@ -805,9 +805,9 @@
   },
   "footer": {
     "madeIn": "© {{year}} SwissStartup Connect. Entwickelt in der Schweiz.",
+    "cookies": "Cookies",
     "privacy": "Datenschutz",
-    "terms": "Nutzungsbedingungen",
-    "contact": "Kontakt"
+    "impressum": "Impressum"
   },
   "modals": {
     "compensation": {
