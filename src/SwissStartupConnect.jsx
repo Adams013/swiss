@@ -8980,7 +8980,9 @@ const SwissStartupConnect = () => {
                 onClick={() => setProfileModalTab('subscription')}
               >
                 <CreditCard size={18} />
-                {translate('profileModal.tabs.subscription', 'Subscription')}
+                {isStudent 
+                  ? translate('profileModal.tabs.subscription', 'Subscription')
+                  : translate('profileModal.tabs.subscriptionServices', 'Subscriptions & Services')}
               </button>
             </div>
 

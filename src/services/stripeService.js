@@ -14,12 +14,18 @@
 
 import { supabase } from '../supabaseClient';
 
+// Stripe Configuration - Use environment variables
+// IMPORTANT: Never commit actual Stripe keys to version control!
+// Add keys to .env.local file (which is gitignored)
 const STRIPE_PUBLISHABLE_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+const STRIPE_SECRET_KEY = process.env.REACT_APP_STRIPE_SECRET_KEY;
+const STRIPE_API_URL = process.env.REACT_APP_STRIPE_API_URL || 'https://api.stripe.com';
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 // Test mode configuration
-const TEST_MODE = !STRIPE_PUBLISHABLE_KEY || process.env.REACT_APP_STRIPE_TEST_MODE === 'true';
+const TEST_MODE = process.env.REACT_APP_STRIPE_TEST_MODE === 'true' || 
+                  (STRIPE_PUBLISHABLE_KEY && STRIPE_PUBLISHABLE_KEY.includes('test'));
 
 // Mock Stripe for testing
 const MOCK_STRIPE = {
@@ -35,11 +41,6 @@ const MOCK_STRIPE = {
  * Initialize Stripe (load Stripe.js)
  */
 export const loadStripe = async () => {
-  if (TEST_MODE) {
-    console.log('[TEST MODE] Using mock Stripe - no API key required');
-    return MOCK_STRIPE;
-  }
-
   if (!STRIPE_PUBLISHABLE_KEY) {
     console.error('Stripe publishable key not configured');
     return null;
@@ -48,7 +49,9 @@ export const loadStripe = async () => {
   // Dynamically import Stripe.js
   try {
     const { loadStripe: stripeLoader } = await import('@stripe/stripe-js');
-    return stripeLoader(STRIPE_PUBLISHABLE_KEY);
+    const stripe = await stripeLoader(STRIPE_PUBLISHABLE_KEY);
+    console.log('Stripe initialized:', STRIPE_PUBLISHABLE_KEY.substring(0, 20) + '...');
+    return stripe;
   } catch (error) {
     console.error('Failed to load Stripe:', error);
     return null;
@@ -56,22 +59,24 @@ export const loadStripe = async () => {
 };
 
 /**
- * Mock subscription plans for testing
+ * Mock subscription plans using actual Stripe Product IDs
+ * Stripe Payment Link: https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00
  */
 const getMockPlans = (userType = null) => {
   const allPlans = [
-    // Student plans
+    // Student plans - Using prod_THY4PLgnJZU3eE, prod_THY4DA4lq3TnrZ, prod_THY3ZpRjvAhJoI
     {
-      id: 'mock_student_monthly',
+      id: 'student_premium_monthly',
       plan_id: 'student_premium_monthly',
-      name: 'Student Premium',
+      name: 'Student Premium (Monthly)',
       description: 'Ad-free experience, see who viewed your profile, enhanced visibility',
       price_cents: 790,
       currency: 'CHF',
       billing_period: 'month',
       billing_interval: 1,
-      stripe_price_id: 'price_test_student_monthly',
-      stripe_product_id: 'prod_test_student',
+      stripe_price_id: 'price_student_monthly',
+      stripe_product_id: 'prod_THY4PLgnJZU3eE',
+      stripe_payment_link: 'https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00',
       is_active: true,
       sort_order: 1,
       features: {
@@ -83,7 +88,7 @@ const getMockPlans = (userType = null) => {
       metadata: { user_type: 'student' },
     },
     {
-      id: 'mock_student_quarterly',
+      id: 'student_premium_quarterly',
       plan_id: 'student_premium_quarterly',
       name: 'Student Premium (Quarterly)',
       description: 'Save 16% with quarterly billing',
@@ -91,8 +96,8 @@ const getMockPlans = (userType = null) => {
       currency: 'CHF',
       billing_period: 'month',
       billing_interval: 3,
-      stripe_price_id: 'price_test_student_quarterly',
-      stripe_product_id: 'prod_test_student',
+      stripe_price_id: 'price_student_quarterly',
+      stripe_product_id: 'prod_THY4DA4lq3TnrZ',
       is_active: true,
       sort_order: 2,
       features: {
@@ -105,7 +110,7 @@ const getMockPlans = (userType = null) => {
       metadata: { user_type: 'student' },
     },
     {
-      id: 'mock_student_yearly',
+      id: 'student_premium_yearly',
       plan_id: 'student_premium_yearly',
       name: 'Student Premium (Yearly)',
       description: 'Save 26% with yearly billing',
@@ -113,8 +118,8 @@ const getMockPlans = (userType = null) => {
       currency: 'CHF',
       billing_period: 'month',
       billing_interval: 12,
-      stripe_price_id: 'price_test_student_yearly',
-      stripe_product_id: 'prod_test_student',
+      stripe_price_id: 'price_student_yearly',
+      stripe_product_id: 'prod_THY3ZpRjvAhJoI',
       is_active: true,
       sort_order: 3,
       features: {
@@ -127,18 +132,18 @@ const getMockPlans = (userType = null) => {
       },
       metadata: { user_type: 'student' },
     },
-    // Employer plans
+    // Employer plans - Using actual product IDs from CSV
     {
-      id: 'mock_employer_analytics',
+      id: 'employer_analytics',
       plan_id: 'employer_analytics',
-      name: 'Analytics Dashboard',
+      name: 'Startup Analytics Dashboard',
       description: 'Track job performance, applicant funnels, and hiring metrics',
       price_cents: 4900,
       currency: 'CHF',
       billing_period: 'month',
       billing_interval: 1,
-      stripe_price_id: 'price_test_analytics',
-      stripe_product_id: 'prod_test_analytics',
+      stripe_price_id: 'price_analytics_monthly',
+      stripe_product_id: 'prod_THY7szAmTkSWq3',
       is_active: true,
       sort_order: 10,
       features: {
@@ -150,7 +155,7 @@ const getMockPlans = (userType = null) => {
       metadata: { user_type: 'employer', feature: 'analytics' },
     },
     {
-      id: 'mock_employer_talent_search',
+      id: 'employer_talent_search',
       plan_id: 'employer_talent_search',
       name: 'Talent Search Access',
       description: 'Search and view detailed student profiles, unlimited access',
@@ -158,8 +163,8 @@ const getMockPlans = (userType = null) => {
       currency: 'CHF',
       billing_period: 'month',
       billing_interval: 1,
-      stripe_price_id: 'price_test_talent_search',
-      stripe_product_id: 'prod_test_talent_search',
+      stripe_price_id: 'price_talent_search_monthly',
+      stripe_product_id: 'prod_THY8CuZp5Mc98C',
       is_active: true,
       sort_order: 11,
       features: {
@@ -172,16 +177,16 @@ const getMockPlans = (userType = null) => {
       metadata: { user_type: 'employer', feature: 'talent_search' },
     },
     {
-      id: 'mock_employer_featured_job',
+      id: 'employer_featured_job',
       plan_id: 'employer_featured_job',
-      name: 'Featured Job in Alerts',
-      description: 'One-time payment to feature a job posting in email alerts and homepage',
+      name: 'Startup Featured Jobs',
+      description: 'Feature your job posting in email alerts and homepage for 30 days',
       price_cents: 11900,
       currency: 'CHF',
       billing_period: 'one_time',
       billing_interval: 1,
-      stripe_price_id: 'price_test_featured_job',
-      stripe_product_id: 'prod_test_featured_job',
+      stripe_price_id: 'price_featured_job_onetime',
+      stripe_product_id: 'prod_THY7tDZ9wkMN4Q',
       is_active: true,
       sort_order: 12,
       features: {
@@ -345,55 +350,149 @@ export const createCheckoutSession = async (userId, planId, userEmail, options =
 };
 
 /**
+ * Create Stripe Checkout Session using Stripe API directly
+ * This creates a real checkout session and redirects to Stripe
+ */
+export const createStripeCheckoutSession = async (userId, planId, userEmail, options = {}) => {
+  try {
+    const plan = getMockPlans().find(p => p.id === planId || p.plan_id === planId);
+    if (!plan) {
+      throw new Error('Plan not found');
+    }
+
+    // Check if we have a Supabase backend endpoint
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.warn('Supabase not configured. Using direct Stripe integration.');
+      
+      // Load Stripe.js
+      const stripe = await loadStripe();
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      return {
+        stripe,
+        plan,
+        priceId: plan.stripe_price_id,
+        error: null
+      };
+    }
+
+    // Call backend to create checkout session
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        userId,
+        planId: plan.id,
+        userEmail,
+        priceId: plan.stripe_price_id,
+        successUrl: options.successUrl || `${window.location.origin}?subscription=success`,
+        cancelUrl: options.cancelUrl || `${window.location.origin}?subscription=cancelled`,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create checkout session');
+    }
+
+    const data = await response.json();
+    const stripe = await loadStripe();
+
+    return {
+      sessionId: data.sessionId,
+      url: data.url,
+      stripe,
+      plan,
+      error: null
+    };
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return { error };
+  }
+};
+
+/**
  * Redirect to Stripe Checkout
+ * Opens Stripe Checkout window for payment
  */
 export const redirectToCheckout = async (userId, planId, userEmail, options = {}) => {
   try {
-    const { sessionId, error: sessionError } = await createCheckoutSession(userId, planId, userEmail, options);
-    if (sessionError) throw sessionError;
+    console.log('Starting checkout process:', { userId, planId, userEmail });
+    
+    // Find the plan to get payment link
+    const plan = getMockPlans().find(p => p.id === planId || p.plan_id === planId);
+    if (!plan) {
+      throw new Error('Plan not found');
+    }
 
-    // Test mode: Show mock success message
-    if (TEST_MODE) {
-      console.log('[TEST MODE] Mock checkout redirect', { sessionId });
+    // If plan has a direct Stripe payment link, use it (simplest method)
+    if (plan.stripe_payment_link) {
+      console.log('Redirecting to Stripe Payment Link:', plan.stripe_payment_link);
+      window.location.href = plan.stripe_payment_link;
+      return { success: true, error: null };
+    }
+
+    // Otherwise, try to create a checkout session
+    const { sessionId, url, stripe, error: checkoutError } = await createStripeCheckoutSession(
+      userId, 
+      planId, 
+      userEmail, 
+      options
+    );
+    
+    if (checkoutError) throw checkoutError;
+
+    // If we have a direct URL (from backend), redirect to it
+    if (url) {
+      console.log('Redirecting to Stripe Checkout:', url);
+      window.location.href = url;
+      return { success: true, error: null };
+    }
+
+    // Otherwise, use Stripe.js to redirect with session ID
+    if (sessionId && stripe) {
+      console.log('Redirecting to Stripe Checkout with session ID:', sessionId);
+      const { error } = await stripe.redirectToCheckout({ sessionId });
       
-      // Show test mode alert
-      const testModeAlert = `
-        🧪 TEST MODE - Checkout Simulation
-        
-        Session ID: ${sessionId}
-        User: ${userEmail}
-        Plan: ${planId}
-        
-        In production mode, you would be redirected to Stripe checkout.
-        Click OK to simulate successful payment.
-      `;
-      
-      if (confirm(testModeAlert)) {
-        // Simulate successful payment after delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('[TEST MODE] Payment simulated as successful');
-        
-        // Redirect to success page if available
-        if (options.successUrl) {
-          window.location.href = options.successUrl;
-        }
+      if (error) {
+        throw error;
       }
       
       return { success: true, error: null };
     }
 
-    const stripe = await loadStripe();
-    if (!stripe) {
-      throw new Error('Stripe failed to load');
-    }
+    // Fallback: Show instructions if prices not configured
+    const message = `
+⚠️ Stripe Configuration Required
 
-    const { error: redirectError } = await stripe.redirectToCheckout({
-      sessionId,
-    });
+Plan: ${plan.name}
+Price: ${formatPrice(plan.price_cents, plan.currency)}
 
-    if (redirectError) throw redirectError;
+To complete payment integration, you need to:
 
-    return { success: true, error: null };
+1. Create a Payment Link in Stripe Dashboard:
+   https://dashboard.stripe.com/payment-links
+   
+2. Or create a Price for this product:
+   https://dashboard.stripe.com/products/${plan.stripe_product_id}
+   
+3. Update the payment link or price ID in the code
+
+For now, this is showing you what would happen.
+Check the console for more details.
+    `.trim();
+
+    console.log('Plan details:', plan);
+    console.log('To complete setup, add payment link or create a price for product:', plan.stripe_product_id);
+    
+    alert(message);
+    
+    return { success: false, error: new Error('Stripe payment link not configured') };
   } catch (error) {
     console.error('Error redirecting to checkout:', error);
     return { success: false, error };
