@@ -1,128 +1,73 @@
-// Supabase Edge Function: create-checkout-session
-// Creates a Stripe Checkout session for subscription
-// Deploy with: supabase functions deploy create-checkout-session
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import Stripe from 'https://esm.sh/stripe@14.5.0?target=deno'
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@14.11.0?target=deno';
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+  apiVersion: '2023-10-16',
+  httpClient: Stripe.createFetchHttpClient(),
+})
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Initialize Stripe
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
-      httpClient: Stripe.createFetchHttpClient(),
-    });
+    const { userId, planId, userEmail, priceId, successUrl, cancelUrl } = await req.json()
 
-    // Initialize Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get request body
-    const { userId, planId, userEmail, jobId, isOneTime, successUrl, cancelUrl } = await req.json();
-
-    if (!userId || !planId || !userEmail) {
-      throw new Error('Missing required fields');
+    // Validate input
+    if (!userId || !userEmail || !priceId) {
+      throw new Error('Missing required fields: userId, userEmail, or priceId')
     }
 
-    // Fetch plan details
-    const { data: plan, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
-
-    if (planError) throw planError;
-
-    // Create or retrieve Stripe customer
-    let customerId: string;
-
-    const { data: existingSubscription } = await supabase
-      .from('user_subscriptions')
-      .select('stripe_customer_id')
-      .eq('user_id', userId)
-      .not('stripe_customer_id', 'is', null)
-      .limit(1)
-      .single();
-
-    if (existingSubscription?.stripe_customer_id) {
-      customerId = existingSubscription.stripe_customer_id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: userEmail,
-        metadata: {
-          supabase_user_id: userId,
-        },
-      });
-      customerId = customer.id;
-    }
-
-    // Determine session mode (payment vs subscription)
-    const mode = isOneTime || plan.billing_period === 'one_time' ? 'payment' : 'subscription';
-
-    // Create Checkout session
-    const sessionConfig: any = {
-      customer: customerId,
-      mode,
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer_email: userEmail,
+      client_reference_id: userId,
       payment_method_types: ['card'],
+      mode: 'subscription',
       line_items: [
         {
-          price: plan.stripe_price_id,
+          price: priceId,
           quantity: 1,
         },
       ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: successUrl || `${req.headers.get('origin')}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${req.headers.get('origin')}/subscription`,
       metadata: {
-        user_id: userId,
-        plan_id: planId,
-        job_id: jobId || '',
-        is_one_time: isOneTime ? 'true' : 'false',
+        userId,
+        planId,
       },
-      allow_promotion_codes: true,
-    };
-
-    // Add subscription-specific configuration
-    if (mode === 'subscription') {
-      sessionConfig.subscription_data = {
+      subscription_data: {
         metadata: {
-          user_id: userId,
-          plan_id: planId,
+          userId,
+          planId,
         },
-        trial_period_days: 7, // 7-day free trial for recurring subscriptions
-      };
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+      },
+    })
 
     return new Response(
-      JSON.stringify({ sessionId: session.id }),
+      JSON.stringify({ 
+        sessionId: session.id,
+        url: session.url 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
-    );
+    )
   } catch (error) {
-    console.error('Error creating checkout session:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 400,
       }
-    );
+    )
   }
-});
-
+})

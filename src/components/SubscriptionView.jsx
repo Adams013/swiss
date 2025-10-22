@@ -13,6 +13,7 @@ import {
   BarChart3,
   Zap,
   Loader,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   getUserSubscription,
@@ -35,6 +36,8 @@ const SubscriptionView = ({ user, translate }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState('overview'); // 'overview' or 'manage'
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [planToSubscribe, setPlanToSubscribe] = useState(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -60,17 +63,26 @@ const SubscriptionView = ({ user, translate }) => {
     }
   };
 
-  const handleSelectPlan = async (plan) => {
+  const handleSelectPlan = (plan) => {
     if (!user) {
       alert(translate('subscription.loginRequired', 'Please log in to subscribe'));
       return;
     }
 
+    // Show confirmation dialog
+    setPlanToSubscribe(plan);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubscription = async () => {
+    if (!planToSubscribe) return;
+
     setIsProcessing(true);
-    setSelectedPlan(plan.id);
+    setSelectedPlan(planToSubscribe.id);
+    setShowConfirmDialog(false);
 
     try {
-      await redirectToCheckout(user.id, plan.id, user.email);
+      await redirectToCheckout(user.id, planToSubscribe.id, user.email);
     } catch (error) {
       console.error('Checkout error:', error);
       alert(translate('subscription.error', 'Failed to start checkout. Please try again.'));
@@ -78,6 +90,12 @@ const SubscriptionView = ({ user, translate }) => {
 
     setIsProcessing(false);
     setSelectedPlan(null);
+    setPlanToSubscribe(null);
+  };
+
+  const handleCancelSubscription = () => {
+    setShowConfirmDialog(false);
+    setPlanToSubscribe(null);
   };
 
   const handleManageBilling = async () => {
@@ -342,6 +360,86 @@ const SubscriptionView = ({ user, translate }) => {
           </p>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && planToSubscribe && (
+        <div className="ssc__subscription-confirm-overlay" onClick={handleCancelSubscription}>
+          <div className="ssc__subscription-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="ssc__subscription-confirm-header">
+              <Crown size={32} color="#f59e0b" />
+              <h3>{translate('subscription.confirm.title', 'Confirm Subscription')}</h3>
+            </div>
+
+            <div className="ssc__subscription-confirm-body">
+              <p className="ssc__subscription-confirm-question">
+                {translate(
+                  'subscription.confirm.question',
+                  'You are about to subscribe to:'
+                )}
+              </p>
+
+              <div className="ssc__subscription-confirm-plan">
+                <h4>{planToSubscribe.name}</h4>
+                <div className="ssc__subscription-confirm-price">
+                  <span className="ssc__subscription-confirm-amount">
+                    {formatPrice(planToSubscribe.price_cents / planToSubscribe.billing_interval, planToSubscribe.currency)}
+                  </span>
+                  <span className="ssc__subscription-confirm-period">
+                    /{translate('subscription.month', 'month')}
+                  </span>
+                </div>
+                {planToSubscribe.billing_interval > 1 && (
+                  <p className="ssc__subscription-confirm-billing">
+                    {translate('subscription.billedAs', 'Billed as')}{' '}
+                    {formatPrice(planToSubscribe.price_cents, planToSubscribe.currency)}{' '}
+                    {translate('subscription.every', 'every')}{' '}
+                    {planToSubscribe.billing_interval}{' '}
+                    {translate('subscription.months', 'months')}
+                  </p>
+                )}
+              </div>
+
+              <div className="ssc__subscription-confirm-info">
+                <CheckCircle2 size={16} color="#10b981" />
+                <p>
+                  {translate(
+                    'subscription.confirm.redirect',
+                    'You will be redirected to Stripe to complete your payment securely.'
+                  )}
+                </p>
+              </div>
+
+              <div className="ssc__subscription-confirm-info">
+                <CheckCircle2 size={16} color="#10b981" />
+                <p>
+                  {translate(
+                    'subscription.confirm.secure',
+                    'Your payment information is processed securely by Stripe.'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="ssc__subscription-confirm-actions">
+              <button
+                type="button"
+                className="ssc__btn ssc__btn--secondary"
+                onClick={handleCancelSubscription}
+              >
+                {translate('subscription.confirm.cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                className="ssc__btn ssc__btn--primary"
+                onClick={handleConfirmSubscription}
+              >
+                <CreditCard size={16} />
+                {translate('subscription.confirm.proceed', 'Proceed to Payment')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
