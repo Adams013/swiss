@@ -866,5 +866,44 @@
         "Bleiben Sie bis zu drei Jahren Erfahrung bei einer Seite; Details gehören ins Gespräch."
       ]
     }
+  },
+  "calendar": {
+    "addToCalendar": "Zum Kalender hinzufügen",
+    "providers": {
+      "google": "Google Kalender",
+      "apple": "Apple Kalender",
+      "outlook": "Outlook Kalender",
+      "office365": "Office 365 Kalender",
+      "yahoo": "Yahoo Kalender",
+      "ical": "iCal-Datei herunterladen"
+    }
+  },
+  "events": {
+    "loading": "Veranstaltungen werden geladen...",
+    "viewDetails": "Details ansehen",
+    "posterAlt": "Veranstaltungsposter für {{title}}"
+  },
+  "map": {
+    "panel": {
+      "eventsCount": "{{count}} Veranstaltungen"
+    },
+    "popup": {
+      "jobsCount": "{{count}} Jobs",
+      "eventsCount": "{{count}} Veranstaltungen",
+      "moreEvents": "+{{count}} weitere"
+    }
+  },
+  "subscription": {
+    "planTabs": {
+      "label": "Abrechnungsintervall auswählen"
+    },
+    "planSubtitle": "Alle Premium-Vorteile mit flexiblem Abonnement geniessen.",
+    "planAssurance": "Jederzeit kündbar mit 30 Tagen Geld-zurück-Garantie.",
+    "interval": {
+      "monthly": "Monatlich",
+      "quarterly": "Vierteljährlich",
+      "yearly": "Jährlich",
+      "months": "Alle {{count}} Monate"
+    }
   }
 }

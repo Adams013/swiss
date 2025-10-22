@@ -218,17 +218,134 @@ export const createJobEventEvent = (jobEvent) => {
   };
 };
 
+const ensureDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+};
+
+const coerceEventDateTime = (event) => {
+  const { event_date: eventDate, event_time: eventTime, end_time: endTime } = event || {};
+
+  const startDate = ensureDate(eventDate);
+  if (!startDate) {
+    return {};
+  }
+
+  if (typeof eventTime === 'string' && eventTime.trim()) {
+    const timeValue = eventTime.trim().slice(0, 5);
+    const [hours, minutes] = timeValue.split(':').map((part) => parseInt(part, 10));
+    if (Number.isFinite(hours)) {
+      startDate.setHours(hours, Number.isFinite(minutes) ? minutes : 0, 0, 0);
+    }
+  } else {
+    startDate.setHours(9, 0, 0, 0);
+  }
+
+  let resolvedEnd = null;
+  if (endTime) {
+    const safeEnd = `${eventDate}T${String(endTime).trim().slice(0, 5)}:00`;
+    const maybeEnd = ensureDate(safeEnd);
+    if (maybeEnd && maybeEnd > startDate) {
+      resolvedEnd = maybeEnd;
+    }
+  }
+
+  if (!resolvedEnd) {
+    resolvedEnd = new Date(startDate.getTime() + 90 * 60 * 1000);
+  }
+
+  return {
+    start: startDate,
+    end: resolvedEnd,
+  };
+};
+
+export const createCommunityCalendarEvent = (event) => {
+  if (!event) {
+    return null;
+  }
+
+  const { start, end } = coerceEventDateTime(event);
+  if (!start || !end) {
+    return null;
+  }
+
+  const addressSegments = [
+    event.location,
+    event.street_address,
+    [event.postal_code, event.city].filter(Boolean).join(' '),
+  ]
+    .filter((segment) => typeof segment === 'string' && segment.trim())
+    .map((segment) => segment.trim());
+
+  const registrationUrl = event.registration_url || event.registrationUrl || event.url;
+
+  const descriptionParts = [];
+  if (event.description) {
+    descriptionParts.push(event.description);
+  }
+  if (event.organizer) {
+    descriptionParts.push(`Organizer: ${event.organizer}`);
+  }
+  if (registrationUrl) {
+    descriptionParts.push(`Register: ${registrationUrl}`);
+  }
+
+  return {
+    title: event.title,
+    description: descriptionParts.join('\n\n'),
+    location: addressSegments.join(', '),
+    startTime: start.toISOString(),
+    endTime: end.toISOString(),
+    url: registrationUrl || '',
+  };
+};
+
 /**
  * Get calendar options for dropdown
  */
-export const getCalendarOptions = () => {
+const FALLBACK_TRANSLATE = (_key, fallback) => fallback;
+
+export const getCalendarOptions = (translate = FALLBACK_TRANSLATE) => {
   return [
-    { value: 'google', label: 'Google Calendar', icon: '📅' },
-    { value: 'apple', label: 'Apple Calendar', icon: '🍎' },
-    { value: 'outlook', label: 'Outlook Calendar', icon: '📧' },
-    { value: 'office365', label: 'Office 365 Calendar', icon: '💼' },
-    { value: 'yahoo', label: 'Yahoo Calendar', icon: '📮' },
-    { value: 'ical', label: 'Download iCal file', icon: '📥' },
+    {
+      value: 'google',
+      label: translate('calendar.providers.google', 'Google Calendar'),
+      icon: '📅',
+    },
+    {
+      value: 'apple',
+      label: translate('calendar.providers.apple', 'Apple Calendar'),
+      icon: '🍎',
+    },
+    {
+      value: 'outlook',
+      label: translate('calendar.providers.outlook', 'Outlook Calendar'),
+      icon: '📧',
+    },
+    {
+      value: 'office365',
+      label: translate('calendar.providers.office365', 'Office 365 Calendar'),
+      icon: '💼',
+    },
+    {
+      value: 'yahoo',
+      label: translate('calendar.providers.yahoo', 'Yahoo Calendar'),
+      icon: '📮',
+    },
+    {
+      value: 'ical',
+      label: translate('calendar.providers.ical', 'Download iCal file'),
+      icon: '📥',
+    },
   ];
 };
 
@@ -271,6 +388,7 @@ export default {
   downloadICalFile,
   createInterviewEvent,
   createJobEventEvent,
+  createCommunityCalendarEvent,
   getCalendarOptions,
   formatEventTime,
   detectPreferredCalendar,

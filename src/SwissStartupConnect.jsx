@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Star,
   CreditCard,
+  ExternalLink,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
@@ -47,6 +48,7 @@ import AIChat from './components/AIChat';
 import CalendarView from './components/CalendarView';
 import SubscriptionView from './components/SubscriptionView';
 import EmployerServices from './components/EmployerServices';
+import AddToCalendarMenu from './components/AddToCalendarMenu';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -7811,7 +7813,9 @@ const SwissStartupConnect = () => {
               </div>
 
               {eventsLoading ? (
-                <div className="ssc__loading">Loading events...</div>
+                <div className="ssc__loading">
+                  {translate('events.loading', 'Loading events...')}
+                </div>
               ) : events.length > 0 ? (
                 <div className="ssc__grid">
                   {events.map((event) => {
@@ -7837,6 +7841,8 @@ const SwissStartupConnect = () => {
                       [event.postal_code, event.city].filter(Boolean).join(' '),
                     ].filter(Boolean);
                     const fullAddress = fullAddressSegments.join(', ');
+                    const registrationUrl =
+                      event.registration_url || event.registrationUrl || event.url;
 
                     return (
                       <article key={event.id} className="ssc__event-card">
@@ -7844,7 +7850,9 @@ const SwissStartupConnect = () => {
                           <div className="ssc__event-poster">
                             <img
                               src={event.poster_url}
-                              alt={`${event.title} poster`}
+                              alt={translate('events.posterAlt', `${event.title} poster`, {
+                                title: event.title,
+                              })}
                               className="ssc__event-poster-image"
                             />
                           </div>
@@ -7880,6 +7888,27 @@ const SwissStartupConnect = () => {
                           {event.description && (
                             <p className="ssc__event-description">{event.description}</p>
                           )}
+
+                          <div className="ssc__event-actions">
+                            <AddToCalendarMenu
+                              communityEvent={event}
+                              translate={translate}
+                              size="small"
+                              variant="secondary"
+                            />
+
+                            {registrationUrl && (
+                              <a
+                                href={registrationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ssc__event-link"
+                              >
+                                <ExternalLink size={16} aria-hidden="true" />
+                                <span>{translate('events.viewDetails', 'View details')}</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </article>
                     );

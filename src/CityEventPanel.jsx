@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, MapPin, Calendar, Clock, Building2 } from 'lucide-react';
+import { X, MapPin, Calendar, Clock, Building2, ExternalLink } from 'lucide-react';
+import AddToCalendarMenu from './components/AddToCalendarMenu';
 
 const CityEventPanel = ({
   selectedCity,
@@ -80,7 +81,10 @@ const CityEventPanel = ({
           <span className="ssc__map-side-panel-count">
             {translate(
               'map.panel.eventsCount',
-              `${cityEvents.length} event${cityEvents.length === 1 ? '' : 's'}`
+              cityEvents.length === 1
+                ? '1 event'
+                : `${cityEvents.length} events`,
+              { count: cityEvents.length }
             )}
           </span>
           <button
@@ -102,6 +106,7 @@ const CityEventPanel = ({
           const streetLine = [event.street_address, event.postal_code]
             .filter(Boolean)
             .join(', ');
+          const registrationUrl = event.registration_url || event.registrationUrl || event.url;
 
           return (
             <article key={event.id || event.title} className="ssc__map-event-card">
@@ -147,6 +152,26 @@ const CityEventPanel = ({
                     : event.description}
                 </p>
               )}
+
+              <div className="ssc__map-event-actions">
+                <AddToCalendarMenu
+                  communityEvent={event}
+                  translate={translate}
+                  size="small"
+                />
+
+                {registrationUrl && (
+                  <a
+                    href={registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ssc__map-event-link"
+                  >
+                    <ExternalLink size={14} aria-hidden="true" />
+                    <span>{translate('events.viewDetails', 'View details')}</span>
+                  </a>
+                )}
+              </div>
             </article>
           );
         })}

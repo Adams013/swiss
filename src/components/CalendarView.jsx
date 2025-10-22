@@ -6,12 +6,11 @@ import {
   Video,
   Briefcase,
   Users,
-  Plus,
-  Trash2,
   ExternalLink,
   AlertCircle,
 } from 'lucide-react';
-import { addToCalendar, getCalendarOptions, formatEventTime } from '../services/calendarService';
+import { formatEventTime } from '../services/calendarService';
+import AddToCalendarMenu from './AddToCalendarMenu';
 import { getUserCalendarEvents } from '../services/supabaseCalendar';
 
 /**
@@ -85,18 +84,14 @@ const CalendarView = ({ user, translate }) => {
     }
   };
 
-  const handleAddToCalendar = (event, provider) => {
-    const calendarEvent = {
-      title: event.title,
-      description: event.description || event.notes || '',
-      location: event.location,
-      startTime: event.startTime,
-      endTime: event.endTime,
-      url: event.meetingUrl || event.url || '',
-    };
-
-    addToCalendar(calendarEvent, provider);
-  };
+  const buildCalendarEventPayload = (event) => ({
+    title: event.title,
+    description: event.description || event.notes || '',
+    location: event.location,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    url: event.meetingUrl || event.url || '',
+  });
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -243,27 +238,11 @@ const CalendarView = ({ user, translate }) => {
 
                     {/* Add to Calendar Options */}
                     <div className="ssc__calendar-event__actions">
-                      <div className="ssc__calendar-event__dropdown">
-                        <button
-                          type="button"
-                          className="ssc__btn ssc__btn--small ssc__btn--secondary"
-                        >
-                          <Plus size={14} />
-                          {translate('calendar.addToCalendar', 'Add to Calendar')}
-                        </button>
-                        <div className="ssc__calendar-event__dropdown-menu">
-                          {getCalendarOptions().map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => handleAddToCalendar(event, option.value)}
-                            >
-                              <span>{option.icon}</span>
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <AddToCalendarMenu
+                        calendarEvent={buildCalendarEventPayload(event)}
+                        translate={translate}
+                        size="small"
+                      />
 
                       {event.url && (
                         <a

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Crown,
   Check,
@@ -35,6 +35,61 @@ const SubscriptionView = ({ user, translate }) => {
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(null);
   const [activeTab, setActiveTab] = useState('plans'); // 'plans', 'benefits', 'manage'
+  const [activePlanInterval, setActivePlanInterval] = useState(null);
+
+  const planGrouping = useMemo(() => {
+    const grouped = new Map();
+
+    plans.forEach((plan) => {
+      const interval = Number(plan?.billing_interval) || 1;
+      if (!grouped.has(interval)) {
+        grouped.set(interval, []);
+      }
+      grouped.get(interval).push(plan);
+    });
+
+    const order = Array.from(grouped.keys()).sort((a, b) => a - b);
+    return { grouped, order };
+  }, [plans]);
+
+  useEffect(() => {
+    if (planGrouping.order.length === 0) {
+      if (activePlanInterval !== null) {
+        setActivePlanInterval(null);
+      }
+      return;
+    }
+
+    if (!planGrouping.grouped.has(activePlanInterval)) {
+      setActivePlanInterval(planGrouping.order[0]);
+    }
+  }, [planGrouping, activePlanInterval]);
+
+  const getIntervalLabel = useCallback(
+    (interval) => {
+      switch (interval) {
+        case 1:
+          return translate('subscription.interval.monthly', 'Monthly');
+        case 3:
+          return translate('subscription.interval.quarterly', 'Quarterly');
+        case 12:
+          return translate('subscription.interval.yearly', 'Yearly');
+        default:
+          return translate('subscription.interval.months', 'Every {{count}} months', {
+            count: interval,
+          });
+      }
+    },
+    [translate]
+  );
+
+  const activePlans = useMemo(() => {
+    if (!activePlanInterval) {
+      return [];
+    }
+    const items = planGrouping.grouped.get(activePlanInterval);
+    return Array.isArray(items) ? items : [];
+  }, [activePlanInterval, planGrouping]);
 
   useEffect(() => {
     if (user?.id) {
@@ -233,131 +288,195 @@ const SubscriptionView = ({ user, translate }) => {
                   <p>{translate('subscription.noPlans', 'No plans available at the moment.')}</p>
                 </div>
               ) : (
-                <div className="ssc__subscription-pricing-cards">
-                  {plans.map((plan) => {
-                    const monthlyPrice = plan.price_cents / plan.billing_interval;
-                    const savings = getSavingsPercentage(plan);
-                    const recommended = isPlanRecommended(plan);
-                    const current = isCurrentPlan(plan);
-                    const isRedirecting = redirecting === plan.id;
-
-                    return (
-                      <div
-                        key={plan.id}
-                        className={`ssc__subscription-plan-card ${
-                          recommended ? 'ssc__subscription-plan-card--recommended' : ''
-                        } ${current ? 'ssc__subscription-plan-card--current' : ''}`}
-                      >
-                        {/* Recommended Badge */}
-                        {recommended && !current && (
-                          <div className="ssc__subscription-plan-card__badge">
-                            <Zap size={14} />
-                            {translate('subscription.bestValue', 'Best Value')}
-                          </div>
-                        )}
-
-                        {/* Current Plan Badge */}
-                        {current && (
-                          <div className="ssc__subscription-plan-card__current-badge">
-                            <Check size={14} />
-                            {translate('subscription.currentPlan', 'Current Plan')}
-                          </div>
-                        )}
-
-                        {/* Plan Name */}
-                        <h4 className="ssc__subscription-plan-card__name">{plan.name}</h4>
-
-                        {/* Savings Badge */}
-                        {savings > 0 && (
-                          <div className="ssc__subscription-plan-card__savings">
-                            {translate('subscription.save', 'Save')} {savings}%
-                          </div>
-                        )}
-
-                        {/* Pricing */}
-                        <div className="ssc__subscription-plan-card__pricing">
-                          <div className="ssc__subscription-plan-card__price">
-                            <span className="ssc__subscription-plan-card__amount">
-                              {formatPrice(monthlyPrice, plan.currency)}
-                            </span>
-                            <span className="ssc__subscription-plan-card__period">
+                <>
+                  <div
+                    className="ssc__subscription-plan-tabs"
+                    role="tablist"
+                    aria-label={translate('subscription.planTabs.label', 'Select a billing interval')}
+                  >
+                    {planGrouping.order.map((interval) => {
+                      const intervalPlans = planGrouping.grouped.get(interval);
+                      if (!intervalPlans || intervalPlans.length === 0) {
+                        return null;
+                      }
+                      const samplePlan = intervalPlans[0];
+                      const monthlyPrice = samplePlan.price_cents / samplePlan.billing_interval;
+                      const savings = getSavingsPercentage(samplePlan);
+                      const isActive = interval === activePlanInterval;
+                      const tabId = `ssc-plan-tab-${interval}`;
+                      const panelId = `ssc-plan-panel-${interval}`;
+                      return (
+                        <button
+                          key={interval}
+                          type="button"
+                          role="tab"
+                          id={tabId}
+                          aria-controls={panelId}
+                          aria-selected={isActive}
+                          className={`ssc__subscription-plan-tab ${isActive ? 'is-active' : ''}`}
+                          onClick={() => setActivePlanInterval(interval)}
+                        >
+                          <span className="ssc__subscription-plan-tab__label">
+                            {getIntervalLabel(interval)}
+                          </span>
+                          <span className="ssc__subscription-plan-tab__price">
+                            {formatPrice(monthlyPrice, samplePlan.currency)}
+                            <span className="ssc__subscription-plan-tab__price-caption">
                               /{translate('subscription.month', 'month')}
                             </span>
-                          </div>
-
-                          {plan.billing_interval > 1 && (
-                            <div className="ssc__subscription-plan-card__total">
-                              {formatPrice(plan.price_cents, plan.currency)}{' '}
-                              {plan.billing_interval === 3
-                                ? translate('subscription.perQuarter', 'per quarter')
-                                : translate('subscription.perYear', 'per year')}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Billing Period */}
-                        <div className="ssc__subscription-plan-card__billing">
-                          <Calendar size={16} />
-                          <span>
-                            {translate('subscription.billedEvery', 'Billed every')}{' '}
-                            {plan.billing_interval}{' '}
-                            {plan.billing_interval === 1
-                              ? translate('subscription.month', 'month')
-                              : translate('subscription.months', 'months')}
                           </span>
-                        </div>
-
-                        {/* Features List */}
-                        <ul className="ssc__subscription-plan-card__features">
-                          <li>
-                            <Check size={16} color="#10b981" />
-                            <span>{translate('subscription.feature.allBenefits', 'All premium benefits')}</span>
-                          </li>
-                          <li>
-                            <Check size={16} color="#10b981" />
-                            <span>{translate('subscription.feature.cancelAnytime', 'Cancel anytime')}</span>
-                          </li>
-                          <li>
-                            <Check size={16} color="#10b981" />
-                            <span>{translate('subscription.feature.moneyBack', '30-day money back')}</span>
-                          </li>
-                        </ul>
-
-                        {/* CTA Button */}
-                        <button
-                          type="button"
-                          className={`ssc__btn ${
-                            recommended && !current
-                              ? 'ssc__btn--primary'
-                              : 'ssc__btn--secondary'
-                          } ssc__subscription-plan-card__cta`}
-                          onClick={() => handleSelectPlan(plan)}
-                          disabled={isRedirecting || current}
-                        >
-                          {isRedirecting ? (
-                            <>
-                              <Loader size={16} className="ssc__spinner-icon" />
-                              {translate('subscription.redirecting', 'Redirecting to Stripe...')}
-                            </>
-                          ) : current ? (
-                            <>
-                              <Check size={16} />
-                              {translate('subscription.currentPlan', 'Current Plan')}
-                            </>
-                          ) : (
-                            <>
-                              <Crown size={16} />
-                              {subscription 
-                                ? translate('subscription.changePlan', 'Switch to This Plan')
-                                : translate('subscription.upgrade', 'Upgrade Now')}
-                              <ArrowRight size={16} />
-                            </>
+                          {savings > 0 && (
+                            <span className="ssc__subscription-plan-tab__savings">
+                              {translate('subscription.save', 'Save')} {savings}%
+                            </span>
                           )}
                         </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+
+                  {activePlanInterval && (
+                    <div
+                      className="ssc__subscription-plan-panel"
+                      role="tabpanel"
+                      id={`ssc-plan-panel-${activePlanInterval}`}
+                      aria-labelledby={`ssc-plan-tab-${activePlanInterval}`}
+                    >
+                      {activePlans.map((plan) => {
+                        const monthlyPrice = plan.price_cents / plan.billing_interval;
+                        const savings = getSavingsPercentage(plan);
+                        const recommended = isPlanRecommended(plan);
+                        const current = isCurrentPlan(plan);
+                        const isRedirecting = redirecting === plan.id;
+                        const intervalLabel = getIntervalLabel(plan.billing_interval);
+
+                        return (
+                          <div
+                            key={plan.id}
+                            className={`ssc__subscription-plan-card ssc__subscription-plan-card--expanded ${
+                              recommended ? 'ssc__subscription-plan-card--recommended' : ''
+                            } ${current ? 'ssc__subscription-plan-card--current' : ''}`}
+                          >
+                            {recommended && !current && (
+                              <div className="ssc__subscription-plan-card__badge">
+                                <Zap size={14} />
+                                {translate('subscription.bestValue', 'Best Value')}
+                              </div>
+                            )}
+
+                            {current && (
+                              <div className="ssc__subscription-plan-card__current-badge">
+                                <Check size={14} />
+                                {translate('subscription.currentPlan', 'Current Plan')}
+                              </div>
+                            )}
+
+                            <header className="ssc__subscription-plan-card__header">
+                              <span className="ssc__subscription-plan-card__interval">{intervalLabel}</span>
+                              <h4 className="ssc__subscription-plan-card__name">{plan.name}</h4>
+                              <p className="ssc__subscription-plan-card__subtitle">
+                                {translate(
+                                  'subscription.planSubtitle',
+                                  'Enjoy every premium benefit with flexible billing.'
+                                )}
+                              </p>
+                            </header>
+
+                            <div className="ssc__subscription-plan-card__pricing">
+                              <div className="ssc__subscription-plan-card__price">
+                                <span className="ssc__subscription-plan-card__amount">
+                                  {formatPrice(monthlyPrice, plan.currency)}
+                                </span>
+                                <span className="ssc__subscription-plan-card__period">
+                                  /{translate('subscription.month', 'month')}
+                                </span>
+                              </div>
+
+                              {plan.billing_interval > 1 && (
+                                <div className="ssc__subscription-plan-card__total">
+                                  {formatPrice(plan.price_cents, plan.currency)}{' '}
+                                  {plan.billing_interval === 3
+                                    ? translate('subscription.perQuarter', 'per quarter')
+                                    : translate('subscription.perYear', 'per year')}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="ssc__subscription-plan-card__billing">
+                              <Calendar size={16} />
+                              <span>
+                                {translate('subscription.billedEvery', 'Billed every')}{' '}
+                                {plan.billing_interval}{' '}
+                                {plan.billing_interval === 1
+                                  ? translate('subscription.month', 'month')
+                                  : translate('subscription.months', 'months')}
+                              </span>
+                              {savings > 0 && (
+                                <span className="ssc__subscription-plan-card__pill">
+                                  {translate('subscription.save', 'Save')} {savings}%
+                                </span>
+                              )}
+                            </div>
+
+                            <ul className="ssc__subscription-plan-card__features">
+                              <li>
+                                <Check size={16} color="#10b981" />
+                                <span>{translate('subscription.feature.allBenefits', 'All premium benefits')}</span>
+                              </li>
+                              <li>
+                                <Check size={16} color="#10b981" />
+                                <span>{translate('subscription.feature.cancelAnytime', 'Cancel anytime')}</span>
+                              </li>
+                              <li>
+                                <Check size={16} color="#10b981" />
+                                <span>{translate('subscription.feature.moneyBack', '30-day money back')}</span>
+                              </li>
+                            </ul>
+
+                            <div className="ssc__subscription-plan-card__actions">
+                              <button
+                                type="button"
+                                className={`ssc__btn ${
+                                  recommended && !current
+                                    ? 'ssc__btn--primary'
+                                    : 'ssc__btn--secondary'
+                                } ssc__subscription-plan-card__cta`}
+                                onClick={() => handleSelectPlan(plan)}
+                                disabled={isRedirecting || current}
+                              >
+                                {isRedirecting ? (
+                                  <>
+                                    <Loader size={16} className="ssc__spinner-icon" />
+                                    {translate('subscription.redirecting', 'Redirecting to Stripe...')}
+                                  </>
+                                ) : current ? (
+                                  <>
+                                    <Check size={16} />
+                                    {translate('subscription.currentPlan', 'Current Plan')}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Crown size={16} />
+                                    {subscription
+                                      ? translate('subscription.changePlan', 'Switch to This Plan')
+                                      : translate('subscription.upgrade', 'Upgrade Now')}
+                                    <ArrowRight size={16} />
+                                  </>
+                                )}
+                              </button>
+                              <p className="ssc__subscription-plan-card__assurance">
+                                {translate(
+                                  'subscription.planAssurance',
+                                  'Cancel anytime with a 30-day money-back guarantee.'
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

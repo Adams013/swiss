@@ -866,5 +866,44 @@
         "Limitez-vous à une page tant que vous avez moins de trois ans d’expérience ; développez en entretien."
       ]
     }
+  },
+  "calendar": {
+    "addToCalendar": "Ajouter au calendrier",
+    "providers": {
+      "google": "Google Agenda",
+      "apple": "Calendrier Apple",
+      "outlook": "Calendrier Outlook",
+      "office365": "Calendrier Office 365",
+      "yahoo": "Calendrier Yahoo",
+      "ical": "Télécharger le fichier iCal"
+    }
+  },
+  "events": {
+    "loading": "Chargement des événements...",
+    "viewDetails": "Voir les détails",
+    "posterAlt": "Affiche de l'événement {{title}}"
+  },
+  "map": {
+    "panel": {
+      "eventsCount": "{{count}} événements"
+    },
+    "popup": {
+      "jobsCount": "{{count}} offres",
+      "eventsCount": "{{count}} événements",
+      "moreEvents": "+{{count}} en plus"
+    }
+  },
+  "subscription": {
+    "planTabs": {
+      "label": "Choisir une fréquence de facturation"
+    },
+    "planSubtitle": "Profitez de tous les avantages premium avec une facturation flexible.",
+    "planAssurance": "Résiliation à tout moment avec garantie de remboursement de 30 jours.",
+    "interval": {
+      "monthly": "Mensuel",
+      "quarterly": "Trimestriel",
+      "yearly": "Annuel",
+      "months": "Tous les {{count}} mois"
+    }
   }
 }

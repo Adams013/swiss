@@ -426,7 +426,11 @@ const SwitzerlandMap = ({
                 <div className="flex items-center justify-center">
                   <Briefcase className="w-4 h-4 mr-1" />
                   <span className="text-sm">
-                    {jobCount} job{jobCount !== 1 ? 's' : ''}
+                    {translate(
+                      'map.popup.jobsCount',
+                      jobCount === 1 ? '1 job' : `${jobCount} jobs`,
+                      { count: jobCount }
+                    )}
                   </span>
                 </div>
               </div>
@@ -476,7 +480,11 @@ const SwitzerlandMap = ({
                 <div className="flex items-center justify-center mb-2">
                   <Calendar className="w-4 h-4 mr-1" />
                   <span className="text-sm">
-                    {eventCount} event{eventCount !== 1 ? 's' : ''}
+                    {translate(
+                      'map.popup.eventsCount',
+                      eventCount === 1 ? '1 event' : `${eventCount} events`,
+                      { count: eventCount }
+                    )}
                   </span>
                 </div>
                 <ul className="text-left text-sm space-y-1">
@@ -495,7 +503,11 @@ const SwitzerlandMap = ({
                     );
                   })}
                   {remainingCount > 0 && (
-                    <li className="text-xs text-gray-500">+{remainingCount} more</li>
+                    <li className="text-xs text-gray-500">
+                      {translate('map.popup.moreEvents', `+${remainingCount} more`, {
+                        count: remainingCount,
+                      })}
+                    </li>
                   )}
                 </ul>
               </div>
