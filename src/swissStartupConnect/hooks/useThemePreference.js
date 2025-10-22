@@ -17,6 +17,19 @@ export const useThemePreference = () => {
     }
 
     persistThemePreference(theme);
+    return () => {
+      if (typeof document === 'undefined') {
+        return;
+      }
+
+      const rootElement = document.documentElement;
+      rootElement.classList.remove('ssc--dark');
+      rootElement.style.colorScheme = '';
+
+      if (document.body) {
+        document.body.classList.remove('ssc--dark');
+      }
+    };
   }, [isDarkMode, theme]);
 
   const toggleTheme = useCallback(() => {

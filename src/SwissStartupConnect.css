@@ -25,6 +25,10 @@
   --ssc-applications-shadow: 0 20px 40px rgba(var(--ssc-ink-rgb), 0.08);
   --ssc-applications-border: var(--ssc-border);
   --ssc-applications-row-active-bg: rgba(var(--ssc-primary-rgb), 0.06);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-primary-dark: #f9fafb;
+  --text-secondary-dark: #9ca3af;
 }
 
 .ssc--dark {
@@ -54,6 +58,10 @@
   --ssc-applications-shadow: 0 22px 48px rgba(5, 12, 24, 0.55);
   --ssc-applications-border: rgba(138, 216, 255, 0.22);
   --ssc-applications-row-active-bg: rgba(138, 216, 255, 0.12);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-primary-dark: #f8fafc;
+  --text-secondary-dark: #cbd5f5;
 }
 
 .ssc {
