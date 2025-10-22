@@ -218,43 +218,134 @@ export const createJobEventEvent = (jobEvent) => {
   };
 };
 
-const ensureDate = (value) => {
+const normalizeDateInput = (value) => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    const fromNumber = new Date(value);
+    return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const direct = new Date(trimmed);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct;
+  }
+
+  const europeanMatch = trimmed.match(/^([0-3]?\d)[./-]([0-1]?\d)[./-](\d{4})$/);
+  if (europeanMatch) {
+    const [, day, month, year] = europeanMatch;
+    const isoLike = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const parsed = new Date(isoLike);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  return null;
+};
+
+const parseTimeComponents = (value) => {
   if (!value) {
     return null;
   }
 
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
+  if (value instanceof Date) {
+    return {
+      hours: value.getHours(),
+      minutes: value.getMinutes(),
+    };
+  }
+
+  if (typeof value !== 'string' && typeof value !== 'number') {
     return null;
   }
 
-  return parsed;
+  const raw = String(value).trim();
+  if (!raw) {
+    return null;
+  }
+
+  const normalized = raw
+    .replace(/[hH]/g, ':')
+    .replace(/\s+/g, '')
+    .replace(/[^0-9:]/g, '');
+
+  const timeMatch = normalized.match(/^([0-2]?\d)(?::?([0-5]?\d))?(?::?([0-5]?\d))?$/);
+  if (!timeMatch) {
+    return null;
+  }
+
+  const [, hoursPart, minutesPart] = timeMatch;
+  const hours = parseInt(hoursPart, 10);
+  const minutes = minutesPart ? parseInt(minutesPart, 10) : 0;
+
+  if (!Number.isFinite(hours) || hours > 23 || minutes > 59) {
+    return null;
+  }
+
+  return { hours, minutes };
 };
 
+const ensureDate = (value) => normalizeDateInput(value);
+
 const coerceEventDateTime = (event) => {
-  const { event_date: eventDate, event_time: eventTime, end_time: endTime } = event || {};
+  const {
+    event_date: eventDate,
+    event_time: eventTime,
+    end_time: endTime,
+    start_time: alternativeStart,
+    endTime: camelEndTime,
+  } = event || {};
 
   const startDate = ensureDate(eventDate);
   if (!startDate) {
     return {};
   }
 
-  if (typeof eventTime === 'string' && eventTime.trim()) {
-    const timeValue = eventTime.trim().slice(0, 5);
-    const [hours, minutes] = timeValue.split(':').map((part) => parseInt(part, 10));
-    if (Number.isFinite(hours)) {
-      startDate.setHours(hours, Number.isFinite(minutes) ? minutes : 0, 0, 0);
-    }
+  const startTimeParts =
+    parseTimeComponents(eventTime) || parseTimeComponents(alternativeStart) || parseTimeComponents(event?.startTime);
+  if (startTimeParts) {
+    startDate.setHours(startTimeParts.hours, startTimeParts.minutes, 0, 0);
   } else {
     startDate.setHours(9, 0, 0, 0);
   }
 
+  const resolveEndFromParts = (baseDate, timeValue) => {
+    const endParts = parseTimeComponents(timeValue);
+    if (baseDate && endParts) {
+      const endDate = new Date(baseDate.getTime());
+      endDate.setHours(endParts.hours, endParts.minutes, 0, 0);
+      return endDate;
+    }
+    return null;
+  };
+
   let resolvedEnd = null;
-  if (endTime) {
-    const safeEnd = `${eventDate}T${String(endTime).trim().slice(0, 5)}:00`;
-    const maybeEnd = ensureDate(safeEnd);
-    if (maybeEnd && maybeEnd > startDate) {
-      resolvedEnd = maybeEnd;
+  resolvedEnd =
+    resolveEndFromParts(startDate, endTime) ||
+    resolveEndFromParts(startDate, camelEndTime) ||
+    resolveEndFromParts(startDate, event?.endTime);
+
+  if (!resolvedEnd) {
+    const absoluteEnd = ensureDate(endTime) || ensureDate(camelEndTime) || ensureDate(event?.endTime);
+    if (absoluteEnd && absoluteEnd > startDate) {
+      resolvedEnd = absoluteEnd;
+    }
+  }
+
+  if (!resolvedEnd && typeof endTime === 'string') {
+    const safeEnd = ensureDate(`${eventDate}T${String(endTime).trim()}`);
+    if (safeEnd && safeEnd > startDate) {
+      resolvedEnd = safeEnd;
     }
   }
 

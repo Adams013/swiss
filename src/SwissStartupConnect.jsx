@@ -157,6 +157,25 @@ const SwissStartupConnect = () => {
     jobSortOptions,
   } = useJobSearchPreferences({ translate });
 
+  const getLocalizedEventText = useCallback(
+    (event, field) => {
+      if (!event) {
+        return '';
+      }
+
+      if (language !== 'en') {
+        const localized = event?.translations?.[language]?.[field];
+        if (typeof localized === 'string' && localized.trim()) {
+          return localized;
+        }
+      }
+
+      const original = event?.[field];
+      return typeof original === 'string' ? original : '';
+    },
+    [language]
+  );
+
   const localizedCvTips = useMemo(() => {
     const translated = translate('modals.cv.tips', '');
     if (Array.isArray(translated) && translated.length > 0) {
@@ -5507,11 +5526,10 @@ const SwissStartupConnect = () => {
   };
 
   const navTabs = useMemo(() => {
-    const baseTabs = ['general', 'jobs', 'companies', 'map', 'events'];
     if (user?.type === 'startup') {
-      baseTabs.push('my-jobs', 'applications');
+      return ['general', 'my-jobs', 'applications', 'map', 'events'];
     }
-    return baseTabs;
+    return ['general', 'jobs', 'companies', 'map', 'events'];
   }, [user?.type]);
 
   const navLabels = useMemo(
@@ -7748,6 +7766,7 @@ const SwissStartupConnect = () => {
                 translate={translate}
                 focusJobId={mapFocusJobId}
                 onFocusHandled={() => setMapFocusJobId(null)}
+                getLocalizedEventText={getLocalizedEventText}
               />
             </div>
           </section>
@@ -7836,6 +7855,15 @@ const SwissStartupConnect = () => {
                         ? timeValue.slice(0, 5)
                         : timeValue
                       : '';
+                    const localizedTitle =
+                      getLocalizedEventText(event, 'title') ||
+                      translate('map.panel.eventFallbackTitle', 'Startup gathering');
+                    const localizedLocation =
+                      getLocalizedEventText(event, 'location') ||
+                      event.location ||
+                      event.location_name ||
+                      '';
+                    const localizedDescription = getLocalizedEventText(event, 'description');
                     const fullAddressSegments = [
                       event.street_address,
                       [event.postal_code, event.city].filter(Boolean).join(' '),
@@ -7850,8 +7878,8 @@ const SwissStartupConnect = () => {
                           <div className="ssc__event-poster">
                             <img
                               src={event.poster_url}
-                              alt={translate('events.posterAlt', `${event.title} poster`, {
-                                title: event.title,
+                              alt={translate('events.posterAlt', `${localizedTitle} poster`, {
+                                title: localizedTitle,
                               })}
                               className="ssc__event-poster-image"
                             />
@@ -7859,12 +7887,12 @@ const SwissStartupConnect = () => {
                         )}
                         <div className="ssc__event-content">
                           <div className="ssc__event-header">
-                            <h3>{event.title}</h3>
+                            <h3>{localizedTitle}</h3>
                             <div className="ssc__event-meta">
-                              {event.location && (
+                              {localizedLocation && (
                                 <div className="ssc__event-venue">
                                   <Building2 size={16} />
-                                  <span>{event.location}</span>
+                                  <span>{localizedLocation}</span>
                                 </div>
                               )}
                               <div className="ssc__event-date">
@@ -7885,8 +7913,12 @@ const SwissStartupConnect = () => {
                               )}
                             </div>
                           </div>
-                          {event.description && (
-                            <p className="ssc__event-description">{event.description}</p>
+                          {localizedDescription && (
+                            <p className="ssc__event-description">
+                              {localizedDescription.length > 220
+                                ? `${localizedDescription.slice(0, 217)}...`
+                                : localizedDescription}
+                            </p>
                           )}
 
                           <div className="ssc__event-actions">
@@ -9437,7 +9469,7 @@ const SwissStartupConnect = () => {
           {user?.type === 'student' ? (
             <SubscriptionView user={user} translate={translate} />
           ) : (
-            <EmployerServices user={user} translate={translate} />
+            <EmployerServices user={user} translate={translate} language={language} />
           )}
         </div>
       </Modal>

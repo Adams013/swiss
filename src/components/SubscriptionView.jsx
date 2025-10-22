@@ -154,6 +154,18 @@ const SubscriptionView = ({ user, translate }) => {
     }
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!redirecting) {
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setRedirecting(null);
+    }, 2500);
+
+    return () => clearTimeout(timeoutId);
+  }, [redirecting]);
+
   const loadSubscriptionData = useCallback(async () => {
     if (!user?.id) {
       return;

@@ -357,12 +357,12 @@
 }
 
 .ssc__theme-toggle-icon {
-  flex: 1;
+  flex: 0 0 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: var(--ssc-muted);
   transition: color 0.3s ease, opacity 0.3s ease;
   z-index: 1;
@@ -4531,6 +4531,7 @@
   background: linear-gradient(165deg, #f5f3ff 0%, #ede9fe 45%, #faf5ff 100%);
   border-color: rgba(192, 132, 252, 0.32);
   box-shadow: 0 28px 64px rgba(168, 85, 247, 0.24);
+  overflow: visible;
 }
 
 .ssc__map-side-panel-header {
@@ -5047,6 +5048,7 @@
   background: linear-gradient(165deg, rgba(67, 56, 202, 0.88) 0%, rgba(30, 27, 75, 0.92) 100%);
   border-color: rgba(192, 132, 252, 0.48);
   box-shadow: 0 32px 72px rgba(129, 140, 248, 0.36);
+  overflow: visible;
 }
 
 .ssc--dark .ssc__map-side-panel-icon {

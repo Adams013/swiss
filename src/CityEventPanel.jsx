@@ -8,6 +8,13 @@ const CityEventPanel = ({
   cityEvents = [],
   onClose,
   translate = (key, fallback) => fallback,
+  getLocalizedEventText = (event, field) => {
+    if (!event) {
+      return '';
+    }
+    const value = event?.[field];
+    return typeof value === 'string' ? value : '';
+  },
 }) => {
   if (!selectedCity || cityEvents.length === 0) {
     return null;
@@ -102,19 +109,25 @@ const CityEventPanel = ({
         {cityEvents.map((event) => {
           const eventDate = formatDate(event.event_date);
           const eventTime = formatTime(event.event_time);
-          const venueName = event.location || event.location_name || '';
+          const eventTitle =
+            getLocalizedEventText(event, 'title') ||
+            translate('map.panel.eventFallbackTitle', 'Startup gathering');
+          const venueName =
+            getLocalizedEventText(event, 'location') ||
+            event.location ||
+            event.location_name ||
+            '';
           const streetLine = [event.street_address, event.postal_code]
             .filter(Boolean)
             .join(', ');
           const registrationUrl = event.registration_url || event.registrationUrl || event.url;
+          const eventDescription = getLocalizedEventText(event, 'description');
 
           return (
             <article key={event.id || event.title} className="ssc__map-event-card">
               <div className="ssc__map-card-heading">
                 <div>
-                  <h4 className="ssc__map-event-title">
-                    {event.title || translate('map.panel.eventFallbackTitle', 'Startup gathering')}
-                  </h4>
+                  <h4 className="ssc__map-event-title">{eventTitle}</h4>
                   {venueName && (
                     <div className="ssc__map-event-venue">
                       <Building2 className="w-4 h-4" aria-hidden="true" />
@@ -145,11 +158,11 @@ const CityEventPanel = ({
                 </div>
               )}
 
-              {event.description && (
+              {eventDescription && (
                 <p className="ssc__map-event-description">
-                  {event.description.length > 220
-                    ? `${event.description.slice(0, 217)}...`
-                    : event.description}
+                  {eventDescription.length > 220
+                    ? `${eventDescription.slice(0, 217)}...`
+                    : eventDescription}
                 </p>
               )}
 

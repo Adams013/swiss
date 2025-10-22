@@ -883,6 +883,52 @@
     "viewDetails": "Voir les détails",
     "posterAlt": "Affiche de l'événement {{title}}"
   },
+  "services": {
+    "loginRequired": "Veuillez vous connecter pour acheter des services",
+    "error": "Échec du démarrage du paiement. Veuillez réessayer.",
+    "title": "Services pour startups",
+    "subtitle": "Des outils puissants pour trouver et attirer les meilleurs talents",
+    "perPost": "par annonce",
+    "month": "mois",
+    "processing": "Traitement...",
+    "purchase": "Acheter maintenant",
+    "subscribe": "S'abonner maintenant",
+    "infoTitle": "Comment ça fonctionne",
+    "step1": {
+      "title": "Choisir un service",
+      "desc": "Sélectionnez le service qui correspond le mieux à vos besoins de recrutement"
+    },
+    "step2": {
+      "title": "Finaliser le paiement",
+      "desc": "Payez en toute sécurité via Stripe avec votre méthode préférée"
+    },
+    "step3": {
+      "title": "Commencer",
+      "desc": "Accédez immédiatement à votre service et commencez à trouver des talents"
+    },
+    "footer": "Tous les paiements sont sécurisés et traités par Stripe. Besoin d'aide ? Contactez notre équipe support.",
+    "analytics": {
+      "feature1": "Suivez les vues de vos offres d'emploi",
+      "feature2": "Surveillez les clics et les métriques d'engagement",
+      "feature3": "Voyez combien de fois vos offres sont partagées",
+      "feature4": "Identifiez les candidats intéressés",
+      "feature5": "Aperçus de performance et tendances"
+    },
+    "talent": {
+      "feature1": "Filtres de recherche avancés",
+      "feature2": "Accédez à des profils étudiants détaillés",
+      "feature3": "Trouvez les meilleures correspondances pour vos postes",
+      "feature4": "Consultez l'expérience et les compétences des étudiants",
+      "feature5": "Accès prioritaire aux meilleurs candidats"
+    },
+    "featured": {
+      "feature1": "Mise en avant dans le menu principal",
+      "feature2": "Visibilité et portée accrues",
+      "feature3": "Démarquez-vous des autres annonces",
+      "feature4": "Attirez davantage de candidats qualifiés",
+      "feature5": "Boostez vos résultats de recrutement"
+    }
+  },
   "map": {
     "panel": {
       "eventsCount": "{{count}} événements"
@@ -912,6 +958,11 @@
     },
     "planSwitcher": {
       "benefits": "Vue des avantages"
+    },
+    "redirecting": {
+      "title": "Redirection vers Stripe...",
+      "message": "Vous allez être redirigé(e) en toute sécurité pour finaliser votre paiement",
+      "short": "Redirection..."
     },
     "displayPrice": {
       "monthly": "CHF 7.90",

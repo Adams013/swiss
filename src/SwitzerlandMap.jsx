@@ -151,6 +151,13 @@ const SwitzerlandMap = ({
   panelOpen = false,
   visibleLayer = 'jobs',
   translate = FALLBACK_TRANSLATE,
+  getLocalizedEventText = (event, field) => {
+    if (!event) {
+      return '';
+    }
+    const value = event?.[field];
+    return typeof value === 'string' ? value : '';
+  },
 }) => {
   // Load cities dynamically from Supabase
   const { citiesByKey, cityLookup, loading: citiesLoading, fallbackActive } = useSwissCities();
@@ -519,9 +526,12 @@ const SwitzerlandMap = ({
                         ? timeValue.slice(0, 5)
                         : timeValue
                       : '';
+                    const eventTitle =
+                      getLocalizedEventText(event, 'title') ||
+                      translate('map.panel.eventFallbackTitle', 'Startup gathering');
                     return (
                       <li key={event.id} className="leading-snug">
-                        <span className="font-medium">{event.title}</span>
+                        <span className="font-medium">{eventTitle}</span>
                         {formattedTime && <span className="text-xs text-gray-500"> · {formattedTime}</span>}
                       </li>
                     );
@@ -540,7 +550,14 @@ const SwitzerlandMap = ({
         );
       })
       .filter(Boolean);
-    }, [eventsByCity, onEventCityClick, selectedEventCity, showEvents, citiesByKey]);
+    }, [
+      eventsByCity,
+      getLocalizedEventText,
+      onEventCityClick,
+      selectedEventCity,
+      showEvents,
+      citiesByKey,
+    ]);
 
   useEffect(() => {
     if (!showJobs || !selectedJobCity || !mapRef.current || !citiesByKey) {

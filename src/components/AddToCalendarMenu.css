@@ -31,7 +31,7 @@
   pointer-events: none;
   transform: translateY(-8px);
   transition: opacity 0.18s ease, transform 0.18s ease;
-  z-index: 20;
+  z-index: 120;
 }
 
 .ssc__add-to-calendar__menu.is-open {

@@ -21,8 +21,24 @@ import './EmployerServices.css';
  * EmployerServices Component
  * Displays available services for startups/employers
  */
-const EmployerServices = ({ user, translate }) => {
+const EmployerServices = ({ user, translate, language = 'en' }) => {
   const [isProcessing, setIsProcessing] = useState(null);
+
+  const resolveServiceText = (service, field) => {
+    if (!service) {
+      return '';
+    }
+
+    if (language !== 'en') {
+      const localized = service?.translations?.[language]?.[field];
+      if (typeof localized === 'string' && localized.trim()) {
+        return localized;
+      }
+    }
+
+    const original = service?.[field];
+    return typeof original === 'string' ? original : '';
+  };
 
   const handlePurchaseService = async (service) => {
     if (!user) {
@@ -175,9 +191,9 @@ const EmployerServices = ({ user, translate }) => {
 
               {/* Service Header */}
               <div className="ssc__service-card__header">
-                <h3>{service.name}</h3>
+                <h3>{resolveServiceText(service, 'name')}</h3>
                 <p className="ssc__service-card__description">
-                  {service.description}
+                  {resolveServiceText(service, 'description')}
                 </p>
               </div>
 
