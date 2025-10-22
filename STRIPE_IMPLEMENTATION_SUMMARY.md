@@ -11,6 +11,7 @@ I've successfully rebuilt the subscription tab in the profile settings with full
   - Public key: `pk_test_51SKytnJYA99atACQ...`
   - Secret key: `sk_test_51SKytnJYA99atACQ...`
   - API URL: `https://api.stripe.com`
+- Added Stripe Payment Link: https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00
 - Configured to automatically detect test mode
 
 ### 2. **Product Integration** ✅

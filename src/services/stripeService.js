@@ -60,6 +60,7 @@ export const loadStripe = async () => {
 
 /**
  * Mock subscription plans using actual Stripe Product IDs
+ * Stripe Payment Link: https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00
  */
 const getMockPlans = (userType = null) => {
   const allPlans = [
@@ -75,6 +76,7 @@ const getMockPlans = (userType = null) => {
       billing_interval: 1,
       stripe_price_id: 'price_student_monthly',
       stripe_product_id: 'prod_THY4PLgnJZU3eE',
+      stripe_payment_link: 'https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00',
       is_active: true,
       sort_order: 1,
       features: {
@@ -422,7 +424,21 @@ export const redirectToCheckout = async (userId, planId, userEmail, options = {}
   try {
     console.log('Starting checkout process:', { userId, planId, userEmail });
     
-    const { sessionId, url, stripe, plan, error: checkoutError } = await createStripeCheckoutSession(
+    // Find the plan to get payment link
+    const plan = getMockPlans().find(p => p.id === planId || p.plan_id === planId);
+    if (!plan) {
+      throw new Error('Plan not found');
+    }
+
+    // If plan has a direct Stripe payment link, use it (simplest method)
+    if (plan.stripe_payment_link) {
+      console.log('Redirecting to Stripe Payment Link:', plan.stripe_payment_link);
+      window.location.href = plan.stripe_payment_link;
+      return { success: true, error: null };
+    }
+
+    // Otherwise, try to create a checkout session
+    const { sessionId, url, stripe, error: checkoutError } = await createStripeCheckoutSession(
       userId, 
       planId, 
       userEmail, 
@@ -459,25 +475,24 @@ Price: ${formatPrice(plan.price_cents, plan.currency)}
 
 To complete payment integration, you need to:
 
-1. Create a Price in Stripe Dashboard:
+1. Create a Payment Link in Stripe Dashboard:
+   https://dashboard.stripe.com/payment-links
+   
+2. Or create a Price for this product:
    https://dashboard.stripe.com/products/${plan.stripe_product_id}
    
-2. Update the price ID in the code:
-   stripe_price_id: 'price_xxxxx'
-
-3. Deploy the Supabase Edge Function:
-   supabase/functions/create-checkout-session
+3. Update the payment link or price ID in the code
 
 For now, this is showing you what would happen.
 Check the console for more details.
     `.trim();
 
     console.log('Plan details:', plan);
-    console.log('To complete setup, create a price for product:', plan.stripe_product_id);
+    console.log('To complete setup, add payment link or create a price for product:', plan.stripe_product_id);
     
     alert(message);
     
-    return { success: false, error: new Error('Stripe prices not configured') };
+    return { success: false, error: new Error('Stripe payment link not configured') };
   } catch (error) {
     console.error('Error redirecting to checkout:', error);
     return { success: false, error };

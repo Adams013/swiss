@@ -9,6 +9,7 @@ Based on your Stripe account, the following products are configured:
 
 ### Student Products
 - **Product ID**: `prod_THY4PLgnJZU3eE` - Student Premium Subscription (Monthly)
+  - **Payment Link**: https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00
 - **Product ID**: `prod_THY4DA4lq3TnrZ` - Student Premium Subscription (Quarterly)
 - **Product ID**: `prod_THY3ZpRjvAhJoI` - Student Premium Subscription (Yearly)
 
@@ -16,6 +17,10 @@ Based on your Stripe account, the following products are configured:
 - **Product ID**: `prod_THY8CuZp5Mc98C` - Talent Search Access
 - **Product ID**: `prod_THY7szAmTkSWq3` - Startup Analytics Dashboard
 - **Product ID**: `prod_THY7tDZ9wkMN4Q` - Startup Featured Jobs
+
+### Payment Links
+Stripe Payment Links provide a simple way to accept payments without creating checkout sessions:
+- **Student Monthly**: https://buy.stripe.com/test_6oU9AU5D9dDldqN7iZg7e00
 
 ## Environment Setup
 
