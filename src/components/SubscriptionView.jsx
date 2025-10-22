@@ -3,7 +3,6 @@ import {
   Crown,
   Check,
   X,
-  CreditCard,
   Calendar,
   ExternalLink,
   Sparkles,
@@ -13,31 +12,26 @@ import {
   BarChart3,
   Zap,
   Loader,
-  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react';
 import {
   getUserSubscription,
   getSubscriptionPlans,
   formatPrice,
-  createCustomerPortalSession,
-  redirectToCheckout,
   calculateSavings,
+  createCustomerPortalSession,
 } from '../services/stripeService';
 import TestModeBanner from './TestModeBanner';
 
 /**
  * SubscriptionView Component
- * Shows subscription status or upgrade options in profile settings
+ * Simplified version that directly redirects to Stripe checkout
  */
 const SubscriptionView = ({ user, translate }) => {
   const [subscription, setSubscription] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [view, setView] = useState('overview'); // 'overview' or 'manage'
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [planToSubscribe, setPlanToSubscribe] = useState(null);
+  const [redirecting, setRedirecting] = useState(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -69,33 +63,25 @@ const SubscriptionView = ({ user, translate }) => {
       return;
     }
 
-    // Show confirmation dialog
-    setPlanToSubscribe(plan);
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSubscription = async () => {
-    if (!planToSubscribe) return;
-
-    setIsProcessing(true);
-    setSelectedPlan(planToSubscribe.id);
-    setShowConfirmDialog(false);
-
-    try {
-      await redirectToCheckout(user.id, planToSubscribe.id, user.email);
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert(translate('subscription.error', 'Failed to start checkout. Please try again.'));
+    // Directly redirect to Stripe checkout
+    setRedirecting(plan.id);
+    
+    // Use the payment link if available
+    if (plan.stripe_payment_link) {
+      // Small delay to show the notification before redirecting
+      setTimeout(() => {
+        window.location.href = plan.stripe_payment_link;
+      }, 800);
+    } else {
+      // Fallback: show alert if no payment link configured
+      alert(
+        translate(
+          'subscription.noPaymentLink',
+          'Payment link not configured for this plan. Please contact support.'
+        )
+      );
+      setRedirecting(null);
     }
-
-    setIsProcessing(false);
-    setSelectedPlan(null);
-    setPlanToSubscribe(null);
-  };
-
-  const handleCancelSubscription = () => {
-    setShowConfirmDialog(false);
-    setPlanToSubscribe(null);
   };
 
   const handleManageBilling = async () => {
@@ -139,9 +125,24 @@ const SubscriptionView = ({ user, translate }) => {
     );
   }
 
-  // If user has a subscription, show current subscription info at the top
   return (
     <div className="ssc__subscription-view">
+      {/* Redirecting Notification */}
+      {redirecting && (
+        <div className="ssc__subscription-redirect-notification">
+          <div className="ssc__subscription-redirect-notification__content">
+            <div className="ssc__subscription-redirect-notification__spinner">
+              <Loader size={20} className="ssc__spinner-icon" />
+            </div>
+            <div className="ssc__subscription-redirect-notification__text">
+              <strong>{translate('subscription.redirecting.title', 'Redirecting to Stripe...')}</strong>
+              <p>{translate('subscription.redirecting.message', 'You will be securely redirected to complete your payment')}</p>
+            </div>
+            <Sparkles size={24} color="#f59e0b" />
+          </div>
+        </div>
+      )}
+
       {/* Test Mode Banner */}
       <TestModeBanner translate={translate} />
 
@@ -213,7 +214,7 @@ const SubscriptionView = ({ user, translate }) => {
         </div>
       </div>
 
-      {/* Pricing Plans - Always Visible */}
+      {/* Pricing Plans */}
       <div className="ssc__subscription-plans-grid">
         <h3 className="ssc__subscription-section-title">
           {translate('subscription.choosePlan', 'Choose Your Plan')}
@@ -230,6 +231,7 @@ const SubscriptionView = ({ user, translate }) => {
               const savings = getSavingsPercentage(plan);
               const recommended = isPlanRecommended(plan);
               const current = isCurrentPlan(plan);
+              const isRedirecting = redirecting === plan.id;
 
               return (
                 <div
@@ -239,7 +241,7 @@ const SubscriptionView = ({ user, translate }) => {
                   } ${current ? 'ssc__subscription-plan-card--current' : ''}`}
                 >
                   {/* Recommended Badge */}
-                  {recommended && (
+                  {recommended && !current && (
                     <div className="ssc__subscription-plan-card__badge">
                       <Zap size={14} />
                       {translate('subscription.bestValue', 'Best Value')}
@@ -317,26 +319,30 @@ const SubscriptionView = ({ user, translate }) => {
                   <button
                     type="button"
                     className={`ssc__btn ${
-                      recommended
+                      recommended && !current
                         ? 'ssc__btn--primary'
                         : 'ssc__btn--secondary'
                     } ssc__subscription-plan-card__cta`}
                     onClick={() => handleSelectPlan(plan)}
-                    disabled={isProcessing || current}
+                    disabled={isRedirecting || current}
                   >
-                    {isProcessing && selectedPlan === plan.id ? (
+                    {isRedirecting ? (
                       <>
                         <Loader size={16} className="ssc__spinner-icon" />
-                        {translate('subscription.processing', 'Processing...')}
+                        {translate('subscription.redirecting', 'Redirecting to Stripe...')}
                       </>
                     ) : current ? (
-                      translate('subscription.currentPlan', 'Current Plan')
+                      <>
+                        <Check size={16} />
+                        {translate('subscription.currentPlan', 'Current Plan')}
+                      </>
                     ) : (
                       <>
                         <Crown size={16} />
                         {subscription 
                           ? translate('subscription.changePlan', 'Switch to This Plan')
                           : translate('subscription.upgrade', 'Upgrade Now')}
+                        <ArrowRight size={16} />
                       </>
                     )}
                   </button>
@@ -361,88 +367,18 @@ const SubscriptionView = ({ user, translate }) => {
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && planToSubscribe && (
-        <div className="ssc__subscription-confirm-overlay" onClick={handleCancelSubscription}>
-          <div className="ssc__subscription-confirm-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="ssc__subscription-confirm-header">
-              <Crown size={32} color="#f59e0b" />
-              <h3>{translate('subscription.confirm.title', 'Confirm Subscription')}</h3>
-            </div>
-
-            <div className="ssc__subscription-confirm-body">
-              <p className="ssc__subscription-confirm-question">
-                {translate(
-                  'subscription.confirm.question',
-                  'You are about to subscribe to:'
-                )}
-              </p>
-
-              <div className="ssc__subscription-confirm-plan">
-                <h4>{planToSubscribe.name}</h4>
-                <div className="ssc__subscription-confirm-price">
-                  <span className="ssc__subscription-confirm-amount">
-                    {formatPrice(planToSubscribe.price_cents / planToSubscribe.billing_interval, planToSubscribe.currency)}
-                  </span>
-                  <span className="ssc__subscription-confirm-period">
-                    /{translate('subscription.month', 'month')}
-                  </span>
-                </div>
-                {planToSubscribe.billing_interval > 1 && (
-                  <p className="ssc__subscription-confirm-billing">
-                    {translate('subscription.billedAs', 'Billed as')}{' '}
-                    {formatPrice(planToSubscribe.price_cents, planToSubscribe.currency)}{' '}
-                    {translate('subscription.every', 'every')}{' '}
-                    {planToSubscribe.billing_interval}{' '}
-                    {translate('subscription.months', 'months')}
-                  </p>
-                )}
-              </div>
-
-              <div className="ssc__subscription-confirm-info">
-                <CheckCircle2 size={16} color="#10b981" />
-                <p>
-                  {translate(
-                    'subscription.confirm.redirect',
-                    'You will be redirected to Stripe to complete your payment securely.'
-                  )}
-                </p>
-              </div>
-
-              <div className="ssc__subscription-confirm-info">
-                <CheckCircle2 size={16} color="#10b981" />
-                <p>
-                  {translate(
-                    'subscription.confirm.secure',
-                    'Your payment information is processed securely by Stripe.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="ssc__subscription-confirm-actions">
-              <button
-                type="button"
-                className="ssc__btn ssc__btn--secondary"
-                onClick={handleCancelSubscription}
-              >
-                {translate('subscription.confirm.cancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                className="ssc__btn ssc__btn--primary"
-                onClick={handleConfirmSubscription}
-              >
-                <CreditCard size={16} />
-                {translate('subscription.confirm.proceed', 'Proceed to Payment')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Secure Payment Info */}
+      <div className="ssc__subscription-secure-info">
+        <Sparkles size={20} color="#3b82f6" />
+        <p>
+          {translate(
+            'subscription.secure.info',
+            'Secure payment powered by Stripe. Your payment information is encrypted and never stored on our servers.'
+          )}
+        </p>
+      </div>
     </div>
   );
 };
 
 export default SubscriptionView;
-

@@ -98,6 +98,7 @@ const getMockPlans = (userType = null) => {
       billing_interval: 3,
       stripe_price_id: 'price_student_quarterly',
       stripe_product_id: 'prod_THY4DA4lq3TnrZ',
+      stripe_payment_link: 'https://buy.stripe.com/test_6oU9AU5D9dDldqN7ss',
       is_active: true,
       sort_order: 2,
       features: {
@@ -120,6 +121,7 @@ const getMockPlans = (userType = null) => {
       billing_interval: 12,
       stripe_price_id: 'price_student_yearly',
       stripe_product_id: 'prod_THY3ZpRjvAhJoI',
+      stripe_payment_link: 'https://buy.stripe.com/test_6oU9AU5D9dDldqN7st',
       is_active: true,
       sort_order: 3,
       features: {
