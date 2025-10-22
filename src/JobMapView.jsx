@@ -2,8 +2,8 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import SwitzerlandMap, {
   resolveCityKeyForJob,
   resolveCityKeyForEvent,
-  SWISS_CITIES,
 } from './SwitzerlandMap';
+import { useSwissCities } from './hooks/useSwissCities';
 import CityJobPanel from './CityJobPanel';
 import CityEventPanel from './CityEventPanel';
 
@@ -15,6 +15,9 @@ const JobMapView = ({
   focusJobId = null,
   onFocusHandled,
 }) => {
+  // Load cities dynamically
+  const { citiesByKey, cityLookup } = useSwissCities();
+
   const [mapLayer, setMapLayer] = useState('jobs');
   const [selectedJobCity, setSelectedJobCity] = useState(null);
   const [selectedEventCity, setSelectedEventCity] = useState(null);
@@ -32,12 +35,12 @@ const JobMapView = ({
   );
 
   const jobsByCity = useMemo(() => {
-    if (!showJobs) {
+    if (!showJobs || !cityLookup) {
       return {};
     }
     const grouped = {};
     jobs.forEach((job) => {
-      const cityKey = resolveCityKeyForJob(job);
+      const cityKey = resolveCityKeyForJob(job, cityLookup);
       if (!cityKey) {
         return;
       }
@@ -47,15 +50,15 @@ const JobMapView = ({
       grouped[cityKey].push(job);
     });
     return grouped;
-  }, [jobs, showJobs]);
+  }, [jobs, showJobs, cityLookup]);
 
   const eventsByCity = useMemo(() => {
-    if (!showEvents) {
+    if (!showEvents || !cityLookup) {
       return {};
     }
     const grouped = {};
     events.forEach((event) => {
-      const cityKey = resolveCityKeyForEvent(event);
+      const cityKey = resolveCityKeyForEvent(event, cityLookup);
       if (!cityKey) {
         return;
       }
@@ -65,7 +68,7 @@ const JobMapView = ({
       grouped[cityKey].push(event);
     });
     return grouped;
-  }, [events, showEvents]);
+  }, [events, showEvents, cityLookup]);
 
   const closePanel = useCallback(() => {
     setActivePanel(null);
@@ -228,18 +231,18 @@ const JobMapView = ({
   }, [activePanel, closePanel, mapLayer]);
 
   const selectedJobCityLabel = useMemo(() => {
-    if (!selectedJobCity) {
+    if (!selectedJobCity || !citiesByKey) {
       return '';
     }
-    return SWISS_CITIES[selectedJobCity]?.name || selectedJobCity;
-  }, [selectedJobCity]);
+    return citiesByKey[selectedJobCity]?.name || selectedJobCity;
+  }, [selectedJobCity, citiesByKey]);
 
   const selectedEventCityLabel = useMemo(() => {
-    if (!selectedEventCity) {
+    if (!selectedEventCity || !citiesByKey) {
       return '';
     }
-    return SWISS_CITIES[selectedEventCity]?.name || selectedEventCity;
-  }, [selectedEventCity]);
+    return citiesByKey[selectedEventCity]?.name || selectedEventCity;
+  }, [selectedEventCity, citiesByKey]);
 
   const mapTitle = useMemo(() => {
     if (mapLayer === 'events') {

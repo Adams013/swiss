@@ -224,10 +224,6 @@ jest.mock('./SwitzerlandMap', () => {
   return {
     __esModule: true,
     default: MockMap,
-    SWISS_CITIES: {
-      Zurich: { name: 'Zurich' },
-      Bern: { name: 'Bern' },
-    },
     resolveCityKeyForJob: (job) => job.cityKey,
     resolveCityKeyForEvent: (event) => event.cityKey,
   };
