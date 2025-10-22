@@ -669,6 +669,27 @@
   box-shadow: 0 30px 60px rgba(2, 6, 23, 0.7);
 }
 
+.ssc--dark .ssc__subscription-redirect-notification__content {
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.9) 0%, rgba(30, 41, 59, 0.88) 100%);
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow:
+    0 22px 44px rgba(15, 23, 42, 0.6),
+    0 0 0 1px rgba(251, 191, 36, 0.2) inset;
+}
+
+.ssc--dark .ssc__subscription-redirect-notification__spinner {
+  background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+  box-shadow: 0 6px 16px rgba(250, 204, 21, 0.45);
+}
+
+.ssc--dark .ssc__subscription-redirect-notification__text strong {
+  color: #fef3c7;
+}
+
+.ssc--dark .ssc__subscription-redirect-notification__text p {
+  color: #fde68a;
+}
+
 .ssc--dark .ssc__subscription-plan-switcher__button {
   border-color: rgba(148, 163, 184, 0.3);
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.92));
@@ -695,6 +716,11 @@
 .ssc--dark .ssc__subscription-benefits-showcase {
   border-color: rgba(96, 165, 250, 0.28);
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.ssc--dark .ssc__subscription-benefits-showcase__badge {
+  background: rgba(96, 165, 250, 0.2);
+  color: #bfdbfe;
 }
 
 .ssc--dark .ssc__subscription-benefit-card {
@@ -727,6 +753,16 @@
   color: #cbd5f5;
 }
 
+.ssc--dark .ssc__subscription-plan-card__badge {
+  background: rgba(96, 165, 250, 0.22);
+  color: #bfdbfe;
+}
+
+.ssc--dark .ssc__subscription-plan-card__badge.is-current {
+  background: rgba(74, 222, 128, 0.24);
+  color: #bbf7d0;
+}
+
 .ssc--dark .ssc__subscription-guarantee {
   background: rgba(16, 185, 129, 0.18);
   color: #bbf7d0;
@@ -745,6 +781,15 @@
   border-color: rgba(96, 165, 250, 0.28);
 }
 
+.ssc--dark .ssc__subscription-benefits-hero__eyebrow {
+  background: rgba(96, 165, 250, 0.2);
+  color: #bfdbfe;
+}
+
+.ssc--dark .ssc__subscription-benefits-hero__cta span {
+  color: #cbd5f5;
+}
+
 .ssc--dark .ssc__subscription-benefits-card {
   background: rgba(15, 23, 42, 0.9);
   color: #e2e8f0;
@@ -752,6 +797,14 @@
 
 .ssc--dark .ssc__subscription-benefits-card p {
   color: #cbd5f5;
+}
+
+.ssc--dark .ssc__subscription-card__price span {
+  color: #cbd5f5;
+}
+
+.ssc--dark .ssc__subscription-card__manage .ssc__btn--link {
+  color: #bfdbfe;
 }
 
 .ssc--dark .ssc__subscription-card {

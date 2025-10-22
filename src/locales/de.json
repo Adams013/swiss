@@ -883,6 +883,52 @@
     "viewDetails": "Details ansehen",
     "posterAlt": "Veranstaltungsposter für {{title}}"
   },
+  "services": {
+    "loginRequired": "Bitte melden Sie sich an, um Services zu kaufen",
+    "error": "Zahlung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+    "title": "Startup-Services",
+    "subtitle": "Leistungsstarke Tools, um die besten Talente zu finden und zu gewinnen",
+    "perPost": "pro Inserat",
+    "month": "Monat",
+    "processing": "Wird verarbeitet...",
+    "purchase": "Jetzt kaufen",
+    "subscribe": "Jetzt abonnieren",
+    "infoTitle": "So funktioniert es",
+    "step1": {
+      "title": "Service auswählen",
+      "desc": "Wählen Sie den Service, der am besten zu Ihrem Recruiting-Bedarf passt"
+    },
+    "step2": {
+      "title": "Zahlung abschließen",
+      "desc": "Bezahlen Sie sicher über Stripe mit Ihrer bevorzugten Zahlungsmethode"
+    },
+    "step3": {
+      "title": "Loslegen",
+      "desc": "Nutzen Sie Ihren Service sofort und finden Sie Talente"
+    },
+    "footer": "Alle Zahlungen sind sicher und werden von Stripe abgewickelt. Brauchen Sie Hilfe? Kontaktieren Sie unser Support-Team.",
+    "analytics": {
+      "feature1": "Verfolgen Sie Profilaufrufe Ihrer Stellenanzeigen",
+      "feature2": "Überwachen Sie Klicks und Engagement-Kennzahlen",
+      "feature3": "Sehen Sie, wie oft Ihre Jobs geteilt werden",
+      "feature4": "Identifizieren Sie interessierte Kandidat:innen",
+      "feature5": "Leistungskennzahlen und Trends einsehen"
+    },
+    "talent": {
+      "feature1": "Erweiterte Suchfilter",
+      "feature2": "Zugriff auf detaillierte Studierendenprofile",
+      "feature3": "Finden Sie die besten Matches für Ihre Positionen",
+      "feature4": "Sehen Sie Erfahrung und Skills der Studierenden",
+      "feature5": "Priorisierter Zugang zu Top-Kandidat:innen"
+    },
+    "featured": {
+      "feature1": "Hervorgehobene Platzierung im Hauptmenü",
+      "feature2": "Mehr Sichtbarkeit und Reichweite",
+      "feature3": "Heben Sie sich von anderen Anzeigen ab",
+      "feature4": "Gewinnen Sie mehr qualifizierte Bewerber:innen",
+      "feature5": "Steigern Sie Ihren Recruiting-Erfolg"
+    }
+  },
   "map": {
     "panel": {
       "eventsCount": "{{count}} Veranstaltungen"
@@ -912,6 +958,11 @@
     },
     "planSwitcher": {
       "benefits": "Vorteilsübersicht"
+    },
+    "redirecting": {
+      "title": "Weiterleitung zu Stripe...",
+      "message": "Sie werden sicher weitergeleitet, um Ihre Zahlung abzuschließen",
+      "short": "Weiterleitung..."
     },
     "displayPrice": {
       "monthly": "CHF 7.90",

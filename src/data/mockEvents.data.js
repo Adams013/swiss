@@ -11,6 +11,20 @@ export const mockEvents = [
     event_date: '2024-09-12',
     event_time: '18:30',
     poster_url: null,
+    translations: {
+      fr: {
+        title: 'Rencontre HealthTech à Zurich',
+        description:
+          'Rencontrez des innovateurs de la santé et des fondateurs de startups lors d\'une soirée de démonstrations et de réseautage centrée sur le patient.',
+        location: 'Impact Hub Zurich - Colab',
+      },
+      de: {
+        title: 'HealthTech Meetup Zürich',
+        description:
+          'Treffen Sie Gesundheitsinnovator:innen und Start-up-Gründer:innen zu Demos und Networking rund um patientenzentrierte Versorgung.',
+        location: 'Impact Hub Zurich - Colab',
+      },
+    },
   },
   {
     id: 'mock-event-2',
@@ -24,6 +38,20 @@ export const mockEvents = [
     event_date: '2024-09-19',
     event_time: '17:45',
     poster_url: null,
+    translations: {
+      fr: {
+        title: 'Table ronde Climate Tech à Genève',
+        description:
+          'Fondateurs, chercheurs et investisseurs explorent des projets de résilience climatique et des pistes de collaboration.',
+        location: 'Campus Biotech - Salle de conférence',
+      },
+      de: {
+        title: 'Climate-Tech-Roundtable Genf',
+        description:
+          'Gründer:innen, Forschende und Investor:innen diskutieren Klimaschutz-Projekte und Kooperationschancen.',
+        location: 'Campus Biotech Konferenzsaal',
+      },
+    },
   },
   {
     id: 'mock-event-3',
@@ -37,6 +65,20 @@ export const mockEvents = [
     event_date: '2024-09-26',
     event_time: '16:00',
     poster_url: null,
+    translations: {
+      fr: {
+        title: "Visite du laboratoire IA pour l'industrie à Lausanne",
+        description:
+          "Découvrez comment les startups de robotique transforment l'industrie suisse lors d'une visite guidée suivie d'un échange avec les fondateurs.",
+        location: 'Parc d\'innovation EPFL - Bâtiment C',
+      },
+      de: {
+        title: 'Laborführung: KI in der Produktion Lausanne',
+        description:
+          'Erleben Sie, wie Robotik-Start-ups die Schweizer Industrie verändern – Führung mit anschliessender Fragerunde mit Gründer:innen.',
+        location: 'EPFL Innovation Park – Gebäude C',
+      },
+    },
   },
   {
     id: 'mock-event-4',
@@ -50,5 +92,19 @@ export const mockEvents = [
     event_date: '2024-10-03',
     event_time: '08:30',
     poster_url: null,
+    translations: {
+      fr: {
+        title: 'Petit-déjeuner GovTech à Berne',
+        description:
+          'Échangez avec des responsables municipaux et des startups sur les services publics numériques autour d\'un café et d\'ateliers pratiques.',
+        location: 'Stadthaus Bern - Forum',
+      },
+      de: {
+        title: 'GovTech Breakfast Briefing Bern',
+        description:
+          'Diskutieren Sie digitale öffentliche Services mit Gemeindevertreter:innen und Start-ups bei Kaffee und fokussierten Breakout-Sessions.',
+        location: 'Stadthaus Bern – Forum',
+      },
+    },
   },
 ];

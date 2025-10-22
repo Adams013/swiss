@@ -59,13 +59,13 @@
 }
 
 /* Dark mode */
-.dark .ssc__test-mode-banner {
+.ssc--dark .ssc__test-mode-banner {
   background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
   border-color: #f59e0b;
 }
 
-.dark .ssc__test-mode-banner__content strong,
-.dark .ssc__test-mode-banner__content p {
+.ssc--dark .ssc__test-mode-banner__content strong,
+.ssc--dark .ssc__test-mode-banner__content p {
   color: #fef3c7;
 }
 
