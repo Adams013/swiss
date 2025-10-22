@@ -236,27 +236,36 @@ const SubscriptionView = ({ user, translate }) => {
     [translate]
   );
 
+  const formatPricePerMonth = useCallback(
+    (amount, currency) => {
+      const price = formatPrice(amount, currency);
+      const monthLabel = translate('subscription.periodLabel', 'Month');
+      return `${price}/${monthLabel}`;
+    },
+    [translate]
+  );
+
   const resolveDisplayPrice = useCallback(
     (interval) => {
       const plansForInterval = planGrouping.grouped.get(interval);
       if (plansForInterval && plansForInterval.length > 0) {
         const samplePlan = plansForInterval[0];
         const monthlyPrice = samplePlan.price_cents / samplePlan.billing_interval;
-        return formatPrice(monthlyPrice, samplePlan.currency);
+        return formatPricePerMonth(monthlyPrice, samplePlan.currency);
       }
 
       switch (interval) {
         case 1:
-          return translate('subscription.displayPrice.monthly', 'CHF 7.90');
+          return translate('subscription.displayPrice.monthly', 'CHF 7.90/Month');
         case 3:
-          return translate('subscription.displayPrice.quarterly', 'CHF 20.00');
+          return translate('subscription.displayPrice.quarterly', 'CHF 20.00/Month');
         case 12:
-          return translate('subscription.displayPrice.yearly', 'CHF 75.00');
+          return translate('subscription.displayPrice.yearly', 'CHF 75.00/Month');
         default:
-          return translate('subscription.displayPrice.generic', 'CHF {{amount}}', { amount: interval });
+          return translate('subscription.displayPrice.generic', 'CHF {{amount}}/Month', { amount: interval });
       }
     },
-    [planGrouping, translate]
+    [planGrouping, translate, formatPricePerMonth]
   );
 
   const getSavingsPercentage = (plan) => {
@@ -488,6 +497,7 @@ const SubscriptionView = ({ user, translate }) => {
                   {parsedPlanViewInterval && activePlans.length > 0 ? (
                     activePlans.map((plan) => {
                       const monthlyPrice = plan.price_cents / plan.billing_interval;
+                      const monthlyDisplay = formatPricePerMonth(monthlyPrice, plan.currency);
                       const savings = getSavingsPercentage(plan);
                       const recommended = isPlanRecommended(plan);
                       const current = isCurrentPlan(plan);
@@ -507,12 +517,7 @@ const SubscriptionView = ({ user, translate }) => {
                           </header>
 
                           <div className="ssc__subscription-plan-card__pricing">
-                            <span className="ssc__subscription-plan-card__amount">
-                              {formatPrice(monthlyPrice, plan.currency)}
-                            </span>
-                            <span className="ssc__subscription-plan-card__period">
-                              /{translate('subscription.month', 'month')}
-                            </span>
+                            <span className="ssc__subscription-plan-card__amount">{monthlyDisplay}</span>
                           </div>
 
                           {plan.billing_interval > 1 && (
@@ -547,40 +552,42 @@ const SubscriptionView = ({ user, translate }) => {
                             </span>
                           )}
 
-                          <button
-                            type="button"
-                            className={`ssc__btn ssc__btn--primary ${isRedirecting ? 'is-loading' : ''}`}
-                            onClick={() => handleSelectPlan(plan)}
-                            disabled={isRedirecting}
-                          >
-                            {isRedirecting ? (
-                              <>
-                                <Loader size={16} className="ssc__spinner-icon" />
-                                {translate('subscription.redirecting.short', 'Redirecting...')}
-                              </>
-                            ) : current ? (
-                              <>
-                                <Check size={16} />
-                                {translate('subscription.currentPlan', 'Current Plan')}
-                              </>
-                            ) : (
-                              <>
-                                <ArrowRight size={16} />
-                                {translate('subscription.selectPlan', 'Select Plan')}
-                              </>
-                            )}
-                          </button>
-
-                          {!current && (
+                          <div className="ssc__subscription-plan-card__actions">
                             <button
                               type="button"
-                              className="ssc__btn ssc__btn--link"
+                              className={`ssc__btn ssc__btn--primary ${isRedirecting ? 'is-loading' : ''}`}
                               onClick={() => handleSelectPlan(plan)}
+                              disabled={isRedirecting}
                             >
-                              <CreditCard size={16} />
-                              {translate('subscription.payWithStripe', 'Checkout with Stripe')}
+                              {isRedirecting ? (
+                                <>
+                                  <Loader size={16} className="ssc__spinner-icon" />
+                                  {translate('subscription.redirecting.short', 'Redirecting...')}
+                                </>
+                              ) : current ? (
+                                <>
+                                  <Check size={16} />
+                                  {translate('subscription.currentPlan', 'Current Plan')}
+                                </>
+                              ) : (
+                                <>
+                                  <ArrowRight size={16} />
+                                  {translate('subscription.selectPlan', 'Select Plan')}
+                                </>
+                              )}
                             </button>
-                          )}
+
+                            {!current && (
+                              <button
+                                type="button"
+                                className="ssc__btn ssc__btn--link"
+                                onClick={() => handleSelectPlan(plan)}
+                              >
+                                <CreditCard size={16} />
+                                {translate('subscription.payWithStripe', 'Checkout with Stripe')}
+                              </button>
+                            )}
+                          </div>
                         </article>
                       );
                     })

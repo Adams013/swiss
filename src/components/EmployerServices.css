@@ -69,30 +69,26 @@
 /* Service Price */
 .ssc__service-card__price {
   display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
   margin-bottom: 1.5rem;
-  padding: 1rem 0;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.35), rgba(191, 219, 254, 0.35));
 }
 
-.ssc__service-card__amount {
-  font-size: 2.5rem;
+.ssc__service-card__price-value {
+  font-size: 1.85rem;
   font-weight: 700;
   color: #111827;
+  white-space: nowrap;
 }
 
-.ssc__service-card__currency {
-  font-size: 1.25rem;
-  font-weight: 600;
+.ssc__service-card__price-caption {
+  font-size: 0.85rem;
   color: #6b7280;
-}
-
-.ssc__service-card__interval {
-  font-size: 1rem;
-  color: #9ca3af;
-  margin-left: 0.25rem;
 }
 
 /* Service Features */
@@ -119,15 +115,38 @@
 }
 
 /* Service CTA */
+.ssc__service-card__actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .ssc__service-card__cta {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
+  padding: 0.9rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.24);
+}
+
+.ssc__service-card__cta:hover,
+.ssc__service-card__cta:focus-visible {
+  box-shadow: 0 22px 40px rgba(37, 99, 235, 0.3);
+}
+
+.ssc__service-card__link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  color: #4b5563;
 }
 
 /* Info Section */
@@ -230,9 +249,14 @@
   color: rgba(var(--ssc-ink-rgb), 0.78);
 }
 
-.ssc--dark .ssc__service-card__currency,
-.ssc--dark .ssc__service-card__interval {
-  color: rgba(var(--ssc-ink-rgb), 0.7);
+.ssc--dark .ssc__service-card__price {
+  border-color: rgba(148, 163, 184, 0.32);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(79, 70, 229, 0.24));
+}
+
+.ssc--dark .ssc__service-card__price-value,
+.ssc--dark .ssc__service-card__price-caption {
+  color: rgba(var(--ssc-ink-rgb), 0.85);
 }
 
 .ssc--dark .ssc__service-card__features li {
@@ -273,8 +297,8 @@
     grid-template-columns: 1fr;
   }
 
-  .ssc__service-card__amount {
-    font-size: 2rem;
+  .ssc__service-card__price-value {
+    font-size: 1.65rem;
   }
 }
 
