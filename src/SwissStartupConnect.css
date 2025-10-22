@@ -313,15 +313,16 @@
 
 .ssc__theme-toggle {
   position: relative;
-  width: 56px;
-  height: 28px;
+  width: 60px;
+  height: 30px;
   border-radius: 999px;
   border: 1px solid var(--ssc-border);
   background: var(--ssc-surface-soft);
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.45rem;
+  padding: 0.25rem 0.35rem;
+  gap: 0.35rem;
   cursor: pointer;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   flex-shrink: 0;
@@ -340,10 +341,10 @@
 
 .ssc__theme-toggle-thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 22px;
-  height: 22px;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--ssc-primary), var(--ssc-accent));
   box-shadow: 0 8px 18px rgba(var(--ssc-primary-rgb), 0.2);
@@ -356,8 +357,12 @@
 }
 
 .ssc__theme-toggle-icon {
-  width: 16px;
-  height: 16px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   color: var(--ssc-muted);
   transition: color 0.3s ease, opacity 0.3s ease;
   z-index: 1;
@@ -4442,6 +4447,45 @@
   width: 100%;
 }
 
+.ssc__map .leaflet-control-zoom {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
+  border: none;
+}
+
+.ssc__map .leaflet-control-zoom a {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2937;
+  font-weight: 600;
+  border: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ssc__map .leaflet-control-zoom a:hover,
+.ssc__map .leaflet-control-zoom a:focus {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+.ssc--dark .ssc__map .leaflet-control-zoom {
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.45);
+}
+
+.ssc--dark .ssc__map .leaflet-control-zoom a {
+  background: rgba(30, 41, 59, 0.92);
+  color: #e2e8f0;
+}
+
+.ssc--dark .ssc__map .leaflet-control-zoom a:hover,
+.ssc--dark .ssc__map .leaflet-control-zoom a:focus {
+  background: rgba(59, 130, 246, 0.28);
+  color: #bfdbfe;
+}
+
 .ssc__map-container .leaflet-popup-content-wrapper {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -4793,6 +4837,34 @@
   line-height: 1.65;
 }
 
+.ssc__map-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ssc__map-event-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ssc-primary);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(var(--ssc-primary-rgb), 0.12);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ssc__map-event-link:hover,
+.ssc__map-event-link:focus-visible {
+  color: var(--ssc-on-primary);
+  background: var(--ssc-primary);
+  outline: none;
+}
+
 @media (max-width: 1280px) {
   .ssc__map-side-panel {
     flex: 0 0 320px;
@@ -5094,6 +5166,17 @@
   box-shadow: 0 26px 54px rgba(129, 140, 248, 0.38);
 }
 
+.ssc--dark .ssc__map-event-link {
+  color: rgba(196, 181, 253, 0.92);
+  background: rgba(196, 181, 253, 0.18);
+}
+
+.ssc--dark .ssc__map-event-link:hover,
+.ssc--dark .ssc__map-event-link:focus-visible {
+  color: #0f172a;
+  background: rgba(196, 181, 253, 0.92);
+}
+
 .ssc--dark .ssc__map-event-title {
   color: #ede9fe;
 }
@@ -5298,6 +5381,35 @@
   margin: 0;
 }
 
+.ssc__event-actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.ssc__event-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(var(--ssc-primary-rgb), 0.12);
+  color: var(--ssc-primary);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ssc__event-link:hover,
+.ssc__event-link:focus-visible {
+  background: var(--ssc-primary);
+  color: var(--ssc-on-primary);
+  outline: none;
+}
+
 .ssc__form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -5337,6 +5449,17 @@
 
 .ssc--dark .ssc__event-description {
   color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__event-link {
+  background: rgba(var(--ssc-primary-rgb), 0.16);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.ssc--dark .ssc__event-link:hover,
+.ssc--dark .ssc__event-link:focus-visible {
+  background: var(--ssc-primary);
+  color: var(--ssc-on-primary);
 }
 
 .ssc--dark .ssc__form-help {

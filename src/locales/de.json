@@ -866,5 +866,78 @@
         "Bleiben Sie bis zu drei Jahren Erfahrung bei einer Seite; Details gehören ins Gespräch."
       ]
     }
+  },
+  "calendar": {
+    "addToCalendar": "Zum Kalender hinzufügen",
+    "providers": {
+      "google": "Google Kalender",
+      "apple": "Apple Kalender",
+      "outlook": "Outlook Kalender",
+      "office365": "Office 365 Kalender",
+      "yahoo": "Yahoo Kalender",
+      "ical": "iCal-Datei herunterladen"
+    }
+  },
+  "events": {
+    "loading": "Veranstaltungen werden geladen...",
+    "viewDetails": "Details ansehen",
+    "posterAlt": "Veranstaltungsposter für {{title}}"
+  },
+  "map": {
+    "panel": {
+      "eventsCount": "{{count}} Veranstaltungen"
+    },
+    "popup": {
+      "jobsCount": "{{count}} Jobs",
+      "eventsCount": "{{count}} Veranstaltungen",
+      "moreEvents": "+{{count}} weitere"
+    }
+  },
+  "subscription": {
+    "overview": {
+      "badge": "Premium-Vorteile",
+      "description": "Wählen Sie die Abrechnungsoption, die am besten zu Ihnen passt, und geniessen Sie alle Premium-Vorteile."
+    },
+    "tabs": {
+      "subscribe": "Abonnieren",
+      "benefits": "Vorteile",
+      "manage": "Verwalten",
+      "overview": "Überblick",
+      "billing": "Abrechnung",
+      "profileViews": "Profilaufrufe",
+      "searches": "Suchanfragen"
+    },
+    "planTabs": {
+      "label": "Abrechnungsoption auswählen"
+    },
+    "planSwitcher": {
+      "benefits": "Vorteilsübersicht"
+    },
+    "displayPrice": {
+      "monthly": "CHF 7.90",
+      "quarterly": "CHF 20.00",
+      "yearly": "CHF 75.00",
+      "generic": "CHF {{amount}}"
+    },
+    "planSubtitle": "Alle Premium-Vorteile mit flexiblem Abonnement geniessen.",
+    "planAssurance": "Jederzeit kündbar mit 30 Tagen Geld-zurück-Garantie.",
+    "securePayment": {
+      "label": "Sichere Zahlung über Stripe. Ihre Daten bleiben verschlüsselt.",
+      "title": "Sichere Stripe-Zahlungen",
+      "description": "Alle Pläne werden über Stripe verschlüsselt verarbeitet und sind durch unsere 30-Tage-Garantie abgedeckt."
+    },
+    "benefits": {
+      "eyebrow": "Premium-Vorteile",
+      "title": "Alles, was Premium für Sie freischaltet",
+      "lead": "Premium hält Ihr Profil im Rampenlicht, liefert Insights in Echtzeit und beschleunigt Verbindungen zu Start-ups.",
+      "cta": "Plan auswählen",
+      "backed": "Abgesichert durch den sicheren Stripe-Checkout"
+    },
+    "interval": {
+      "monthly": "Monatlich",
+      "quarterly": "Vierteljährlich",
+      "yearly": "Jährlich",
+      "months": "Alle {{count}} Monate"
+    }
   }
 }
