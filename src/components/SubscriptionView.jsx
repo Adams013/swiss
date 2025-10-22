@@ -26,6 +26,7 @@ import {
   createCustomerPortalSession,
 } from '../services/stripeService';
 import TestModeBanner from './TestModeBanner';
+import './Subscription.css';
 
 const PLAN_VIEW_PREFIX = 'interval-';
 
