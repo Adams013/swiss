@@ -7,9 +7,29 @@ export const useThemePreference = () => {
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+      const rootElement = document.documentElement;
+      rootElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+      rootElement.classList.toggle('ssc--dark', isDarkMode);
+
+      if (document.body) {
+        document.body.classList.toggle('ssc--dark', isDarkMode);
+      }
     }
+
     persistThemePreference(theme);
+    return () => {
+      if (typeof document === 'undefined') {
+        return;
+      }
+
+      const rootElement = document.documentElement;
+      rootElement.classList.remove('ssc--dark');
+      rootElement.style.colorScheme = '';
+
+      if (document.body) {
+        document.body.classList.remove('ssc--dark');
+      }
+    };
   }, [isDarkMode, theme]);
 
   const toggleTheme = useCallback(() => {

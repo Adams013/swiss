@@ -25,6 +25,10 @@
   --ssc-applications-shadow: 0 20px 40px rgba(var(--ssc-ink-rgb), 0.08);
   --ssc-applications-border: var(--ssc-border);
   --ssc-applications-row-active-bg: rgba(var(--ssc-primary-rgb), 0.06);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-primary-dark: #f9fafb;
+  --text-secondary-dark: #9ca3af;
 }
 
 .ssc--dark {
@@ -54,6 +58,10 @@
   --ssc-applications-shadow: 0 22px 48px rgba(5, 12, 24, 0.55);
   --ssc-applications-border: rgba(138, 216, 255, 0.22);
   --ssc-applications-row-active-bg: rgba(138, 216, 255, 0.12);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-primary-dark: #f8fafc;
+  --text-secondary-dark: #cbd5f5;
 }
 
 .ssc {
@@ -312,17 +320,19 @@
 }
 
 .ssc__theme-toggle {
+  --ssc-theme-toggle-size: 2.4rem;
+  --ssc-theme-toggle-padding: 0.2rem;
+  --ssc-theme-toggle-thumb: calc(var(--ssc-theme-toggle-size) - (var(--ssc-theme-toggle-padding) * 2));
   position: relative;
-  width: 60px;
-  height: 30px;
+  width: calc(var(--ssc-theme-toggle-size) * 2);
+  height: var(--ssc-theme-toggle-size);
   border-radius: 999px;
   border: 1px solid var(--ssc-border);
   background: var(--ssc-surface-soft);
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: repeat(2, 1fr);
   align-items: center;
-  justify-content: space-between;
-  padding: 0.25rem 0.35rem;
-  gap: 0.35rem;
+  padding: var(--ssc-theme-toggle-padding);
   cursor: pointer;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   flex-shrink: 0;
@@ -341,10 +351,10 @@
 
 .ssc__theme-toggle-thumb {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 24px;
-  height: 24px;
+  top: var(--ssc-theme-toggle-padding);
+  left: var(--ssc-theme-toggle-padding);
+  width: var(--ssc-theme-toggle-thumb);
+  height: var(--ssc-theme-toggle-thumb);
   border-radius: 999px;
   background: linear-gradient(135deg, var(--ssc-primary), var(--ssc-accent));
   box-shadow: 0 8px 18px rgba(var(--ssc-primary-rgb), 0.2);
@@ -353,20 +363,20 @@
 }
 
 .ssc__theme-toggle.is-active .ssc__theme-toggle-thumb {
-  transform: translateX(30px);
+  transform: translateX(calc(100% - (var(--ssc-theme-toggle-padding) * 2) - var(--ssc-theme-toggle-thumb)));
 }
 
 .ssc__theme-toggle-icon {
-  flex: 0 0 24px;
-  display: flex;
+  width: var(--ssc-theme-toggle-thumb);
+  height: var(--ssc-theme-toggle-thumb);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
   color: var(--ssc-muted);
   transition: color 0.3s ease, opacity 0.3s ease;
   z-index: 1;
   pointer-events: none;
+  justify-self: center;
 }
 
 .ssc__theme-toggle-icon--sun {
