@@ -1,0 +1,646 @@
+/* =====================================================
+   Recommended Jobs Styles
+   ===================================================== */
+
+.ssc__recommended-jobs {
+  width: 100%;
+  padding: 2rem 0;
+}
+
+.ssc__recommended-jobs--loading,
+.ssc__recommended-jobs--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.ssc__recommended-jobs--loading {
+  gap: 1rem;
+}
+
+.ssc__recommended-jobs--empty h3 {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.ssc__recommended-jobs--empty p {
+  margin: 0;
+  max-width: 400px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__recommended-jobs__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.ssc__recommended-jobs__header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.ssc__recommended-jobs__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ssc__recommended-job-card {
+  position: relative;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ssc__recommended-job-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  border-color: var(--primary-color, #3b82f6);
+}
+
+.ssc__recommended-job-card__badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ssc__recommended-job-card__title {
+  margin: 0 0 1rem 0;
+  padding-right: 5rem; /* Space for badge */
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__recommended-job-card__company {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ssc__recommended-job-card__location,
+.ssc__recommended-job-card__salary {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+}
+
+.ssc__recommended-job-card__salary {
+  color: var(--success-color, #059669);
+  font-weight: 500;
+}
+
+.ssc__recommended-job-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.ssc__tag {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  background: var(--tag-bg, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ssc__tag--small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+}
+
+.ssc__tag--more {
+  background: var(--primary-light, #dbeafe);
+  color: var(--primary-color, #3b82f6);
+}
+
+.ssc__recommended-job-card__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-color, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.ssc__recommended-job-card__action:hover {
+  background: var(--primary-dark, #2563eb);
+}
+
+.ssc__recommended-jobs__footer {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 12px;
+}
+
+.ssc__recommended-jobs__hint {
+  margin: 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* =====================================================
+   Recommendation Widget (Compact)
+   ===================================================== */
+
+.ssc__recommendation-widget {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.ssc__recommendation-widget h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ssc__recommendation-widget__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ssc__recommendation-widget__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ssc__recommendation-widget__item:hover {
+  background: var(--primary-light, #eff6ff);
+}
+
+.ssc__recommendation-widget__item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssc__recommendation-widget__item-info strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssc__recommendation-widget__item-info span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssc__recommendation-widget__item-score {
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--primary-color, #3b82f6);
+  color: white;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* =====================================================
+   Analytics Dashboard Styles
+   ===================================================== */
+
+.ssc__analytics-dashboard {
+  width: 100%;
+  padding: 2rem 0;
+}
+
+.ssc__analytics-dashboard--loading,
+.ssc__analytics-dashboard--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.ssc__analytics-dashboard--empty h3 {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.ssc__analytics-dashboard--empty p {
+  margin: 0;
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__analytics-dashboard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.ssc__analytics-dashboard__header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.ssc__analytics-dashboard__subtitle {
+  margin: 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+}
+
+.ssc__analytics-time-range select {
+  padding: 0.5rem 1rem;
+}
+
+.ssc__analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ssc__analytics-metric-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease;
+}
+
+.ssc__analytics-metric-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ssc__analytics-metric-card__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.ssc__analytics-metric-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssc__analytics-metric-card__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ssc__analytics-metric-card__value {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+}
+
+.ssc__analytics-metric-card__change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ssc__analytics-metric-card__change--positive {
+  color: var(--success-color, #10b981);
+}
+
+.ssc__analytics-metric-card__change--negative {
+  color: var(--danger-color, #ef4444);
+}
+
+.ssc__analytics-trust-signals {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+}
+
+.ssc__analytics-trust-signals h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ssc__analytics-trust-signals__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ssc__trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ssc__trust-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.ssc__trust-metric strong {
+  color: var(--primary-color, #3b82f6);
+}
+
+.ssc__analytics-jobs-table {
+  margin-bottom: 2rem;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ssc__analytics-jobs-table__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.ssc__analytics-jobs-table__header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ssc__analytics-jobs-table__content {
+  overflow-x: auto;
+}
+
+.ssc__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ssc__table thead {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.ssc__table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary, #6b7280);
+  letter-spacing: 0.05em;
+}
+
+.ssc__table td {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  font-size: 0.875rem;
+}
+
+.ssc__table-row--clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ssc__table-row--clickable:hover {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.ssc__analytics-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__analytics-cvr {
+  font-weight: 600;
+}
+
+.ssc__status-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ssc__status-badge--active {
+  background: var(--success-light, #d1fae5);
+  color: var(--success-color, #059669);
+}
+
+.ssc__analytics-insights {
+  padding: 1.5rem;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+}
+
+.ssc__analytics-insights h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ssc__analytics-insights__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ssc__analytics-insight {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.ssc__analytics-insight--warning {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.ssc__analytics-insight--info {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.ssc__analytics-insight--success {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+.ssc__analytics-insight strong {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ssc__analytics-insight p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   Dark Mode Support
+   ===================================================== */
+
+.dark .ssc__recommended-job-card,
+.dark .ssc__analytics-metric-card,
+.dark .ssc__analytics-trust-signals,
+.dark .ssc__analytics-jobs-table,
+.dark .ssc__analytics-insights,
+.dark .ssc__recommendation-widget {
+  background: var(--card-bg-dark, #1f2937);
+  border-color: var(--border-color-dark, #374151);
+}
+
+.dark .ssc__table thead {
+  background: var(--bg-secondary-dark, #111827);
+}
+
+.dark .ssc__tag {
+  background: var(--tag-bg-dark, #374151);
+}
+
+/* =====================================================
+   Responsive Design
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .ssc__recommended-jobs__grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .ssc__analytics-metrics {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .ssc__recommended-jobs__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ssc__analytics-dashboard__header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ssc__analytics-time-range {
+    width: 100%;
+  }
+
+  .ssc__analytics-time-range select {
+    width: 100%;
+  }
+
+  .ssc__analytics-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .ssc__analytics-jobs-table__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .ssc__table {
+    font-size: 0.75rem;
+  }
+
+  .ssc__table th,
+  .ssc__table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+

@@ -1,0 +1,297 @@
+/* =====================================================
+   Ad Container Styles
+   ===================================================== */
+
+.ssc__ad-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin: 2rem 0;
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.ssc__ad-container:hover {
+  border-color: var(--border-color-hover, #d1d5db);
+}
+
+/* Ad Label */
+.ssc__ad-label {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 1;
+}
+
+/* Dismiss Button */
+.ssc__ad-dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: var(--bg-tertiary, #f3f4f6);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 50%;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 1;
+}
+
+.ssc__ad-dismiss:hover {
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #1f2937);
+  transform: scale(1.1);
+}
+
+/* Ad Content */
+.ssc__ad-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0 0.5rem 0;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+/* Ad Sizes */
+.ssc__ad--banner {
+  max-width: 728px;
+}
+
+.ssc__ad--square {
+  max-width: 300px;
+}
+
+.ssc__ad--sidebar {
+  max-width: 160px;
+}
+
+.ssc__ad--mobile {
+  max-width: 320px;
+}
+
+/* Upgrade Prompt */
+.ssc__ad-upgrade-prompt {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.ssc__ad-upgrade-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: none;
+  border: none;
+  color: var(--primary-color, #3b82f6);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: underline;
+}
+
+.ssc__ad-upgrade-link:hover {
+  color: var(--primary-color-hover, #2563eb);
+  text-decoration: none;
+}
+
+/* Mock Ad (Placeholder) */
+.ssc__ad-mock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+}
+
+.ssc__ad-mock__content {
+  text-align: center;
+}
+
+.ssc__ad-mock__content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ssc__ad-mock__content p {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.ssc__ad-mock__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ssc__ad-mock__cta:hover {
+  background: #f9fafb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* =====================================================
+   Premium Ad-Free Banner
+   ===================================================== */
+
+.ssc__premium-ad-free-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  color: #78350f;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 1rem 0;
+}
+
+/* =====================================================
+   Ad Placements
+   ===================================================== */
+
+/* Between job listings */
+.ssc__jobs-list .ssc__ad-container {
+  margin: 2rem 0;
+}
+
+/* Sidebar placement */
+.ssc__sidebar .ssc__ad-container {
+  position: sticky;
+  top: 1rem;
+  margin: 0 0 2rem 0;
+}
+
+/* Mobile placement */
+@media (max-width: 768px) {
+  .ssc__ad--banner,
+  .ssc__ad--square,
+  .ssc__ad--sidebar {
+    max-width: 100%;
+  }
+
+  .ssc__ad-content {
+    max-width: 100%;
+  }
+
+  .ssc__ad-container {
+    margin: 1rem 0;
+  }
+}
+
+/* =====================================================
+   Dark Mode Support
+   ===================================================== */
+
+.dark .ssc__ad-container {
+  background: var(--bg-secondary-dark, #1f2937);
+  border-color: var(--border-color-dark, #374151);
+}
+
+.dark .ssc__ad-label,
+.dark .ssc__ad-dismiss {
+  background: var(--bg-tertiary-dark, #111827);
+  border-color: var(--border-color-dark, #374151);
+  color: var(--text-secondary-dark, #9ca3af);
+}
+
+.dark .ssc__ad-dismiss:hover {
+  background: var(--bg-secondary-dark, #1f2937);
+  color: var(--text-primary-dark, #f9fafb);
+}
+
+/* =====================================================
+   Responsive Design
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .ssc__ad--sidebar {
+    display: none; /* Hide sidebar ads on tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .ssc__ad-container {
+    padding: 0.75rem;
+  }
+
+  .ssc__ad--banner {
+    /* Use mobile ad size on phones */
+    max-width: 320px;
+  }
+
+  .ssc__ad-content {
+    margin: 1rem 0 0.5rem 0;
+  }
+}
+
+/* =====================================================
+   Print Styles
+   ===================================================== */
+
+@media print {
+  .ssc__ad-container {
+    display: none; /* Never print ads */
+  }
+}
+
+/* =====================================================
+   Accessibility
+   ===================================================== */
+
+.ssc__ad-container:focus-within {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .ssc__ad-container,
+  .ssc__ad-dismiss,
+  .ssc__ad-upgrade-link,
+  .ssc__ad-mock__cta {
+    transition: none;
+  }
+
+  .ssc__ad-mock__cta:hover {
+    transform: none;
+  }
+}
+
