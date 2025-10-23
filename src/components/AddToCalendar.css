@@ -122,6 +122,19 @@
   transition: all 0.2s;
 }
 
+.ssc__add-to-calendar__option.is-loading {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.ssc__add-to-calendar__option.is-success {
+  background: rgba(var(--ssc-success-rgb, 34, 197, 94), 0.12);
+}
+
+.ssc__add-to-calendar__option.is-error {
+  background: rgba(var(--ssc-danger-rgb, 220, 38, 38), 0.08);
+}
+
 .ssc__add-to-calendar__option:hover:not(:disabled) {
   background: var(--bg-secondary, #f9fafb);
 }
@@ -144,6 +157,21 @@
   flex-shrink: 0;
   color: var(--success-color, #10b981);
   animation: checkIn 0.3s ease-out;
+}
+
+.ssc__add-to-calendar__status {
+  margin: 0.5rem 0.75rem 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary, #6b7280);
+}
+
+.ssc__add-to-calendar__status--success {
+  color: var(--success-color, #10b981);
+}
+
+.ssc__add-to-calendar__status--error {
+  color: var(--danger-color, #ef4444);
 }
 
 @keyframes checkIn {

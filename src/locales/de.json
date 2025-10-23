@@ -872,10 +872,14 @@
     "providers": {
       "google": "Google Kalender",
       "apple": "Apple Kalender",
+      "site": "Swiss Startup Connect Kalender",
       "outlook": "Outlook Kalender",
-      "office365": "Office 365 Kalender",
-      "yahoo": "Yahoo Kalender",
       "ical": "iCal-Datei herunterladen"
+    },
+    "siteCalendar": {
+      "success": "Veranstaltung wurde zu deinem Swiss Startup Connect Kalender hinzugefügt.",
+      "authRequired": "Melde dich an, um Veranstaltungen zu deinem Swiss Startup Connect Kalender hinzuzufügen.",
+      "error": "Die Veranstaltung konnte nicht gespeichert werden. Bitte versuche es erneut."
     }
   },
   "events": {

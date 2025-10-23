@@ -1,3 +1,6 @@
+import { supabase } from '../supabaseClient';
+import { createCalendarEvent as createSiteCalendarEvent } from './supabaseCalendar';
+
 /**
  * Calendar Service
  * Add interviews and events to Google Calendar, Apple Calendar, etc.
@@ -400,6 +403,60 @@ export const createCommunityCalendarEvent = (event) => {
   };
 };
 
+export const saveEventToSiteCalendar = async (event) => {
+  if (!event) {
+    return { success: false, code: 'invalid_event' };
+  }
+
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      return {
+        success: false,
+        code: 'auth_error',
+        message: error.message,
+      };
+    }
+
+    const userId = data?.user?.id;
+    if (!userId) {
+      return {
+        success: false,
+        code: 'auth_required',
+      };
+    }
+
+    const payload = {
+      title: event.title,
+      description: event.description || null,
+      location: event.location || null,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      url: event.url || null,
+    };
+
+    const { event: createdEvent, error: createError } = await createSiteCalendarEvent(userId, payload);
+    if (createError) {
+      return {
+        success: false,
+        code: 'save_failed',
+        message: createError,
+      };
+    }
+
+    return {
+      success: true,
+      event: createdEvent,
+    };
+  } catch (exception) {
+    return {
+      success: false,
+      code: 'unknown_error',
+      message: exception.message,
+    };
+  }
+};
+
 /**
  * Get calendar options for dropdown
  */
@@ -413,6 +470,11 @@ export const getCalendarOptions = (translate = FALLBACK_TRANSLATE) => {
       icon: '📅',
     },
     {
+      value: 'site',
+      label: translate('calendar.providers.site', 'Swiss Startup Connect Calendar'),
+      icon: '✨',
+    },
+    {
       value: 'apple',
       label: translate('calendar.providers.apple', 'Apple Calendar'),
       icon: '🍎',
@@ -421,16 +483,6 @@ export const getCalendarOptions = (translate = FALLBACK_TRANSLATE) => {
       value: 'outlook',
       label: translate('calendar.providers.outlook', 'Outlook Calendar'),
       icon: '📧',
-    },
-    {
-      value: 'office365',
-      label: translate('calendar.providers.office365', 'Office 365 Calendar'),
-      icon: '💼',
-    },
-    {
-      value: 'yahoo',
-      label: translate('calendar.providers.yahoo', 'Yahoo Calendar'),
-      icon: '📮',
     },
     {
       value: 'ical',
@@ -480,6 +532,7 @@ export default {
   createInterviewEvent,
   createJobEventEvent,
   createCommunityCalendarEvent,
+  saveEventToSiteCalendar,
   getCalendarOptions,
   formatEventTime,
   detectPreferredCalendar,

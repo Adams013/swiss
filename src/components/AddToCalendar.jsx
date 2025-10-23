@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Calendar,
   ChevronDown,
@@ -14,6 +14,7 @@ import {
   getCalendarOptions,
   formatEventTime,
 } from '../services/calendarService';
+import useSiteCalendarSave from '../hooks/useSiteCalendarSave';
 import './AddToCalendar.css';
 
 /**
@@ -24,7 +25,49 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
   const [isOpen, setIsOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
 
-  const handleAddToCalendar = (provider) => {
+  const {
+    status: siteCalendarStatus,
+    message: siteCalendarMessage,
+    saveToSiteCalendar,
+    resetSiteCalendarStatus,
+  } = useSiteCalendarSave({ translate });
+  const siteCloseTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetSiteCalendarStatus();
+    }
+  }, [isOpen, resetSiteCalendarStatus]);
+
+  useEffect(() => () => {
+    if (siteCloseTimeoutRef.current && typeof window !== 'undefined') {
+      window.clearTimeout(siteCloseTimeoutRef.current);
+      siteCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleAddToCalendar = async (provider) => {
+    if (provider === 'site') {
+      const result = await saveToSiteCalendar(event);
+      if (result.success) {
+        setSelectedProvider(provider);
+
+        if (typeof window !== 'undefined') {
+          if (siteCloseTimeoutRef.current) {
+            window.clearTimeout(siteCloseTimeoutRef.current);
+          }
+          siteCloseTimeoutRef.current = window.setTimeout(() => {
+            setIsOpen(false);
+            setSelectedProvider(null);
+            resetSiteCalendarStatus();
+            siteCloseTimeoutRef.current = null;
+          }, 1200);
+        }
+      }
+
+      return;
+    }
+
     addToCalendar(event, provider);
     setSelectedProvider(provider);
     setTimeout(() => {
@@ -33,7 +76,7 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
     }, 1000);
   };
 
-  const calendarOptions = getCalendarOptions();
+  const calendarOptions = getCalendarOptions(translate);
   const timeInfo = formatEventTime(event.startTime, event.endTime);
 
   return (
@@ -92,25 +135,61 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
                 {translate?.('calendar.selectCalendar', 'Select your calendar:')}
               </p>
               
-              {calendarOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className="ssc__add-to-calendar__option"
-                  onClick={() => handleAddToCalendar(option.value)}
-                  disabled={selectedProvider === option.value}
+              {calendarOptions.map((option) => {
+                const isSiteOption = option.value === 'site';
+                const isSavingSite = isSiteOption && siteCalendarStatus === 'loading';
+                const isSiteSuccess = isSiteOption && siteCalendarStatus === 'success';
+                const isSiteError = isSiteOption && siteCalendarStatus === 'error';
+                const isSelected = selectedProvider === option.value;
+                const optionClasses = ['ssc__add-to-calendar__option'];
+
+                if (
+                  isSiteOption &&
+                  (siteCalendarStatus === 'loading' ||
+                    siteCalendarStatus === 'success' ||
+                    siteCalendarStatus === 'error')
+                ) {
+                  optionClasses.push(`is-${siteCalendarStatus}`);
+                }
+                if (isSiteSuccess) {
+                  optionClasses.push('is-success');
+                }
+                if (isSiteError) {
+                  optionClasses.push('is-error');
+                }
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={optionClasses.join(' ')}
+                    onClick={() => handleAddToCalendar(option.value)}
+                    disabled={(isSelected && !isSiteOption) || isSavingSite}
+                  >
+                    <span className="ssc__add-to-calendar__option-icon">
+                      {option.icon}
+                    </span>
+                    <span className="ssc__add-to-calendar__option-label">
+                      {option.label}
+                    </span>
+                    {isSelected && !isSiteOption && (
+                      <Check size={16} className="ssc__add-to-calendar__check" />
+                    )}
+                    {isSiteSuccess && (
+                      <Check size={16} className="ssc__add-to-calendar__check" />
+                    )}
+                  </button>
+                );
+              })}
+              {siteCalendarMessage && (
+                <p
+                  className={`ssc__add-to-calendar__status ssc__add-to-calendar__status--${siteCalendarStatus}`}
+                  role="status"
+                  aria-live="polite"
                 >
-                  <span className="ssc__add-to-calendar__option-icon">
-                    {option.icon}
-                  </span>
-                  <span className="ssc__add-to-calendar__option-label">
-                    {option.label}
-                  </span>
-                  {selectedProvider === option.value && (
-                    <Check size={16} className="ssc__add-to-calendar__check" />
-                  )}
-                </button>
-              ))}
+                  {siteCalendarMessage}
+                </p>
+              )}
             </div>
           </div>
         </>
