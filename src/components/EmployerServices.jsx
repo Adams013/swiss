@@ -160,7 +160,7 @@ const EmployerServices = ({ user, translate, language = 'en' }) => {
       return `${basePrice}/${perPostLabel}`;
     }
 
-    const monthLabel = translate('services.periodLabel', 'Month');
+    const monthLabel = translate('services.periodLabel', 'Mo');
     return `${basePrice}/${monthLabel}`;
   };
 
