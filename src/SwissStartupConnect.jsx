@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BookmarkPlus,
@@ -76,6 +77,43 @@ import { mapSupabaseUser } from './swissStartupConnect/utils/supabase';
 import { useI18n } from './swissStartupConnect/hooks/useI18n';
 import { useThemePreference } from './swissStartupConnect/hooks/useThemePreference';
 import { useJobSearchPreferences } from './swissStartupConnect/hooks/useJobSearchPreferences';
+
+const TAB_ROUTE_SEGMENTS = {
+  general: '',
+  jobs: 'jobs',
+  companies: 'companies',
+  'my-jobs': 'my-jobs',
+  applications: 'applications',
+  messages: 'messages',
+  map: 'map',
+  events: 'events',
+  saved: 'saved',
+};
+
+const getTabFromPathname = (pathname = '/') => {
+  if (typeof pathname !== 'string') {
+    return 'general';
+  }
+
+  const [firstSegment = ''] = pathname.split('/').filter(Boolean);
+  if (!firstSegment) {
+    return 'general';
+  }
+
+  const matchingEntry = Object.entries(TAB_ROUTE_SEGMENTS).find(([, segment]) => segment === firstSegment);
+  return matchingEntry ? matchingEntry[0] : 'general';
+};
+
+const getPathnameForTab = (tab) => {
+  const segment = TAB_ROUTE_SEGMENTS[tab];
+  if (!segment) {
+    return '/';
+  }
+  return `/${segment}`;
+};
+
+const isKnownRouteSegment = (segment) =>
+  typeof segment === 'string' && segment.length > 0 && Object.values(TAB_ROUTE_SEGMENTS).includes(segment);
 const SwissStartupConnect = () => {
   const {
     language,
@@ -93,10 +131,35 @@ const SwissStartupConnect = () => {
 
   const { isDarkMode, toggleTheme } = useThemePreference();
 
-  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTabState] = useState(() => getTabFromPathname(location.pathname));
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+
+  useEffect(() => {
+    const nextTab = getTabFromPathname(location.pathname);
+    setActiveTabState((previous) => (previous === nextTab ? previous : nextTab));
+
+    const [firstSegment = ''] = location.pathname.split('/').filter(Boolean);
+    if (nextTab === 'general' && firstSegment && !isKnownRouteSegment(firstSegment)) {
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const setActiveTab = useCallback(
+    (tab) => {
+      setActiveTabState(tab);
+      const targetPath = getPathnameForTab(tab);
+      const currentPath = getPathnameForTab(getTabFromPathname(location.pathname));
+      if (currentPath !== targetPath) {
+        navigate(targetPath);
+      }
+    },
+    [navigate, location.pathname]
+  );
+
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
 
   const handleBrandClick = useCallback(() => {
     setActiveTab('general');

@@ -1,5 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
 import SwissStartupConnect from "./SwissStartupConnect";
 
 // Create a client with optimized defaults
@@ -20,7 +21,9 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SwissStartupConnect />
+      <BrowserRouter>
+        <SwissStartupConnect />
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
