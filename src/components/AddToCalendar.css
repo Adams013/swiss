@@ -19,28 +19,27 @@
   transition: transform 0.2s;
 }
 
-/* Backdrop */
-.ssc__add-to-calendar__backdrop {
+/* Dropdown */
+.ssc__add-to-calendar__dropdown {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-}
-
-/* Dropdown */
-.ssc__add-to-calendar__dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 320px;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 2rem));
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  z-index: 3200;
-  animation: dropdownIn 0.2s ease-out;
+  z-index: 3400;
+  animation: dropdownIn 0.18s ease-out;
+}
+
+.ssc__add-to-calendar__dropdown--top {
+  transform-origin: top center;
+}
+
+.ssc__add-to-calendar__dropdown--bottom {
+  transform-origin: bottom center;
 }
 
 @keyframes dropdownIn {

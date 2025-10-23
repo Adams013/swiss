@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Calendar,
   ChevronDown,
@@ -6,7 +12,6 @@ import {
   Clock,
   MapPin,
   Video,
-  Download,
   X,
 } from 'lucide-react';
 import {
@@ -24,6 +29,11 @@ import './AddToCalendar.css';
 const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [dropdownStyles, setDropdownStyles] = useState(null);
+  const [dropdownPlacement, setDropdownPlacement] = useState('bottom');
+  const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const {
     status: siteCalendarStatus,
@@ -35,6 +45,9 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
 
   useEffect(() => {
     if (!isOpen) {
+      setSelectedProvider(null);
+      setDropdownStyles(null);
+      setDropdownPlacement('bottom');
       resetSiteCalendarStatus();
     }
   }, [isOpen, resetSiteCalendarStatus]);
@@ -45,6 +58,17 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
       siteCloseTimeoutRef.current = null;
     }
   }, []);
+
+  const closeDropdown = useCallback(() => {
+    if (siteCloseTimeoutRef.current && typeof window !== 'undefined') {
+      window.clearTimeout(siteCloseTimeoutRef.current);
+      siteCloseTimeoutRef.current = null;
+    }
+    setIsOpen(false);
+    setSelectedProvider(null);
+    setDropdownStyles(null);
+    resetSiteCalendarStatus();
+  }, [resetSiteCalendarStatus]);
 
   const handleAddToCalendar = async (provider) => {
     if (provider === 'site') {
@@ -57,9 +81,7 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
             window.clearTimeout(siteCloseTimeoutRef.current);
           }
           siteCloseTimeoutRef.current = window.setTimeout(() => {
-            setIsOpen(false);
-            setSelectedProvider(null);
-            resetSiteCalendarStatus();
+            closeDropdown();
             siteCloseTimeoutRef.current = null;
           }, 1200);
         }
@@ -71,20 +93,138 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
     addToCalendar(event, provider);
     setSelectedProvider(provider);
     setTimeout(() => {
-      setIsOpen(false);
-      setSelectedProvider(null);
+      closeDropdown();
     }, 1000);
   };
 
   const calendarOptions = getCalendarOptions(translate);
   const timeInfo = formatEventTime(event.startTime, event.endTime);
+  const dropdownInlineStyles = dropdownStyles
+    ? dropdownStyles
+    : { visibility: 'hidden', opacity: 0, pointerEvents: 'none' };
+
+  const updateDropdownPosition = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!triggerRef.current || !dropdownRef.current) {
+      return;
+    }
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const dropdownEl = dropdownRef.current;
+    const spacing = 12;
+    const margin = 16;
+    const viewportWidth = Math.max(window.innerWidth || 0, margin * 2 + 1);
+    const viewportHeight = Math.max(window.innerHeight || 0, margin * 2 + 1);
+    const dropdownWidth = Math.min(
+      Math.max(triggerRect.width, 320),
+      Math.max(viewportWidth - margin * 2, 240)
+    );
+
+    let left = triggerRect.right - dropdownWidth;
+    if (left < margin) {
+      left = Math.max(triggerRect.left, margin);
+    }
+    if (left + dropdownWidth > viewportWidth - margin) {
+      left = Math.max(viewportWidth - dropdownWidth - margin, margin);
+    }
+
+    let top = triggerRect.bottom + spacing;
+    let placement = 'bottom';
+    const dropdownHeight = dropdownEl.offsetHeight;
+    if (top + dropdownHeight > viewportHeight - margin) {
+      const upwardTop = triggerRect.top - spacing - dropdownHeight;
+      if (upwardTop >= margin) {
+        top = upwardTop;
+        placement = 'top';
+      } else {
+        top = Math.max(viewportHeight - dropdownHeight - margin, margin);
+      }
+    }
+
+    setDropdownPlacement(placement);
+    setDropdownStyles({
+      top,
+      left,
+      width: dropdownWidth,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    updateDropdownPosition();
+
+    const handleWindowChange = () => {
+      updateDropdownPosition();
+    };
+
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+    };
+  }, [isOpen, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    updateDropdownPosition();
+
+    const handleClickOutside = (event) => {
+      const target = event.target;
+      if (!containerRef.current) {
+        return;
+      }
+
+      if (
+        containerRef.current.contains(target) ||
+        (dropdownRef.current && dropdownRef.current.contains(target))
+      ) {
+        return;
+      }
+
+      closeDropdown();
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeDropdown, isOpen, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+    }
+  }, [isOpen, siteCalendarMessage, updateDropdownPosition]);
 
   return (
-    <div className="ssc__add-to-calendar">
+    <div className="ssc__add-to-calendar" ref={containerRef}>
       <button
         type="button"
         className={`ssc__btn ssc__btn--${buttonStyle} ssc__add-to-calendar__trigger`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((previous) => !previous)}
+        ref={triggerRef}
       >
         <Calendar size={18} />
         {buttonText || translate?.('calendar.addToCalendar', 'Add to Calendar')}
@@ -92,25 +232,22 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
       </button>
 
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="ssc__add-to-calendar__backdrop"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Dropdown */}
-          <div className="ssc__add-to-calendar__dropdown">
+        <div
+          className={`ssc__add-to-calendar__dropdown ssc__add-to-calendar__dropdown--${dropdownPlacement}`}
+          ref={dropdownRef}
+          style={dropdownInlineStyles}
+          role="menu"
+        >
             {/* Event Preview */}
             <div className="ssc__add-to-calendar__preview">
               <h4 className="ssc__add-to-calendar__title">{event.title}</h4>
-              
+
               <div className="ssc__add-to-calendar__details">
                 <div className="ssc__add-to-calendar__detail">
                   <Clock size={14} />
                   <span>{timeInfo.full}</span>
                 </div>
-                
+
                 {event.location && (
                   <div className="ssc__add-to-calendar__detail">
                     {event.location.toLowerCase().includes('http') ||
@@ -134,7 +271,7 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
               <p className="ssc__add-to-calendar__options-title">
                 {translate?.('calendar.selectCalendar', 'Select your calendar:')}
               </p>
-              
+
               {calendarOptions.map((option) => {
                 const isSiteOption = option.value === 'site';
                 const isSavingSite = isSiteOption && siteCalendarStatus === 'loading';
@@ -192,8 +329,7 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
               )}
             </div>
           </div>
-        </>
-      )}
+        )}
     </div>
   );
 };
