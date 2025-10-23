@@ -869,6 +869,7 @@
   },
   "calendar": {
     "addToCalendar": "Ajouter au calendrier",
+    "closeAddToCalendar": "Fermer le menu d’ajout au calendrier",
     "providers": {
       "google": "Google Agenda",
       "apple": "Calendrier Apple",

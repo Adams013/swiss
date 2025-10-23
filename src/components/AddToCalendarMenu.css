@@ -17,10 +17,26 @@
   white-space: nowrap;
 }
 
-.ssc__add-to-calendar__menu {
+.ssc__add-to-calendar__portal {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
+  z-index: 3400;
+  pointer-events: none;
+}
+
+.ssc__add-to-calendar__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+  pointer-events: auto;
+}
+
+.ssc__add-to-calendar__menu {
+  position: absolute;
   min-width: 13rem;
   max-width: min(20rem, calc(100vw - 2rem));
   border-radius: 0.75rem;
@@ -29,15 +45,13 @@
   border: 1px solid var(--ssc-border);
   padding: 0.35rem 0;
   opacity: 0;
-  pointer-events: none;
   transform: translateY(-8px);
   transition: opacity 0.18s ease, transform 0.18s ease;
-  z-index: 3200;
+  pointer-events: auto;
 }
 
-.ssc__add-to-calendar__menu.is-open {
+.ssc__add-to-calendar__menu.is-ready {
   opacity: 1;
-  pointer-events: auto;
   transform: translateY(0);
 }
 
@@ -45,7 +59,7 @@
   transform: translateY(8px);
 }
 
-.ssc__add-to-calendar__menu[data-placement='top'].is-open {
+.ssc__add-to-calendar__menu[data-placement='top'].is-ready {
   transform: translateY(0);
 }
 

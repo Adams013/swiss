@@ -20,37 +20,52 @@
 }
 
 /* Dropdown */
-.ssc__add-to-calendar__dropdown {
+.ssc__add-to-calendar__portal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: max-content;
+  inset: 0;
+  z-index: 3400;
+  pointer-events: none;
+}
+
+.ssc__add-to-calendar__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+  pointer-events: auto;
+}
+
+.ssc__add-to-calendar__dropdown {
+  position: absolute;
   max-width: min(24rem, calc(100vw - 2rem));
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  z-index: 3400;
-  animation: dropdownIn 0.18s ease-out;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: auto;
+}
+
+.ssc__add-to-calendar__dropdown.is-ready {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .ssc__add-to-calendar__dropdown--top {
-  transform-origin: top center;
+  transform: translateY(8px);
+}
+
+.ssc__add-to-calendar__dropdown--top.is-ready {
+  transform: translateY(0);
 }
 
 .ssc__add-to-calendar__dropdown--bottom {
   transform-origin: bottom center;
-}
-
-@keyframes dropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Event Preview */

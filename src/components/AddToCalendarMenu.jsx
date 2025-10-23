@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarPlus, ChevronDown } from 'lucide-react';
 import {
   addToCalendar,
@@ -30,8 +31,10 @@ const AddToCalendarMenu = ({
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
-  const [menuStyles, setMenuStyles] = useState(null);
+  const [menuLayout, setMenuLayout] = useState(null);
   const [menuPlacement, setMenuPlacement] = useState('bottom');
+  const [canRenderPortal, setCanRenderPortal] = useState(false);
+  const isOpenRef = useRef(false);
 
   const {
     status: siteCalendarStatus,
@@ -41,24 +44,16 @@ const AddToCalendarMenu = ({
   } = useSiteCalendarSave({ translate });
 
   useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
+    setCanRenderPortal(typeof document !== 'undefined');
+  }, []);
 
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside, { passive: true });
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isOpen]);
+  const closeMenu = useCallback(() => {
+    isOpenRef.current = false;
+    setIsOpen(false);
+    setMenuLayout(null);
+    setMenuPlacement('bottom');
+    resetSiteCalendarStatus();
+  }, [resetSiteCalendarStatus]);
 
   const resolvedCalendarEvent = useMemo(() => {
     if (calendarEvent) {
@@ -87,22 +82,26 @@ const AddToCalendarMenu = ({
     if (typeof analyticsEvent === 'function') {
       analyticsEvent(provider, resolvedCalendarEvent);
     }
-    setIsOpen(false);
+    closeMenu();
   };
 
   const menuId = useRef(`ssc-add-to-calendar-${Math.random().toString(36).slice(2)}`).current;
 
   useEffect(() => {
     if (!isOpen) {
-      setMenuStyles(null);
+      setMenuLayout(null);
       resetSiteCalendarStatus();
     }
   }, [isOpen, resetSiteCalendarStatus]);
 
   useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
     if (siteCalendarStatus === 'success' && typeof window !== 'undefined') {
       const timeout = window.setTimeout(() => {
-        setIsOpen(false);
+        closeMenu();
       }, 1400);
 
       return () => {
@@ -119,6 +118,11 @@ const AddToCalendarMenu = ({
     }
 
     if (!triggerRef.current || !menuRef.current) {
+      if (typeof window !== 'undefined' && isOpenRef.current) {
+        window.requestAnimationFrame(() => {
+          updateMenuPosition();
+        });
+      }
       return;
     }
 
@@ -158,10 +162,10 @@ const AddToCalendarMenu = ({
     );
 
     setMenuPlacement(placement);
-    setMenuStyles({
+    setMenuLayout({
       top,
       left,
-      minWidth,
+      width: Math.max(minWidth, Math.min(menuWidth, viewportWidth - margin * 2)),
     });
   }, []);
 
@@ -195,6 +199,103 @@ const AddToCalendarMenu = ({
     }
   }, [isOpen, siteCalendarMessage, updateMenuPosition]);
 
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeMenu();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeMenu, isOpen]);
+
+  const handleToggleMenu = () => {
+    if (disabled || !resolvedCalendarEvent) {
+      return;
+    }
+
+    if (isOpenRef.current) {
+      closeMenu();
+      return;
+    }
+
+    isOpenRef.current = true;
+    setIsOpen(true);
+  };
+
+  const overlay =
+    isOpen && canRenderPortal
+      ? createPortal(
+          <div className="ssc__add-to-calendar__portal" aria-hidden={!isOpen}>
+            <button
+              type="button"
+              className="ssc__add-to-calendar__backdrop"
+              onClick={closeMenu}
+              aria-label={translate('calendar.closeAddToCalendar', 'Close add to calendar menu')}
+            />
+            <div
+              id={menuId}
+              className={`ssc__add-to-calendar__menu ${menuLayout ? 'is-ready' : ''}`}
+              role="menu"
+              ref={menuRef}
+              data-placement={menuPlacement}
+              style={
+                menuLayout
+                  ? {
+                      top: `${menuLayout.top}px`,
+                      left: `${menuLayout.left}px`,
+                      width: `${menuLayout.width}px`,
+                    }
+                  : { visibility: 'hidden', pointerEvents: 'none' }
+              }
+            >
+              {getCalendarOptions(translate).map((option) => {
+                const isSiteOption = option.value === 'site';
+                const isLoading = isSiteOption && siteCalendarStatus === 'loading';
+                const isSuccessful = isSiteOption && siteCalendarStatus === 'success';
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleSelectOption(option.value)}
+                    className={`ssc__add-to-calendar__option${
+                      isLoading ? ' is-loading' : ''
+                    }${isSuccessful ? ' is-success' : ''}`}
+                    disabled={isLoading}
+                  >
+                    <span aria-hidden="true" className="ssc__add-to-calendar__emoji">
+                      {option.icon}
+                    </span>
+                    <span>{option.label}</span>
+                  </button>
+                );
+              })}
+
+              {siteCalendarMessage && (
+                <p
+                  className={`ssc__add-to-calendar__status ssc__add-to-calendar__status--${siteCalendarStatus}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {siteCalendarMessage}
+                </p>
+              )}
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div
       className={`ssc__add-to-calendar ssc__add-to-calendar--${size}`}
@@ -203,7 +304,7 @@ const AddToCalendarMenu = ({
       <button
         type="button"
         className={`ssc__add-to-calendar__trigger ssc__btn ssc__btn--${variant} ssc__btn--${size}`}
-        onClick={() => setIsOpen((previous) => !previous)}
+        onClick={handleToggleMenu}
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-expanded={isOpen}
@@ -214,45 +315,7 @@ const AddToCalendarMenu = ({
         <span>{translate('calendar.addToCalendar', 'Add to calendar')}</span>
         <ChevronDown size={14} aria-hidden="true" />
       </button>
-
-      <div
-        id={menuId}
-        className={`ssc__add-to-calendar__menu ${isOpen ? 'is-open' : ''}`}
-        role="menu"
-        ref={menuRef}
-        data-placement={menuPlacement}
-        style={menuStyles || undefined}
-      >
-        {getCalendarOptions(translate).map((option) => {
-          const isSiteOption = option.value === 'site';
-          const isLoading = isSiteOption && siteCalendarStatus === 'loading';
-          const isSuccessful = isSiteOption && siteCalendarStatus === 'success';
-
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="menuitem"
-              onClick={() => handleSelectOption(option.value)}
-              className={`ssc__add-to-calendar__option${isLoading ? ' is-loading' : ''}${isSuccessful ? ' is-success' : ''}`}
-              disabled={isLoading}
-            >
-              <span aria-hidden="true" className="ssc__add-to-calendar__emoji">{option.icon}</span>
-              <span>{option.label}</span>
-            </button>
-          );
-        })}
-
-        {siteCalendarMessage && (
-          <p
-            className={`ssc__add-to-calendar__status ssc__add-to-calendar__status--${siteCalendarStatus}`}
-            role="status"
-            aria-live="polite"
-          >
-            {siteCalendarMessage}
-          </p>
-        )}
-      </div>
+      {overlay}
     </div>
   );
 };
