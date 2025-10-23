@@ -732,7 +732,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  z-index: 60;
+  z-index: 1500;
 }
 
 .ssc__user-menu-header {
@@ -3871,7 +3871,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  z-index: 1200;
+  z-index: 4200;
 }
 
 .ssc__modal {
@@ -3883,6 +3883,7 @@
   overflow-y: auto;
   position: relative;
   box-shadow: 0 32px 64px rgba(var(--ssc-ink-rgb), 0.3);
+  z-index: 1;
 }
 
 .ssc__modal--wide {

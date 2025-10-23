@@ -6,7 +6,7 @@
 .ssc__subscription-view {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 2.25rem;
+  padding: 1rem 1.25rem 1.35rem;
   position: relative;
 }
 
@@ -119,39 +119,39 @@
 
 .ssc__subscription-view__header {
   text-align: center;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.05rem;
 }
 
 .ssc__subscription-view__header h2 {
-  margin: 0.75rem 0 0.4rem 0;
-  font-size: 1.85rem;
+  margin: 0.35rem 0 0.25rem 0;
+  font-size: 1.7rem;
   font-weight: 700;
 }
 
 .ssc__subscription-view__subtitle {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--text-secondary, #6b7280);
-  max-width: 620px;
   margin: 0 auto;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #6b7280);
+  max-width: 560px;
+  line-height: 1.45;
 }
 
 .ssc__subscription-tabs {
   justify-content: center;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.05rem;
 }
 
 .ssc__subscription-content {
   background: var(--ssc-surface, #ffffff);
   border-radius: 20px;
   border: 1px solid var(--ssc-border, rgba(15, 23, 42, 0.08));
-  padding: 1.75rem 1.75rem 2rem;
-  box-shadow: 0 26px 50px rgba(15, 23, 42, 0.08);
+  padding: 1.15rem 1.3rem 1.35rem;
+  box-shadow: 0 22px 42px rgba(15, 23, 42, 0.08);
 }
 
 @media (max-width: 768px) {
   .ssc__subscription-content {
-    padding: 1.25rem;
+    padding: 0.95rem 1rem 1.15rem;
   }
 }
 
@@ -159,12 +159,12 @@
 .ssc__subscription-subscribe-tab {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.25rem;
 }
 
 .ssc__subscription-plan-switcher {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.6rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
@@ -172,8 +172,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 1rem 1.1rem;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
   border-radius: 16px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.9));
@@ -228,14 +228,14 @@
 .ssc__subscription-plan-view {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1.35rem;
 }
 
 .ssc__subscription-benefits-showcase {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
+  gap: 1.5rem;
+  padding: 1.6rem;
   border-radius: 22px;
   border: 1px solid rgba(59, 130, 246, 0.18);
   background: linear-gradient(135deg, rgba(239, 246, 255, 0.85), rgba(219, 234, 254, 0.9));
@@ -262,7 +262,7 @@
 
 .ssc__subscription-benefits-showcase__intro h3 {
   margin: 0;
-  font-size: 1.9rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--text-primary, #0f172a);
 }
@@ -270,20 +270,20 @@
 .ssc__subscription-benefits-showcase__intro p {
   margin: 0;
   color: var(--text-primary, #1f2937);
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .ssc__subscription-benefits-showcase__grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.05rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
 .ssc__subscription-benefit-card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.4rem;
+  gap: 0.65rem;
+  padding: 1.2rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
@@ -308,7 +308,7 @@
 
 .ssc__subscription-benefit-card h4 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary, #0f172a);
 }
@@ -317,7 +317,7 @@
   margin: 0;
   font-size: 0.9rem;
   color: var(--text-secondary, #4b5563);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .ssc__subscription-benefits-showcase__footer {
@@ -505,14 +505,14 @@
 .ssc__subscription-benefits-tab {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .ssc__subscription-benefits-hero {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 2rem;
+  gap: 1rem;
+  padding: 1.65rem;
   border-radius: 22px;
   background: linear-gradient(135deg, rgba(239, 246, 255, 0.92), rgba(191, 219, 254, 0.86));
   border: 1px solid rgba(59, 130, 246, 0.24);
@@ -539,7 +539,7 @@
 
 .ssc__subscription-benefits-hero__copy h3 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--text-primary, #0f172a);
 }
@@ -547,7 +547,7 @@
 .ssc__subscription-benefits-hero__copy p {
   margin: 0;
   color: var(--text-primary, #1f2937);
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 .ssc__subscription-benefits-hero__cta {
@@ -564,18 +564,18 @@
 
 .ssc__subscription-benefits-cards {
   display: grid;
-  gap: 1.4rem;
+  gap: 1.1rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
 .ssc__subscription-benefits-card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.5rem;
+  gap: 0.65rem;
+  padding: 1.25rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -586,7 +586,7 @@
 
 .ssc__subscription-benefits-card h4 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary, #0f172a);
 }
@@ -601,7 +601,7 @@
 .ssc__subscription-benefits-footer {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 /* Manage tab */
@@ -609,11 +609,11 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
   border-radius: 20px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  padding: 1.7rem;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .ssc__subscription-card h3 {
@@ -639,7 +639,7 @@
 
 .ssc__subscription-card__details {
   display: grid;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .ssc__subscription-card__detail {
@@ -666,15 +666,15 @@
 
 @media (max-width: 640px) {
   .ssc__subscription-view {
-    padding: 1.75rem 1rem;
+    padding: 1.35rem 1rem;
   }
 
   .ssc__subscription-plan-switcher__button {
-    padding: 0.9rem 1rem;
+    padding: 0.85rem 0.95rem;
   }
 
   .ssc__subscription-benefits-hero {
-    padding: 1.5rem;
+    padding: 1.45rem;
   }
 
   .ssc__subscription-content {

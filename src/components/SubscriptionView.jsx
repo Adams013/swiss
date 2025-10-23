@@ -239,7 +239,7 @@ const SubscriptionView = ({ user, translate }) => {
   const formatPricePerMonth = useCallback(
     (amount, currency) => {
       const price = formatPrice(amount, currency);
-      const monthLabel = translate('subscription.periodLabel', 'Month');
+      const monthLabel = translate('subscription.periodLabel', 'Mo');
       return `${price}/${monthLabel}`;
     },
     [translate]
@@ -256,13 +256,13 @@ const SubscriptionView = ({ user, translate }) => {
 
       switch (interval) {
         case 1:
-          return translate('subscription.displayPrice.monthly', 'CHF 7.90/Month');
+          return translate('subscription.displayPrice.monthly', 'CHF 7.90/Mo');
         case 3:
-          return translate('subscription.displayPrice.quarterly', 'CHF 20.00/Month');
+          return translate('subscription.displayPrice.quarterly', 'CHF 20.00/Mo');
         case 12:
-          return translate('subscription.displayPrice.yearly', 'CHF 75.00/Month');
+          return translate('subscription.displayPrice.yearly', 'CHF 75.00/Mo');
         default:
-          return translate('subscription.displayPrice.generic', 'CHF {{amount}}/Month', { amount: interval });
+          return translate('subscription.displayPrice.generic', 'CHF {{amount}}/Mo', { amount: interval });
       }
     },
     [planGrouping, translate, formatPricePerMonth]
@@ -307,6 +307,13 @@ const SubscriptionView = ({ user, translate }) => {
     );
   }
 
+  const subscribeTabId = 'subscription-tab-subscribe';
+  const benefitsTabId = 'subscription-tab-benefits';
+  const manageTabId = 'subscription-tab-manage';
+  const subscribePanelId = 'subscription-panel-subscribe';
+  const benefitsPanelId = 'subscription-panel-benefits';
+  const managePanelId = 'subscription-panel-manage';
+
   return (
     <div className="ssc__subscription-view">
       {redirecting && (
@@ -346,9 +353,17 @@ const SubscriptionView = ({ user, translate }) => {
         </p>
       </div>
 
-      <div className="ssc__profile-tabs ssc__subscription-tabs">
+      <div
+        className="ssc__profile-tabs ssc__subscription-tabs"
+        role="tablist"
+        aria-label={translate('subscription.tabs.ariaLabel', 'Subscription sections')}
+      >
         <button
           type="button"
+          role="tab"
+          id={subscribeTabId}
+          aria-controls={subscribePanelId}
+          aria-selected={activeTab === 'subscribe'}
           className={`ssc__profile-tab ${activeTab === 'subscribe' ? 'ssc__profile-tab--active' : ''}`}
           onClick={() => setActiveTab('subscribe')}
         >
@@ -357,6 +372,10 @@ const SubscriptionView = ({ user, translate }) => {
         </button>
         <button
           type="button"
+          role="tab"
+          id={benefitsTabId}
+          aria-controls={benefitsPanelId}
+          aria-selected={activeTab === 'benefits'}
           className={`ssc__profile-tab ${activeTab === 'benefits' ? 'ssc__profile-tab--active' : ''}`}
           onClick={() => setActiveTab('benefits')}
         >
@@ -366,6 +385,10 @@ const SubscriptionView = ({ user, translate }) => {
         {subscription && (
           <button
             type="button"
+            role="tab"
+            id={manageTabId}
+            aria-controls={managePanelId}
+            aria-selected={activeTab === 'manage'}
             className={`ssc__profile-tab ${activeTab === 'manage' ? 'ssc__profile-tab--active' : ''}`}
             onClick={() => setActiveTab('manage')}
           >
@@ -377,7 +400,13 @@ const SubscriptionView = ({ user, translate }) => {
 
       <div className="ssc__subscription-content">
         {activeTab === 'subscribe' && (
-          <div className="ssc__subscription-subscribe-tab">
+          <div
+            id={subscribePanelId}
+            role="tabpanel"
+            aria-labelledby={subscribeTabId}
+            className="ssc__subscription-subscribe-tab"
+            tabIndex={0}
+          >
             {subscription && (
               <div className="ssc__current-subscription-banner">
                 <div className="ssc__current-subscription-banner__content">
@@ -603,7 +632,13 @@ const SubscriptionView = ({ user, translate }) => {
         )}
 
         {activeTab === 'benefits' && (
-          <div className="ssc__subscription-benefits-tab">
+          <div
+            id={benefitsPanelId}
+            role="tabpanel"
+            aria-labelledby={benefitsTabId}
+            className="ssc__subscription-benefits-tab"
+            tabIndex={0}
+          >
             <div className="ssc__subscription-benefits-hero">
               <div className="ssc__subscription-benefits-hero__copy">
                 <span className="ssc__subscription-benefits-hero__eyebrow">
@@ -668,7 +703,13 @@ const SubscriptionView = ({ user, translate }) => {
         )}
 
         {activeTab === 'manage' && subscription && (
-          <div className="ssc__subscription-manage-tab">
+          <div
+            id={managePanelId}
+            role="tabpanel"
+            aria-labelledby={manageTabId}
+            className="ssc__subscription-manage-tab"
+            tabIndex={0}
+          >
             <div className="ssc__subscription-card">
               <h3>{subscription.plan?.name}</h3>
               <p className="ssc__subscription-card__price">
