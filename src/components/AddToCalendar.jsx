@@ -1,4 +1,11 @@
-import React, { useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 import {
   Calendar,
   ChevronDown,
@@ -6,7 +13,6 @@ import {
   Clock,
   MapPin,
   Video,
-  Download,
   X,
 } from 'lucide-react';
 import {
@@ -14,6 +20,7 @@ import {
   getCalendarOptions,
   formatEventTime,
 } from '../services/calendarService';
+import useSiteCalendarSave from '../hooks/useSiteCalendarSave';
 import './AddToCalendar.css';
 
 /**
@@ -23,98 +30,371 @@ import './AddToCalendar.css';
 const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [dropdownLayout, setDropdownLayout] = useState(null);
+  const [dropdownPlacement, setDropdownPlacement] = useState('bottom');
+  const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const isOpenRef = useRef(false);
+  const [canRenderPortal, setCanRenderPortal] = useState(false);
 
-  const handleAddToCalendar = (provider) => {
+  const {
+    status: siteCalendarStatus,
+    message: siteCalendarMessage,
+    saveToSiteCalendar,
+    resetSiteCalendarStatus,
+  } = useSiteCalendarSave({ translate });
+  const siteCloseTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedProvider(null);
+      setDropdownLayout(null);
+      setDropdownPlacement('bottom');
+      resetSiteCalendarStatus();
+    }
+  }, [isOpen, resetSiteCalendarStatus]);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    setCanRenderPortal(typeof document !== 'undefined');
+  }, []);
+
+  useEffect(() => () => {
+    if (siteCloseTimeoutRef.current && typeof window !== 'undefined') {
+      window.clearTimeout(siteCloseTimeoutRef.current);
+      siteCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const closeDropdown = useCallback(() => {
+    if (siteCloseTimeoutRef.current && typeof window !== 'undefined') {
+      window.clearTimeout(siteCloseTimeoutRef.current);
+      siteCloseTimeoutRef.current = null;
+    }
+    isOpenRef.current = false;
+    setIsOpen(false);
+    setSelectedProvider(null);
+    setDropdownLayout(null);
+    setDropdownPlacement('bottom');
+    resetSiteCalendarStatus();
+  }, [resetSiteCalendarStatus]);
+
+  const handleAddToCalendar = async (provider) => {
+    if (provider === 'site') {
+      const result = await saveToSiteCalendar(event);
+      if (result.success) {
+        setSelectedProvider(provider);
+
+        if (typeof window !== 'undefined') {
+          if (siteCloseTimeoutRef.current) {
+            window.clearTimeout(siteCloseTimeoutRef.current);
+          }
+          siteCloseTimeoutRef.current = window.setTimeout(() => {
+            closeDropdown();
+            siteCloseTimeoutRef.current = null;
+          }, 1200);
+        }
+      }
+
+      return;
+    }
+
     addToCalendar(event, provider);
     setSelectedProvider(provider);
     setTimeout(() => {
-      setIsOpen(false);
-      setSelectedProvider(null);
+      closeDropdown();
     }, 1000);
   };
 
-  const calendarOptions = getCalendarOptions();
+  const calendarOptions = getCalendarOptions(translate);
   const timeInfo = formatEventTime(event.startTime, event.endTime);
+  const updateDropdownPosition = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!triggerRef.current || !dropdownRef.current) {
+      if (typeof window !== 'undefined' && isOpenRef.current) {
+        window.requestAnimationFrame(() => {
+          updateDropdownPosition();
+        });
+      }
+      return;
+    }
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const dropdownEl = dropdownRef.current;
+    const spacing = 12;
+    const margin = 16;
+    const viewportWidth = Math.max(window.innerWidth || 0, margin * 2 + 1);
+    const viewportHeight = Math.max(window.innerHeight || 0, margin * 2 + 1);
+    const dropdownWidth = Math.min(
+      Math.max(triggerRect.width, 320),
+      Math.max(viewportWidth - margin * 2, 240)
+    );
+
+    let left = triggerRect.right - dropdownWidth;
+    if (left < margin) {
+      left = Math.max(triggerRect.left, margin);
+    }
+    if (left + dropdownWidth > viewportWidth - margin) {
+      left = Math.max(viewportWidth - dropdownWidth - margin, margin);
+    }
+
+    let top = triggerRect.bottom + spacing;
+    let placement = 'bottom';
+    const dropdownHeight = dropdownEl.offsetHeight;
+    if (top + dropdownHeight > viewportHeight - margin) {
+      const upwardTop = triggerRect.top - spacing - dropdownHeight;
+      if (upwardTop >= margin) {
+        top = upwardTop;
+        placement = 'top';
+      } else {
+        top = Math.max(viewportHeight - dropdownHeight - margin, margin);
+      }
+    }
+
+    setDropdownPlacement(placement);
+    setDropdownLayout({
+      top,
+      left,
+      width: dropdownWidth,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    updateDropdownPosition();
+
+    const handleWindowChange = () => {
+      updateDropdownPosition();
+    };
+
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+    };
+  }, [isOpen, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    updateDropdownPosition();
+
+    const handleClickOutside = (event) => {
+      const target = event.target;
+      if (!containerRef.current) {
+        return;
+      }
+
+      if (
+        containerRef.current.contains(target) ||
+        (dropdownRef.current && dropdownRef.current.contains(target))
+      ) {
+        return;
+      }
+
+      closeDropdown();
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeDropdown, isOpen, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+    }
+  }, [isOpen, siteCalendarMessage, updateDropdownPosition]);
+
+  const handleToggleDropdown = () => {
+    if (isOpenRef.current) {
+      closeDropdown();
+      return;
+    }
+
+    isOpenRef.current = true;
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeDropdown, isOpen]);
+
+  const overlay =
+    isOpen && canRenderPortal
+      ? createPortal(
+          <div className="ssc__add-to-calendar__portal" aria-hidden={!isOpen}>
+            <button
+              type="button"
+              className="ssc__add-to-calendar__backdrop"
+              onClick={closeDropdown}
+              aria-label={translate?.('calendar.closeAddToCalendar', 'Close add to calendar menu')}
+            />
+            <div
+              className={`ssc__add-to-calendar__dropdown ssc__add-to-calendar__dropdown--${dropdownPlacement} ${
+                dropdownLayout ? 'is-ready' : ''
+              }`}
+              ref={dropdownRef}
+              style={
+                dropdownLayout
+                  ? {
+                      top: `${dropdownLayout.top}px`,
+                      left: `${dropdownLayout.left}px`,
+                      width: `${dropdownLayout.width}px`,
+                    }
+                  : { visibility: 'hidden', pointerEvents: 'none' }
+              }
+              role="menu"
+            >
+              {/* Event Preview */}
+              <div className="ssc__add-to-calendar__preview">
+                <h4 className="ssc__add-to-calendar__title">{event.title}</h4>
+
+                <div className="ssc__add-to-calendar__details">
+                  <div className="ssc__add-to-calendar__detail">
+                    <Clock size={14} />
+                    <span>{timeInfo.full}</span>
+                  </div>
+
+                  {event.location && (
+                    <div className="ssc__add-to-calendar__detail">
+                      {event.location.toLowerCase().includes('http') ||
+                      event.location.toLowerCase().includes('zoom') ||
+                      event.location.toLowerCase().includes('meet') ? (
+                        <Video size={14} />
+                      ) : (
+                        <MapPin size={14} />
+                      )}
+                      <span>{event.location}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="ssc__add-to-calendar__divider" />
+
+              {/* Calendar Options */}
+              <div className="ssc__add-to-calendar__options">
+                <p className="ssc__add-to-calendar__options-title">
+                  {translate?.('calendar.selectCalendar', 'Select your calendar:')}
+                </p>
+
+                {calendarOptions.map((option) => {
+                  const isSiteOption = option.value === 'site';
+                  const isSavingSite = isSiteOption && siteCalendarStatus === 'loading';
+                  const isSiteSuccess = isSiteOption && siteCalendarStatus === 'success';
+                  const isSiteError = isSiteOption && siteCalendarStatus === 'error';
+                  const isSelected = selectedProvider === option.value;
+                  const optionClasses = ['ssc__add-to-calendar__option'];
+
+                  if (
+                    isSiteOption &&
+                    (siteCalendarStatus === 'loading' ||
+                      siteCalendarStatus === 'success' ||
+                      siteCalendarStatus === 'error')
+                  ) {
+                    optionClasses.push(`is-${siteCalendarStatus}`);
+                  }
+                  if (isSiteSuccess) {
+                    optionClasses.push('is-success');
+                  }
+                  if (isSiteError) {
+                    optionClasses.push('is-error');
+                  }
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={optionClasses.join(' ')}
+                      onClick={() => handleAddToCalendar(option.value)}
+                      disabled={(isSelected && !isSiteOption) || isSavingSite}
+                    >
+                      <span className="ssc__add-to-calendar__option-icon">
+                        {option.icon}
+                      </span>
+                      <span className="ssc__add-to-calendar__option-label">
+                        {option.label}
+                      </span>
+                      {isSelected && !isSiteOption && (
+                        <Check size={16} className="ssc__add-to-calendar__check" />
+                      )}
+                      {isSiteSuccess && (
+                        <Check size={16} className="ssc__add-to-calendar__check" />
+                      )}
+                    </button>
+                  );
+                })}
+                {siteCalendarMessage && (
+                  <p
+                    className={`ssc__add-to-calendar__status ssc__add-to-calendar__status--${siteCalendarStatus}`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {siteCalendarMessage}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
-    <div className="ssc__add-to-calendar">
+    <div className="ssc__add-to-calendar" ref={containerRef}>
       <button
         type="button"
         className={`ssc__btn ssc__btn--${buttonStyle} ssc__add-to-calendar__trigger`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleDropdown}
+        ref={triggerRef}
       >
         <Calendar size={18} />
         {buttonText || translate?.('calendar.addToCalendar', 'Add to Calendar')}
         <ChevronDown size={16} className={isOpen ? 'ssc__add-to-calendar__chevron--open' : ''} />
       </button>
-
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="ssc__add-to-calendar__backdrop"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Dropdown */}
-          <div className="ssc__add-to-calendar__dropdown">
-            {/* Event Preview */}
-            <div className="ssc__add-to-calendar__preview">
-              <h4 className="ssc__add-to-calendar__title">{event.title}</h4>
-              
-              <div className="ssc__add-to-calendar__details">
-                <div className="ssc__add-to-calendar__detail">
-                  <Clock size={14} />
-                  <span>{timeInfo.full}</span>
-                </div>
-                
-                {event.location && (
-                  <div className="ssc__add-to-calendar__detail">
-                    {event.location.toLowerCase().includes('http') ||
-                    event.location.toLowerCase().includes('zoom') ||
-                    event.location.toLowerCase().includes('meet') ? (
-                      <Video size={14} />
-                    ) : (
-                      <MapPin size={14} />
-                    )}
-                    <span>{event.location}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="ssc__add-to-calendar__divider" />
-
-            {/* Calendar Options */}
-            <div className="ssc__add-to-calendar__options">
-              <p className="ssc__add-to-calendar__options-title">
-                {translate?.('calendar.selectCalendar', 'Select your calendar:')}
-              </p>
-              
-              {calendarOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className="ssc__add-to-calendar__option"
-                  onClick={() => handleAddToCalendar(option.value)}
-                  disabled={selectedProvider === option.value}
-                >
-                  <span className="ssc__add-to-calendar__option-icon">
-                    {option.icon}
-                  </span>
-                  <span className="ssc__add-to-calendar__option-label">
-                    {option.label}
-                  </span>
-                  {selectedProvider === option.value && (
-                    <Check size={16} className="ssc__add-to-calendar__check" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+      {overlay}
     </div>
   );
 };
