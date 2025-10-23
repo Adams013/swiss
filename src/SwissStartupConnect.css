@@ -3886,6 +3886,15 @@
   z-index: 1;
 }
 
+.ssc__modal > p {
+  color: var(--text-secondary);
+}
+
+.ssc--dark .ssc__modal > p,
+body.ssc--dark .ssc__modal > p {
+  color: var(--text-secondary-dark);
+}
+
 .ssc__modal--wide {
   width: min(780px, 100%);
 }
