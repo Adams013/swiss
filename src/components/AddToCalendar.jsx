@@ -111,11 +111,14 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
       return;
     }
 
+    // For device calendar, trigger download
     addToCalendar(event, provider);
     setSelectedProvider(provider);
+    
+    // Close dropdown after a short delay for device calendar
     setTimeout(() => {
       closeDropdown();
-    }, 1000);
+    }, provider === 'device' ? 500 : 1000);
   };
 
   const calendarOptions = useMemo(

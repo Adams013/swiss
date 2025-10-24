@@ -95,11 +95,20 @@ const AddToCalendarMenu = ({
       return;
     }
 
+    // For device calendar, trigger download and close menu
     addToCalendar(resolvedCalendarEvent, provider);
     if (typeof analyticsEvent === 'function') {
       analyticsEvent(provider, resolvedCalendarEvent);
     }
-    closeMenu();
+    
+    // Close menu after a short delay for device calendar
+    if (provider === 'device') {
+      setTimeout(() => {
+        closeMenu();
+      }, 500);
+    } else {
+      closeMenu();
+    }
   };
 
   const menuId = useRef(`ssc-add-to-calendar-${Math.random().toString(36).slice(2)}`).current;
