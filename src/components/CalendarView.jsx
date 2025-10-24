@@ -6,12 +6,11 @@ import {
   Video,
   Briefcase,
   Users,
-  Plus,
-  Trash2,
   ExternalLink,
   AlertCircle,
 } from 'lucide-react';
-import { addToCalendar, getCalendarOptions, formatEventTime } from '../services/calendarService';
+import { formatEventTime, normalizeEventTimeRange } from '../services/calendarService';
+import AddToCalendarMenu from './AddToCalendarMenu';
 import { getUserCalendarEvents } from '../services/supabaseCalendar';
 
 /**
@@ -67,14 +66,28 @@ const CalendarView = ({ user, translate }) => {
         setEvents(mockEvents);
       } else {
         // Map database fields to component fields
-        const mappedEvents = userEvents.map(event => ({
-          ...event,
-          startTime: event.start_time,
-          endTime: event.end_time,
-          jobTitle: event.job_title,
-          companyName: event.company_name,
-          meetingUrl: event.meeting_url,
-        }));
+        const mappedEvents = userEvents
+          .map((event) => {
+            const { start, end } = normalizeEventTimeRange({
+              ...event,
+              startTime: event.start_time,
+              endTime: event.end_time,
+            });
+
+            if (!start) {
+              return null;
+            }
+
+            return {
+              ...event,
+              startTime: start.toISOString(),
+              endTime: end ? end.toISOString() : null,
+              jobTitle: event.job_title,
+              companyName: event.company_name,
+              meetingUrl: event.meeting_url,
+            };
+          })
+          .filter(Boolean);
         setEvents(mappedEvents);
       }
     } catch (error) {
@@ -85,17 +98,21 @@ const CalendarView = ({ user, translate }) => {
     }
   };
 
-  const handleAddToCalendar = (event, provider) => {
-    const calendarEvent = {
+  const buildCalendarEventPayload = (event) => {
+    const { start, end } = normalizeEventTimeRange(event);
+
+    if (!start || !end) {
+      return null;
+    }
+
+    return {
       title: event.title,
       description: event.description || event.notes || '',
       location: event.location,
-      startTime: event.startTime,
-      endTime: event.endTime,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
       url: event.meetingUrl || event.url || '',
     };
-
-    addToCalendar(calendarEvent, provider);
   };
 
   const formatDate = (dateString) => {
@@ -243,27 +260,11 @@ const CalendarView = ({ user, translate }) => {
 
                     {/* Add to Calendar Options */}
                     <div className="ssc__calendar-event__actions">
-                      <div className="ssc__calendar-event__dropdown">
-                        <button
-                          type="button"
-                          className="ssc__btn ssc__btn--small ssc__btn--secondary"
-                        >
-                          <Plus size={14} />
-                          {translate('calendar.addToCalendar', 'Add to Calendar')}
-                        </button>
-                        <div className="ssc__calendar-event__dropdown-menu">
-                          {getCalendarOptions().map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => handleAddToCalendar(event, option.value)}
-                            >
-                              <span>{option.icon}</span>
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <AddToCalendarMenu
+                        calendarEvent={buildCalendarEventPayload(event)}
+                        translate={translate}
+                        size="small"
+                      />
 
                       {event.url && (
                         <a

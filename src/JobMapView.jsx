@@ -14,6 +14,13 @@ const JobMapView = ({
   translate = (key, fallback) => fallback,
   focusJobId = null,
   onFocusHandled,
+  getLocalizedEventText = (event, field) => {
+    if (!event) {
+      return '';
+    }
+    const value = event?.[field];
+    return typeof value === 'string' ? value : '';
+  },
 }) => {
   // Load cities dynamically
   const { citiesByKey, cityLookup } = useSwissCities();
@@ -308,6 +315,7 @@ const JobMapView = ({
           panelOpen={isPanelOpen}
           visibleLayer={mapLayer}
           translate={translate}
+          getLocalizedEventText={getLocalizedEventText}
         />
 
         {shouldShowJobPanel && (
@@ -328,6 +336,7 @@ const JobMapView = ({
             cityEvents={eventPanelEntries}
             onClose={closePanel}
             translate={translate}
+            getLocalizedEventText={getLocalizedEventText}
           />
         )}
       </div>

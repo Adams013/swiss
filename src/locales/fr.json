@@ -866,5 +866,135 @@
         "Limitez-vous à une page tant que vous avez moins de trois ans d’expérience ; développez en entretien."
       ]
     }
+  },
+  "calendar": {
+    "addToCalendar": "Ajouter au calendrier",
+    "closeAddToCalendar": "Fermer le menu d’ajout au calendrier",
+    "providers": {
+      "google": "Google Agenda",
+      "apple": "Calendrier Apple",
+      "site": "Calendrier Swiss Startup Connect",
+      "outlook": "Calendrier Outlook",
+      "ical": "Télécharger le fichier iCal"
+    },
+    "siteCalendar": {
+      "success": "Événement ajouté à votre calendrier Swiss Startup Connect.",
+      "authRequired": "Connectez-vous pour ajouter des événements à votre calendrier Swiss Startup Connect.",
+      "error": "Impossible d'enregistrer l'événement. Veuillez réessayer."
+    }
+  },
+  "events": {
+    "loading": "Chargement des événements...",
+    "viewDetails": "Voir les détails",
+    "posterAlt": "Affiche de l'événement {{title}}"
+  },
+  "services": {
+    "loginRequired": "Veuillez vous connecter pour acheter des services",
+    "error": "Échec du démarrage du paiement. Veuillez réessayer.",
+    "title": "Services pour startups",
+    "subtitle": "Des outils puissants pour trouver et attirer les meilleurs talents",
+    "perPostLabelShort": "Annonce",
+    "perPost": "par annonce",
+    "month": "mois",
+    "processing": "Traitement...",
+    "purchase": "Acheter maintenant",
+    "subscribe": "S'abonner maintenant",
+    "infoTitle": "Comment ça fonctionne",
+    "step1": {
+      "title": "Choisir un service",
+      "desc": "Sélectionnez le service qui correspond le mieux à vos besoins de recrutement"
+    },
+    "step2": {
+      "title": "Finaliser le paiement",
+      "desc": "Payez en toute sécurité via Stripe avec votre méthode préférée"
+    },
+    "step3": {
+      "title": "Commencer",
+      "desc": "Accédez immédiatement à votre service et commencez à trouver des talents"
+    },
+    "footer": "Tous les paiements sont sécurisés et traités par Stripe. Besoin d'aide ? Contactez notre équipe support.",
+    "analytics": {
+      "feature1": "Suivez les vues de vos offres d'emploi",
+      "feature2": "Surveillez les clics et les métriques d'engagement",
+      "feature3": "Voyez combien de fois vos offres sont partagées",
+      "feature4": "Identifiez les candidats intéressés",
+      "feature5": "Aperçus de performance et tendances"
+    },
+    "talent": {
+      "feature1": "Filtres de recherche avancés",
+      "feature2": "Accédez à des profils étudiants détaillés",
+      "feature3": "Trouvez les meilleures correspondances pour vos postes",
+      "feature4": "Consultez l'expérience et les compétences des étudiants",
+      "feature5": "Accès prioritaire aux meilleurs candidats"
+    },
+    "featured": {
+      "feature1": "Mise en avant dans le menu principal",
+      "feature2": "Visibilité et portée accrues",
+      "feature3": "Démarquez-vous des autres annonces",
+      "feature4": "Attirez davantage de candidats qualifiés",
+      "feature5": "Boostez vos résultats de recrutement"
+    }
+  },
+  "map": {
+    "panel": {
+      "eventsCount": "{{count}} événements"
+    },
+    "popup": {
+      "jobsCount": "{{count}} offres",
+      "eventsCount": "{{count}} événements",
+      "moreEvents": "+{{count}} en plus"
+    }
+  },
+  "subscription": {
+    "overview": {
+      "badge": "Avantages Premium",
+      "description": "Choisissez l'option de facturation qui vous convient et profitez de tous les avantages premium."
+    },
+    "tabs": {
+      "subscribe": "S'abonner",
+      "benefits": "Avantages",
+      "manage": "Gérer",
+      "overview": "Vue d'ensemble",
+      "billing": "Facturation",
+      "profileViews": "Vues de profil",
+      "searches": "Recherches"
+    },
+    "planTabs": {
+      "label": "Choisir une option de facturation"
+    },
+    "planSwitcher": {
+      "benefits": "Vue des avantages"
+    },
+    "redirecting": {
+      "title": "Redirection vers Stripe...",
+      "message": "Vous allez être redirigé(e) en toute sécurité pour finaliser votre paiement",
+      "short": "Redirection..."
+    },
+    "displayPrice": {
+      "monthly": "CHF 7.90",
+      "quarterly": "CHF 20.00",
+      "yearly": "CHF 75.00",
+      "generic": "CHF {{amount}}"
+    },
+    "planSubtitle": "Profitez de tous les avantages premium avec une facturation flexible.",
+    "planAssurance": "Résiliation à tout moment avec garantie de remboursement de 30 jours.",
+    "securePayment": {
+      "label": "Paiement sécurisé via Stripe. Vos informations restent chiffrées.",
+      "title": "Paiements Stripe sécurisés",
+      "description": "Chaque formule est traitée via Stripe avec chiffrement et bénéficie de notre garantie de 30 jours."
+    },
+    "benefits": {
+      "eyebrow": "Avantages premium",
+      "title": "Tout ce que le Premium débloque pour vous",
+      "lead": "Premium met votre profil en avant, fournit des insights en temps réel et accélère les connexions avec les start-up.",
+      "cta": "Choisir une formule",
+      "backed": "Sécurisé par le paiement Stripe"
+    },
+    "interval": {
+      "monthly": "Mensuel",
+      "quarterly": "Trimestriel",
+      "yearly": "Annuel",
+      "months": "Tous les {{count}} mois"
+    }
   }
 }

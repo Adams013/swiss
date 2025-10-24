@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, within, fireEvent, act } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
@@ -32,6 +33,16 @@ jest.mock('./data/companyProfiles', () => ({
   loadCompanyProfilesById: jest.fn(),
   loadMockCompanies: jest.fn(),
 }));
+
+const LocationObserver = ({ onChange }) => {
+  const location = useLocation();
+  React.useEffect(() => {
+    if (typeof onChange === 'function') {
+      onChange(location);
+    }
+  }, [location, onChange]);
+  return null;
+};
 
 jest.mock('./supabaseClient', () => {
   const eventRecord = {
@@ -350,9 +361,14 @@ const setupSupabaseErrorScenario = () => {
   fetchCompanies.mockRejectedValue(new Error('network down'));
 };
 
-const renderApp = async () => {
+const renderApp = async ({ initialEntries = ['/'], onLocationChange } = {}) => {
   const user = userEvent.setup();
-  render(<SwissStartupConnect />);
+  render(
+    <MemoryRouter initialEntries={initialEntries}>
+      {onLocationChange ? <LocationObserver onChange={onLocationChange} /> : null}
+      <SwissStartupConnect />
+    </MemoryRouter>
+  );
   await waitFor(() => expect(loadMockJobs).toHaveBeenCalled());
   await waitFor(() => expect(fetchJobs).toHaveBeenCalled());
   return user;
@@ -415,6 +431,38 @@ it('switches hero copy when changing languages', async () => {
   expect(
     await screen.findByText(/Devenez l’artisan du prochain succès start-up suisse/i)
   ).toBeInTheDocument();
+});
+
+it('syncs navigation with the current route', async () => {
+  setupSupabaseSuccess();
+  const locations = [];
+  const user = await renderApp({
+    onLocationChange: (location) => {
+      locations.push(location);
+    },
+  });
+
+  const navigation = await screen.findByRole('navigation');
+  const opportunitiesTab = within(navigation).getByRole('button', { name: /Opportunities/i });
+  await user.click(opportunitiesTab);
+
+  await waitFor(() => {
+    expect(locations[locations.length - 1]?.pathname).toBe('/jobs');
+  });
+
+  const mapTab = within(navigation).getByRole('button', { name: /Map/i });
+  await user.click(mapTab);
+
+  await waitFor(() => {
+    expect(locations[locations.length - 1]?.pathname).toBe('/map');
+  });
+});
+
+it('restores the active tab from the current route on load', async () => {
+  setupSupabaseSuccess();
+  await renderApp({ initialEntries: ['/events'] });
+
+  expect(await screen.findByRole('heading', { name: /Events/i })).toBeInTheDocument();
 });
 
 it('opens resource modal with fallback data and closes on escape', async () => {

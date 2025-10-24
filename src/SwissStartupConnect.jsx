@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BookmarkPlus,
@@ -33,13 +34,13 @@ import {
   CheckCircle2,
   Star,
   CreditCard,
+  ExternalLink,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
 import { supabase } from './supabaseClient';
 import { tableExists } from './services/supabaseMetadata';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
-import { createCalendarEvent } from './services/supabaseCalendar';
 import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
 import CvFootnote from './components/CvFootnote';
@@ -48,7 +49,7 @@ import AIChat from './components/AIChat';
 import CalendarView from './components/CalendarView';
 import SubscriptionView from './components/SubscriptionView';
 import EmployerServices from './components/EmployerServices';
-import AddToCalendar from './components/AddToCalendar';
+import AddToCalendarMenu from './components/AddToCalendarMenu';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -76,6 +77,43 @@ import { mapSupabaseUser } from './swissStartupConnect/utils/supabase';
 import { useI18n } from './swissStartupConnect/hooks/useI18n';
 import { useThemePreference } from './swissStartupConnect/hooks/useThemePreference';
 import { useJobSearchPreferences } from './swissStartupConnect/hooks/useJobSearchPreferences';
+
+const TAB_ROUTE_SEGMENTS = {
+  general: '',
+  jobs: 'jobs',
+  companies: 'companies',
+  'my-jobs': 'my-jobs',
+  applications: 'applications',
+  messages: 'messages',
+  map: 'map',
+  events: 'events',
+  saved: 'saved',
+};
+
+const getTabFromPathname = (pathname = '/') => {
+  if (typeof pathname !== 'string') {
+    return 'general';
+  }
+
+  const [firstSegment = ''] = pathname.split('/').filter(Boolean);
+  if (!firstSegment) {
+    return 'general';
+  }
+
+  const matchingEntry = Object.entries(TAB_ROUTE_SEGMENTS).find(([, segment]) => segment === firstSegment);
+  return matchingEntry ? matchingEntry[0] : 'general';
+};
+
+const getPathnameForTab = (tab) => {
+  const segment = TAB_ROUTE_SEGMENTS[tab];
+  if (!segment) {
+    return '/';
+  }
+  return `/${segment}`;
+};
+
+const isKnownRouteSegment = (segment) =>
+  typeof segment === 'string' && segment.length > 0 && Object.values(TAB_ROUTE_SEGMENTS).includes(segment);
 const SwissStartupConnect = () => {
   const {
     language,
@@ -93,10 +131,35 @@ const SwissStartupConnect = () => {
 
   const { isDarkMode, toggleTheme } = useThemePreference();
 
-  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTabState] = useState(() => getTabFromPathname(location.pathname));
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+
+  useEffect(() => {
+    const nextTab = getTabFromPathname(location.pathname);
+    setActiveTabState((previous) => (previous === nextTab ? previous : nextTab));
+
+    const [firstSegment = ''] = location.pathname.split('/').filter(Boolean);
+    if (nextTab === 'general' && firstSegment && !isKnownRouteSegment(firstSegment)) {
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const setActiveTab = useCallback(
+    (tab) => {
+      setActiveTabState(tab);
+      const targetPath = getPathnameForTab(tab);
+      const currentPath = getPathnameForTab(getTabFromPathname(location.pathname));
+      if (currentPath !== targetPath) {
+        navigate(targetPath);
+      }
+    },
+    [navigate, location.pathname]
+  );
+
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
 
   const handleBrandClick = useCallback(() => {
     setActiveTab('general');
@@ -156,6 +219,25 @@ const SwissStartupConnect = () => {
     setJobSort,
     jobSortOptions,
   } = useJobSearchPreferences({ translate });
+
+  const getLocalizedEventText = useCallback(
+    (event, field) => {
+      if (!event) {
+        return '';
+      }
+
+      if (language !== 'en') {
+        const localized = event?.translations?.[language]?.[field];
+        if (typeof localized === 'string' && localized.trim()) {
+          return localized;
+        }
+      }
+
+      const original = event?.[field];
+      return typeof original === 'string' ? original : '';
+    },
+    [language]
+  );
 
   const localizedCvTips = useMemo(() => {
     const translated = translate('modals.cv.tips', '');
@@ -5507,11 +5589,10 @@ const SwissStartupConnect = () => {
   };
 
   const navTabs = useMemo(() => {
-    const baseTabs = ['general', 'jobs', 'companies', 'map', 'events'];
     if (user?.type === 'startup') {
-      baseTabs.push('my-jobs', 'applications');
+      return ['general', 'my-jobs', 'applications', 'map', 'events'];
     }
-    return baseTabs;
+    return ['general', 'jobs', 'companies', 'map', 'events'];
   }, [user?.type]);
 
   const navLabels = useMemo(
@@ -5878,9 +5959,9 @@ const SwissStartupConnect = () => {
               aria-label={themeToggleLabel}
               title={themeToggleLabel}
             >
-              <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={16} aria-hidden="true" />
+              <Sun className="ssc__theme-toggle-icon ssc__theme-toggle-icon--sun" size={14} aria-hidden="true" />
               <span className="ssc__theme-toggle-thumb" aria-hidden="true" />
-              <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={16} aria-hidden="true" />
+              <Moon className="ssc__theme-toggle-icon ssc__theme-toggle-icon--moon" size={14} aria-hidden="true" />
             </button>
 
             <div
@@ -7748,6 +7829,7 @@ const SwissStartupConnect = () => {
                 translate={translate}
                 focusJobId={mapFocusJobId}
                 onFocusHandled={() => setMapFocusJobId(null)}
+                getLocalizedEventText={getLocalizedEventText}
               />
             </div>
           </section>
@@ -7813,7 +7895,9 @@ const SwissStartupConnect = () => {
               </div>
 
               {eventsLoading ? (
-                <div className="ssc__loading">Loading events...</div>
+                <div className="ssc__loading">
+                  {translate('events.loading', 'Loading events...')}
+                </div>
               ) : events.length > 0 ? (
                 <div className="ssc__grid">
                   {events.map((event) => {
@@ -7834,11 +7918,22 @@ const SwissStartupConnect = () => {
                         ? timeValue.slice(0, 5)
                         : timeValue
                       : '';
+                    const localizedTitle =
+                      getLocalizedEventText(event, 'title') ||
+                      translate('map.panel.eventFallbackTitle', 'Startup gathering');
+                    const localizedLocation =
+                      getLocalizedEventText(event, 'location') ||
+                      event.location ||
+                      event.location_name ||
+                      '';
+                    const localizedDescription = getLocalizedEventText(event, 'description');
                     const fullAddressSegments = [
                       event.street_address,
                       [event.postal_code, event.city].filter(Boolean).join(' '),
                     ].filter(Boolean);
                     const fullAddress = fullAddressSegments.join(', ');
+                    const registrationUrl =
+                      event.registration_url || event.registrationUrl || event.url;
 
                     return (
                       <article key={event.id} className="ssc__event-card">
@@ -7846,19 +7941,21 @@ const SwissStartupConnect = () => {
                           <div className="ssc__event-poster">
                             <img
                               src={event.poster_url}
-                              alt={`${event.title} poster`}
+                              alt={translate('events.posterAlt', `${localizedTitle} poster`, {
+                                title: localizedTitle,
+                              })}
                               className="ssc__event-poster-image"
                             />
                           </div>
                         )}
                         <div className="ssc__event-content">
                           <div className="ssc__event-header">
-                            <h3>{event.title}</h3>
+                            <h3>{localizedTitle}</h3>
                             <div className="ssc__event-meta">
-                              {event.location && (
+                              {localizedLocation && (
                                 <div className="ssc__event-venue">
                                   <Building2 size={16} />
-                                  <span>{event.location}</span>
+                                  <span>{localizedLocation}</span>
                                 </div>
                               )}
                               <div className="ssc__event-date">
@@ -7879,43 +7976,33 @@ const SwissStartupConnect = () => {
                               )}
                             </div>
                           </div>
-                          {event.description && (
-                            <p className="ssc__event-description">{event.description}</p>
+                          {localizedDescription && (
+                            <p className="ssc__event-description">
+                              {localizedDescription.length > 220
+                                ? `${localizedDescription.slice(0, 217)}...`
+                                : localizedDescription}
+                            </p>
                           )}
+
                           <div className="ssc__event-actions">
-                            <AddToCalendar
-                              event={{
-                                title: event.title,
-                                description: event.description || '',
-                                location: fullAddress || event.location || '',
-                                startTime: eventDate && formattedTime 
-                                  ? new Date(`${event.event_date}T${event.event_time}`).toISOString()
-                                  : eventDate?.toISOString() || new Date().toISOString(),
-                                endTime: eventDate && formattedTime
-                                  ? new Date(new Date(`${event.event_date}T${event.event_time}`).getTime() + 2 * 60 * 60 * 1000).toISOString()
-                                  : new Date(eventDate?.getTime() + 2 * 60 * 60 * 1000 || Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-                              }}
+                            <AddToCalendarMenu
+                              communityEvent={event}
                               translate={translate}
-                              user={user}
-                              onInternalSave={async (calendarEvent) => {
-                                if (!user?.id) {
-                                  throw new Error(translate('calendar.loginRequired', 'Please sign in to save events to your calendar'));
-                                }
-                                const { event: savedEvent, error } = await createCalendarEvent(user.id, {
-                                  type: 'event',
-                                  title: calendarEvent.title,
-                                  description: calendarEvent.description,
-                                  location: calendarEvent.location,
-                                  startTime: calendarEvent.startTime,
-                                  endTime: calendarEvent.endTime,
-                                });
-                                if (error) {
-                                  throw new Error(error);
-                                }
-                                return savedEvent;
-                              }}
-                              buttonStyle="ghost"
+                              size="small"
+                              variant="secondary"
                             />
+
+                            {registrationUrl && (
+                              <a
+                                href={registrationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ssc__event-link"
+                              >
+                                <ExternalLink size={16} aria-hidden="true" />
+                                <span>{translate('events.viewDetails', 'View details')}</span>
+                              </a>
+                            )}
                           </div>
                         </div>
                       </article>
@@ -9445,7 +9532,7 @@ const SwissStartupConnect = () => {
           {user?.type === 'student' ? (
             <SubscriptionView user={user} translate={translate} />
           ) : (
-            <EmployerServices user={user} translate={translate} />
+            <EmployerServices user={user} translate={translate} language={language} />
           )}
         </div>
       </Modal>
