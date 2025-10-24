@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -20,6 +21,7 @@ import {
   getCalendarOptions,
   formatEventTime,
 } from '../services/calendarService';
+import { isSupabaseConfigured } from '../supabaseClient';
 import useSiteCalendarSave from '../hooks/useSiteCalendarSave';
 import './AddToCalendar.css';
 
@@ -83,8 +85,14 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
     resetSiteCalendarStatus();
   }, [resetSiteCalendarStatus]);
 
+  const includeSiteCalendar = isSupabaseConfigured && Boolean(event?.startTime && event?.endTime);
+
   const handleAddToCalendar = async (provider) => {
     if (provider === 'site') {
+      if (!includeSiteCalendar) {
+        return;
+      }
+
       const result = await saveToSiteCalendar(event);
       if (result.success) {
         setSelectedProvider(provider);
@@ -110,7 +118,10 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
     }, 1000);
   };
 
-  const calendarOptions = getCalendarOptions(translate);
+  const calendarOptions = useMemo(
+    () => getCalendarOptions(translate, { includeSiteCalendar }),
+    [includeSiteCalendar, translate],
+  );
   const timeInfo = formatEventTime(event.startTime, event.endTime);
   const updateDropdownPosition = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -351,9 +362,6 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
                       onClick={() => handleAddToCalendar(option.value)}
                       disabled={(isSelected && !isSiteOption) || isSavingSite}
                     >
-                      <span className="ssc__add-to-calendar__option-icon">
-                        {option.icon}
-                      </span>
                       <span className="ssc__add-to-calendar__option-label">
                         {option.label}
                       </span>
@@ -366,7 +374,7 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
                     </button>
                   );
                 })}
-                {siteCalendarMessage && (
+                {includeSiteCalendar && siteCalendarMessage && (
                   <p
                     className={`ssc__add-to-calendar__status ssc__add-to-calendar__status--${siteCalendarStatus}`}
                     role="status"

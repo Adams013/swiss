@@ -893,6 +893,7 @@
     "error": "Échec du démarrage du paiement. Veuillez réessayer.",
     "title": "Services pour startups",
     "subtitle": "Des outils puissants pour trouver et attirer les meilleurs talents",
+    "perPostLabelShort": "Annonce",
     "perPost": "par annonce",
     "month": "mois",
     "processing": "Traitement...",

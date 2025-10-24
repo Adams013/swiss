@@ -64,6 +64,88 @@
   --text-secondary-dark: #cbd5f5;
 }
 
+.ssc--dark .ssc,
+body.ssc--dark .ssc {
+  color: var(--text-primary-dark, #f8fafc);
+}
+
+.ssc--dark .ssc h1,
+.ssc--dark .ssc h2,
+.ssc--dark .ssc h3,
+.ssc--dark .ssc h4,
+.ssc--dark .ssc h5,
+.ssc--dark .ssc h6,
+body.ssc--dark .ssc h1,
+body.ssc--dark .ssc h2,
+body.ssc--dark .ssc h3,
+body.ssc--dark .ssc h4,
+body.ssc--dark .ssc h5,
+body.ssc--dark .ssc h6 {
+  color: var(--text-primary-dark, #f8fafc);
+}
+
+.ssc--dark .ssc p,
+.ssc--dark .ssc li,
+.ssc--dark .ssc small,
+.ssc--dark .ssc label,
+body.ssc--dark .ssc p,
+body.ssc--dark .ssc li,
+body.ssc--dark .ssc small,
+body.ssc--dark .ssc label {
+  color: var(--text-secondary-dark, #cbd5f5);
+}
+
+.ssc--dark .ssc__section-header p,
+.ssc--dark .ssc__steps p,
+.ssc--dark .ssc__tip-card p,
+.ssc--dark .ssc__testimonials p,
+.ssc--dark .ssc__user-menu-header span,
+.ssc--dark .ssc__user-menu button,
+.ssc--dark .ssc__user-menu-role,
+.ssc--dark .ssc__user-role,
+.ssc--dark .ssc__map-event-description,
+.ssc--dark .ssc__map-event-location span,
+.ssc--dark .ssc__map-event-venue span,
+.ssc--dark .ssc__map-side-panel-footer-text,
+.ssc--dark .ssc__map-chip span,
+.ssc--dark .ssc__map-event-title span,
+body.ssc--dark .ssc__section-header p,
+body.ssc--dark .ssc__steps p,
+body.ssc--dark .ssc__tip-card p,
+body.ssc--dark .ssc__testimonials p,
+body.ssc--dark .ssc__user-menu-header span,
+body.ssc--dark .ssc__user-menu button,
+body.ssc--dark .ssc__user-menu-role,
+body.ssc--dark .ssc__user-role,
+body.ssc--dark .ssc__map-event-description,
+body.ssc--dark .ssc__map-event-location span,
+body.ssc--dark .ssc__map-event-venue span,
+body.ssc--dark .ssc__map-side-panel-footer-text,
+body.ssc--dark .ssc__map-chip span,
+body.ssc--dark .ssc__map-event-title span {
+  color: var(--text-secondary-dark, #cbd5f5);
+}
+
+.ssc--dark .ssc__user-menu,
+body.ssc--dark .ssc__user-menu {
+  background: var(--ssc-surface-elevated);
+  border-color: rgba(var(--ssc-primary-rgb), 0.35);
+  box-shadow: 0 22px 48px rgba(5, 12, 24, 0.6);
+}
+
+.ssc--dark .ssc__user-menu button,
+body.ssc--dark .ssc__user-menu button {
+  color: var(--text-primary-dark, #f8fafc);
+}
+
+.ssc--dark .ssc__user-menu button:hover,
+.ssc--dark .ssc__user-menu button:focus-visible,
+body.ssc--dark .ssc__user-menu button:hover,
+body.ssc--dark .ssc__user-menu button:focus-visible {
+  background: rgba(var(--ssc-primary-rgb), 0.18);
+  color: var(--text-primary-dark, #f8fafc);
+}
+
 .ssc {
   min-height: 100vh;
   background: linear-gradient(

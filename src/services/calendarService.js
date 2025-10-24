@@ -16,8 +16,80 @@ const formatICalDate = (date) => {
 /**
  * Generate iCal file content
  */
+const DEFAULT_EVENT_DURATION_MINUTES = 90;
+
+const resolveDurationMinutes = (event, defaultDurationMinutes = DEFAULT_EVENT_DURATION_MINUTES) => {
+  const candidates = [
+    event?.durationMinutes,
+    event?.duration,
+    event?.duration_minutes,
+    event?.durationInMinutes,
+  ];
+
+  const resolved = candidates
+    .map((value) => {
+      if (typeof value === 'string' && value.trim()) {
+        const numeric = Number(value);
+        return Number.isNaN(numeric) ? null : numeric;
+      }
+      return value;
+    })
+    .find((value) => Number.isFinite(value) && value > 0);
+
+  return resolved || defaultDurationMinutes;
+};
+
+export const normalizeEventTimeRange = (
+  event,
+  { defaultDurationMinutes = DEFAULT_EVENT_DURATION_MINUTES } = {},
+) => {
+  if (!event) {
+    return { start: null, end: null };
+  }
+
+  const startCandidate =
+    event.startTime ??
+    event.start_time ??
+    event.start ??
+    event.startDate ??
+    event.start_date ??
+    event.event_date ??
+    null;
+
+  const startDate = normalizeDateInput(startCandidate);
+  if (!startDate) {
+    return { start: null, end: null };
+  }
+
+  const endCandidate =
+    event.endTime ??
+    event.end_time ??
+    event.end ??
+    event.endDate ??
+    event.end_date ??
+    null;
+
+  let endDate = normalizeDateInput(endCandidate);
+  const safeStart = new Date(startDate.getTime());
+
+  if (!endDate || endDate <= safeStart) {
+    const durationMinutes = resolveDurationMinutes(event, defaultDurationMinutes);
+    endDate = new Date(safeStart.getTime() + durationMinutes * 60 * 1000);
+  }
+
+  return {
+    start: safeStart,
+    end: endDate,
+  };
+};
+
 const generateICalContent = (event) => {
-  const { title, description, location, startTime, endTime, url } = event;
+  const { title, description, location, url } = event;
+  const { start, end } = normalizeEventTimeRange(event);
+
+  if (!start || !end) {
+    return '';
+  }
 
   const icalContent = [
     'BEGIN:VCALENDAR',
@@ -26,8 +98,8 @@ const generateICalContent = (event) => {
     'BEGIN:VEVENT',
     `UID:${Date.now()}@swissstartupconnect.ch`,
     `DTSTAMP:${formatICalDate(new Date())}`,
-    `DTSTART:${formatICalDate(new Date(startTime))}`,
-    `DTEND:${formatICalDate(new Date(endTime))}`,
+    `DTSTART:${formatICalDate(start)}`,
+    `DTEND:${formatICalDate(end)}`,
     `SUMMARY:${title}`,
     description ? `DESCRIPTION:${description.replace(/\n/g, '\\n')}` : '',
     location ? `LOCATION:${location}` : '',
@@ -35,7 +107,9 @@ const generateICalContent = (event) => {
     'STATUS:CONFIRMED',
     'END:VEVENT',
     'END:VCALENDAR',
-  ].filter(Boolean).join('\r\n');
+  ]
+    .filter(Boolean)
+    .join('\r\n');
 
   return icalContent;
 };
@@ -45,6 +119,9 @@ const generateICalContent = (event) => {
  */
 export const downloadICalFile = (event) => {
   const content = generateICalContent(event);
+  if (!content) {
+    return;
+  }
   const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -58,15 +135,20 @@ export const downloadICalFile = (event) => {
  * Add to Google Calendar
  */
 export const addToGoogleCalendar = (event) => {
-  const { title, description, location, startTime, endTime } = event;
+  const { title, description, location } = event;
+  const { start, end } = normalizeEventTimeRange(event);
 
-  const start = new Date(startTime).toISOString().replace(/[-:]/g, '').split('.')[0];
-  const end = new Date(endTime).toISOString().replace(/[-:]/g, '').split('.')[0];
+  if (!start || !end) {
+    return;
+  }
+
+  const startValue = start.toISOString().replace(/[-:]/g, '').split('.')[0];
+  const endValue = end.toISOString().replace(/[-:]/g, '').split('.')[0];
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: title,
-    dates: `${start}/${end}`,
+    dates: `${startValue}/${endValue}`,
     details: description || '',
     location: location || '',
   });
@@ -79,10 +161,12 @@ export const addToGoogleCalendar = (event) => {
  * Add to Outlook Calendar
  */
 export const addToOutlookCalendar = (event) => {
-  const { title, description, location, startTime, endTime } = event;
+  const { title, description, location } = event;
+  const { start, end } = normalizeEventTimeRange(event);
 
-  const start = new Date(startTime).toISOString();
-  const end = new Date(endTime).toISOString();
+  if (!start || !end) {
+    return;
+  }
 
   const params = new URLSearchParams({
     path: '/calendar/action/compose',
@@ -90,8 +174,8 @@ export const addToOutlookCalendar = (event) => {
     subject: title,
     body: description || '',
     location: location || '',
-    startdt: start,
-    enddt: end,
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
   });
 
   const url = `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
@@ -102,10 +186,12 @@ export const addToOutlookCalendar = (event) => {
  * Add to Office 365 Calendar
  */
 export const addToOffice365Calendar = (event) => {
-  const { title, description, location, startTime, endTime } = event;
+  const { title, description, location } = event;
+  const { start, end } = normalizeEventTimeRange(event);
 
-  const start = new Date(startTime).toISOString();
-  const end = new Date(endTime).toISOString();
+  if (!start || !end) {
+    return;
+  }
 
   const params = new URLSearchParams({
     path: '/calendar/action/compose',
@@ -113,8 +199,8 @@ export const addToOffice365Calendar = (event) => {
     subject: title,
     body: description || '',
     location: location || '',
-    startdt: start,
-    enddt: end,
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
   });
 
   const url = `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
@@ -125,16 +211,18 @@ export const addToOffice365Calendar = (event) => {
  * Add to Yahoo Calendar
  */
 export const addToYahooCalendar = (event) => {
-  const { title, description, location, startTime, endTime } = event;
+  const { title, description, location } = event;
+  const { start, end } = normalizeEventTimeRange(event);
 
-  const start = formatICalDate(new Date(startTime));
-  const end = formatICalDate(new Date(endTime));
+  if (!start || !end) {
+    return;
+  }
 
   const params = new URLSearchParams({
     v: '60',
     title: title,
-    st: start,
-    et: end,
+    st: formatICalDate(start),
+    et: formatICalDate(end),
     desc: description || '',
     in_loc: location || '',
   });
@@ -462,53 +550,65 @@ export const saveEventToSiteCalendar = async (event) => {
  */
 const FALLBACK_TRANSLATE = (_key, fallback) => fallback;
 
-export const getCalendarOptions = (translate = FALLBACK_TRANSLATE) => {
-  return [
+export const getCalendarOptions = (
+  translate = FALLBACK_TRANSLATE,
+  { includeSiteCalendar = true } = {},
+) => {
+  const options = [
     {
       value: 'google',
       label: translate('calendar.providers.google', 'Google Calendar'),
-      icon: '📅',
     },
-    {
+  ];
+
+  if (includeSiteCalendar) {
+    options.push({
       value: 'site',
       label: translate('calendar.providers.site', 'Swiss Startup Connect Calendar'),
-      icon: '✨',
-    },
+    });
+  }
+
+  options.push(
     {
       value: 'apple',
       label: translate('calendar.providers.apple', 'Apple Calendar'),
-      icon: '🍎',
     },
     {
       value: 'outlook',
       label: translate('calendar.providers.outlook', 'Outlook Calendar'),
-      icon: '📧',
     },
     {
       value: 'ical',
       label: translate('calendar.providers.ical', 'Download iCal file'),
-      icon: '📥',
     },
-  ];
+  );
+
+  return options;
 };
 
 /**
  * Format time for display
  */
 export const formatEventTime = (startTime, endTime) => {
-  const start = new Date(startTime);
-  const end = new Date(endTime);
+  const { start, end } = normalizeEventTimeRange({ startTime, endTime });
+  if (!start || !end) {
+    return {
+      date: '',
+      time: '',
+      full: '',
+    };
+  }
 
-  const dateOptions = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const dateOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   };
-  
-  const timeOptions = { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+
+  const timeOptions = {
+    hour: '2-digit',
+    minute: '2-digit',
   };
 
   const dateStr = start.toLocaleDateString('en-US', dateOptions);
@@ -536,5 +636,6 @@ export default {
   getCalendarOptions,
   formatEventTime,
   detectPreferredCalendar,
+  normalizeEventTimeRange,
 };
 

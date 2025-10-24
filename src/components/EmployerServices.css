@@ -70,20 +70,21 @@
 .ssc__service-card__price {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.4rem;
   margin-bottom: 1.5rem;
   padding: 1rem 1.25rem;
   border-radius: 14px;
   border: 1px solid #e5e7eb;
   background: linear-gradient(135deg, rgba(219, 234, 254, 0.35), rgba(191, 219, 254, 0.35));
+  text-align: center;
 }
 
 .ssc__service-card__price-value {
-  font-size: 1.85rem;
+  font-size: 1.7rem;
   font-weight: 700;
   color: #111827;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .ssc__service-card__price-caption {

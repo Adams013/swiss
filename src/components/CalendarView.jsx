@@ -9,7 +9,7 @@ import {
   ExternalLink,
   AlertCircle,
 } from 'lucide-react';
-import { formatEventTime } from '../services/calendarService';
+import { formatEventTime, normalizeEventTimeRange } from '../services/calendarService';
 import AddToCalendarMenu from './AddToCalendarMenu';
 import { getUserCalendarEvents } from '../services/supabaseCalendar';
 
@@ -66,14 +66,28 @@ const CalendarView = ({ user, translate }) => {
         setEvents(mockEvents);
       } else {
         // Map database fields to component fields
-        const mappedEvents = userEvents.map(event => ({
-          ...event,
-          startTime: event.start_time,
-          endTime: event.end_time,
-          jobTitle: event.job_title,
-          companyName: event.company_name,
-          meetingUrl: event.meeting_url,
-        }));
+        const mappedEvents = userEvents
+          .map((event) => {
+            const { start, end } = normalizeEventTimeRange({
+              ...event,
+              startTime: event.start_time,
+              endTime: event.end_time,
+            });
+
+            if (!start) {
+              return null;
+            }
+
+            return {
+              ...event,
+              startTime: start.toISOString(),
+              endTime: end ? end.toISOString() : null,
+              jobTitle: event.job_title,
+              companyName: event.company_name,
+              meetingUrl: event.meeting_url,
+            };
+          })
+          .filter(Boolean);
         setEvents(mappedEvents);
       }
     } catch (error) {
@@ -84,14 +98,22 @@ const CalendarView = ({ user, translate }) => {
     }
   };
 
-  const buildCalendarEventPayload = (event) => ({
-    title: event.title,
-    description: event.description || event.notes || '',
-    location: event.location,
-    startTime: event.startTime,
-    endTime: event.endTime,
-    url: event.meetingUrl || event.url || '',
-  });
+  const buildCalendarEventPayload = (event) => {
+    const { start, end } = normalizeEventTimeRange(event);
+
+    if (!start || !end) {
+      return null;
+    }
+
+    return {
+      title: event.title,
+      description: event.description || event.notes || '',
+      location: event.location,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      url: event.meetingUrl || event.url || '',
+    };
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
