@@ -13,6 +13,7 @@ import {
   createCommunityCalendarEvent,
   getCalendarOptions,
 } from '../services/calendarService';
+import { isSupabaseConfigured } from '../supabaseClient';
 import useSiteCalendarSave from '../hooks/useSiteCalendarSave';
 import './AddToCalendarMenu.css';
 
@@ -65,8 +66,24 @@ const AddToCalendarMenu = ({
     return null;
   }, [calendarEvent, communityEvent]);
 
+  const calendarOptions = useMemo(
+    () =>
+      getCalendarOptions(translate, {
+        includeSiteCalendar: isSupabaseConfigured && Boolean(resolvedCalendarEvent),
+      }),
+    [resolvedCalendarEvent, translate],
+  );
+  const includesSiteOption = useMemo(
+    () => calendarOptions.some((option) => option.value === 'site'),
+    [calendarOptions],
+  );
+
   const handleSelectOption = async (provider) => {
     if (!resolvedCalendarEvent) {
+      return;
+    }
+
+    if (provider === 'site' && !includesSiteOption) {
       return;
     }
 
@@ -257,7 +274,7 @@ const AddToCalendarMenu = ({
                   : { visibility: 'hidden', pointerEvents: 'none' }
               }
             >
-              {getCalendarOptions(translate).map((option) => {
+              {calendarOptions.map((option) => {
                 const isSiteOption = option.value === 'site';
                 const isLoading = isSiteOption && siteCalendarStatus === 'loading';
                 const isSuccessful = isSiteOption && siteCalendarStatus === 'success';
@@ -273,15 +290,12 @@ const AddToCalendarMenu = ({
                     }${isSuccessful ? ' is-success' : ''}`}
                     disabled={isLoading}
                   >
-                    <span aria-hidden="true" className="ssc__add-to-calendar__emoji">
-                      {option.icon}
-                    </span>
                     <span>{option.label}</span>
                   </button>
                 );
               })}
 
-              {siteCalendarMessage && (
+              {includesSiteOption && siteCalendarMessage && (
                 <p
                   className={`ssc__add-to-calendar__status ssc__add-to-calendar__status--${siteCalendarStatus}`}
                   role="status"

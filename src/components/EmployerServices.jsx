@@ -153,10 +153,20 @@ const EmployerServices = ({ user, translate, language = 'en' }) => {
       return '';
     }
 
-    const basePrice = `${service.currency} ${service.price.toFixed(2)}`;
+    const formatAmount = (price) => {
+      if (typeof price !== 'number') {
+        return '';
+      }
+
+      const rounded = Number.isInteger(price) ? price : Number(price.toFixed(2));
+      return rounded % 1 === 0 ? String(Math.trunc(rounded)) : rounded.toFixed(2);
+    };
+
+    const formattedAmount = formatAmount(service.price);
+    const basePrice = `${service.currency} ${formattedAmount}`;
 
     if (service.interval === 'one-time') {
-      const perPostLabel = translate('services.perPostLabel', 'Per Post');
+      const perPostLabel = translate('services.perPostLabelShort', 'Post');
       return `${basePrice}/${perPostLabel}`;
     }
 
