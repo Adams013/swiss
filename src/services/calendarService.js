@@ -255,6 +255,10 @@ export const addToCalendar = (event, provider = null) => {
   const calendarProvider = provider || detectPreferredCalendar();
 
   switch (calendarProvider) {
+    case 'device':
+      // Device calendar - download .ics file which opens in default calendar app
+      downloadICalFile(event);
+      break;
     case 'google':
       addToGoogleCalendar(event);
       break;
@@ -452,11 +456,18 @@ const coerceEventDateTime = (event) => {
 
 export const createCommunityCalendarEvent = (event) => {
   if (!event) {
+    console.error('createCommunityCalendarEvent: event is null or undefined');
     return null;
   }
 
   const { start, end } = coerceEventDateTime(event);
   if (!start || !end) {
+    console.error('createCommunityCalendarEvent: Failed to parse event date/time', {
+      event_date: event.event_date,
+      event_time: event.event_time,
+      start,
+      end
+    });
     return null;
   }
 
@@ -481,14 +492,17 @@ export const createCommunityCalendarEvent = (event) => {
     descriptionParts.push(`Register: ${registrationUrl}`);
   }
 
-  return {
-    title: event.title,
+  const calendarEvent = {
+    title: event.title || 'Event',
     description: descriptionParts.join('\n\n'),
     location: addressSegments.join(', '),
     startTime: start.toISOString(),
     endTime: end.toISOString(),
     url: registrationUrl || '',
   };
+
+  console.log('createCommunityCalendarEvent: Created calendar event', calendarEvent);
+  return calendarEvent;
 };
 
 export const saveEventToSiteCalendar = async (event) => {
@@ -554,12 +568,7 @@ export const getCalendarOptions = (
   translate = FALLBACK_TRANSLATE,
   { includeSiteCalendar = true } = {},
 ) => {
-  const options = [
-    {
-      value: 'google',
-      label: translate('calendar.providers.google', 'Google Calendar'),
-    },
-  ];
+  const options = [];
 
   if (includeSiteCalendar) {
     options.push({
@@ -568,20 +577,10 @@ export const getCalendarOptions = (
     });
   }
 
-  options.push(
-    {
-      value: 'apple',
-      label: translate('calendar.providers.apple', 'Apple Calendar'),
-    },
-    {
-      value: 'outlook',
-      label: translate('calendar.providers.outlook', 'Outlook Calendar'),
-    },
-    {
-      value: 'ical',
-      label: translate('calendar.providers.ical', 'Download iCal file'),
-    },
-  );
+  options.push({
+    value: 'device',
+    label: translate('calendar.providers.device', 'Add to Device Calendar'),
+  });
 
   return options;
 };

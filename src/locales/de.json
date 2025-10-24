@@ -871,11 +871,8 @@
     "addToCalendar": "Zum Kalender hinzufügen",
     "closeAddToCalendar": "Kalenderauswahl schließen",
     "providers": {
-      "google": "Google Kalender",
-      "apple": "Apple Kalender",
       "site": "Swiss Startup Connect Kalender",
-      "outlook": "Outlook Kalender",
-      "ical": "iCal-Datei herunterladen"
+      "device": "Zu Gerätekalender hinzufügen"
     },
     "siteCalendar": {
       "success": "Veranstaltung wurde zu deinem Swiss Startup Connect Kalender hinzugefügt.",

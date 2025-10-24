@@ -869,13 +869,10 @@
   },
   "calendar": {
     "addToCalendar": "Ajouter au calendrier",
-    "closeAddToCalendar": "Fermer le menu d’ajout au calendrier",
+    "closeAddToCalendar": "Fermer le menu d'ajout au calendrier",
     "providers": {
-      "google": "Google Agenda",
-      "apple": "Calendrier Apple",
       "site": "Calendrier Swiss Startup Connect",
-      "outlook": "Calendrier Outlook",
-      "ical": "Télécharger le fichier iCal"
+      "device": "Ajouter au calendrier de l'appareil"
     },
     "siteCalendar": {
       "success": "Événement ajouté à votre calendrier Swiss Startup Connect.",
