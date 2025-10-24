@@ -196,6 +196,36 @@
   }
 }
 
+/* Error Message */
+.ssc__add-to-calendar__error {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fee2e2;
+  border: 1px solid #f87171;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  animation: errorIn 0.3s ease-out;
+}
+
+@keyframes errorIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dark .ssc__add-to-calendar__error {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
 /* =====================================================
    Calendar Event Card
    ===================================================== */

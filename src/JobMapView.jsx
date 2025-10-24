@@ -158,7 +158,7 @@ const JobMapView = ({
       return;
     }
 
-    const cityKey = resolveCityKeyForJob(targetJob);
+    const cityKey = resolveCityKeyForJob(targetJob, cityLookup);
     if (!cityKey) {
       closePanel();
       if (onFocusHandled) {
@@ -190,6 +190,7 @@ const JobMapView = ({
     jobsByCity,
     onFocusHandled,
     showJobs,
+    cityLookup,
   ]);
 
   const jobPanelEntries = useMemo(() => {

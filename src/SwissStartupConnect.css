@@ -5475,6 +5475,140 @@ body.ssc--dark .ssc__modal-body::-webkit-scrollbar-thumb,
   color: #d1d5db;
 }
 
+/* Dark mode for all map components */
+.ssc--dark .ssc__map-title {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-description {
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__map-toggle {
+  color: #9ca3af;
+}
+
+.ssc--dark .ssc__map-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-toggle.is-active {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-controls {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ssc--dark .ssc__map-side-panel {
+  background: linear-gradient(160deg, #1a202c 0%, #2d3748 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-side-panel--jobs {
+  background: linear-gradient(165deg, #1a3a2e 0%, #2d4a3e 45%, #1f3d2f 100%);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.ssc--dark .ssc__map-side-panel--events {
+  background: linear-gradient(165deg, #2d1f3d 0%, #3d2a4a 45%, #2f1f3d 100%);
+  border-color: rgba(192, 132, 252, 0.2);
+}
+
+.ssc--dark .ssc__map-side-panel-title {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-side-panel-count {
+  color: var(--ssc-ink);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ssc--dark .ssc__map-side-panel-overline {
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__map-side-panel-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__map-side-panel-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-side-panel-footer {
+  background: rgba(255, 255, 255, 0.05);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.ssc--dark .ssc__map-side-panel-footer-text {
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__map-job-card {
+  background: rgba(20, 31, 53, 0.9);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-job-card:hover {
+  background: rgba(20, 31, 53, 0.95);
+}
+
+.ssc--dark .ssc__map-job-title,
+.ssc--dark .ssc__map-event-title {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-job-company,
+.ssc--dark .ssc__map-event-venue {
+  color: var(--ssc-muted);
+}
+
+.ssc--dark .ssc__map-card-arrow {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-chip {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ssc-ink);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ssc--dark .ssc__map-chip--jobs {
+  border-color: rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.1);
+  color: #86efac;
+}
+
+.ssc--dark .ssc__map-chip--events {
+  border-color: rgba(192, 132, 252, 0.25);
+  background: rgba(192, 132, 252, 0.1);
+  color: #d8b4fe;
+}
+
+.ssc--dark .ssc__map-job-cta {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__map-job-card:hover .ssc__map-job-cta {
+  color: #86efac;
+}
+
+.ssc--dark .ssc__map-event-card {
+  background: rgba(20, 31, 53, 0.9);
+  border-color: rgba(192, 132, 252, 0.25);
+}
+
+.ssc--dark .ssc__map-event-location {
+  color: #c4b5fd;
+}
+
 /* Event Components */
 .ssc__event-card {
   background: var(--ssc-surface);
