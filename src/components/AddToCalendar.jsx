@@ -20,20 +20,41 @@ import './AddToCalendar.css';
  * AddToCalendar Component
  * Beautiful dropdown to add events to various calendar apps
  */
-const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }) => {
+const AddToCalendar = ({ 
+  event, 
+  translate, 
+  buttonText, 
+  buttonStyle = 'primary',
+  user = null,
+  onInternalSave = null,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleAddToCalendar = (provider) => {
-    addToCalendar(event, provider);
-    setSelectedProvider(provider);
-    setTimeout(() => {
-      setIsOpen(false);
+  const handleAddToCalendar = async (provider) => {
+    setError(null);
+    setSaving(true);
+    
+    try {
+      await addToCalendar(event, provider, onInternalSave);
+      setSelectedProvider(provider);
+      setTimeout(() => {
+        setIsOpen(false);
+        setSelectedProvider(null);
+        setError(null);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to add to calendar:', err);
+      setError(err.message || 'We could not save this event. Please try again.');
       setSelectedProvider(null);
-    }, 1000);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const calendarOptions = getCalendarOptions();
+  const calendarOptions = getCalendarOptions(Boolean(user && onInternalSave));
   const timeInfo = formatEventTime(event.startTime, event.endTime);
 
   return (
@@ -98,7 +119,7 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
                   type="button"
                   className="ssc__add-to-calendar__option"
                   onClick={() => handleAddToCalendar(option.value)}
-                  disabled={selectedProvider === option.value}
+                  disabled={selectedProvider === option.value || saving}
                 >
                   <span className="ssc__add-to-calendar__option-icon">
                     {option.icon}
@@ -111,6 +132,12 @@ const AddToCalendar = ({ event, translate, buttonText, buttonStyle = 'primary' }
                   )}
                 </button>
               ))}
+              
+              {error && (
+                <div className="ssc__add-to-calendar__error" role="alert">
+                  {error}
+                </div>
+              )}
             </div>
           </div>
         </>

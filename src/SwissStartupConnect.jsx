@@ -39,6 +39,7 @@ import { supabase } from './supabaseClient';
 import { tableExists } from './services/supabaseMetadata';
 import { fetchJobs } from './services/supabaseJobs';
 import { fetchCompanies } from './services/supabaseCompanies';
+import { createCalendarEvent } from './services/supabaseCalendar';
 import JobMapView from './JobMapView';
 import CompanyProfilePage from './components/CompanyProfilePage';
 import CvFootnote from './components/CvFootnote';
@@ -47,6 +48,7 @@ import AIChat from './components/AIChat';
 import CalendarView from './components/CalendarView';
 import SubscriptionView from './components/SubscriptionView';
 import EmployerServices from './components/EmployerServices';
+import AddToCalendar from './components/AddToCalendar';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -7880,6 +7882,41 @@ const SwissStartupConnect = () => {
                           {event.description && (
                             <p className="ssc__event-description">{event.description}</p>
                           )}
+                          <div className="ssc__event-actions">
+                            <AddToCalendar
+                              event={{
+                                title: event.title,
+                                description: event.description || '',
+                                location: fullAddress || event.location || '',
+                                startTime: eventDate && formattedTime 
+                                  ? new Date(`${event.event_date}T${event.event_time}`).toISOString()
+                                  : eventDate?.toISOString() || new Date().toISOString(),
+                                endTime: eventDate && formattedTime
+                                  ? new Date(new Date(`${event.event_date}T${event.event_time}`).getTime() + 2 * 60 * 60 * 1000).toISOString()
+                                  : new Date(eventDate?.getTime() + 2 * 60 * 60 * 1000 || Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                              }}
+                              translate={translate}
+                              user={user}
+                              onInternalSave={async (calendarEvent) => {
+                                if (!user?.id) {
+                                  throw new Error(translate('calendar.loginRequired', 'Please sign in to save events to your calendar'));
+                                }
+                                const { event: savedEvent, error } = await createCalendarEvent(user.id, {
+                                  type: 'event',
+                                  title: calendarEvent.title,
+                                  description: calendarEvent.description,
+                                  location: calendarEvent.location,
+                                  startTime: calendarEvent.startTime,
+                                  endTime: calendarEvent.endTime,
+                                });
+                                if (error) {
+                                  throw new Error(error);
+                                }
+                                return savedEvent;
+                              }}
+                              buttonStyle="ghost"
+                            />
+                          </div>
                         </div>
                       </article>
                     );

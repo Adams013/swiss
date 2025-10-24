@@ -159,10 +159,24 @@ export const detectPreferredCalendar = () => {
 
 /**
  * Smart add to calendar - tries to detect best option
+ * @param {Object} event - Event object with title, description, location, startTime, endTime
+ * @param {string} provider - Calendar provider ('google', 'apple', 'outlook', etc.)
+ * @param {Function} onInternalSave - Callback for internal calendar save (returns Promise)
+ * @returns {Promise} - For internal calendar, returns promise from onInternalSave
  */
-export const addToCalendar = (event, provider = null) => {
+export const addToCalendar = async (event, provider = null, onInternalSave = null) => {
   const calendarProvider = provider || detectPreferredCalendar();
 
+  // Handle internal Swiss Startup Connect Calendar
+  if (calendarProvider === 'internal') {
+    if (onInternalSave && typeof onInternalSave === 'function') {
+      return await onInternalSave(event);
+    } else {
+      throw new Error('Internal calendar save function not provided');
+    }
+  }
+
+  // Handle external calendars
   switch (calendarProvider) {
     case 'google':
       addToGoogleCalendar(event);
@@ -221,8 +235,15 @@ export const createJobEventEvent = (jobEvent) => {
 /**
  * Get calendar options for dropdown
  */
-export const getCalendarOptions = () => {
+export const getCalendarOptions = (includeInternalCalendar = false) => {
+  const options = [];
+  
+  if (includeInternalCalendar) {
+    options.push({ value: 'internal', label: 'Swiss Startup Connect Calendar', icon: '🇨🇭' });
+  }
+  
   return [
+    ...options,
     { value: 'google', label: 'Google Calendar', icon: '📅' },
     { value: 'apple', label: 'Apple Calendar', icon: '🍎' },
     { value: 'outlook', label: 'Outlook Calendar', icon: '📧' },
