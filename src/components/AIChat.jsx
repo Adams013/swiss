@@ -156,6 +156,59 @@ const AIChat = ({ user, translate, initiallyOpen = false }) => {
     setIsExpanded(!isExpanded);
   };
 
+  const renderInlineSegments = (segments, keyPrefix) =>
+    (Array.isArray(segments) ? segments : []).map((segment, segmentIndex) => {
+      const key = `${keyPrefix}-segment-${segmentIndex}`;
+
+      if (segment.type === 'strong') {
+        return (
+          <strong key={key}>{segment.content}</strong>
+        );
+      }
+
+      if (segment.type === 'em') {
+        return (
+          <em key={key}>{segment.content}</em>
+        );
+      }
+
+      if (segment.type === 'br') {
+        return <br key={key} />;
+      }
+
+      return <React.Fragment key={key}>{segment.content}</React.Fragment>;
+    });
+
+  const renderMessageContent = (content, messageIndex) => {
+    const blocks = formatAIResponse(content);
+
+    if (!blocks.length) {
+      return null;
+    }
+
+    return blocks.map((block, blockIndex) => {
+      const keyPrefix = `${messageIndex}-block-${blockIndex}`;
+
+      if (block.type === 'list') {
+        return (
+          <ul key={`${keyPrefix}-list`}>
+            {block.items.map((item, itemIndex) => (
+              <li key={`${keyPrefix}-item-${itemIndex}`}>
+                {renderInlineSegments(item, `${keyPrefix}-item-${itemIndex}`)}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+
+      return (
+        <p key={`${keyPrefix}-paragraph`}>
+          {renderInlineSegments(block.content, `${keyPrefix}-paragraph`)}
+        </p>
+      );
+    });
+  };
+
   return (
     <>
       {/* Chat Widget */}
@@ -222,12 +275,9 @@ const AIChat = ({ user, translate, initiallyOpen = false }) => {
                     )}
                   </div>
                   <div className="ssc__ai-chat__message-content">
-                    <div
-                      className="ssc__ai-chat__message-text"
-                      dangerouslySetInnerHTML={{
-                        __html: formatAIResponse(message.content),
-                      }}
-                    />
+                    <div className="ssc__ai-chat__message-text">
+                      {renderMessageContent(message.content, index)}
+                    </div>
                     <div className="ssc__ai-chat__message-time">
                       {message.timestamp.toLocaleTimeString([], {
                         hour: '2-digit',

@@ -154,7 +154,7 @@ export const addToGoogleCalendar = (event) => {
   });
 
   const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
-  window.open(url, '_blank');
+  window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 /**
@@ -179,7 +179,7 @@ export const addToOutlookCalendar = (event) => {
   });
 
   const url = `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
-  window.open(url, '_blank');
+  window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 /**
@@ -204,7 +204,7 @@ export const addToOffice365Calendar = (event) => {
   });
 
   const url = `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
-  window.open(url, '_blank');
+  window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 /**
@@ -228,7 +228,7 @@ export const addToYahooCalendar = (event) => {
   });
 
   const url = `https://calendar.yahoo.com/?${params.toString()}`;
-  window.open(url, '_blank');
+  window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 /**
