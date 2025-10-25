@@ -3043,6 +3043,29 @@ body.ssc--dark .ssc__tag--soft:hover {
   border-color: #fff;
 }
 
+/* Dark mode CTA text colors */
+.ssc--dark .ssc__cta-inner {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__cta-inner h2 {
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__cta-inner p {
+  color: var(--ssc-ink);
+  opacity: 0.85;
+}
+
+.ssc--dark .ssc__cta .ssc__ghost-btn {
+  border-color: rgba(7, 17, 29, 0.6);
+  color: var(--ssc-ink);
+}
+
+.ssc--dark .ssc__cta .ssc__ghost-btn:hover {
+  border-color: var(--ssc-ink);
+}
+
 .ssc__avatar-small {
   width: 32px;
   height: 32px;
