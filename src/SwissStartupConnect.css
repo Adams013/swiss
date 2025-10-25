@@ -4038,6 +4038,13 @@ body.ssc--dark .ssc__modal-description {
   color: rgba(var(--ssc-ink-rgb), 0.75);
 }
 
+.ssc--dark .ssc__modal h2,
+body.ssc--dark .ssc__modal h2,
+.ssc--dark .ssc__modal h3,
+body.ssc--dark .ssc__modal h3 {
+  color: var(--text-primary-dark, #f8fafc);
+}
+
 .ssc__modal--wide {
   width: min(780px, 100%);
 }
