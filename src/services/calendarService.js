@@ -369,13 +369,18 @@ const parseTimeComponents = (value) => {
     return null;
   }
 
+  // Handle common time formats:
+  // "18:30", "18:30:00", "18:30:00.000", "1830", "6:30 PM", etc.
   const normalized = raw
     .replace(/[hH]/g, ':')
+    .replace(/\s*(AM|PM|am|pm)\s*$/i, '') // Remove AM/PM for now (could enhance later)
     .replace(/\s+/g, '')
-    .replace(/[^0-9:]/g, '');
+    .replace(/[^0-9:\.]/g, ''); // Allow dots for milliseconds
 
-  const timeMatch = normalized.match(/^([0-2]?\d)(?::?([0-5]?\d))?(?::?([0-5]?\d))?$/);
+  // Match HH:MM:SS.mmm or HH:MM:SS or HH:MM or HHMM
+  const timeMatch = normalized.match(/^([0-2]?\d)(?::?([0-5]?\d))?(?::?([0-5]?\d))?(?:\.(\d+))?$/);
   if (!timeMatch) {
+    console.warn('parseTimeComponents: Could not parse time:', value);
     return null;
   }
 
@@ -383,10 +388,12 @@ const parseTimeComponents = (value) => {
   const hours = parseInt(hoursPart, 10);
   const minutes = minutesPart ? parseInt(minutesPart, 10) : 0;
 
-  if (!Number.isFinite(hours) || hours > 23 || minutes > 59) {
+  if (!Number.isFinite(hours) || hours > 23 || !Number.isFinite(minutes) || minutes > 59) {
+    console.warn('parseTimeComponents: Invalid time values:', { hours, minutes, value });
     return null;
   }
 
+  console.log('parseTimeComponents: Parsed:', { value, hours, minutes });
   return { hours, minutes };
 };
 
@@ -401,18 +408,38 @@ const coerceEventDateTime = (event) => {
     endTime: camelEndTime,
   } = event || {};
 
-  const startDate = ensureDate(eventDate);
-  if (!startDate) {
+  console.log('coerceEventDateTime: Input:', { eventDate, eventTime, endTime, alternativeStart, camelEndTime });
+
+  // Parse the base date
+  const baseDateObj = ensureDate(eventDate);
+  if (!baseDateObj) {
+    console.error('coerceEventDateTime: Could not parse event_date:', eventDate);
     return {};
   }
 
+  // Create a local date to avoid timezone issues
+  // Extract year, month, day from the base date
+  const year = baseDateObj.getFullYear();
+  const month = baseDateObj.getMonth();
+  const day = baseDateObj.getDate();
+
+  // Parse start time
   const startTimeParts =
-    parseTimeComponents(eventTime) || parseTimeComponents(alternativeStart) || parseTimeComponents(event?.startTime);
+    parseTimeComponents(eventTime) || 
+    parseTimeComponents(alternativeStart) || 
+    parseTimeComponents(event?.startTime);
+  
+  console.log('coerceEventDateTime: Start time parts:', startTimeParts);
+
+  // Create start date with local timezone
+  const startDate = new Date(year, month, day);
   if (startTimeParts) {
     startDate.setHours(startTimeParts.hours, startTimeParts.minutes, 0, 0);
   } else {
     startDate.setHours(9, 0, 0, 0);
   }
+
+  console.log('coerceEventDateTime: Start date created:', startDate.toISOString());
 
   const resolveEndFromParts = (baseDate, timeValue) => {
     const endParts = parseTimeComponents(timeValue);
@@ -448,6 +475,8 @@ const coerceEventDateTime = (event) => {
     resolvedEnd = new Date(startDate.getTime() + 90 * 60 * 1000);
   }
 
+  console.log('coerceEventDateTime: End date created:', resolvedEnd.toISOString());
+
   return {
     start: startDate,
     end: resolvedEnd,
@@ -460,13 +489,17 @@ export const createCommunityCalendarEvent = (event) => {
     return null;
   }
 
+  console.log('createCommunityCalendarEvent: Input event:', event);
+
   const { start, end } = coerceEventDateTime(event);
   if (!start || !end) {
     console.error('createCommunityCalendarEvent: Failed to parse event date/time', {
       event_date: event.event_date,
       event_time: event.event_time,
+      end_time: event.end_time,
       start,
-      end
+      end,
+      fullEvent: event
     });
     return null;
   }
@@ -506,13 +539,17 @@ export const createCommunityCalendarEvent = (event) => {
 };
 
 export const saveEventToSiteCalendar = async (event) => {
+  console.log('saveEventToSiteCalendar: Called with event:', event);
+
   if (!event) {
+    console.error('saveEventToSiteCalendar: Event is null or undefined');
     return { success: false, code: 'invalid_event' };
   }
 
   try {
     const { data, error } = await supabase.auth.getUser();
     if (error) {
+      console.error('saveEventToSiteCalendar: Auth error:', error);
       return {
         success: false,
         code: 'auth_error',
@@ -522,6 +559,7 @@ export const saveEventToSiteCalendar = async (event) => {
 
     const userId = data?.user?.id;
     if (!userId) {
+      console.warn('saveEventToSiteCalendar: User not authenticated');
       return {
         success: false,
         code: 'auth_required',
@@ -537,8 +575,11 @@ export const saveEventToSiteCalendar = async (event) => {
       url: event.url || null,
     };
 
+    console.log('saveEventToSiteCalendar: Payload to save:', payload);
+
     const { event: createdEvent, error: createError } = await createSiteCalendarEvent(userId, payload);
     if (createError) {
+      console.error('saveEventToSiteCalendar: Save failed:', createError);
       return {
         success: false,
         code: 'save_failed',
@@ -546,11 +587,13 @@ export const saveEventToSiteCalendar = async (event) => {
       };
     }
 
+    console.log('saveEventToSiteCalendar: Successfully saved event:', createdEvent);
     return {
       success: true,
       event: createdEvent,
     };
   } catch (exception) {
+    console.error('saveEventToSiteCalendar: Exception:', exception);
     return {
       success: false,
       code: 'unknown_error',
