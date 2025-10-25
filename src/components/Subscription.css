@@ -119,18 +119,19 @@
 
 .ssc__subscription-view__header {
   text-align: center;
-  margin-bottom: 1.05rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
 }
 
 .ssc__subscription-view__header h2 {
-  margin: 0.35rem 0 0.25rem 0;
-  font-size: 1.7rem;
+  margin: 0.25rem 0 0.2rem 0;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
 .ssc__subscription-view__subtitle {
   margin: 0 auto;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--text-secondary, #6b7280);
   max-width: 560px;
   line-height: 1.45;
@@ -466,6 +467,10 @@
   line-height: 1.1;
   background: linear-gradient(135deg, rgba(var(--ssc-primary-rgb), 0.95), rgba(59, 130, 246, 0.92));
   box-shadow: 0 18px 32px rgba(37, 99, 235, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .ssc__subscription-plan-card__actions .ssc__btn--primary:hover,
@@ -477,6 +482,21 @@
   width: auto;
   align-self: center;
   color: var(--text-secondary, #4b5563);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.ssc__subscription-plan-card__actions .ssc__btn--link:hover {
+  color: var(--text-primary, #1f2937);
 }
 
 .ssc__subscription-guarantee {
@@ -505,7 +525,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: var(--text-primary, #1f2937);
+  color: var(--text-secondary, #4b5563);
 }
 
 /* Benefits tab */
@@ -800,7 +820,7 @@
 }
 
 .ssc--dark .ssc__subscription-secure {
-  color: #cbd5f5;
+  color: #cbd5f5 !important;
 }
 
 .ssc--dark .ssc__subscription-benefits-hero {
