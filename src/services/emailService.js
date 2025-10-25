@@ -1,129 +1,26 @@
 /**
  * Email Service
- * Handles sending emails via Resend, SendGrid, or Supabase Edge Functions
- * 
+ * Routes all outbound email through a secure backend
+ *
  * Setup Instructions:
- * 1. Choose your email provider (Resend recommended for simplicity)
- * 2. Add API key to .env.local:
- *    - For Resend: REACT_APP_RESEND_API_KEY=re_xxxxx
- *    - For SendGrid: REACT_APP_SENDGRID_API_KEY=SG.xxxxx
- * 3. Set FROM_EMAIL in .env.local: REACT_APP_FROM_EMAIL=noreply@yourapp.com
+ * 1. Deploy a Supabase Edge Function (recommended) or custom API that sends email
+ * 2. Configure the client with either:
+ *    - REACT_APP_SUPABASE_URL + REACT_APP_SUPABASE_ANON_KEY
+ *    - REACT_APP_EMAIL_SERVICE_URL (custom proxy endpoint)
+ * 3. Optionally set FROM_EMAIL / FROM_NAME for branding
  */
 
-const EMAIL_PROVIDER = process.env.REACT_APP_EMAIL_PROVIDER || 'resend'; // 'resend', 'sendgrid', or 'supabase'
 const FROM_EMAIL = process.env.REACT_APP_FROM_EMAIL || 'noreply@swissstartupconnect.com';
 const FROM_NAME = process.env.REACT_APP_FROM_NAME || 'Swiss Startup Connect';
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const EMAIL_SERVICE_URL = process.env.REACT_APP_EMAIL_SERVICE_URL;
 
-/**
- * Send email via Resend API (recommended)
- * https://resend.com/docs/send-with-nodejs
- */
-const sendViaResend = async (to, subject, html, text) => {
-  const RESEND_API_KEY = process.env.REACT_APP_RESEND_API_KEY;
+const normalizeRecipients = (to) => (Array.isArray(to) ? to : [to]).filter(Boolean);
 
-  if (!RESEND_API_KEY) {
-    console.warn('Resend API key not configured');
-    return { success: false, error: 'Email service not configured' };
-  }
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
-        to: Array.isArray(to) ? to : [to],
-        subject,
-        html,
-        text,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return { success: false, error: data.message || 'Failed to send email' };
-    }
-
-    return { success: true, messageId: data.id };
-  } catch (error) {
-    console.error('Error sending email via Resend:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Send email via SendGrid API
- * https://docs.sendgrid.com/api-reference/mail-send/mail-send
- */
-const sendViaSendGrid = async (to, subject, html, text) => {
-  const SENDGRID_API_KEY = process.env.REACT_APP_SENDGRID_API_KEY;
-
-  if (!SENDGRID_API_KEY) {
-    console.warn('SendGrid API key not configured');
-    return { success: false, error: 'Email service not configured' };
-  }
-
-  try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }],
-          },
-        ],
-        from: {
-          email: FROM_EMAIL,
-          name: FROM_NAME,
-        },
-        subject,
-        content: [
-          {
-            type: 'text/plain',
-            value: text,
-          },
-          {
-            type: 'text/html',
-            value: html,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return { success: false, error: errorData.errors?.[0]?.message || 'Failed to send email' };
-    }
-
-    return { success: true, messageId: response.headers.get('x-message-id') };
-  } catch (error) {
-    console.error('Error sending email via SendGrid:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Send email via Supabase Edge Function
- * This is useful if you deploy to Supabase and want to keep everything in one place
- */
-const sendViaSupabase = async (to, subject, html, text) => {
-  // This would call your Supabase Edge Function
-  // Example: https://your-project.supabase.co/functions/v1/send-email
-  
-  const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
-
+const sendViaSupabase = async (payload) => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.warn('Supabase not configured');
-    return { success: false, error: 'Email service not configured' };
+    return { success: false, error: 'Supabase not configured' };
   }
 
   try {
@@ -133,12 +30,7 @@ const sendViaSupabase = async (to, subject, html, text) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({
-        to,
-        subject,
-        html,
-        text,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -154,23 +46,66 @@ const sendViaSupabase = async (to, subject, html, text) => {
   }
 };
 
+const sendViaCustomBackend = async (payload) => {
+  if (!EMAIL_SERVICE_URL) {
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const response = await fetch(EMAIL_SERVICE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Failed to send email' };
+    }
+
+    return { success: true, messageId: data.messageId };
+  } catch (error) {
+    console.error('Error sending email via custom backend:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 /**
  * Main email sending function
- * Automatically routes to the configured provider
+ * Automatically routes to the configured backend
  */
 export const sendEmail = async (to, subject, html, text = null) => {
-  // If text not provided, strip HTML for text version
-  const plainText = text || html.replace(/<[^>]*>/g, '');
+  const recipients = normalizeRecipients(to);
 
-  switch (EMAIL_PROVIDER) {
-    case 'sendgrid':
-      return sendViaSendGrid(to, subject, html, plainText);
-    case 'supabase':
-      return sendViaSupabase(to, subject, html, plainText);
-    case 'resend':
-    default:
-      return sendViaResend(to, subject, html, plainText);
+  if (!recipients.length) {
+    return { success: false, error: 'No recipients provided' };
   }
+
+  const payload = {
+    to: recipients,
+    subject,
+    html,
+    text: text || html.replace(/<[^>]*>/g, ''),
+    fromEmail: FROM_EMAIL,
+    fromName: FROM_NAME,
+  };
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    const response = await sendViaSupabase(payload);
+    if (response.success || !EMAIL_SERVICE_URL) {
+      return response;
+    }
+  }
+
+  if (EMAIL_SERVICE_URL) {
+    return sendViaCustomBackend(payload);
+  }
+
+  console.warn('Email service not configured. Please configure a secure backend.');
+  return { success: false, error: 'Email service not configured' };
 };
 
 /**

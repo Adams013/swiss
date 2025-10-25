@@ -7,7 +7,7 @@
  * 2. Get API keys (publishable and secret)
  * 3. Add to .env.local:
  *    REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
- *    (Secret key goes in Edge Function or backend)
+ *    (Secret key stays on the backend only)
  * 4. Create Products and Prices in Stripe Dashboard
  * 5. Set up webhook endpoint
  */
@@ -18,8 +18,6 @@ import { supabase } from '../supabaseClient';
 // IMPORTANT: Never commit actual Stripe keys to version control!
 // Add keys to .env.local file (which is gitignored)
 const STRIPE_PUBLISHABLE_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
-const STRIPE_SECRET_KEY = process.env.REACT_APP_STRIPE_SECRET_KEY;
-const STRIPE_API_URL = process.env.REACT_APP_STRIPE_API_URL || 'https://api.stripe.com';
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
