@@ -3045,16 +3045,16 @@ body.ssc--dark .ssc__tag--soft:hover {
 
 /* Dark mode CTA text colors */
 .ssc--dark .ssc__cta-inner {
-  color: var(--ssc-ink);
+  color: #fff;
 }
 
 .ssc--dark .ssc__cta-inner h2 {
-  color: var(--ssc-ink);
+  color: #fff;
 }
 
 .ssc--dark .ssc__cta-inner p {
-  color: var(--ssc-ink);
-  opacity: 0.85;
+  color: #fff;
+  opacity: 0.92;
 }
 
 .ssc--dark .ssc__cta .ssc__ghost-btn {
