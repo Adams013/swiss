@@ -10128,7 +10128,7 @@ const SwissStartupConnect = () => {
               <X size={18} />
             </button>
             <h2 id={MODAL_TITLE_IDS.security}>{translate('security.modal.title', 'Privacy & security')}</h2>
-            <p>
+            <p className="ssc__modal-description">
               {translate(
                 'security.modal.description',
                 'Keep your contact email up to date and rotate your password regularly for extra safety.'
