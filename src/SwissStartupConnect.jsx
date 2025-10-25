@@ -337,7 +337,7 @@ const SwissStartupConnect = () => {
   const [authError, setAuthError] = useState('');
   const [profile, setProfile] = useState(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [profileModalTab, setProfileModalTab] = useState('profile'); // 'profile', 'calendar'
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({
     full_name: '',
     university: '',
@@ -6104,6 +6104,17 @@ const SwissStartupConnect = () => {
                           {translate('accountMenu.messages', 'Messages')}
                         </button>
                       )}
+                      {user.type === 'student' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCalendarModalOpen(true);
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          {translate('accountMenu.calendar', 'Calendar')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -9074,17 +9085,11 @@ const SwissStartupConnect = () => {
 
       <Modal
         isOpen={profileModalOpen}
-        onRequestClose={() => {
-          setProfileModalOpen(false);
-          setProfileModalTab('profile');
-        }}
+        onRequestClose={() => setProfileModalOpen(false)}
         dialogClassName="ssc__modal--wide"
         aria-labelledby={MODAL_TITLE_IDS.profile}
       >
-        <button type="button" className="ssc__modal-close" onClick={() => {
-          setProfileModalOpen(false);
-          setProfileModalTab('profile');
-        }}>
+        <button type="button" className="ssc__modal-close" onClick={() => setProfileModalOpen(false)}>
               <X size={18} />
             </button>
             <header className="ssc__modal-header">
@@ -9092,32 +9097,12 @@ const SwissStartupConnect = () => {
               <p>
                 {translate(
                   'profileModal.subtitle',
-                  'Manage your profile and calendar'
+                  'Manage your profile'
                 )}
               </p>
             </header>
 
-            {/* Profile Modal Tabs */}
-            <div className="ssc__profile-tabs">
-              <button
-                type="button"
-                className={`ssc__profile-tab ${profileModalTab === 'profile' ? 'ssc__profile-tab--active' : ''}`}
-                onClick={() => setProfileModalTab('profile')}
-              >
-                <User size={18} />
-                {translate('profileModal.tabs.profile', 'Profile')}
-              </button>
-              <button
-                type="button"
-                className={`ssc__profile-tab ${profileModalTab === 'calendar' ? 'ssc__profile-tab--active' : ''}`}
-                onClick={() => setProfileModalTab('calendar')}
-              >
-                <Calendar size={18} />
-                {translate('profileModal.tabs.calendar', 'Calendar')}
-              </button>
-            </div>
-
-            {profileModalTab === 'profile' && (
+            {/* Profile Form */}
               <form className="ssc__modal-body" onSubmit={handleProfileSubmit}>
               <div className="ssc__profile-grid">
                 <label className="ssc__field">
@@ -9352,14 +9337,30 @@ const SwissStartupConnect = () => {
                 </button>
               </div>
             </form>
-            )}
+      </Modal>
 
-            {/* Calendar Tab */}
-            {profileModalTab === 'calendar' && (
-              <div className="ssc__modal-body">
-                <CalendarView user={user} translate={translate} />
-              </div>
+      {/* Calendar Modal */}
+      <Modal
+        isOpen={calendarModalOpen}
+        onRequestClose={() => setCalendarModalOpen(false)}
+        dialogClassName="ssc__modal--wide"
+        aria-labelledby="calendar-modal"
+      >
+        <button type="button" className="ssc__modal-close" onClick={() => setCalendarModalOpen(false)}>
+          <X size={18} />
+        </button>
+        <header className="ssc__modal-header">
+          <h2 id="calendar-modal">{translate('calendarModal.title', 'My Calendar')}</h2>
+          <p>
+            {translate(
+              'calendarModal.subtitle',
+              'Manage your interviews and events'
             )}
+          </p>
+        </header>
+        <div className="ssc__modal-body">
+          <CalendarView user={user} translate={translate} />
+        </div>
       </Modal>
 
       <Modal

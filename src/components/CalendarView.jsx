@@ -8,10 +8,11 @@ import {
   Users,
   ExternalLink,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { formatEventTime, normalizeEventTimeRange } from '../services/calendarService';
 import AddToCalendarMenu from './AddToCalendarMenu';
-import { getUserCalendarEvents } from '../services/supabaseCalendar';
+import { getUserCalendarEvents, deleteCalendarEvent } from '../services/supabaseCalendar';
 
 /**
  * CalendarView Component
@@ -21,6 +22,8 @@ const CalendarView = ({ user, translate }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -95,6 +98,35 @@ const CalendarView = ({ user, translate }) => {
       setEvents([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (!eventId || !user?.id) {
+      return;
+    }
+
+    setDeleting(true);
+    
+    try {
+      const { success, error } = await deleteCalendarEvent(eventId, user.id);
+      
+      if (error) {
+        console.error('Failed to delete event:', error);
+        alert(translate('calendar.deleteError', 'Failed to delete event. Please try again.'));
+        return;
+      }
+
+      if (success) {
+        // Remove from local state
+        setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+        setDeleteConfirm(null);
+      }
+    } catch (error) {
+      console.error('Exception deleting event:', error);
+      alert(translate('calendar.deleteError', 'Failed to delete event. Please try again.'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -277,6 +309,38 @@ const CalendarView = ({ user, translate }) => {
                           {translate('calendar.viewDetails', 'Details')}
                         </a>
                       )}
+
+                      {/* Delete Button */}
+                      {deleteConfirm === event.id ? (
+                        <div className="ssc__calendar-event__delete-confirm">
+                          <span>{translate('calendar.confirmDelete', 'Delete this event?')}</span>
+                          <button
+                            type="button"
+                            className="ssc__btn ssc__btn--small ssc__btn--danger"
+                            onClick={() => handleDeleteEvent(event.id)}
+                            disabled={deleting}
+                          >
+                            {deleting ? translate('calendar.deleting', 'Deleting...') : translate('calendar.yes', 'Yes')}
+                          </button>
+                          <button
+                            type="button"
+                            className="ssc__btn ssc__btn--small ssc__btn--ghost"
+                            onClick={() => setDeleteConfirm(null)}
+                            disabled={deleting}
+                          >
+                            {translate('calendar.cancel', 'Cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ssc__btn ssc__btn--small ssc__btn--ghost ssc__btn--delete"
+                          onClick={() => setDeleteConfirm(event.id)}
+                          title={translate('calendar.delete', 'Delete event')}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -310,6 +374,40 @@ const CalendarView = ({ user, translate }) => {
                         <Clock size={14} />
                         <span>{timeInfo.date}</span>
                       </div>
+                    </div>
+
+                    {/* Delete Button for Past Events */}
+                    <div className="ssc__calendar-event__actions">
+                      {deleteConfirm === event.id ? (
+                        <div className="ssc__calendar-event__delete-confirm">
+                          <span>{translate('calendar.confirmDelete', 'Delete this event?')}</span>
+                          <button
+                            type="button"
+                            className="ssc__btn ssc__btn--small ssc__btn--danger"
+                            onClick={() => handleDeleteEvent(event.id)}
+                            disabled={deleting}
+                          >
+                            {deleting ? translate('calendar.deleting', 'Deleting...') : translate('calendar.yes', 'Yes')}
+                          </button>
+                          <button
+                            type="button"
+                            className="ssc__btn ssc__btn--small ssc__btn--ghost"
+                            onClick={() => setDeleteConfirm(null)}
+                            disabled={deleting}
+                          >
+                            {translate('calendar.cancel', 'Cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ssc__btn ssc__btn--small ssc__btn--ghost ssc__btn--delete"
+                          onClick={() => setDeleteConfirm(event.id)}
+                          title={translate('calendar.delete', 'Delete event')}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
