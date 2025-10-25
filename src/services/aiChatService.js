@@ -12,6 +12,7 @@ import { supabase } from '../supabaseClient';
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 /**
  * System prompt for the AI assistant
@@ -59,9 +60,16 @@ Swiss Tax Info:
  */
 export const chatWithAI = async (messages, options = {}) => {
   try {
-    // Use Edge Function for production (recommended)
-    if (SUPABASE_URL && !OPENAI_API_KEY) {
+    const canUseEdgeFunction = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+    if (canUseEdgeFunction) {
       return await chatViaEdgeFunction(messages, options);
+    }
+
+    if (IS_PRODUCTION) {
+      throw new Error(
+        'Direct OpenAI access is disabled in production. Configure the Supabase Edge Function instead.'
+      );
     }
 
     // Direct OpenAI call (development only - exposes API key)
@@ -111,6 +119,10 @@ export const chatWithAI = async (messages, options = {}) => {
  */
 const chatViaEdgeFunction = async (messages, options = {}) => {
   try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error('Supabase Edge Function is not fully configured');
+    }
+
     const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
       method: 'POST',
       headers: {
@@ -242,20 +254,102 @@ export const isTaxQuestion = (message) => {
 /**
  * Format AI response with markdown-like styling
  */
+const parseInlineSegments = (value) => {
+  const text = typeof value === 'string' ? value : value == null ? '' : String(value);
+  const segments = [];
+  const pattern = /(\*\*|\*)([^*]+?)\1/;
+  let remaining = text;
+
+  while (remaining.length) {
+    const match = remaining.match(pattern);
+
+    if (!match) {
+      segments.push({ type: 'text', content: remaining });
+      break;
+    }
+
+    const [matchedText, marker, content] = match;
+    const matchIndex = match.index ?? 0;
+
+    if (matchIndex > 0) {
+      segments.push({ type: 'text', content: remaining.slice(0, matchIndex) });
+    }
+
+    segments.push({
+      type: marker === '**' ? 'strong' : 'em',
+      content,
+    });
+
+    remaining = remaining.slice(matchIndex + matchedText.length);
+  }
+
+  if (!segments.length) {
+    return [{ type: 'text', content: '' }];
+  }
+
+  return segments;
+};
+
 export const formatAIResponse = (text) => {
-  // Convert **bold** to <strong>
-  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Convert *italic* to <em>
-  text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
-  // Convert line breaks
-  text = text.replace(/\n/g, '<br>');
-  
-  // Convert bullet points
-  text = text.replace(/^- (.+)/gm, '• $1');
-  
-  return text;
+  const input = typeof text === 'string' ? text : text == null ? '' : String(text);
+  const blocks = [];
+  let currentList = null;
+  let currentParagraph = null;
+
+  const flushList = () => {
+    if (currentList) {
+      blocks.push({ type: 'list', items: currentList });
+      currentList = null;
+    }
+  };
+
+  const flushParagraph = () => {
+    if (currentParagraph) {
+      blocks.push({ type: 'paragraph', content: currentParagraph });
+      currentParagraph = null;
+    }
+  };
+
+  const lines = input.split(/\r?\n/);
+
+  lines.forEach((rawLine) => {
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      flushList();
+      flushParagraph();
+      return;
+    }
+
+    if (/^[-*•]\s+/.test(trimmed)) {
+      flushParagraph();
+      if (!currentList) {
+        currentList = [];
+      }
+
+      const itemText = trimmed.replace(/^[-*•]\s+/, '');
+      currentList.push(parseInlineSegments(itemText));
+      return;
+    }
+
+    flushList();
+    if (!currentParagraph) {
+      currentParagraph = [];
+    } else {
+      currentParagraph.push({ type: 'br' });
+    }
+
+    currentParagraph.push(...parseInlineSegments(trimmed));
+  });
+
+  flushList();
+  flushParagraph();
+
+  if (!blocks.length) {
+    return [{ type: 'paragraph', content: [{ type: 'text', content: '' }] }];
+  }
+
+  return blocks;
 };
 
 export default {
