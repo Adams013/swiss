@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { saveEventToSiteCalendar } from '../services/calendarService';
+import { BRAND_CALENDAR_NAME } from '../config/branding';
 
 const buildMessage = (translate, key, fallback) => {
   if (typeof translate === 'function') {
@@ -36,7 +37,7 @@ const useSiteCalendarSave = ({ translate } = {}) => {
         buildMessage(
           translate,
           'calendar.siteCalendar.success',
-          'Event saved to your Swiss Startup Connect calendar.'
+          `Event saved to your ${BRAND_CALENDAR_NAME}.`
         )
       );
       return result;
@@ -47,7 +48,7 @@ const useSiteCalendarSave = ({ translate } = {}) => {
         ? buildMessage(
             translate,
             'calendar.siteCalendar.authRequired',
-            'Sign in to save events to your Swiss Startup Connect calendar.'
+            `Sign in to save events to your ${BRAND_CALENDAR_NAME}.`
           )
         : buildMessage(
             translate,

@@ -40,9 +40,9 @@ serve(async (req) => {
 
     // Get email service configuration
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@swissstartupconnect.com';
-    const fromName = Deno.env.get('FROM_NAME') || 'Swiss Startup Connect';
-    const appUrl = Deno.env.get('APP_URL') || 'https://swissstartupconnect.com';
+    const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@startupconnect.ch';
+    const fromName = Deno.env.get('FROM_NAME') || 'StartupConnect';
+    const appUrl = Deno.env.get('APP_URL') || 'https://startupconnect.ch';
 
     if (!resendApiKey) {
       throw new Error('RESEND_API_KEY not configured');
@@ -224,7 +224,7 @@ function generateEmailContent(
   payload: NotificationPayload,
   appUrl: string
 ): { html: string; text: string; subject: string } {
-  const subject = payload.subject || 'Notification from Swiss Startup Connect';
+  const subject = payload.subject || 'Notification from StartupConnect';
 
   switch (type) {
     case 'job_alert':

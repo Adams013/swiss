@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Crown, X, ExternalLink } from 'lucide-react';
 import './AdContainer.css';
+import { BRAND_NAME } from '../config/branding';
 
 /**
  * AdContainer Component
@@ -123,7 +124,7 @@ const MockAd = ({ placement, size, translate }) => {
     <div className="ssc__ad-mock">
       <div className="ssc__ad-mock__content">
         <h4>{translate?.('ad.mock.title', 'Your Ad Here')}</h4>
-        <p>{translate?.('ad.mock.description', 'Advertise with Swiss Startup Connect')}</p>
+        <p>{translate?.('ad.mock.description', `Advertise with ${BRAND_NAME}`)}</p>
         <button className="ssc__ad-mock__cta">
           {translate?.('ad.mock.cta', 'Learn More')}
           <ExternalLink size={14} />

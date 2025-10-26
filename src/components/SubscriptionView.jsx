@@ -27,6 +27,7 @@ import {
 } from '../services/stripeService';
 import TestModeBanner from './TestModeBanner';
 import './Subscription.css';
+import { BRAND_NAME } from '../config/branding';
 
 const PLAN_VIEW_PREFIX = 'interval-';
 
@@ -480,7 +481,7 @@ const SubscriptionView = ({ user, translate }) => {
                     <p>
                       {translate(
                         'subscription.overview.description',
-                        'Unlock the Swiss Startup Connect premium experience with every option below.'
+                        `Unlock the ${BRAND_NAME} premium experience with every option below.`
                       )}
                     </p>
                   </div>

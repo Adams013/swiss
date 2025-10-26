@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../supabaseClient';
+import { BRAND_NAME } from '../config/branding';
 
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
@@ -17,7 +18,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 /**
  * System prompt for the AI assistant
  */
-const SYSTEM_PROMPT = `You are a helpful career assistant for Swiss Startup Connect, a job platform connecting students with Swiss startups.
+const SYSTEM_PROMPT = `You are a helpful career assistant for ${BRAND_NAME}, a job platform connecting students with Swiss startups.
 
 Your expertise includes:
 - Swiss salary expectations and ranges for different roles

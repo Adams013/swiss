@@ -333,7 +333,6 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
   border: none;
   background: transparent;
   color: inherit;
@@ -352,34 +351,28 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   outline-offset: 3px;
 }
 
-.ssc__brand:hover .ssc__brand-name,
-.ssc__brand:focus-visible .ssc__brand-name {
-  text-decoration: underline;
+.ssc__brand:hover,
+.ssc__brand:focus-visible {
+  transform: translateY(-1px);
 }
 
-.ssc__brand-badge {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--ssc-primary), var(--ssc-accent));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
 
-.ssc__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+.ssc__brand-logo {
+  display: block;
+  height: 40px;
+  width: auto;
 }
 
 .ssc__brand-name {
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
+  border: 0;
 }
 
 .ssc__brand-sub {
@@ -4435,19 +4428,8 @@ body.ssc--dark .ssc__modal-body::-webkit-scrollbar-thumb,
     padding: 0.35rem 0;
   }
 
-  .ssc__header.is-compact .ssc__brand {
-    gap: 0.65rem;
-  }
-
-  .ssc__header.is-compact .ssc__brand-badge {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    font-size: 1.1rem;
-  }
-
-  .ssc__header.is-compact .ssc__brand-name {
-    font-size: 1.05rem;
+  .ssc__header.is-compact .ssc__brand-logo {
+    height: 32px;
   }
 
   .ssc__header.is-compact .ssc__nav,

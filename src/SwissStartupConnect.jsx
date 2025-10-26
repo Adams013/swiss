@@ -57,6 +57,7 @@ import {
 } from './data/companyProfiles';
 import { loadMockJobs } from './data/mockJobs';
 import { loadMockEvents } from './data/mockEvents';
+import { BRAND_NAME } from './config/branding';
 
 import { LANGUAGE_OPTIONS, LANGUAGE_TAG_PREFIX, mapLanguageValueToCanonical, filterLanguageTags, resolveJobLanguageLabels } from './swissStartupConnect/utils/language';
 import { readCachedProfile, writeCachedProfile, removeCachedProfile } from './swissStartupConnect/utils/profileStorage';
@@ -77,6 +78,9 @@ import { mapSupabaseUser } from './swissStartupConnect/utils/supabase';
 import { useI18n } from './swissStartupConnect/hooks/useI18n';
 import { useThemePreference } from './swissStartupConnect/hooks/useThemePreference';
 import { useJobSearchPreferences } from './swissStartupConnect/hooks/useJobSearchPreferences';
+
+const PUBLIC_URL = process.env.PUBLIC_URL || '';
+const BRAND_LOGO_WORDMARK = `${PUBLIC_URL}/assets/startupconnect-logo-wordmark.svg`;
 
 const TAB_ROUTE_SEGMENTS = {
   general: '',
@@ -5929,10 +5933,8 @@ const SwissStartupConnect = () => {
               aria-label={brandHomeLabel}
               title={brandHomeLabel}
             >
-              <div className="ssc__brand-badge">⌁</div>
-              <div className="ssc__brand-text">
-                <span className="ssc__brand-name">SwissStartup Connect</span>
-              </div>
+              <img className="ssc__brand-logo" src={BRAND_LOGO_WORDMARK} alt={BRAND_NAME} />
+              <span className="ssc__brand-name">{BRAND_NAME}</span>
             </button>
 
             <nav className="ssc__nav">
@@ -8442,7 +8444,7 @@ const SwissStartupConnect = () => {
       <footer className="ssc__footer">
         <div className="ssc__max">
           <span>
-            {translate('footer.madeIn', `© ${currentYear} SwissStartup Connect. Built in Switzerland.`, {
+            {translate('footer.madeIn', `© ${currentYear} ${BRAND_NAME}. Built in Switzerland.`, {
               year: currentYear,
             })}
           </span>
@@ -10056,7 +10058,7 @@ const SwissStartupConnect = () => {
             <div className="ssc__auth-switch">
               {isRegistering
                 ? translate('authModal.switch.haveAccount', 'Already have an account?')
-                : translate('authModal.switch.newHere', 'New to SwissStartup Connect?')}{' '}
+                : translate('authModal.switch.newHere', `New to ${BRAND_NAME}?`)}{' '}
               <button
                 type="button"
                 onClick={() => {

@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { createCalendarEvent as createSiteCalendarEvent } from './supabaseCalendar';
+import { BRAND_CALENDAR_NAME, BRAND_DOMAIN, BRAND_NAME } from '../config/branding';
 
 /**
  * Calendar Service
@@ -94,9 +95,9 @@ const generateICalContent = (event) => {
   const icalContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Swiss Startup Connect//Events//EN',
+    `PRODID:-//${BRAND_NAME}//Events//EN`,
     'BEGIN:VEVENT',
-    `UID:${Date.now()}@swissstartupconnect.ch`,
+    `UID:${Date.now()}@${BRAND_DOMAIN}`,
     `DTSTAMP:${formatICalDate(new Date())}`,
     `DTSTART:${formatICalDate(start)}`,
     `DTEND:${formatICalDate(end)}`,
@@ -616,7 +617,7 @@ export const getCalendarOptions = (
   if (includeSiteCalendar) {
     options.push({
       value: 'site',
-      label: translate('calendar.providers.site', 'Swiss Startup Connect Calendar'),
+      label: translate('calendar.providers.site', BRAND_CALENDAR_NAME),
     });
   }
 
