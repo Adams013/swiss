@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-labelledby="wordmark-title wordmark-desc">
+  <title id="wordmark-title">StartupConnect wordmark</title>
+  <desc id="wordmark-desc">StartupConnect icon with the Startup and Connect text lockup.</desc>
+  <defs>
+    <linearGradient id="icon-base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d4f8b" />
+      <stop offset="50%" stop-color="#1f3b4d" />
+      <stop offset="100%" stop-color="#102030" />
+    </linearGradient>
+    <linearGradient id="icon-accent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffb580" />
+      <stop offset="100%" stop-color="#ff8c5a" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(16 16)">
+    <rect x="0" y="0" width="168" height="168" rx="48" fill="url(#icon-base)" />
+    <g fill="none" stroke="#fef9f5" stroke-width="7" opacity="0.5">
+      <path d="M36 88c0-32 26-54 54-54s54 22 54 54" stroke-linecap="round" />
+      <path d="M36 88c0 32 26 54 54 54s54-22 54-54" stroke-linecap="round" />
+    </g>
+    <circle cx="60" cy="56" r="14" fill="#fef9f5" opacity="0.55" />
+    <circle cx="136" cy="124" r="11" fill="#fef9f5" opacity="0.45" />
+    <path
+      d="M64 126c16 12 44 12 58-2 10-10 10-26-8-32l-16-5c-14-4-18-20-8-30 12-12 36-9 46 5"
+      fill="none"
+      stroke="url(#icon-accent)"
+      stroke-width="9"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <text
+      x="84"
+      y="94"
+      fill="#fefaf4"
+      font-size="82"
+      font-weight="700"
+      font-family="'Inter', 'Segoe UI', sans-serif"
+      text-anchor="middle"
+      dominant-baseline="central"
+    >SC</text>
+  </g>
+  <g transform="translate(220 40)">
+    <text
+      font-family="'Inter', 'Segoe UI', sans-serif"
+      font-size="88"
+      font-weight="700"
+      letter-spacing="-0.04em"
+      fill="#102030"
+    >
+      <tspan fill="#102030">Startup</tspan>
+      <tspan dx="8" fill="#ff8c5a">Connect</tspan>
+    </text>
+    <text
+      x="4"
+      y="120"
+      font-family="'Inter', 'Segoe UI', sans-serif"
+      font-size="24"
+      letter-spacing="0.22em"
+      fill="#4b5c6a"
+    >EMPOWERING SWISS INNOVATION</text>
+  </g>
+</svg>

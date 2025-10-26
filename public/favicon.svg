@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="fav-title fav-desc">
+  <title id="fav-title">StartupConnect favicon</title>
+  <desc id="fav-desc">Compact StartupConnect monogram in a rounded square.</desc>
+  <defs>
+    <linearGradient id="fav-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d4f8b" />
+      <stop offset="100%" stop-color="#1f3b4d" />
+    </linearGradient>
+    <linearGradient id="fav-accent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffb580" />
+      <stop offset="100%" stop-color="#ff8c5a" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#fav-grad)" />
+  <g fill="none" stroke="#fefaf4" stroke-width="3" opacity="0.55">
+    <path d="M12 32c0-12 9-20 20-20s20 8 20 20" stroke-linecap="round" />
+    <path d="M12 32c0 12 9 20 20 20s20-8 20-20" stroke-linecap="round" />
+  </g>
+  <path
+    d="M20 44c7 5 19 5 25-1 4-4 4-11-4-13l-8-2c-6-2-8-8-4-12 5-5 15-3 20 2"
+    fill="none"
+    stroke="url(#fav-accent)"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <text
+    x="50%"
+    y="56%"
+    fill="#fefaf4"
+    font-size="26"
+    font-weight="700"
+    font-family="'Inter', 'Segoe UI', sans-serif"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >SC</text>
+</svg>

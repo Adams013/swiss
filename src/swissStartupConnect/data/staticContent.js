@@ -71,7 +71,7 @@ export const testimonials = [
   {
     id: 1,
     quote:
-      'SwissStartup Connect made it effortless to discover startups that matched my values. I shipped production code in week two.',
+      'StartupConnect made it effortless to discover startups that matched my values. I shipped production code in week two.',
     name: 'Lina H.',
     role: 'ETH Zürich, Software Engineering Student',
   },

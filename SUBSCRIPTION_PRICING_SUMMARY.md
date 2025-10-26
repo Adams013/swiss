@@ -332,14 +332,14 @@ We want to make premium **affordable and simple** for students. One price, all f
 
 ### Students
 
-👉 [View Student Premium Plans](/subscription/student)  
-📧 Questions? support@swissstartupconnect.ch
+👉 [View Student Premium Plans](/subscription/student)
+📧 Questions? support@startupconnect.ch
 
 ### Employers
 
 👉 [View Employer Features](/subscription/employer)  
 📊 [See Feature Comparison](/features)  
-💬 [Talk to Sales](mailto:sales@swissstartupconnect.ch)
+💬 [Talk to Sales](mailto:sales@startupconnect.ch)
 
 ---
 
@@ -347,7 +347,7 @@ We want to make premium **affordable and simple** for students. One price, all f
 
 Need a custom package for your organization?
 
-**Email:** sales@swissstartupconnect.ch  
+**Email:** sales@startupconnect.ch
 **Phone:** +41 XX XXX XX XX  
 
 We offer:
@@ -359,5 +359,5 @@ We offer:
 ---
 
 **Last Updated:** October 2025  
-**Questions?** [Contact Support](mailto:support@swissstartupconnect.ch)
+**Questions?** [Contact Support](mailto:support@startupconnect.ch)
 
