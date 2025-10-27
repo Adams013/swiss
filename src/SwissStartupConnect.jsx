@@ -5931,7 +5931,7 @@ const SwissStartupConnect = () => {
             >
               <div className="ssc__brand-badge">⌁</div>
               <div className="ssc__brand-text">
-                <span className="ssc__brand-name">SwissStartup Connect</span>
+                <span className="ssc__brand-name">Startup Connect</span>
               </div>
             </button>
 
@@ -8442,7 +8442,7 @@ const SwissStartupConnect = () => {
       <footer className="ssc__footer">
         <div className="ssc__max">
           <span>
-            {translate('footer.madeIn', `© ${currentYear} SwissStartup Connect. Built in Switzerland.`, {
+            {translate('footer.madeIn', `© ${currentYear} Startup Connect. Built in Switzerland.`, {
               year: currentYear,
             })}
           </span>
@@ -10056,7 +10056,7 @@ const SwissStartupConnect = () => {
             <div className="ssc__auth-switch">
               {isRegistering
                 ? translate('authModal.switch.haveAccount', 'Already have an account?')
-                : translate('authModal.switch.newHere', 'New to SwissStartup Connect?')}{' '}
+                : translate('authModal.switch.newHere', 'New to Startup Connect?')}{' '}
               <button
                 type="button"
                 onClick={() => {

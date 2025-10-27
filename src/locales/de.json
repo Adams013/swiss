@@ -584,7 +584,7 @@
     },
     "switch": {
       "haveAccount": "Schon ein Konto?",
-      "newHere": "Neu bei SwissStartup Connect?",
+      "newHere": "Neu bei Startup Connect?",
       "signInInstead": "Stattdessen anmelden",
       "createProfile": "Profil erstellen"
     },
@@ -721,7 +721,7 @@
   },
   "testimonials": {
     "1": {
-      "quote": "SwissStartup Connect hat es mir leicht gemacht, Start-ups zu finden, die zu meinen Werten passen. Schon in Woche zwei habe ich produktiven Code ausgeliefert.",
+      "quote": "Startup Connect hat es mir leicht gemacht, Start-ups zu finden, die zu meinen Werten passen. Schon in Woche zwei habe ich produktiven Code ausgeliefert.",
       "role": "ETH Zürich, Studentin Software Engineering"
     },
     "2": {
@@ -804,7 +804,7 @@
     "secondary": "Start-ups entdecken"
   },
   "footer": {
-    "madeIn": "© {{year}} SwissStartup Connect. Entwickelt in der Schweiz.",
+    "madeIn": "© {{year}} Startup Connect. Entwickelt in der Schweiz.",
     "cookies": "Cookies",
     "privacy": "Datenschutz",
     "impressum": "Impressum"
@@ -871,12 +871,12 @@
     "addToCalendar": "Zum Kalender hinzufügen",
     "closeAddToCalendar": "Kalenderauswahl schließen",
     "providers": {
-      "site": "Swiss Startup Connect Kalender",
+      "site": "Startup Connect Kalender",
       "device": "Zu Gerätekalender hinzufügen"
     },
     "siteCalendar": {
-      "success": "Veranstaltung wurde zu deinem Swiss Startup Connect Kalender hinzugefügt.",
-      "authRequired": "Melde dich an, um Veranstaltungen zu deinem Swiss Startup Connect Kalender hinzuzufügen.",
+      "success": "Veranstaltung wurde zu deinem Startup Connect Kalender hinzugefügt.",
+      "authRequired": "Melde dich an, um Veranstaltungen zu deinem Startup Connect Kalender hinzuzufügen.",
       "error": "Die Veranstaltung konnte nicht gespeichert werden. Bitte versuche es erneut."
     }
   },

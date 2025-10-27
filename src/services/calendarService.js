@@ -94,7 +94,7 @@ const generateICalContent = (event) => {
   const icalContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Swiss Startup Connect//Events//EN',
+    'PRODID:-//Startup Connect//Events//EN',
     'BEGIN:VEVENT',
     `UID:${Date.now()}@swissstartupconnect.ch`,
     `DTSTAMP:${formatICalDate(new Date())}`,
@@ -616,7 +616,7 @@ export const getCalendarOptions = (
   if (includeSiteCalendar) {
     options.push({
       value: 'site',
-      label: translate('calendar.providers.site', 'Swiss Startup Connect Calendar'),
+      label: translate('calendar.providers.site', 'Startup Connect Calendar'),
     });
   }
 
