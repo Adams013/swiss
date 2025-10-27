@@ -12,7 +12,7 @@
 
 const EMAIL_PROVIDER = process.env.REACT_APP_EMAIL_PROVIDER || 'resend'; // 'resend', 'sendgrid', or 'supabase'
 const FROM_EMAIL = process.env.REACT_APP_FROM_EMAIL || 'noreply@swissstartupconnect.com';
-const FROM_NAME = process.env.REACT_APP_FROM_NAME || 'Swiss Startup Connect';
+const FROM_NAME = process.env.REACT_APP_FROM_NAME || 'Startup Connect';
 
 /**
  * Send email via Resend API (recommended)
@@ -213,7 +213,7 @@ export const sendNewCompanyJobEmail = async (to, companyName, job) => {
  * Send weekly digest email
  */
 export const sendWeeklyDigestEmail = async (to, stats) => {
-  const subject = 'Your weekly job digest - Swiss Startup Connect';
+  const subject = 'Your weekly job digest - Startup Connect';
   
   const html = generateWeeklyDigestHTML(stats);
   const text = generateWeeklyDigestText(stats);
@@ -259,7 +259,7 @@ function generateJobAlertHTML(jobs, searchName) {
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #ffffff;">
       <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="margin: 0; color: #1f2937; font-size: 24px;">Swiss Startup Connect</h1>
+          <h1 style="margin: 0; color: #1f2937; font-size: 24px;">Startup Connect</h1>
         </div>
         
         <div style="background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
@@ -309,7 +309,7 @@ View job: ${process.env.REACT_APP_URL}?job=${job.id}
   `).join('\n');
 
   return `
-Swiss Startup Connect
+Startup Connect
 
 ${jobs.length} new job${jobs.length > 1 ? 's' : ''} matching "${searchName}"
 

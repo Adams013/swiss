@@ -123,7 +123,7 @@ const MockAd = ({ placement, size, translate }) => {
     <div className="ssc__ad-mock">
       <div className="ssc__ad-mock__content">
         <h4>{translate?.('ad.mock.title', 'Your Ad Here')}</h4>
-        <p>{translate?.('ad.mock.description', 'Advertise with Swiss Startup Connect')}</p>
+        <p>{translate?.('ad.mock.description', 'Advertise with Startup Connect')}</p>
         <button className="ssc__ad-mock__cta">
           {translate?.('ad.mock.cta', 'Learn More')}
           <ExternalLink size={14} />

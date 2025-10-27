@@ -480,7 +480,7 @@ const SubscriptionView = ({ user, translate }) => {
                     <p>
                       {translate(
                         'subscription.overview.description',
-                        'Unlock the Swiss Startup Connect premium experience with every option below.'
+                        'Unlock the Startup Connect premium experience with every option below.'
                       )}
                     </p>
                   </div>

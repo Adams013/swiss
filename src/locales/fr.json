@@ -584,7 +584,7 @@
     },
     "switch": {
       "haveAccount": "Vous avez déjà un compte ?",
-      "newHere": "Nouveau sur SwissStartup Connect ?",
+      "newHere": "Nouveau sur Startup Connect ?",
       "signInInstead": "Se connecter",
       "createProfile": "Créer un profil"
     },
@@ -637,7 +637,7 @@
     "sortLabel": "Trier par",
     "count": "{{count}} startup{{plural}}",
     "emptyTitle": "Aucune startup pour le moment",
-    "emptyDescription": "Revenez bientôt pour découvrir les nouvelles équipes qui recrutent sur SwissStartup Connect."
+    "emptyDescription": "Revenez bientôt pour découvrir les nouvelles équipes qui recrutent sur Startup Connect."
   },
   "applications": {
     "viewCv": "Voir le CV",
@@ -721,7 +721,7 @@
   },
   "testimonials": {
     "1": {
-      "quote": "SwissStartup Connect a rendu la découverte des startups alignées avec mes valeurs très simple. J’ai livré du code en production dès la deuxième semaine.",
+      "quote": "Startup Connect a rendu la découverte des startups alignées avec mes valeurs très simple. J'ai livré du code en production dès la deuxième semaine.",
       "role": "ETH Zurich, étudiante en ingénierie logicielle"
     },
     "2": {
@@ -804,7 +804,7 @@
     "secondary": "Explorer les startups"
   },
   "footer": {
-    "madeIn": "© {{year}} SwissStartup Connect. Conçu en Suisse.",
+    "madeIn": "© {{year}} Startup Connect. Conçu en Suisse.",
     "cookies": "Cookies",
     "privacy": "Confidentialité",
     "impressum": "Mentions légales"
@@ -871,12 +871,12 @@
     "addToCalendar": "Ajouter au calendrier",
     "closeAddToCalendar": "Fermer le menu d'ajout au calendrier",
     "providers": {
-      "site": "Calendrier Swiss Startup Connect",
+      "site": "Calendrier Startup Connect",
       "device": "Ajouter au calendrier de l'appareil"
     },
     "siteCalendar": {
-      "success": "Événement ajouté à votre calendrier Swiss Startup Connect.",
-      "authRequired": "Connectez-vous pour ajouter des événements à votre calendrier Swiss Startup Connect.",
+      "success": "Événement ajouté à votre calendrier Startup Connect.",
+      "authRequired": "Connectez-vous pour ajouter des événements à votre calendrier Startup Connect.",
       "error": "Impossible d'enregistrer l'événement. Veuillez réessayer."
     }
   },

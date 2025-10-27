@@ -36,7 +36,7 @@ const useSiteCalendarSave = ({ translate } = {}) => {
         buildMessage(
           translate,
           'calendar.siteCalendar.success',
-          'Event saved to your Swiss Startup Connect calendar.'
+          'Event saved to your Startup Connect calendar.'
         )
       );
       return result;
@@ -47,7 +47,7 @@ const useSiteCalendarSave = ({ translate } = {}) => {
         ? buildMessage(
             translate,
             'calendar.siteCalendar.authRequired',
-            'Sign in to save events to your Swiss Startup Connect calendar.'
+            'Sign in to save events to your Startup Connect calendar.'
           )
         : buildMessage(
             translate,

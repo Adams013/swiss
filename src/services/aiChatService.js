@@ -16,7 +16,7 @@ const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
 /**
  * System prompt for the AI assistant
  */
-const SYSTEM_PROMPT = `You are a helpful career assistant for Swiss Startup Connect, a job platform connecting students with Swiss startups.
+const SYSTEM_PROMPT = `You are a helpful career assistant for Startup Connect, a job platform connecting students with Swiss startups.
 
 Your expertise includes:
 - Swiss salary expectations and ranges for different roles
