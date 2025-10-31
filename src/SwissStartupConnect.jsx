@@ -37,6 +37,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import './SwissStartupConnect.css';
+import startupConnectLogoWithText from './assets/branding/startup-connect-logo-with-text.svg';
 import { supabase } from './supabaseClient';
 import { tableExists } from './services/supabaseMetadata';
 import { fetchJobs } from './services/supabaseJobs';
@@ -5929,10 +5930,12 @@ const SwissStartupConnect = () => {
               aria-label={brandHomeLabel}
               title={brandHomeLabel}
             >
-              <div className="ssc__brand-badge">⌁</div>
-              <div className="ssc__brand-text">
-                <span className="ssc__brand-name">SwissStartup Connect</span>
-              </div>
+              <img
+                src={startupConnectLogoWithText}
+                alt=""
+                className="ssc__brand-logo"
+                aria-hidden="true"
+              />
             </button>
 
             <nav className="ssc__nav">
