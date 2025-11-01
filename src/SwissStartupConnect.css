@@ -39,6 +39,9 @@
   --ssc-hero-tab-active-border: rgba(var(--ssc-primary-rgb), 0.3);
   --ssc-hero-panel-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 255, 0.86));
   --ssc-hero-panel-border: rgba(var(--ssc-primary-rgb), 0.16);
+  --ssc-hero-highlight-bg: rgba(255, 255, 255, 0.9);
+  --ssc-hero-highlight-border: rgba(var(--ssc-primary-rgb), 0.12);
+  --ssc-hero-highlight-shadow: 0 20px 40px rgba(var(--ssc-primary-rgb), 0.12);
 }
 
 .ssc--dark {
@@ -82,6 +85,9 @@
   --ssc-hero-tab-active-border: rgba(var(--ssc-primary-rgb), 0.45);
   --ssc-hero-panel-bg: linear-gradient(135deg, rgba(12, 18, 38, 0.96), rgba(8, 14, 32, 0.9));
   --ssc-hero-panel-border: rgba(var(--ssc-primary-rgb), 0.32);
+  --ssc-hero-highlight-bg: rgba(6, 12, 32, 0.82);
+  --ssc-hero-highlight-border: rgba(var(--ssc-primary-rgb), 0.2);
+  --ssc-hero-highlight-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .ssc--dark .ssc,
@@ -1053,9 +1059,9 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   align-items: flex-start;
   padding: 1rem 1.15rem;
   border-radius: 18px;
-  background: rgba(6, 12, 32, 0.82);
-  border: 1px solid rgba(var(--ssc-primary-rgb), 0.2);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--ssc-hero-highlight-bg);
+  border: 1px solid var(--ssc-hero-highlight-border);
+  box-shadow: var(--ssc-hero-highlight-shadow);
 }
 
 .ssc__hero-highlight-icon {
