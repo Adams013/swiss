@@ -409,6 +409,8 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   display: flex;
   align-items: center;
   gap: 1.35rem;
+  row-gap: 0.35rem;
+  flex-wrap: wrap;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -462,7 +464,8 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__brand-name {
   font-weight: 700;
   letter-spacing: -0.01em;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.15;
 }
 
 .ssc__brand-sub {

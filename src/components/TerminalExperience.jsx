@@ -1,15 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Activity,
-  CircuitBoard,
-  RadioTower,
-  Radar,
-  ShieldHalf,
-  Compass,
-} from 'lucide-react';
+import { Radar, ShieldHalf, Compass } from 'lucide-react';
 import './TerminalExperience.css';
 
-const HERO_WORD_REVEAL_INTERVAL_MS = 220;
+const HERO_WORD_REVEAL_INTERVAL_MS = 320;
 
 const technologyCards = [
   {
@@ -90,34 +83,6 @@ const benefits = [
   },
 ];
 
-const updates = [
-  {
-    id: 'update-01',
-    date: 'Oct 02, 2024',
-    title: 'Talent Graph adds campus cohorts',
-    excerpt: 'ETH, EPFL, and HSG student groups now showcase live projects for founders scouting emerging skills.',
-  },
-  {
-    id: 'update-02',
-    date: 'Sep 12, 2024',
-    title: 'Founder Studio debuts Swiss scaleup track',
-    excerpt: 'Growth-stage teams unlock dedicated curators to co-design briefs for mission-critical hires.',
-  },
-];
-
-const credibilityBands = [
-  {
-    id: 'built-by',
-    title: 'Built with the Ecosystem',
-    partners: ['ETH Entrepreneur Club', 'EPFL Innovation Park', 'Fongit', 'Swissnex'],
-  },
-  {
-    id: 'trusted-by',
-    title: 'Trusted by Operators',
-    partners: ['Climeworks', 'Planted Foods', 'Wingtra', 'Beekeeper'],
-  },
-];
-
 const swissCities = [
   { id: 'geneva', name: 'Geneva', x: 18, y: 46 },
   { id: 'lausanne', name: 'Lausanne', x: 26, y: 40 },
@@ -133,11 +98,8 @@ const swissCities = [
 const TerminalExperience = ({
   translate = (key, fallback) => fallback,
   onHeroCta,
-  onFinalCta,
   isDarkMode = false,
 }) => {
-  const canvasRef = useRef(null);
-  const sequenceRef = useRef(null);
   const featureRefs = useRef([]);
   const benefitsRef = useRef([]);
   const yardPanelRef = useRef(null);
@@ -202,140 +164,6 @@ const TerminalExperience = ({
 
     return () => clearTimeout(timeout);
   }, [heroWordProgress, heroWords.length, isTestEnvironment]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.CanvasRenderingContext2D === 'undefined') {
-      return undefined;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return undefined;
-    }
-
-    let context = null;
-    try {
-      context = canvas.getContext('2d');
-    } catch (error) {
-      context = null;
-    }
-
-    if (!context) {
-      return undefined;
-    }
-
-    let animationFrame;
-
-    const drawFrame = () => {
-      if (!canvas) {
-        return;
-      }
-      const rect = sequenceRef.current?.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || 1;
-      let progress = 0;
-      if (rect) {
-        const start = viewportHeight * 0.1;
-        const end = viewportHeight * 0.9;
-        const visible = Math.min(Math.max(end - rect.top, 0), end - start);
-        progress = Math.min(Math.max((rect.height - rect.top - start) / (rect.height + viewportHeight), 0), 1);
-        if (visible <= 0) {
-          progress = 0;
-        }
-      }
-
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      const backgroundTop = isDarkMode ? '#0b152c' : '#f2eee5';
-      const backgroundBottom = isDarkMode ? '#132448' : '#e4d7c6';
-      const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, backgroundTop);
-      gradient.addColorStop(1, backgroundBottom);
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      const ridgeColors = isDarkMode
-        ? ['rgba(215, 48, 42, 0.22)', 'rgba(108, 142, 181, 0.18)', 'rgba(255, 255, 255, 0.08)']
-        : ['rgba(215, 48, 42, 0.22)', 'rgba(41, 82, 163, 0.18)', 'rgba(108, 142, 181, 0.16)'];
-
-      ridgeColors.forEach((color, index) => {
-        const baseY = canvas.height * (0.55 + index * 0.08);
-        const amplitude = canvas.height * (0.08 + index * 0.02);
-        const offset = progress * 120 + index * 60;
-        context.beginPath();
-        context.moveTo(-160, baseY + Math.sin(offset * 0.01) * amplitude);
-        const ridgeSegments = 6;
-        for (let segment = 0; segment <= ridgeSegments; segment += 1) {
-          const t = segment / ridgeSegments;
-          const x = canvas.width * t;
-          const wave = Math.sin((t + progress) * Math.PI * (2 + index));
-          const y = baseY + wave * amplitude * (0.6 - index * 0.1);
-          context.lineTo(x, y);
-        }
-        context.lineTo(canvas.width + 40, canvas.height + 40);
-        context.lineTo(-120, canvas.height + 40);
-        context.closePath();
-        context.fillStyle = color;
-        context.fill();
-      });
-
-      const routeColor = isDarkMode ? 'rgba(215, 48, 42, 0.65)' : 'rgba(210, 50, 40, 0.55)';
-      const accentColor = isDarkMode ? 'rgba(108, 142, 181, 0.45)' : 'rgba(41, 82, 163, 0.4)';
-      const routes = 3;
-
-      for (let i = 0; i < routes; i += 1) {
-        context.beginPath();
-        const phase = progress * (1.2 + i * 0.2);
-        const startY = canvas.height * (0.28 + i * 0.12);
-        const controlOffset = canvas.width * (0.25 + i * 0.06);
-        context.moveTo(-120 + phase * 180, startY);
-        context.bezierCurveTo(
-          canvas.width * 0.25,
-          startY - controlOffset * 0.12,
-          canvas.width * 0.55,
-          startY + controlOffset * 0.12,
-          canvas.width + 120 - phase * 160,
-          canvas.height * (0.42 + i * 0.08)
-        );
-        context.lineWidth = 3 - i * 0.4;
-        context.strokeStyle = i === 0 ? routeColor : accentColor;
-        context.globalAlpha = 0.65;
-        context.stroke();
-        context.globalAlpha = 1;
-
-        const nodeCount = 6;
-        for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex += 1) {
-          const nodeProgress = (phase + nodeIndex / nodeCount + progress * 0.4) % 1;
-          const x = canvas.width * nodeProgress;
-          const y = startY + Math.sin(progress * Math.PI * 2 + nodeIndex) * (12 - i * 2) + i * 18;
-          const radius = 4 + (1 - i * 0.2);
-          context.beginPath();
-          context.fillStyle = i === 0 ? routeColor : accentColor;
-          context.globalAlpha = 0.6 + 0.3 * Math.sin(progress * 8 + nodeIndex);
-          context.arc(x, y, radius, 0, Math.PI * 2);
-          context.fill();
-          context.globalAlpha = 1;
-        }
-      }
-
-      animationFrame = requestAnimationFrame(drawFrame);
-    };
-
-    const handleResize = () => {
-      if (!canvas) return;
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    };
-
-    handleResize();
-    drawFrame();
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrame);
-    };
-  }, [isDarkMode]);
 
   useEffect(() => {
     if (isTestEnvironment) {
@@ -420,22 +248,8 @@ const TerminalExperience = ({
     return () => observer.disconnect();
   }, []);
 
-  const displayedHeadline = useMemo(() => {
-    if (heroWords.length === 0) {
-      return heroHeadline;
-    }
-
-    if (heroWordProgress === 0) {
-      return '';
-    }
-
-    if (heroWordProgress >= heroWords.length) {
-      return heroHeadline;
-    }
-
-    return heroWords.slice(0, heroWordProgress).join(' ');
-  }, [heroHeadline, heroWordProgress, heroWords]);
-
+  const heroAccessibleHeadline = heroHeadline;
+  const heroHasWords = heroWords.length > 0;
   const isHeroHeadlineComplete = heroWordProgress >= heroWords.length && heroWords.length > 0;
 
   const themeMode = isDarkMode ? 'dark' : 'light';
@@ -455,11 +269,23 @@ const TerminalExperience = ({
         <div className="terminal-hero__content">
           <p className="terminal-hero__badge">{heroBadge}</p>
           <h1 className="terminal-hero__headline" aria-live="polite">
-            {displayedHeadline}
+            <span className="terminal-hero__headline-sr">{heroAccessibleHeadline}</span>
+            <span className="terminal-hero__headline-words" aria-hidden="true">
+              {heroHasWords
+                ? heroWords.map((word, index) => (
+                    <span
+                      key={`${word}-${index}`}
+                      className={`terminal-hero__word ${heroWordProgress > index ? 'is-visible' : ''}`}
+                    >
+                      {word}
+                    </span>
+                  ))
+                : heroAccessibleHeadline}
+            </span>
             <span className="terminal-hero__cursor" aria-hidden="true">
-            {heroWordProgress < heroWords.length ? '_' : ''}
-          </span>
-        </h1>
+              {heroWordProgress < heroWords.length ? '_' : ''}
+            </span>
+          </h1>
           {(isHeroHeadlineComplete || heroWords.length === 0) && (
             <p className="terminal-hero__tagline">{heroTagline}</p>
           )}
@@ -478,10 +304,6 @@ const TerminalExperience = ({
         <div className="terminal-scroll-indicator" aria-hidden="true">
           <span>{heroScrollPrompt}</span>
         </div>
-      </section>
-
-      <section className="terminal-sequence" ref={sequenceRef}>
-        <canvas ref={canvasRef} className="terminal-sequence__canvas" aria-hidden="true" />
       </section>
 
       <section className="terminal-technology">
@@ -662,94 +484,9 @@ const TerminalExperience = ({
         </ul>
       </section>
 
-      {credibilityBands.map((band) => (
-        <section key={band.id} className="terminal-credibility">
-          <header>
-            <h3>{band.title}</h3>
-          </header>
-          <div className="terminal-credibility__grid">
-            {band.partners.map((partner) => (
-              <span key={partner} className="terminal-credibility__partner">
-                {partner}
-              </span>
-            ))}
-          </div>
-        </section>
-      ))}
-
-      <section className="terminal-updates">
-        <header className="terminal-section-header">
-          <h2>Platform Updates</h2>
-          <p>Fresh signals on how the community is evolving.</p>
-        </header>
-        <div className="terminal-updates__grid">
-          {updates.map((update) => (
-            <article key={update.id} className="terminal-updates__card">
-              <time dateTime={update.date}>{update.date}</time>
-              <h3>{update.title}</h3>
-              <p>{update.excerpt}</p>
-              <button type="button" className="terminal-updates__link" aria-label={`Read more about ${update.title}`}>
-                <span>Read Update</span>
-                <ArrowIcon />
-              </button>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="terminal-finale">
-        <div className="terminal-finale__path" aria-hidden="true" />
-        <header>
-          <h2>How it Works</h2>
-          <p>Trace how candidates move from discovery to offers with support at every moment.</p>
-        </header>
-        <button
-          type="button"
-          className="terminal-finale__cta"
-          onClick={() => {
-            if (typeof onFinalCta === 'function') {
-              onFinalCta();
-            }
-          }}
-        >
-          TAKE A CLOSER LOOK
-        </button>
-      </section>
-
-      <footer className="terminal-footer">
-        <div className="terminal-footer__inner">
-          <div className="terminal-footer__brand">Swiss Startup Connect</div>
-          <div className="terminal-footer__links">
-            <a href="#vision">Vision</a>
-            <a href="#technology">Technology</a>
-            <a href="#careers">Careers</a>
-            <a href="#contact">Contact</a>
-          </div>
-          <div className="terminal-footer__social">
-            <a href="https://www.linkedin.com" aria-label="LinkedIn">
-              <CircuitBoard size={18} />
-            </a>
-            <a href="https://www.twitter.com" aria-label="Twitter">
-              <RadioTower size={18} />
-            </a>
-            <a href="https://www.youtube.com" aria-label="YouTube">
-              <Activity size={18} />
-            </a>
-          </div>
-          <p>© {new Date().getFullYear()} Swiss Startup Connect. All rights reserved.</p>
-        </div>
-      </footer>
+      
     </div>
   );
 };
-
-const ArrowIcon = () => (
-  <svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true">
-    <g fill="none" stroke="currentColor" strokeWidth="1.5">
-      <line x1="1" y1="6" x2="24" y2="6" />
-      <polyline points="19 1 25 6 19 11" />
-    </g>
-  </svg>
-);
 
 export default TerminalExperience;

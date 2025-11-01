@@ -6456,7 +6456,6 @@ const SwissStartupConnect = () => {
             <TerminalExperience
               translate={translate}
               onHeroCta={() => setActiveTab('jobs')}
-              onFinalCta={() => setActiveTab('jobs')}
               isDarkMode={isDarkMode}
             />
             {showLegacyGeneralHero && (
