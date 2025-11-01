@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" role="img">
+  <defs>
+    <linearGradient id="startupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B8CFF" />
+      <stop offset="100%" stop-color="#7C4DFF" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="160" rx="28" fill="#0B1120" />
+  <g transform="translate(40 36)">
+    <rect x="0" y="0" width="88" height="88" rx="24" fill="url(#startupGradient)" />
+    <path d="M32 68l12-24-16-16 16-16 28 28-16 28z" fill="#FFFFFF" opacity="0.9" />
+    <path d="M60 68l12-24-16-16 16-16 28 28-16 28z" fill="#E9EDFF" opacity="0.85" />
+    <path d="M28 88h32l24-48L84 20z" fill="#0B1120" opacity="0.2" />
+  </g>
+  <text x="160" y="78" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="40" font-weight="700" fill="#F5F7FF">
+    Startup Connect
+  </text>
+  <text x="160" y="118" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="22" font-weight="500" fill="#ADB5D6">
+    Swiss Innovation Network
+  </text>
+</svg>
