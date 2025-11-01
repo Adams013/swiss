@@ -27,11 +27,11 @@
   },
   "terminal": {
     "hero": {
-      "badge": "LE PROGRÈS EST UN TERMINAL SANS FIN",
-      "headline": "Nous avons réinventé l’avenir de la logistique par la cour",
-      "tagline": "Faire circuler les marchandises pour mettre le monde en mouvement.",
+      "badge": "SWISS STARTUP CONNECT",
+      "headline": "Nous avons réinventé la manière dont les startups suisses et les talents se rencontrent",
+      "tagline": "Nous associons des étudiant·e·s ambitieux·ses aux fondateurs qui bâtissent la suite.",
       "scrollPrompt": "FAITES DÉFILER POUR EXPLORER",
-      "cta": "GO"
+      "cta": "DÉCOUVRIR LES RÔLES"
     }
   },
   "stats": {

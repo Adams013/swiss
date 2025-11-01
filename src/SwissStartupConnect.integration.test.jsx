@@ -418,7 +418,7 @@ it('switches hero copy when changing languages', async () => {
   const user = await renderApp();
 
   expect(
-    await screen.findByText(/We have reinvented the future of logistics through the yard/i)
+    await screen.findByText(/We have reinvented how Swiss startups and talent connect/i)
   ).toBeInTheDocument();
 
   const languageGroup = await screen.findByRole('group', { name: /language/i });
@@ -431,7 +431,7 @@ it('switches hero copy when changing languages', async () => {
   await user.click(frenchOption);
 
   expect(
-    await screen.findByText(/Nous avons réinventé l’avenir de la logistique par la cour/i)
+    await screen.findByText(/Nous avons réinventé la manière dont les startups suisses et les talents se rencontrent/i)
   ).toBeInTheDocument();
 });
 

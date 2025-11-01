@@ -6453,7 +6453,11 @@ const SwissStartupConnect = () => {
 
         {activeTab === 'general' && (
           <>
-            <TerminalExperience translate={translate} />
+            <TerminalExperience
+              translate={translate}
+              onHeroCta={() => setActiveTab('jobs')}
+              onFinalCta={() => setActiveTab('jobs')}
+            />
             {showLegacyGeneralHero && (
               <section className="ssc__hero">
             <div className="ssc__max">

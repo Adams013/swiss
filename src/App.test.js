@@ -4,6 +4,6 @@ import App from './App';
 test('renders the hero headline', async () => {
   render(<App />);
   expect(
-    await screen.findByText(/We have reinvented the future of logistics through the yard/i)
+    await screen.findByText(/We have reinvented how Swiss startups and talent connect/i)
   ).toBeInTheDocument();
 });

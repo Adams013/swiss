@@ -13,59 +13,59 @@ const HERO_REVEAL_INTERVAL_MS = 12;
 
 const technologyCards = [
   {
-    id: 'autonomous-routing',
+    id: 'talent-graph',
     icon: Compass,
-    title: 'Autonomous Routing',
-    description: 'Neural pathfinding eliminates congestion by directing every trailer with millisecond precision.',
+    title: 'Curated Talent Graph',
+    description: 'Swiss Startup Connect maps verified founders, teams, and talent for precise, values-led matches.',
     accent: 'cobalt',
   },
   {
-    id: 'predictive-orchestration',
+    id: 'signal-intelligence',
     icon: Radar,
-    title: 'Predictive Orchestration',
-    description: 'Edge analytics predict choke points and balance crews before friction appears.',
+    title: 'Signal Intelligence',
+    description: 'Live hiring signals surface the roles, skills, and salary ranges rising across Swiss innovation hubs.',
     accent: 'magenta',
   },
   {
-    id: 'adaptive-safety',
+    id: 'studio-briefings',
     icon: ShieldHalf,
-    title: 'Adaptive Safety Mesh',
-    description: 'Real-time compliance and failsafe protocols wrap each move in responsive protection.',
+    title: 'Founder Studio Briefings',
+    description: 'Guided onboarding keeps candidates and startup teams aligned on expectations before the first call.',
     accent: 'cyan',
   },
 ];
 
 const industriesServed = [
-  'Aerospace',
-  'E-commerce',
-  'Automotive',
-  'Pharma',
-  'Energy',
-  'Retail',
-  'Manufacturing',
-  'Food Logistics',
+  'Climate Tech',
+  'Fintech',
+  'Healthtech',
+  'Robotics',
+  'Mobility',
+  'Food Innovation',
+  'AI & Data',
+  'Cybersecurity',
 ];
 
 const featureMoments = [
   {
-    id: 'perception',
-    title: 'Perception Grid',
-    copy: 'Sensor fusion stitches an uninterrupted awareness grid across every gate and dock.',
+    id: 'signal-intake',
+    title: 'Signal Intake',
+    copy: 'We gather venture, university, and community signals to understand who is hiring and what skills unlock offers.',
   },
   {
-    id: 'orchestration',
-    title: 'Orchestration Engine',
-    copy: 'AI agents negotiate dwell time, carrier priority, and live SLAs for fluid yard throughput.',
+    id: 'match-studio',
+    title: 'Match Studio',
+    copy: 'Human curators and product intelligence pair talent with founders through transparent briefs and expectations.',
   },
   {
-    id: 'integration',
-    title: 'Integration Fabric',
-    copy: 'APIs harmonize TMS, WMS, and fleet telemetry so decisions propagate instantly.',
+    id: 'launch-support',
+    title: 'Launch Support',
+    copy: 'Calendar tooling, interview prep, and compensation insights help candidates step into roles with confidence.',
   },
   {
-    id: 'telemetry',
-    title: 'Telemetry Memory',
-    copy: 'Historic patterns replay in high fidelity to forecast delays before they surface.',
+    id: 'momentum-memory',
+    title: 'Momentum Memory',
+    copy: 'We learn from every placement to recommend next steps and surface alumni willing to mentor the next cohort.',
   },
 ];
 
@@ -73,20 +73,20 @@ const benefits = [
   {
     id: 'benefit-01',
     label: 'Benefit 01',
-    headline: '60% faster gate turns',
-    copy: 'Model-driven appointment windows slash idle time and keep inbound velocity compounding.',
+    headline: 'Faster hiring cycles',
+    copy: 'Startups cut weeks from their process by meeting applicants who already understand founder pace.',
   },
   {
     id: 'benefit-02',
     label: 'Benefit 02',
-    headline: 'Unified control plane',
-    copy: 'Command every yard in one pane with synchronized automations and human overrides.',
+    headline: 'One connected workspace',
+    copy: 'Talent pipelines, saved roles, and feedback loops live in one interface for teams and candidates.',
   },
   {
     id: 'benefit-03',
     label: 'Benefit 03',
-    headline: 'Proven partner ecosystem',
-    copy: 'Allied integrators and carriers rely on the platform to keep critical inventory moving.',
+    headline: 'Community proof',
+    copy: 'Universities, accelerators, and alumni validate every story so trust travels with every introduction.',
   },
 ];
 
@@ -94,27 +94,27 @@ const updates = [
   {
     id: 'update-01',
     date: 'Oct 02, 2024',
-    title: 'Yard OS 4.0 expands multi-site cognition',
-    excerpt: 'New adaptive site clusters let operators choreograph seasonal surges with one directive.',
+    title: 'Talent Graph adds campus cohorts',
+    excerpt: 'ETH, EPFL, and HSG student groups now showcase live projects for founders scouting emerging skills.',
   },
   {
     id: 'update-02',
     date: 'Sep 12, 2024',
-    title: 'Terminal alliance announces transatlantic pilot',
-    excerpt: 'European ports join the network to synchronize container staging with inland depots.',
+    title: 'Founder Studio debuts Swiss scaleup track',
+    excerpt: 'Growth-stage teams unlock dedicated curators to co-design briefs for mission-critical hires.',
   },
 ];
 
 const credibilityBands = [
   {
     id: 'built-by',
-    title: 'Built by the Industry',
-    partners: ['Vector Logistics', 'RailSync Labs', 'Helix Freight', 'Northpoint Data'],
+    title: 'Built with the Ecosystem',
+    partners: ['ETH Entrepreneur Club', 'EPFL Innovation Park', 'Fongit', 'Swissnex'],
   },
   {
     id: 'trusted-by',
     title: 'Trusted by Operators',
-    partners: ['Orion Warehousing', 'PrimeFleet', 'Everway', 'Continuum Freight'],
+    partners: ['Climeworks', 'Planted Foods', 'Wingtra', 'Beekeeper'],
   },
 ];
 
@@ -130,7 +130,7 @@ const nodeCoordinates = [
   { x: 28, y: 60 },
 ];
 
-const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
+const TerminalExperience = ({ translate = (key, fallback) => fallback, onHeroCta, onFinalCta }) => {
   const canvasRef = useRef(null);
   const sequenceRef = useRef(null);
   const featureRefs = useRef([]);
@@ -140,14 +140,14 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
   const [activeFeature, setActiveFeature] = useState(featureMoments[0].id);
   const [visibleBenefit, setVisibleBenefit] = useState(benefits[0].id);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const heroBadge = translate('terminal.hero.badge', 'PROGRESS IS AN ENDLESS TERMINAL');
+  const heroBadge = translate('terminal.hero.badge', 'SWISS STARTUP CONNECT');
   const heroHeadline = translate(
     'terminal.hero.headline',
-    'We have reinvented the future of logistics through the yard'
+    'We have reinvented how Swiss startups and talent connect'
   );
-  const heroTagline = translate('terminal.hero.tagline', 'Moving the world by making goods flow.');
+  const heroTagline = translate('terminal.hero.tagline', 'Matching ambitious students with founders building what is next.');
   const heroScrollPrompt = translate('terminal.hero.scrollPrompt', 'SCROLL TO EXPLORE');
-  const heroCtaLabel = translate('terminal.hero.cta', 'GO');
+  const heroCtaLabel = translate('terminal.hero.cta', 'BROWSE ROLES');
 
   useEffect(() => {
     const handle = setInterval(() => {
@@ -350,7 +350,15 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
           {headlineProgress >= heroHeadline.length && (
             <p className="terminal-hero__tagline">{heroTagline}</p>
           )}
-          <button type="button" className="terminal-hero__cta">
+          <button
+            type="button"
+            className="terminal-hero__cta"
+            onClick={() => {
+              if (typeof onHeroCta === 'function') {
+                onHeroCta();
+              }
+            }}
+          >
             {heroCtaLabel}
           </button>
         </div>
@@ -362,14 +370,14 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
       <section className="terminal-sequence" ref={sequenceRef}>
         <canvas ref={canvasRef} className="terminal-sequence__canvas" aria-hidden="true" />
         <div className="terminal-sequence__caption">
-          <span>Scroll-synced industrial narrative</span>
+          <span>Scroll-synced Swiss startup journey</span>
         </div>
       </section>
 
       <section className="terminal-technology">
         <header className="terminal-section-header">
           <h2>Technology Highlights</h2>
-          <p>Engineered panels reveal the systems that make the yard adaptive.</p>
+          <p>Engineered panels reveal the systems that make Swiss Startup Connect feel personal at scale.</p>
         </header>
         <div className="terminal-technology__grid">
           {technologyCards.map(({ id, icon: Icon, title, description, accent }) => (
@@ -387,7 +395,7 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
       <section className="terminal-bridge">
         <div className="terminal-bridge__inner">
           <h2>
-            Imagine the yard as an intelligent bridge seamlessly connecting highway to warehouse
+            Imagine the Swiss startup landscape as a bridge carrying talent from campus studios into venture floors
           </h2>
         </div>
       </section>
@@ -417,7 +425,7 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
         <div className="terminal-industries__mission">
           <h3>MISSION</h3>
           <p>
-            TO RE-IMAGINE EVERY YARD AS A CYBER-INDUSTRIAL TERMINAL WHERE DATA, MACHINES, AND OPERATORS MOVE AS ONE.
+            TO CONNECT SWISS STUDENTS AND FOUNDERS THROUGH TRANSPARENT MATCHES THAT KEEP THE ECOSYSTEM BUILDING TOGETHER.
           </p>
         </div>
       </section>
@@ -458,14 +466,14 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
       <section className="terminal-yard-os">
         <div className="terminal-yard-os__panel">
           <h2 aria-live="polite">
-            {Array.from('Yard Operating System').map((letter, index) => (
+            {Array.from('Talent Operating System').map((letter, index) => (
               <span key={`${letter}-${index}`} style={{ transitionDelay: `${index * 40}ms` }}>
                 {letter}
               </span>
             ))}
           </h2>
           <p>
-            A persistent intelligence that anchors site automation and releases when the journey advances.
+            A persistent intelligence that keeps profiles, saved roles, and founder feedback in rhythm as you explore.
           </p>
         </div>
       </section>
@@ -490,7 +498,7 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
       <section className="terminal-map">
         <header className="terminal-section-header">
           <h2>Global Presence</h2>
-          <p>Worldwide signals pulse across critical logistics nodes.</p>
+          <p>Swiss talent signals ripple outward as alumni launch ventures across the globe.</p>
         </header>
         <div className="terminal-map__wrapper">
           <svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">
@@ -542,8 +550,8 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
 
       <section className="terminal-updates">
         <header className="terminal-section-header">
-          <h2>Terminal Updates</h2>
-          <p>Latest signals from the command center.</p>
+          <h2>Platform Updates</h2>
+          <p>Fresh signals on how the community is evolving.</p>
         </header>
         <div className="terminal-updates__grid">
           {updates.map((update) => (
@@ -564,16 +572,24 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
         <div className="terminal-finale__path" aria-hidden="true" />
         <header>
           <h2>How it Works</h2>
-          <p>Trace the choreography from arrival to departure with guided intelligence.</p>
+          <p>Trace how candidates move from discovery to offers with support at every moment.</p>
         </header>
-        <button type="button" className="terminal-finale__cta">
+        <button
+          type="button"
+          className="terminal-finale__cta"
+          onClick={() => {
+            if (typeof onFinalCta === 'function') {
+              onFinalCta();
+            }
+          }}
+        >
           TAKE A CLOSER LOOK
         </button>
       </section>
 
       <footer className="terminal-footer">
         <div className="terminal-footer__inner">
-          <div className="terminal-footer__brand">Terminal Intelligence</div>
+          <div className="terminal-footer__brand">Swiss Startup Connect</div>
           <div className="terminal-footer__links">
             <a href="#vision">Vision</a>
             <a href="#technology">Technology</a>
@@ -591,7 +607,7 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback }) => {
               <Activity size={18} />
             </a>
           </div>
-          <p>© {new Date().getFullYear()} Terminal Intelligence. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Swiss Startup Connect. All rights reserved.</p>
         </div>
       </footer>
     </div>
