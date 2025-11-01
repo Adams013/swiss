@@ -1168,12 +1168,13 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 
 .ssc__hero-focus-panels {
   position: relative;
+  display: grid;
   min-height: 260px;
 }
 
 .ssc__hero-focus-panel {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
