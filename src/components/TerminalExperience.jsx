@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import './TerminalExperience.css';
 
-const HERO_REVEAL_INTERVAL_MS = 12;
+const HERO_WORD_REVEAL_INTERVAL_MS = 220;
 
 const technologyCards = [
   {
@@ -142,7 +142,7 @@ const TerminalExperience = ({
   const benefitsRef = useRef([]);
   const yardPanelRef = useRef(null);
   const isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-  const [headlineProgress, setHeadlineProgress] = useState(0);
+  const [heroWordProgress, setHeroWordProgress] = useState(0);
   const [activeFeature, setActiveFeature] = useState(featureMoments[0].id);
   const [visibleBenefit, setVisibleBenefit] = useState(benefits[0].id);
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -164,24 +164,44 @@ const TerminalExperience = ({
     return () => clearInterval(handle);
   }, []);
 
-  useEffect(() => {
-    setHeadlineProgress(0);
+  const heroWords = useMemo(() => {
+    if (!heroHeadline) {
+      return [];
+    }
+
+    const tokens = heroHeadline.match(/\S+/g);
+    if (!tokens || tokens.length === 0) {
+      return [];
+    }
+
+    return tokens;
   }, [heroHeadline]);
 
   useEffect(() => {
     if (isTestEnvironment) {
-      setHeadlineProgress(heroHeadline.length);
+      setHeroWordProgress(heroWords.length);
       return undefined;
     }
 
-    if (headlineProgress >= heroHeadline.length) {
+    setHeroWordProgress(0);
+    return undefined;
+  }, [heroHeadline, heroWords.length, isTestEnvironment]);
+
+  useEffect(() => {
+    if (isTestEnvironment) {
       return undefined;
     }
+
+    if (heroWordProgress >= heroWords.length) {
+      return undefined;
+    }
+
     const timeout = setTimeout(() => {
-      setHeadlineProgress((prev) => Math.min(heroHeadline.length, prev + 1));
-    }, HERO_REVEAL_INTERVAL_MS);
+      setHeroWordProgress((previous) => Math.min(heroWords.length, previous + 1));
+    }, HERO_WORD_REVEAL_INTERVAL_MS);
+
     return () => clearTimeout(timeout);
-  }, [headlineProgress, heroHeadline, isTestEnvironment]);
+  }, [heroWordProgress, heroWords.length, isTestEnvironment]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.CanvasRenderingContext2D === 'undefined') {
@@ -400,10 +420,23 @@ const TerminalExperience = ({
     return () => observer.disconnect();
   }, []);
 
-  const displayedHeadline = useMemo(
-    () => heroHeadline.slice(0, headlineProgress),
-    [headlineProgress, heroHeadline]
-  );
+  const displayedHeadline = useMemo(() => {
+    if (heroWords.length === 0) {
+      return heroHeadline;
+    }
+
+    if (heroWordProgress === 0) {
+      return '';
+    }
+
+    if (heroWordProgress >= heroWords.length) {
+      return heroHeadline;
+    }
+
+    return heroWords.slice(0, heroWordProgress).join(' ');
+  }, [heroHeadline, heroWordProgress, heroWords]);
+
+  const isHeroHeadlineComplete = heroWordProgress >= heroWords.length && heroWords.length > 0;
 
   const themeMode = isDarkMode ? 'dark' : 'light';
 
@@ -424,10 +457,10 @@ const TerminalExperience = ({
           <h1 className="terminal-hero__headline" aria-live="polite">
             {displayedHeadline}
             <span className="terminal-hero__cursor" aria-hidden="true">
-              {headlineProgress < heroHeadline.length ? '_' : ''}
-            </span>
-          </h1>
-          {headlineProgress >= heroHeadline.length && (
+            {heroWordProgress < heroWords.length ? '_' : ''}
+          </span>
+        </h1>
+          {(isHeroHeadlineComplete || heroWords.length === 0) && (
             <p className="terminal-hero__tagline">{heroTagline}</p>
           )}
           <button
@@ -449,9 +482,6 @@ const TerminalExperience = ({
 
       <section className="terminal-sequence" ref={sequenceRef}>
         <canvas ref={canvasRef} className="terminal-sequence__canvas" aria-hidden="true" />
-        <div className="terminal-sequence__caption">
-          <span>Scroll-synced Swiss startup journey</span>
-        </div>
       </section>
 
       <section className="terminal-technology">
@@ -611,7 +641,7 @@ const TerminalExperience = ({
             {swissCities.map(({ id, name, x, y }, index) => (
               <g key={id}>
                 <circle cx={x} cy={y} r={2.8} fill="url(#mapGlow)" />
-                <circle cx={x} cy={y} r={1.1} fill="var(--terminal-map-node)">
+                <circle cx={x} cy={y} r={1.1} fill="var(--terminal-map-node)" stroke="var(--terminal-map-outline)" strokeWidth="0.3">
                   <animate
                     attributeName="r"
                     values="1.1;2;1.1"
@@ -625,6 +655,11 @@ const TerminalExperience = ({
             ))}
           </svg>
         </div>
+        <ul className="terminal-map__legend">
+          {swissCities.map(({ id, name }) => (
+            <li key={id}>{name}</li>
+          ))}
+        </ul>
       </section>
 
       {credibilityBands.map((band) => (
