@@ -19,6 +19,18 @@
   --ssc-glow-accent: rgba(var(--ssc-accent-rgb), 0.18);
   --ssc-glow-alt: rgba(var(--ssc-accent-alt-rgb), 0.2);
   --ssc-ivory-rgb: 248, 243, 232;
+  --ssc-header-bg: linear-gradient(135deg, rgba(255, 252, 244, 0.96), rgba(247, 240, 226, 0.9));
+  --ssc-header-border: rgba(var(--ssc-primary-rgb), 0.18);
+  --ssc-header-shadow: 0 24px 60px rgba(var(--ssc-primary-rgb), 0.18);
+  --ssc-header-text: var(--ssc-text-secondary, #242c38);
+  --ssc-nav-button-bg: rgba(var(--ssc-primary-rgb), 0.06);
+  --ssc-nav-button-hover-bg: rgba(var(--ssc-primary-rgb), 0.14);
+  --ssc-nav-button-active-bg: rgba(var(--ssc-primary-rgb), 0.22);
+  --ssc-nav-button-text: rgba(var(--ssc-ink-rgb), 0.75);
+  --ssc-nav-button-hover-text: var(--text-primary, #161b22);
+  --ssc-nav-button-active-text: var(--text-primary, #161b22);
+  --ssc-nav-button-shadow: 0 16px 28px rgba(var(--ssc-primary-rgb), 0.14);
+  --ssc-nav-button-hover-shadow: 0 18px 36px rgba(var(--ssc-primary-rgb), 0.2);
   --ssc-applications-header-bg: rgba(255, 252, 244, 0.94);
   --ssc-applications-panel-bg: rgba(255, 252, 244, 0.86);
   --ssc-applications-grid-bg: rgba(255, 252, 244, 0.92);
@@ -68,6 +80,18 @@
   --ssc-glow-accent: rgba(var(--ssc-accent-rgb), 0.32);
   --ssc-glow-alt: rgba(var(--ssc-accent-alt-rgb), 0.28);
   --ssc-ivory-rgb: 18, 24, 46;
+  --ssc-header-bg: linear-gradient(135deg, rgba(16, 24, 48, 0.92), rgba(12, 18, 36, 0.92));
+  --ssc-header-border: rgba(var(--ssc-primary-rgb), 0.34);
+  --ssc-header-shadow: 0 28px 80px rgba(4, 10, 32, 0.55);
+  --ssc-header-text: var(--ssc-text-primary, #f7f5f0);
+  --ssc-nav-button-bg: rgba(255, 255, 255, 0.05);
+  --ssc-nav-button-hover-bg: rgba(var(--ssc-primary-rgb), 0.26);
+  --ssc-nav-button-active-bg: rgba(var(--ssc-primary-rgb), 0.32);
+  --ssc-nav-button-text: rgba(224, 232, 255, 0.8);
+  --ssc-nav-button-hover-text: var(--text-primary-dark, #f7f5f0);
+  --ssc-nav-button-active-text: var(--text-primary-dark, #f7f5f0);
+  --ssc-nav-button-shadow: 0 16px 36px rgba(4, 10, 32, 0.65);
+  --ssc-nav-button-hover-shadow: 0 20px 44px rgba(4, 10, 32, 0.72);
   --ssc-applications-header-bg: rgba(20, 26, 52, 0.94);
   --ssc-applications-panel-bg: rgba(16, 22, 44, 0.9);
   --ssc-applications-grid-bg: rgba(18, 26, 48, 0.92);
@@ -353,12 +377,13 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   width: min(1120px, 100%);
   padding: 0.85rem clamp(1.25rem, 4vw, 2.5rem);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(10, 14, 28, 0.88), rgba(6, 8, 16, 0.92));
-  border: 1px solid rgba(126, 250, 255, 0.22);
-  box-shadow: 0 28px 80px rgba(4, 10, 32, 0.45);
+  background: var(--ssc-header-bg);
+  border: 1px solid var(--ssc-header-border);
+  box-shadow: var(--ssc-header-shadow);
   backdrop-filter: blur(18px);
-  transition: min-height 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-  color: #f0f6ff;
+  transition: min-height 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease,
+    background 0.3s ease, color 0.3s ease;
+  color: var(--ssc-header-text);
 }
 
 .ssc__header-left {
@@ -630,28 +655,29 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   padding: 0.55rem 1.25rem;
   border-radius: 999px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(240, 246, 255, 0.72);
+  background: var(--ssc-nav-button-bg);
+  color: var(--ssc-nav-button-text);
   font-weight: 600;
   transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   line-height: 1.05;
   white-space: nowrap;
   flex: 0 0 auto;
+  box-shadow: var(--ssc-nav-button-shadow);
 }
 
 .ssc__nav-button:hover,
 .ssc__nav-button:focus-visible {
-  background: #f5f8ff;
-  color: #040608;
-  box-shadow: 0 14px 32px rgba(126, 250, 255, 0.18);
+  background: var(--ssc-nav-button-hover-bg);
+  color: var(--ssc-nav-button-hover-text);
+  box-shadow: var(--ssc-nav-button-hover-shadow);
   transform: translateY(-2px);
   outline: none;
 }
 
 .ssc__nav-button.is-active {
-  background: #f0f6ff;
-  color: #050608;
-  box-shadow: 0 16px 40px rgba(126, 250, 255, 0.24);
+  background: var(--ssc-nav-button-active-bg);
+  color: var(--ssc-nav-button-active-text);
+  box-shadow: var(--ssc-nav-button-hover-shadow);
 }
 
 .ssc__actions {

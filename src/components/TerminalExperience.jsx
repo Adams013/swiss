@@ -337,13 +337,15 @@ const TerminalExperience = ({
     [headlineProgress, heroHeadline]
   );
 
+  const themeMode = isDarkMode ? 'dark' : 'light';
+
   const experienceClassName = useMemo(
     () => `terminal-experience ${isDarkMode ? 'terminal-experience--dark' : 'terminal-experience--light'}`,
     [isDarkMode]
   );
 
   return (
-    <div className={experienceClassName}>
+    <div className={experienceClassName} data-theme={themeMode}>
       <section className="terminal-hero">
         <video className="terminal-hero__video" autoPlay loop muted playsInline>
           <source src="https://cdn.coverr.co/videos/coverr-shimmering-oil-6498/1080p.mp4" type="video/mp4" />
