@@ -946,11 +946,6 @@
     "panel": {
       "eventsCount": "{{count}} Veranstaltungen"
     },
-    "nationalPresence": {
-      "title": "Nationale Präsenz",
-      "description": "Schweizer Startup-Talente sind von Genf bis St. Gallen aktiv, mit koordinierten Hubs im ganzen Land.",
-      "ariaLabel": "Karte der Schweiz mit hervorgehobenen Startup-Hubs"
-    },
     "popup": {
       "jobsCount": "{{count}} Jobs",
       "eventsCount": "{{count}} Veranstaltungen",

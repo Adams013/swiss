@@ -946,11 +946,6 @@
     "panel": {
       "eventsCount": "{{count}} événements"
     },
-    "nationalPresence": {
-      "title": "Présence nationale",
-      "description": "Les talents des start-up suisses sont actifs de Genève à Saint-Gall avec des hubs coordonnés dans tout le pays.",
-      "ariaLabel": "Carte de la Suisse mettant en évidence les hubs de start-up"
-    },
     "popup": {
       "jobsCount": "{{count}} offres",
       "eventsCount": "{{count}} événements",

@@ -83,18 +83,6 @@ const benefits = [
   },
 ];
 
-export const swissCities = [
-  { id: 'geneva', name: 'Geneva', x: 18, y: 46 },
-  { id: 'lausanne', name: 'Lausanne', x: 26, y: 40 },
-  { id: 'bern', name: 'Bern', x: 40, y: 34 },
-  { id: 'basel', name: 'Basel', x: 38, y: 24 },
-  { id: 'zurich', name: 'Zurich', x: 56, y: 28 },
-  { id: 'lucerne', name: 'Lucerne', x: 48, y: 40 },
-  { id: 'st-gallen', name: 'St. Gallen', x: 70, y: 26 },
-  { id: 'chur', name: 'Chur', x: 64, y: 36 },
-  { id: 'lugano', name: 'Lugano', x: 66, y: 54 },
-];
-
 const TerminalExperience = ({
   translate = (key, fallback) => fallback,
   onHeroCta,
@@ -434,57 +422,7 @@ const TerminalExperience = ({
         ))}
       </section>
 
-      <section className="terminal-map">
-        <header className="terminal-section-header">
-          <h2>National Presence</h2>
-          <p>Swiss startup talent is active from Geneva to St. Gallen with coordinated hubs across the country.</p>
-        </header>
-        <div className="terminal-map__wrapper">
-          <svg
-            viewBox="0 0 100 64"
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-label="Swiss map with highlighted cities"
-          >
-            <defs>
-              <radialGradient id="mapGlow" cx="50%" cy="50%" r="70%">
-                <stop offset="0%" stopColor="var(--terminal-map-node)" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="var(--terminal-map-node)" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <rect width="100" height="64" fill="var(--terminal-map-surface)" />
-            <path
-              d="M8,34 C14,22 28,14 40,16 C48,20 58,16 66,20 C74,24 86,22 94,32 C90,40 82,46 70,50 C58,56 44,56 32,52 C24,48 14,44 8,34 Z"
-              fill="var(--terminal-map-land)"
-              stroke="var(--terminal-map-outline)"
-              strokeWidth="0.8"
-              strokeLinejoin="round"
-            />
-            {swissCities.map(({ id, name, x, y }, index) => (
-              <g key={id}>
-                <circle cx={x} cy={y} r={2.8} fill="url(#mapGlow)" />
-                <circle cx={x} cy={y} r={1.1} fill="var(--terminal-map-node)" stroke="var(--terminal-map-outline)" strokeWidth="0.3">
-                  <animate
-                    attributeName="r"
-                    values="1.1;2;1.1"
-                    dur="2.8s"
-                    begin={`${index * 0.28}s`}
-                    repeatCount="indefinite"
-                  />
-                </circle>
-                <title>{name}</title>
-              </g>
-            ))}
-          </svg>
-        </div>
-        <ul className="terminal-map__legend">
-          {swissCities.map(({ id, name }) => (
-            <li key={id}>{name}</li>
-          ))}
-        </ul>
-      </section>
 
-      
     </div>
   );
 };
