@@ -50,6 +50,7 @@ import CalendarView from './components/CalendarView';
 import SubscriptionView from './components/SubscriptionView';
 import EmployerServices from './components/EmployerServices';
 import AddToCalendarMenu from './components/AddToCalendarMenu';
+import TerminalExperience from './components/TerminalExperience';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -136,6 +137,7 @@ const SwissStartupConnect = () => {
 
   const [activeTab, setActiveTabState] = useState(() => getTabFromPathname(location.pathname));
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+  const showLegacyGeneralHero = false;
 
   useEffect(() => {
     const nextTab = getTabFromPathname(location.pathname);
@@ -6170,7 +6172,11 @@ const SwissStartupConnect = () => {
               </div>
             </button>
 
-            <nav className="ssc__nav">
+            <nav
+              className="ssc__nav"
+              role="navigation"
+              aria-label={translate('nav.primary', 'Primary navigation')}
+            >
               {navTabs.map((tab) => (
                 <button
                   key={tab}
@@ -6446,7 +6452,10 @@ const SwissStartupConnect = () => {
         )}
 
         {activeTab === 'general' && (
-          <section className="ssc__hero">
+          <>
+            <TerminalExperience translate={translate} />
+            {showLegacyGeneralHero && (
+              <section className="ssc__hero">
             <div className="ssc__max">
               <div className="ssc__hero-inner">
                 <div className="ssc__hero-content">
@@ -6659,7 +6668,9 @@ const SwissStartupConnect = () => {
             >
               <ChevronDown size={22} />
             </button>
-          </section>
+              </section>
+            )}
+          </>
         )}
 
         {(activeTab === 'general' || activeTab === 'jobs') && (

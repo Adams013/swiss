@@ -14,7 +14,8 @@
     "saved": "Favoris",
     "join": "Rejoindre",
     "signIn": "Se connecter",
-    "language": "Langue"
+    "language": "Langue",
+    "primary": "Navigation principale"
   },
   "hero": {
     "badge": "Plébiscité par les startups et universités suisses",
@@ -23,6 +24,15 @@
     "searchPlaceholder": "Rechercher une startup, un poste ou une compétence",
     "searchButton": "Trouver des correspondances",
     "scrollAria": "Faire défiler vers les filtres"
+  },
+  "terminal": {
+    "hero": {
+      "badge": "LE PROGRÈS EST UN TERMINAL SANS FIN",
+      "headline": "Nous avons réinventé l’avenir de la logistique par la cour",
+      "tagline": "Faire circuler les marchandises pour mettre le monde en mouvement.",
+      "scrollPrompt": "FAITES DÉFILER POUR EXPLORER",
+      "cta": "GO"
+    }
   },
   "stats": {
     "startups": {

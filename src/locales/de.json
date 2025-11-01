@@ -14,7 +14,8 @@
     "saved": "Gemerkt",
     "join": "Beitreten",
     "signIn": "Anmelden",
-    "language": "Sprache"
+    "language": "Sprache",
+    "primary": "Hauptnavigation"
   },
   "hero": {
     "badge": "Vertrauen von Schweizer Start-ups und Hochschulen",
@@ -23,6 +24,15 @@
     "searchPlaceholder": "Start-up, Rolle oder Skill suchen",
     "searchButton": "Passende Rollen finden",
     "scrollAria": "Zu den Filtern scrollen"
+  },
+  "terminal": {
+    "hero": {
+      "badge": "FORTSCHRITT IST EIN ENDLOSER TERMINAL",
+      "headline": "Wir haben die Zukunft der Logistik über den Yard neu erfunden",
+      "tagline": "Wir bewegen die Welt, indem wir Warenströme in Gang setzen.",
+      "scrollPrompt": "ZUM ENTDECKEN SCROLLEN",
+      "cta": "LOS"
+    }
   },
   "stats": {
     "startups": {

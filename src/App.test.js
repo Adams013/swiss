@@ -3,5 +3,7 @@ import App from './App';
 
 test('renders the hero headline', async () => {
   render(<App />);
-  expect(await screen.findByText(/Shape the next Swiss startup success story/i)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/We have reinvented the future of logistics through the yard/i)
+  ).toBeInTheDocument();
 });

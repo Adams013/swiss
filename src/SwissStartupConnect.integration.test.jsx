@@ -417,7 +417,9 @@ it('switches hero copy when changing languages', async () => {
   setupSupabaseSuccess();
   const user = await renderApp();
 
-  expect(await screen.findByText(/Shape the next Swiss startup success story/i)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/We have reinvented the future of logistics through the yard/i)
+  ).toBeInTheDocument();
 
   const languageGroup = await screen.findByRole('group', { name: /language/i });
   const toggleButton = within(languageGroup).getByRole('button', { name: 'EN' });
@@ -429,7 +431,7 @@ it('switches hero copy when changing languages', async () => {
   await user.click(frenchOption);
 
   expect(
-    await screen.findByText(/Devenez l’artisan du prochain succès start-up suisse/i)
+    await screen.findByText(/Nous avons réinventé l’avenir de la logistique par la cour/i)
   ).toBeInTheDocument();
 });
 
