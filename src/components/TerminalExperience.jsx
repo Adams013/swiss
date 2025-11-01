@@ -83,7 +83,7 @@ const benefits = [
   },
 ];
 
-const swissCities = [
+export const swissCities = [
   { id: 'geneva', name: 'Geneva', x: 18, y: 46 },
   { id: 'lausanne', name: 'Lausanne', x: 26, y: 40 },
   { id: 'bern', name: 'Bern', x: 40, y: 34 },

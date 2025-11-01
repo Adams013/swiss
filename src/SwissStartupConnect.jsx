@@ -51,6 +51,7 @@ import SubscriptionView from './components/SubscriptionView';
 import EmployerServices from './components/EmployerServices';
 import AddToCalendarMenu from './components/AddToCalendarMenu';
 import TerminalExperience from './components/TerminalExperience';
+import SwissNationalPresenceMap from './components/SwissNationalPresenceMap';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -8235,21 +8236,24 @@ const SwissStartupConnect = () => {
         )}
 
         {activeTab === 'map' && (
-          <section className="ssc__section" data-tab="map">
-            <div className="ssc__max">
-              <JobMapView
-                jobs={normalizedJobs}
-                events={events}
-                onJobClick={(job) => {
-                  setSelectedJob(job);
-                }}
-                translate={translate}
-                focusJobId={mapFocusJobId}
-                onFocusHandled={() => setMapFocusJobId(null)}
-                getLocalizedEventText={getLocalizedEventText}
-              />
-            </div>
-          </section>
+          <>
+            <SwissNationalPresenceMap translate={translate} />
+            <section className="ssc__section" data-tab="map">
+              <div className="ssc__max ssc__map-tab-interactive">
+                <JobMapView
+                  jobs={normalizedJobs}
+                  events={events}
+                  onJobClick={(job) => {
+                    setSelectedJob(job);
+                  }}
+                  translate={translate}
+                  focusJobId={mapFocusJobId}
+                  onFocusHandled={() => setMapFocusJobId(null)}
+                  getLocalizedEventText={getLocalizedEventText}
+                />
+              </div>
+            </section>
+          </>
         )}
 
         {activeTab === 'events' && (
