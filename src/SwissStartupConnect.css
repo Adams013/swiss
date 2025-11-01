@@ -5,10 +5,10 @@
   --ssc-accent-rgb: 236, 72, 153;
   --ssc-accent-alt: #14b8a6;
   --ssc-accent-alt-rgb: 20, 184, 166;
-  --ssc-ink: #0f172a;
-  --ssc-ink-rgb: 15, 23, 42;
-  --ssc-muted: rgba(100, 116, 139, 0.76);
-  --ssc-border: rgba(15, 23, 42, 0.08);
+  --ssc-ink: #020617;
+  --ssc-ink-rgb: 2, 6, 23;
+  --ssc-muted: rgba(30, 41, 59, 0.7);
+  --ssc-border: rgba(2, 6, 23, 0.08);
   --ssc-background-start: #f8fafc;
   --ssc-background-mid: #eef2ff;
   --ssc-background-end: #e0e7ff;
@@ -26,13 +26,19 @@
   --ssc-applications-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
   --ssc-applications-border: rgba(var(--ssc-primary-rgb), 0.14);
   --ssc-applications-row-active-bg: rgba(var(--ssc-accent-rgb), 0.12);
-  --ssc-text-primary: var(--text-primary, #0f172a);
-  --ssc-text-secondary: var(--text-secondary, #334155);
-  --ssc-text-muted: rgba(100, 116, 139, 0.7);
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
+  --ssc-text-primary: var(--text-primary, #020617);
+  --ssc-text-secondary: var(--text-secondary, #1e293b);
+  --ssc-text-muted: rgba(51, 65, 85, 0.7);
+  --text-primary: #020617;
+  --text-secondary: #1e293b;
   --text-primary-dark: #f8fafc;
   --text-secondary-dark: #dbeafe;
+  --ssc-hero-tab-bg: rgba(255, 255, 255, 0.9);
+  --ssc-hero-tab-border: rgba(var(--ssc-primary-rgb), 0.14);
+  --ssc-hero-tab-active-bg: rgba(var(--ssc-primary-rgb), 0.12);
+  --ssc-hero-tab-active-border: rgba(var(--ssc-primary-rgb), 0.3);
+  --ssc-hero-panel-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 255, 0.86));
+  --ssc-hero-panel-border: rgba(var(--ssc-primary-rgb), 0.16);
 }
 
 .ssc--dark {
@@ -70,6 +76,12 @@
   --text-secondary: #dbeafe;
   --text-primary-dark: #f8fafc;
   --text-secondary-dark: #dbeafe;
+  --ssc-hero-tab-bg: rgba(15, 20, 46, 0.92);
+  --ssc-hero-tab-border: rgba(var(--ssc-primary-rgb), 0.32);
+  --ssc-hero-tab-active-bg: rgba(var(--ssc-primary-rgb), 0.24);
+  --ssc-hero-tab-active-border: rgba(var(--ssc-primary-rgb), 0.45);
+  --ssc-hero-panel-bg: linear-gradient(135deg, rgba(12, 18, 38, 0.96), rgba(8, 14, 32, 0.9));
+  --ssc-hero-panel-border: rgba(var(--ssc-primary-rgb), 0.32);
 }
 
 .ssc--dark .ssc,
@@ -1084,8 +1096,8 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   gap: 1.25rem;
   padding: 1.4rem;
   border-radius: 28px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.72));
-  border: 1px solid rgba(var(--ssc-primary-rgb), 0.14);
+  background: var(--ssc-hero-panel-bg);
+  border: 1px solid var(--ssc-hero-panel-border);
   box-shadow: 0 30px 70px rgba(15, 23, 42, 0.14);
   backdrop-filter: blur(20px);
 }
@@ -1102,8 +1114,8 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: 18px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--ssc-hero-tab-bg);
+  border: 1px solid var(--ssc-hero-tab-border);
   color: var(--ssc-text-secondary);
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1111,6 +1123,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   font-size: 0.8rem;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 14px 30px rgba(var(--ssc-primary-rgb), 0.08);
 }
 
 .ssc__hero-focus-tab svg {
@@ -1118,8 +1131,8 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 }
 
 .ssc__hero-focus-tab.is-active {
-  background: rgba(var(--ssc-primary-rgb), 0.08);
-  border-color: rgba(var(--ssc-primary-rgb), 0.24);
+  background: var(--ssc-hero-tab-active-bg);
+  border-color: var(--ssc-hero-tab-active-border);
   color: var(--text-primary);
   box-shadow: 0 18px 36px rgba(var(--ssc-primary-rgb), 0.16);
   transform: translateX(4px);
@@ -1153,9 +1166,9 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   flex-direction: column;
   gap: 1.1rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 255, 0.8));
+  background: var(--ssc-hero-panel-bg);
   border-radius: 22px;
-  border: 1px solid rgba(var(--ssc-primary-rgb), 0.12);
+  border: 1px solid var(--ssc-hero-panel-border);
   box-shadow: 0 28px 60px rgba(15, 23, 42, 0.12);
   opacity: 0;
   transform: translateY(12px);
@@ -1328,18 +1341,21 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 }
 
 .ssc--dark .ssc__hero-focus {
-  background: linear-gradient(140deg, rgba(12, 16, 38, 0.94), rgba(10, 16, 36, 0.84));
-  border-color: rgba(var(--ssc-primary-rgb), 0.3);
+  background: var(--ssc-hero-panel-bg);
+  border-color: var(--ssc-hero-panel-border);
   box-shadow: 0 30px 70px rgba(2, 6, 20, 0.55);
 }
 
 .ssc--dark .ssc__hero-focus-tab {
-  color: rgba(214, 222, 245, 0.76);
+  background: var(--ssc-hero-tab-bg);
+  border-color: var(--ssc-hero-tab-border);
+  color: rgba(214, 222, 245, 0.82);
+  box-shadow: 0 18px 44px rgba(3, 7, 26, 0.45);
 }
 
 .ssc--dark .ssc__hero-focus-tab.is-active {
-  background: rgba(var(--ssc-primary-rgb), 0.18);
-  border-color: rgba(var(--ssc-primary-rgb), 0.38);
+  background: var(--ssc-hero-tab-active-bg);
+  border-color: var(--ssc-hero-tab-active-border);
   color: var(--text-primary);
   box-shadow: 0 18px 36px rgba(var(--ssc-primary-rgb), 0.28);
 }
@@ -1349,8 +1365,8 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 }
 
 .ssc--dark .ssc__hero-focus-panel {
-  background: linear-gradient(135deg, rgba(12, 18, 38, 0.96), rgba(8, 14, 32, 0.9));
-  border-color: rgba(var(--ssc-primary-rgb), 0.28);
+  background: var(--ssc-hero-panel-bg);
+  border-color: var(--ssc-hero-panel-border);
   box-shadow: 0 28px 60px rgba(2, 6, 20, 0.55);
 }
 
