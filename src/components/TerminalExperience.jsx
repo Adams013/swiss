@@ -130,7 +130,12 @@ const nodeCoordinates = [
   { x: 28, y: 60 },
 ];
 
-const TerminalExperience = ({ translate = (key, fallback) => fallback, onHeroCta, onFinalCta }) => {
+const TerminalExperience = ({
+  translate = (key, fallback) => fallback,
+  onHeroCta,
+  onFinalCta,
+  isDarkMode = false,
+}) => {
   const canvasRef = useRef(null);
   const sequenceRef = useRef(null);
   const featureRefs = useRef([]);
@@ -332,8 +337,13 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback, onHeroCta
     [headlineProgress, heroHeadline]
   );
 
+  const experienceClassName = useMemo(
+    () => `terminal-experience ${isDarkMode ? 'terminal-experience--dark' : 'terminal-experience--light'}`,
+    [isDarkMode]
+  );
+
   return (
-    <div className="terminal-experience">
+    <div className={experienceClassName}>
       <section className="terminal-hero">
         <video className="terminal-hero__video" autoPlay loop muted playsInline>
           <source src="https://cdn.coverr.co/videos/coverr-shimmering-oil-6498/1080p.mp4" type="video/mp4" />
@@ -504,21 +514,21 @@ const TerminalExperience = ({ translate = (key, fallback) => fallback, onHeroCta
           <svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">
             <defs>
               <radialGradient id="mapGlow" cx="50%" cy="50%" r="70%">
-                <stop offset="0%" stopColor="rgba(0, 255, 255, 0.45)" />
-                <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
+                <stop offset="0%" stopColor="var(--terminal-map-node)" stopOpacity="0.45" />
+                <stop offset="100%" stopColor="var(--terminal-map-node)" stopOpacity="0" />
               </radialGradient>
             </defs>
-            <rect width="100" height="50" fill="#1a1a1a" />
+            <rect width="100" height="50" fill="var(--terminal-map-surface)" />
             <path
               d="M6,32 C14,20 26,16 38,18 C46,24 58,22 64,18 C70,12 82,12 92,24 C90,30 84,36 74,38 C66,44 52,46 38,44 C28,42 14,40 6,32"
-              fill="#2c2c2c"
-              stroke="#3a3a3a"
+              fill="var(--terminal-map-land)"
+              stroke="var(--terminal-map-outline)"
               strokeWidth="0.6"
             />
             {nodeCoordinates.map(({ x, y }, index) => (
               <g key={`${x}-${y}`}>
                 <circle cx={x} cy={y} r={1.6} fill="url(#mapGlow)" />
-                <circle cx={x} cy={y} r={0.5} fill="#7efaff">
+                <circle cx={x} cy={y} r={0.5} fill="var(--terminal-map-node)">
                   <animate
                     attributeName="r"
                     values="0.5;1.2;0.5"

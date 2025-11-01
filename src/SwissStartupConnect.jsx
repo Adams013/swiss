@@ -6457,6 +6457,7 @@ const SwissStartupConnect = () => {
               translate={translate}
               onHeroCta={() => setActiveTab('jobs')}
               onFinalCta={() => setActiveTab('jobs')}
+              isDarkMode={isDarkMode}
             />
             {showLegacyGeneralHero && (
               <section className="ssc__hero">
