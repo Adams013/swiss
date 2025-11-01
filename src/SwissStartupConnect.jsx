@@ -6148,8 +6148,14 @@ const SwissStartupConnect = () => {
   const showFallbackNotice = !dataNoticeDismissed && Boolean(fallbackNoticeMessage);
 
 
+  const isGeneralTab = activeTab === 'general';
+
   return (
-    <div className={`ssc ${isDarkMode ? 'ssc--dark' : 'ssc--light'}`}>
+    <div
+      className={`ssc ${isDarkMode ? 'ssc--dark' : 'ssc--light'} ${
+        isGeneralTab ? 'ssc--mode-general' : 'ssc--mode-interior'
+      }`}
+    >
       {toast && (
         <div className="ssc__toast" role="status" aria-live="polite">
           <CheckCircle2 size={20} />
@@ -6168,7 +6174,7 @@ const SwissStartupConnect = () => {
             >
               <div className="ssc__brand-badge">⌁</div>
               <div className="ssc__brand-text">
-                <span className="ssc__brand-name">SwissStartup Connect</span>
+                <span className="ssc__brand-name">StartupConnect</span>
               </div>
             </button>
 
@@ -6425,7 +6431,7 @@ const SwissStartupConnect = () => {
         </div>
       </header>
 
-      <main className="ssc__main">
+      <main className={`ssc__main ssc__main--${activeTab}`}>
         {user && !emailVerified && (
           <div className="ssc__notice">
             <p>

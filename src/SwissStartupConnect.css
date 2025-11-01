@@ -36,7 +36,7 @@
   --ssc-header-controls-shadow: 0 18px 46px rgba(var(--ssc-primary-rgb), 0.16);
   --ssc-header-offset: clamp(7.5rem, 16vw, 10.5rem);
   --ssc-header-compact-offset: clamp(5.5rem, 12vw, 8rem);
-  --ssc-notice-gap: clamp(1.5rem, 3vw, 2.2rem);
+  --ssc-notice-gap: clamp(0.85rem, 2.25vw, 1.6rem);
   --ssc-applications-header-bg: rgba(255, 252, 244, 0.94);
   --ssc-applications-panel-bg: rgba(255, 252, 244, 0.86);
   --ssc-applications-grid-bg: rgba(255, 252, 244, 0.92);
@@ -101,7 +101,7 @@
   --ssc-header-controls-bg: rgba(12, 18, 36, 0.92);
   --ssc-header-controls-border: rgba(var(--ssc-primary-rgb), 0.38);
   --ssc-header-controls-shadow: 0 22px 60px rgba(2, 6, 20, 0.55);
-  --ssc-notice-gap: clamp(1.5rem, 3vw, 2.2rem);
+  --ssc-notice-gap: clamp(0.85rem, 2.25vw, 1.6rem);
   --ssc-applications-header-bg: rgba(20, 26, 52, 0.94);
   --ssc-applications-panel-bg: rgba(16, 22, 44, 0.9);
   --ssc-applications-grid-bg: rgba(18, 26, 48, 0.92);
@@ -232,6 +232,20 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   overflow-x: hidden;
 }
 
+.ssc.ssc--mode-interior {
+  background:
+    radial-gradient(115% 140% at 12% 18%, rgba(80, 140, 200, 0.28), transparent 65%),
+    radial-gradient(120% 150% at 88% -10%, rgba(191, 149, 89, 0.22), transparent 70%),
+    linear-gradient(185deg, #eef3ff 0%, #e6f1ff 48%, #e1f6f5 100%);
+}
+
+.ssc.ssc--dark.ssc--mode-interior {
+  background:
+    radial-gradient(120% 150% at 8% 12%, rgba(62, 100, 180, 0.4), transparent 68%),
+    radial-gradient(130% 155% at 90% -12%, rgba(150, 102, 52, 0.35), transparent 72%),
+    linear-gradient(185deg, #0a111f 0%, #101b32 45%, #0f2529 100%);
+}
+
 .ssc h1,
 .ssc h2,
 .ssc h3,
@@ -345,7 +359,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 }
 
 .ssc__main > .ssc__notice:first-of-type {
-  margin-top: calc(var(--ssc-notice-gap) + 2.5rem);
+  margin-top: calc(var(--ssc-notice-gap) + 0.75rem);
 }
 
 .ssc__header.is-compact + .ssc__main {
@@ -391,10 +405,10 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: clamp(1rem, 4vw, 2.25rem);
-  min-height: 68px;
+  gap: clamp(0.75rem, 3vw, 1.75rem);
+  min-height: 62px;
   width: min(1120px, 100%);
-  padding: 0.85rem clamp(1.25rem, 4vw, 2.5rem);
+  padding: 0.75rem clamp(1.1rem, 3.25vw, 2.15rem);
   border-radius: 999px;
   background: var(--ssc-header-bg);
   border: 1px solid var(--ssc-header-border);
@@ -408,9 +422,9 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__header-left {
   display: flex;
   align-items: center;
-  gap: 1.35rem;
+  gap: clamp(0.8rem, 2vw, 1.2rem);
   row-gap: 0.35rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -464,8 +478,9 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__brand-name {
   font-weight: 700;
   letter-spacing: -0.01em;
-  white-space: normal;
-  line-height: 1.15;
+  white-space: nowrap;
+  line-height: 1.1;
+  font-size: 1rem;
 }
 
 .ssc__brand-sub {
@@ -475,7 +490,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 
 .ssc__nav {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
@@ -487,7 +502,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__header-controls {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.65rem;
   margin-left: auto;
   flex-wrap: nowrap;
   flex: 0 0 auto;
@@ -680,12 +695,13 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 }
 
 .ssc__nav-button {
-  padding: 0.55rem 1.25rem;
+  padding: 0.45rem 1.05rem;
   border-radius: 999px;
   border: 1px solid transparent;
   background: var(--ssc-nav-button-bg);
   color: var(--ssc-nav-button-text);
   font-weight: 600;
+  font-size: 0.9rem;
   transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   line-height: 1.05;
   white-space: nowrap;
@@ -773,7 +789,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__auth-buttons {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: nowrap;
   justify-content: center;
 }
@@ -788,14 +804,14 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   );
   color: var(--ssc-primary);
   border-radius: 999px;
-  padding: 0.55rem 1.35rem;
+  padding: 0.48rem 1.15rem;
   font-weight: 600;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  min-width: 6rem;
+  min-width: 5.4rem;
   box-shadow: 0 14px 28px rgba(var(--ssc-primary-rgb), 0.08);
 }
 
@@ -807,7 +823,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 .ssc__cta-btn {
   border: none;
   border-radius: 999px;
-  padding: 0.6rem 1.4rem;
+  padding: 0.5rem 1.2rem;
   font-weight: 600;
   background: linear-gradient(
     130deg,
