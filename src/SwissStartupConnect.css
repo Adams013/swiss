@@ -42,6 +42,9 @@
   --ssc-hero-highlight-bg: rgba(255, 255, 255, 0.9);
   --ssc-hero-highlight-border: rgba(var(--ssc-primary-rgb), 0.12);
   --ssc-hero-highlight-shadow: 0 20px 40px rgba(var(--ssc-primary-rgb), 0.12);
+  --ssc-search-field-bg: rgba(255, 255, 255, 0.92);
+  --ssc-search-field-border: rgba(var(--ssc-primary-rgb), 0.14);
+  --ssc-search-field-shadow: 0 24px 42px rgba(var(--ssc-primary-rgb), 0.18);
 }
 
 .ssc--dark {
@@ -88,6 +91,9 @@
   --ssc-hero-highlight-bg: rgba(6, 12, 32, 0.82);
   --ssc-hero-highlight-border: rgba(var(--ssc-primary-rgb), 0.2);
   --ssc-hero-highlight-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --ssc-search-field-bg: rgba(5, 10, 28, 0.82);
+  --ssc-search-field-border: rgba(var(--ssc-primary-rgb), 0.28);
+  --ssc-search-field-shadow: 0 24px 54px rgba(3, 7, 24, 0.58);
 }
 
 .ssc--dark .ssc,
@@ -1659,11 +1665,11 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: rgba(5, 10, 28, 0.82);
+  background: var(--ssc-search-field-bg);
   border-radius: 16px;
   padding: 0.85rem 1.2rem;
-  border: 1px solid rgba(var(--ssc-primary-rgb), 0.28);
-  box-shadow: 0 24px 54px rgba(3, 7, 24, 0.58);
+  border: 1px solid var(--ssc-search-field-border);
+  box-shadow: var(--ssc-search-field-shadow);
   min-width: 0;
 }
 
