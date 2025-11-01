@@ -14,7 +14,8 @@
     "saved": "Favoris",
     "join": "Rejoindre",
     "signIn": "Se connecter",
-    "language": "Langue"
+    "language": "Langue",
+    "primary": "Navigation principale"
   },
   "hero": {
     "badge": "Plébiscité par les startups et universités suisses",
@@ -23,6 +24,15 @@
     "searchPlaceholder": "Rechercher une startup, un poste ou une compétence",
     "searchButton": "Trouver des correspondances",
     "scrollAria": "Faire défiler vers les filtres"
+  },
+  "terminal": {
+    "hero": {
+      "badge": "SWISS STARTUP CONNECT",
+      "headline": "Nous avons réinventé la manière dont les startups suisses et les talents se rencontrent",
+      "tagline": "Nous associons des étudiant·e·s ambitieux·ses aux fondateurs qui bâtissent la suite.",
+      "scrollPrompt": "FAITES DÉFILER POUR EXPLORER",
+      "cta": "DÉCOUVRIR LES RÔLES"
+    }
   },
   "stats": {
     "startups": {

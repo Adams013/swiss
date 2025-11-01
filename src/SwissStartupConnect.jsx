@@ -50,6 +50,7 @@ import CalendarView from './components/CalendarView';
 import SubscriptionView from './components/SubscriptionView';
 import EmployerServices from './components/EmployerServices';
 import AddToCalendarMenu from './components/AddToCalendarMenu';
+import TerminalExperience from './components/TerminalExperience';
 import {
   loadCompanyProfiles,
   loadMockCompanies,
@@ -136,6 +137,7 @@ const SwissStartupConnect = () => {
 
   const [activeTab, setActiveTabState] = useState(() => getTabFromPathname(location.pathname));
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+  const showLegacyGeneralHero = false;
 
   useEffect(() => {
     const nextTab = getTabFromPathname(location.pathname);
@@ -6146,15 +6148,21 @@ const SwissStartupConnect = () => {
   const showFallbackNotice = !dataNoticeDismissed && Boolean(fallbackNoticeMessage);
 
 
+  const isGeneralTab = activeTab === 'general';
+
   return (
-    <div className={`ssc ${isDarkMode ? 'ssc--dark' : ''}`}>
+    <div
+      className={`ssc ${isDarkMode ? 'ssc--dark' : 'ssc--light'} ${
+        isGeneralTab ? 'ssc--mode-general' : 'ssc--mode-interior'
+      }`}
+    >
       {toast && (
         <div className="ssc__toast" role="status" aria-live="polite">
           <CheckCircle2 size={20} />
           <span className="ssc__toast-message">{toast.message}</span>
         </div>
       )}
-      <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
+      <header className={`ssc__header ${compactHeader ? 'is-compact' : ''} ${isDarkMode ? 'is-dark' : 'is-light'}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__header-left">
             <button
@@ -6166,11 +6174,15 @@ const SwissStartupConnect = () => {
             >
               <div className="ssc__brand-badge">⌁</div>
               <div className="ssc__brand-text">
-                <span className="ssc__brand-name">SwissStartup Connect</span>
+                <span className="ssc__brand-name">StartupConnect</span>
               </div>
             </button>
 
-            <nav className="ssc__nav">
+            <nav
+              className="ssc__nav"
+              role="navigation"
+              aria-label={translate('nav.primary', 'Primary navigation')}
+            >
               {navTabs.map((tab) => (
                 <button
                   key={tab}
@@ -6261,7 +6273,7 @@ const SwissStartupConnect = () => {
               )}
             </div>
 
-            <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
+            <div className={`ssc__actions ${compactHeader ? 'is-condensed' : ''}`} ref={actionsRef}>
               {!user ? (
                 <div className="ssc__auth-buttons">
                   <button
@@ -6419,7 +6431,7 @@ const SwissStartupConnect = () => {
         </div>
       </header>
 
-      <main className="ssc__main">
+      <main className={`ssc__main ssc__main--${activeTab}`}>
         {user && !emailVerified && (
           <div className="ssc__notice">
             <p>
@@ -6446,7 +6458,14 @@ const SwissStartupConnect = () => {
         )}
 
         {activeTab === 'general' && (
-          <section className="ssc__hero">
+          <>
+            <TerminalExperience
+              translate={translate}
+              onHeroCta={() => setActiveTab('jobs')}
+              isDarkMode={isDarkMode}
+            />
+            {showLegacyGeneralHero && (
+              <section className="ssc__hero">
             <div className="ssc__max">
               <div className="ssc__hero-inner">
                 <div className="ssc__hero-content">
@@ -6659,7 +6678,9 @@ const SwissStartupConnect = () => {
             >
               <ChevronDown size={22} />
             </button>
-          </section>
+              </section>
+            )}
+          </>
         )}
 
         {(activeTab === 'general' || activeTab === 'jobs') && (
@@ -8215,7 +8236,7 @@ const SwissStartupConnect = () => {
 
         {activeTab === 'map' && (
           <section className="ssc__section" data-tab="map">
-            <div className="ssc__max">
+            <div className="ssc__max ssc__map-tab-interactive">
               <JobMapView
                 jobs={normalizedJobs}
                 events={events}

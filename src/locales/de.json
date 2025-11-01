@@ -14,7 +14,8 @@
     "saved": "Gemerkt",
     "join": "Beitreten",
     "signIn": "Anmelden",
-    "language": "Sprache"
+    "language": "Sprache",
+    "primary": "Hauptnavigation"
   },
   "hero": {
     "badge": "Vertrauen von Schweizer Start-ups und Hochschulen",
@@ -23,6 +24,15 @@
     "searchPlaceholder": "Start-up, Rolle oder Skill suchen",
     "searchButton": "Passende Rollen finden",
     "scrollAria": "Zu den Filtern scrollen"
+  },
+  "terminal": {
+    "hero": {
+      "badge": "SWISS STARTUP CONNECT",
+      "headline": "Wir haben neu definiert, wie Schweizer Start-ups und Talente zusammenfinden",
+      "tagline": "Wir verbinden ambitionierte Studierende mit Gründer:innen, die das Nächste bauen.",
+      "scrollPrompt": "ZUM ENTDECKEN SCROLLEN",
+      "cta": "ROLLEN ENTDECKEN"
+    }
   },
   "stats": {
     "startups": {
