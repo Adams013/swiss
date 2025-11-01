@@ -118,16 +118,16 @@ const credibilityBands = [
   },
 ];
 
-const nodeCoordinates = [
-  { x: 18, y: 42 },
-  { x: 32, y: 28 },
-  { x: 46, y: 36 },
-  { x: 58, y: 24 },
-  { x: 71, y: 42 },
-  { x: 82, y: 30 },
-  { x: 66, y: 56 },
-  { x: 44, y: 64 },
-  { x: 28, y: 60 },
+const swissCities = [
+  { id: 'geneva', name: 'Geneva', x: 18, y: 46 },
+  { id: 'lausanne', name: 'Lausanne', x: 26, y: 40 },
+  { id: 'bern', name: 'Bern', x: 40, y: 34 },
+  { id: 'basel', name: 'Basel', x: 38, y: 24 },
+  { id: 'zurich', name: 'Zurich', x: 56, y: 28 },
+  { id: 'lucerne', name: 'Lucerne', x: 48, y: 40 },
+  { id: 'st-gallen', name: 'St. Gallen', x: 70, y: 26 },
+  { id: 'chur', name: 'Chur', x: 64, y: 36 },
+  { id: 'lugano', name: 'Lugano', x: 66, y: 54 },
 ];
 
 const TerminalExperience = ({
@@ -140,11 +140,13 @@ const TerminalExperience = ({
   const sequenceRef = useRef(null);
   const featureRefs = useRef([]);
   const benefitsRef = useRef([]);
+  const yardPanelRef = useRef(null);
   const isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
   const [headlineProgress, setHeadlineProgress] = useState(0);
   const [activeFeature, setActiveFeature] = useState(featureMoments[0].id);
   const [visibleBenefit, setVisibleBenefit] = useState(benefits[0].id);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [isYardPanelVisible, setIsYardPanelVisible] = useState(false);
   const heroBadge = translate('terminal.hero.badge', 'SWISS STARTUP CONNECT');
   const heroHeadline = translate(
     'terminal.hero.headline',
@@ -153,6 +155,7 @@ const TerminalExperience = ({
   const heroTagline = translate('terminal.hero.tagline', 'Matching ambitious students with founders building what is next.');
   const heroScrollPrompt = translate('terminal.hero.scrollPrompt', 'SCROLL TO EXPLORE');
   const heroCtaLabel = translate('terminal.hero.cta', 'BROWSE ROLES');
+  const yardOsLines = useMemo(() => ['Talent Operating', 'System'], []);
 
   useEffect(() => {
     const handle = setInterval(() => {
@@ -221,42 +224,76 @@ const TerminalExperience = ({
       }
 
       context.clearRect(0, 0, canvas.width, canvas.height);
-      const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, `rgba(${Math.floor(120 + progress * 100)}, ${50 + progress * 80}, 255, 0.8)`);
-      gradient.addColorStop(1, `rgba(20, 20, 20, 0.9)`);
+      const backgroundTop = isDarkMode ? '#0b152c' : '#f2eee5';
+      const backgroundBottom = isDarkMode ? '#132448' : '#e4d7c6';
+      const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, backgroundTop);
+      gradient.addColorStop(1, backgroundBottom);
       context.fillStyle = gradient;
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      const layers = 6;
-      for (let i = 0; i < layers; i += 1) {
-        const intensity = progress * (i + 1) * 0.15;
-        context.beginPath();
-        context.strokeStyle = `rgba(${80 + i * 20}, ${40 + i * 10}, ${120 + i * 15}, ${0.15 + intensity})`;
-        context.lineWidth = 12 - i * 1.5;
-        const offset = (progress * 120 + i * 25) % canvas.width;
-        context.moveTo(-100 + offset, 80 + i * 40);
-        context.bezierCurveTo(
-          canvas.width * 0.25 + offset,
-          20 + i * 50,
-          canvas.width * 0.65 - offset,
-          140 + i * 25,
-          canvas.width + offset,
-          80 + i * 35
-        );
-        context.stroke();
-      }
+      const ridgeColors = isDarkMode
+        ? ['rgba(215, 48, 42, 0.22)', 'rgba(108, 142, 181, 0.18)', 'rgba(255, 255, 255, 0.08)']
+        : ['rgba(215, 48, 42, 0.22)', 'rgba(41, 82, 163, 0.18)', 'rgba(108, 142, 181, 0.16)'];
 
-      const nodes = 8;
-      for (let i = 0; i < nodes; i += 1) {
-        const angle = (progress * Math.PI * 2 + (i * Math.PI) / nodes) % (Math.PI * 2);
-        const x = canvas.width * (0.1 + 0.8 * (i / nodes));
-        const y = canvas.height * (0.4 + 0.2 * Math.sin(angle));
-        const radius = 10 + Math.sin(angle * 2) * 4;
-        const alpha = 0.4 + 0.4 * Math.sin(angle + progress * 4);
+      ridgeColors.forEach((color, index) => {
+        const baseY = canvas.height * (0.55 + index * 0.08);
+        const amplitude = canvas.height * (0.08 + index * 0.02);
+        const offset = progress * 120 + index * 60;
         context.beginPath();
-        context.fillStyle = `rgba(110, 220, 255, ${alpha})`;
-        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.moveTo(-160, baseY + Math.sin(offset * 0.01) * amplitude);
+        const ridgeSegments = 6;
+        for (let segment = 0; segment <= ridgeSegments; segment += 1) {
+          const t = segment / ridgeSegments;
+          const x = canvas.width * t;
+          const wave = Math.sin((t + progress) * Math.PI * (2 + index));
+          const y = baseY + wave * amplitude * (0.6 - index * 0.1);
+          context.lineTo(x, y);
+        }
+        context.lineTo(canvas.width + 40, canvas.height + 40);
+        context.lineTo(-120, canvas.height + 40);
+        context.closePath();
+        context.fillStyle = color;
         context.fill();
+      });
+
+      const routeColor = isDarkMode ? 'rgba(215, 48, 42, 0.65)' : 'rgba(210, 50, 40, 0.55)';
+      const accentColor = isDarkMode ? 'rgba(108, 142, 181, 0.45)' : 'rgba(41, 82, 163, 0.4)';
+      const routes = 3;
+
+      for (let i = 0; i < routes; i += 1) {
+        context.beginPath();
+        const phase = progress * (1.2 + i * 0.2);
+        const startY = canvas.height * (0.28 + i * 0.12);
+        const controlOffset = canvas.width * (0.25 + i * 0.06);
+        context.moveTo(-120 + phase * 180, startY);
+        context.bezierCurveTo(
+          canvas.width * 0.25,
+          startY - controlOffset * 0.12,
+          canvas.width * 0.55,
+          startY + controlOffset * 0.12,
+          canvas.width + 120 - phase * 160,
+          canvas.height * (0.42 + i * 0.08)
+        );
+        context.lineWidth = 3 - i * 0.4;
+        context.strokeStyle = i === 0 ? routeColor : accentColor;
+        context.globalAlpha = 0.65;
+        context.stroke();
+        context.globalAlpha = 1;
+
+        const nodeCount = 6;
+        for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex += 1) {
+          const nodeProgress = (phase + nodeIndex / nodeCount + progress * 0.4) % 1;
+          const x = canvas.width * nodeProgress;
+          const y = startY + Math.sin(progress * Math.PI * 2 + nodeIndex) * (12 - i * 2) + i * 18;
+          const radius = 4 + (1 - i * 0.2);
+          context.beginPath();
+          context.fillStyle = i === 0 ? routeColor : accentColor;
+          context.globalAlpha = 0.6 + 0.3 * Math.sin(progress * 8 + nodeIndex);
+          context.arc(x, y, radius, 0, Math.PI * 2);
+          context.fill();
+          context.globalAlpha = 1;
+        }
       }
 
       animationFrame = requestAnimationFrame(drawFrame);
@@ -278,7 +315,38 @@ const TerminalExperience = ({
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    if (isTestEnvironment) {
+      setIsYardPanelVisible(true);
+      return undefined;
+    }
+
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const panel = yardPanelRef.current;
+    if (!panel || typeof IntersectionObserver !== 'function') {
+      setIsYardPanelVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          setIsYardPanelVisible(true);
+        }
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(panel);
+
+    return () => observer.disconnect();
+  }, [isTestEnvironment]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof IntersectionObserver !== 'function') {
@@ -476,11 +544,18 @@ const TerminalExperience = ({
       </section>
 
       <section className="terminal-yard-os">
-        <div className="terminal-yard-os__panel">
+        <div
+          className={`terminal-yard-os__panel ${isYardPanelVisible ? 'is-visible' : ''}`}
+          ref={yardPanelRef}
+        >
           <h2 aria-live="polite">
-            {Array.from('Talent Operating System').map((letter, index) => (
-              <span key={`${letter}-${index}`} style={{ transitionDelay: `${index * 40}ms` }}>
-                {letter}
+            {yardOsLines.map((word, wordIndex) => (
+              <span
+                key={word}
+                className="terminal-yard-os__line"
+                style={{ transitionDelay: `${wordIndex * 160}ms` }}
+              >
+                {word}
               </span>
             ))}
           </h2>
@@ -509,36 +584,43 @@ const TerminalExperience = ({
 
       <section className="terminal-map">
         <header className="terminal-section-header">
-          <h2>Global Presence</h2>
-          <p>Swiss talent signals ripple outward as alumni launch ventures across the globe.</p>
+          <h2>National Presence</h2>
+          <p>Swiss startup talent is active from Geneva to St. Gallen with coordinated hubs across the country.</p>
         </header>
         <div className="terminal-map__wrapper">
-          <svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">
+          <svg
+            viewBox="0 0 100 64"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label="Swiss map with highlighted cities"
+          >
             <defs>
               <radialGradient id="mapGlow" cx="50%" cy="50%" r="70%">
                 <stop offset="0%" stopColor="var(--terminal-map-node)" stopOpacity="0.45" />
                 <stop offset="100%" stopColor="var(--terminal-map-node)" stopOpacity="0" />
               </radialGradient>
             </defs>
-            <rect width="100" height="50" fill="var(--terminal-map-surface)" />
+            <rect width="100" height="64" fill="var(--terminal-map-surface)" />
             <path
-              d="M6,32 C14,20 26,16 38,18 C46,24 58,22 64,18 C70,12 82,12 92,24 C90,30 84,36 74,38 C66,44 52,46 38,44 C28,42 14,40 6,32"
+              d="M8,34 C14,22 28,14 40,16 C48,20 58,16 66,20 C74,24 86,22 94,32 C90,40 82,46 70,50 C58,56 44,56 32,52 C24,48 14,44 8,34 Z"
               fill="var(--terminal-map-land)"
               stroke="var(--terminal-map-outline)"
-              strokeWidth="0.6"
+              strokeWidth="0.8"
+              strokeLinejoin="round"
             />
-            {nodeCoordinates.map(({ x, y }, index) => (
-              <g key={`${x}-${y}`}>
-                <circle cx={x} cy={y} r={1.6} fill="url(#mapGlow)" />
-                <circle cx={x} cy={y} r={0.5} fill="var(--terminal-map-node)">
+            {swissCities.map(({ id, name, x, y }, index) => (
+              <g key={id}>
+                <circle cx={x} cy={y} r={2.8} fill="url(#mapGlow)" />
+                <circle cx={x} cy={y} r={1.1} fill="var(--terminal-map-node)">
                   <animate
                     attributeName="r"
-                    values="0.5;1.2;0.5"
-                    dur="2.6s"
-                    begin={`${index * 0.3}s`}
+                    values="1.1;2;1.1"
+                    dur="2.8s"
+                    begin={`${index * 0.28}s`}
                     repeatCount="indefinite"
                   />
                 </circle>
+                <title>{name}</title>
               </g>
             ))}
           </svg>

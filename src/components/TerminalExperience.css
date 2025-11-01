@@ -684,26 +684,35 @@
   border: 1px solid var(--terminal-yard-border);
   box-shadow: var(--terminal-yard-shadow);
   color: var(--terminal-green-text);
+  text-align: center;
 }
 
 .terminal-yard-os__panel h2 {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  letter-spacing: 0.18em;
+  gap: 0.75rem;
+  justify-content: center;
+  font-size: clamp(1.9rem, 3.6vw, 2.8rem);
+  letter-spacing: 0.22em;
   text-transform: uppercase;
+  line-height: 1.2;
+  max-width: 20ch;
+  margin: 0 auto;
 }
 
-.terminal-yard-os__panel h2 span {
+.terminal-yard-os__line {
   opacity: 0;
-  transform: translateY(16px);
-  display: inline-block;
-  transition: opacity 300ms ease, transform 300ms ease;
+  transform: translateY(22px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: opacity 360ms ease, transform 360ms ease;
 }
 
-.terminal-yard-os__panel:hover h2 span,
-.terminal-yard-os__panel:focus-within h2 span {
+.terminal-yard-os__panel.is-visible .terminal-yard-os__line,
+.terminal-yard-os__panel:hover .terminal-yard-os__line,
+.terminal-yard-os__panel:focus-within .terminal-yard-os__line {
   opacity: 1;
   transform: translateY(0);
 }
@@ -771,6 +780,12 @@
   border: 1px solid var(--terminal-map-border);
   overflow: hidden;
   box-shadow: var(--terminal-map-shadow);
+}
+
+.terminal-map__wrapper svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .terminal-credibility {

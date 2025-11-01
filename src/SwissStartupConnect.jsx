@@ -6149,14 +6149,14 @@ const SwissStartupConnect = () => {
 
 
   return (
-    <div className={`ssc ${isDarkMode ? 'ssc--dark' : ''}`}>
+    <div className={`ssc ${isDarkMode ? 'ssc--dark' : 'ssc--light'}`}>
       {toast && (
         <div className="ssc__toast" role="status" aria-live="polite">
           <CheckCircle2 size={20} />
           <span className="ssc__toast-message">{toast.message}</span>
         </div>
       )}
-      <header className={`ssc__header ${compactHeader ? 'is-compact' : ''}`}>
+      <header className={`ssc__header ${compactHeader ? 'is-compact' : ''} ${isDarkMode ? 'is-dark' : 'is-light'}`}>
         <div className="ssc__max ssc__header-inner">
           <div className="ssc__header-left">
             <button
@@ -6267,7 +6267,7 @@ const SwissStartupConnect = () => {
               )}
             </div>
 
-            <div className={`ssc__actions ${compactHeader ? 'is-hidden' : ''}`} ref={actionsRef}>
+            <div className={`ssc__actions ${compactHeader ? 'is-condensed' : ''}`} ref={actionsRef}>
               {!user ? (
                 <div className="ssc__auth-buttons">
                   <button
