@@ -34,9 +34,9 @@
   --ssc-header-controls-bg: rgba(255, 252, 244, 0.86);
   --ssc-header-controls-border: rgba(var(--ssc-primary-rgb), 0.18);
   --ssc-header-controls-shadow: 0 18px 46px rgba(var(--ssc-primary-rgb), 0.16);
-  --ssc-header-offset: clamp(5.25rem, 11vw, 7.5rem);
-  --ssc-header-compact-offset: clamp(4rem, 8vw, 6.25rem);
-  --ssc-notice-gap: clamp(0.2rem, 1vw, 0.45rem);
+  --ssc-header-offset: clamp(4.6rem, 9vw, 6.3rem);
+  --ssc-header-compact-offset: clamp(3.2rem, 6vw, 4.9rem);
+  --ssc-notice-gap: clamp(0.15rem, 0.8vw, 0.35rem);
   --ssc-applications-header-bg: rgba(255, 252, 244, 0.94);
   --ssc-applications-panel-bg: rgba(255, 252, 244, 0.86);
   --ssc-applications-grid-bg: rgba(255, 252, 244, 0.92);
@@ -101,7 +101,7 @@
   --ssc-header-controls-bg: rgba(12, 18, 36, 0.92);
   --ssc-header-controls-border: rgba(var(--ssc-primary-rgb), 0.38);
   --ssc-header-controls-shadow: 0 22px 60px rgba(2, 6, 20, 0.55);
-  --ssc-notice-gap: clamp(0.85rem, 2.25vw, 1.6rem);
+  --ssc-notice-gap: clamp(0.35rem, 1.2vw, 0.65rem);
   --ssc-applications-header-bg: rgba(20, 26, 52, 0.94);
   --ssc-applications-panel-bg: rgba(16, 22, 44, 0.9);
   --ssc-applications-grid-bg: rgba(18, 26, 48, 0.92);
@@ -359,7 +359,7 @@ body.ssc--dark .ssc__user-menu button:focus-visible {
 }
 
 .ssc__main > .ssc__notice:first-of-type {
-  margin-top: calc(var(--ssc-notice-gap) + 0.05rem);
+  margin-top: calc(var(--ssc-notice-gap) * 0.85);
 }
 
 .ssc__header.is-compact + .ssc__main {
