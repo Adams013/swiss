@@ -191,6 +191,72 @@ const SwissStartupConnect = () => {
     };
   }, [activeTab]);
 
+  const heroHighlights = useMemo(
+    () => [
+      {
+        id: 'network',
+        icon: Users,
+        title: translate('hero.highlight.network.title', 'Founder-ready teams'),
+        description: translate(
+          'hero.highlight.network.description',
+          'Curated Swiss startups from fintech to climate tech searching for builders.'
+        ),
+      },
+      {
+        id: 'compensation',
+        icon: TrendingUp,
+        title: translate('hero.highlight.compensation.title', 'Transparent compensation'),
+        description: translate(
+          'hero.highlight.compensation.description',
+          'Real salary bands, equity insights, and internship benchmarks calibrated for Switzerland.'
+        ),
+      },
+      {
+        id: 'mentors',
+        icon: GraduationCap,
+        title: translate('hero.highlight.mentors.title', 'Career catalysts'),
+        description: translate(
+          'hero.highlight.mentors.description',
+          'Mentorship circles, venture-backed founder stories, and career design sessions.'
+        ),
+      },
+    ],
+    [translate]
+  );
+
+  const heroPulseItems = useMemo(
+    () => [
+      {
+        id: 'match',
+        label: translate('hero.pulse.match.label', 'Match secured'),
+        detail: translate(
+          'hero.pulse.match.detail',
+          'Product designer joining a Zürich AI startup for a growth internship.'
+        ),
+        time: translate('hero.pulse.match.time', '2 minutes ago'),
+      },
+      {
+        id: 'event',
+        label: translate('hero.pulse.event.label', 'Next founder meetup'),
+        detail: translate(
+          'hero.pulse.event.detail',
+          'Impact Collective hiring night • Lausanne campus innovation hub.'
+        ),
+        time: translate('hero.pulse.event.time', 'Today · 18:00 CET'),
+      },
+      {
+        id: 'application',
+        label: translate('hero.pulse.application.label', 'Application fast-tracked'),
+        detail: translate(
+          'hero.pulse.application.detail',
+          'ETH Entrepreneur-in-Residence fellowship interviews closing soon.'
+        ),
+        time: translate('hero.pulse.application.time', 'Closing in 3 days'),
+      },
+    ],
+    [translate]
+  );
+
   const {
     searchTerm,
     setSearchTerm,
@@ -6213,67 +6279,136 @@ const SwissStartupConnect = () => {
         {activeTab === 'general' && (
           <section className="ssc__hero">
             <div className="ssc__max">
-              <div className="ssc__hero-badge">
-                <Sparkles size={18} />
-                <span>{translate('hero.badge', 'Trusted by Swiss startups & universities')}</span>
-              </div>
-              <h1 className="ssc__hero-title">{translate('hero.title', 'Shape the next Swiss startup success story')}</h1>
-              <p className="ssc__hero-lede">{translate(
-                'hero.subtitle',
-                'Discover paid internships, part-time roles, and graduate opportunities with founders who want you in the room from day one.'
-              )}</p>
+              <div className="ssc__hero-inner">
+                <div className="ssc__hero-content">
+                  <div className="ssc__hero-badge">
+                    <Sparkles size={18} />
+                    <span>{translate('hero.badge', 'Trusted by Swiss startups & universities')}</span>
+                  </div>
+                  <h1 className="ssc__hero-title">{translate('hero.title', 'Shape the next Swiss startup success story')}</h1>
+                  <p className="ssc__hero-lede">{translate(
+                    'hero.subtitle',
+                    'Discover paid internships, part-time roles, and graduate opportunities with founders who want you in the room from day one.'
+                  )}</p>
 
-              {feedback && (
-                <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
-                  {feedback.message}
+                  <div className="ssc__hero-actions">
+                    <button
+                      type="button"
+                      className="ssc__hero-cta ssc__hero-cta--primary"
+                      onClick={() => setActiveTab('jobs')}
+                    >
+                      <span>{translate('hero.cta.jobs', 'Browse open roles')}</span>
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="ssc__hero-cta ssc__hero-cta--secondary"
+                      onClick={() => setActiveTab('companies')}
+                    >
+                      <span>{translate('hero.cta.companies', 'Meet hiring teams')}</span>
+                      <Building2 size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+
+                  <form
+                    className="ssc__search"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      setActiveTab('jobs');
+                    }}
+                  >
+                    <div className="ssc__search-field">
+                      <Search size={18} />
+                      <input
+                        type="text"
+                        placeholder={translate('hero.searchPlaceholder', 'Search startup, role, or skill')}
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        aria-label={translate('hero.searchPlaceholder', 'Search startup, role, or skill')}
+                      />
+                    </div>
+                    <button type="submit" className="ssc__search-btn">
+                      {translate('hero.searchButton', 'Find matches')}
+                    </button>
+                  </form>
+
+                  {feedback && (
+                    <div className={`ssc__feedback ${feedback.type === 'success' ? 'is-success' : ''}`}>
+                      {feedback.message}
+                    </div>
+                  )}
+
+                  <div className="ssc__hero-highlights">
+                    {heroHighlights.map(({ id, icon: Icon, title, description }) => (
+                      <article key={id} className="ssc__hero-highlight">
+                        <span className="ssc__hero-highlight-icon">
+                          <Icon size={18} aria-hidden="true" />
+                        </span>
+                        <div className="ssc__hero-highlight-body">
+                          <h3>{title}</h3>
+                          <p>{description}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              )}
 
-              <form
-                className="ssc__search"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setActiveTab('jobs');
-                }}
-              >
-                <div className="ssc__search-field">
-                  <Search size={18} />
-                  <input
-                    type="text"
-                    placeholder={translate('hero.searchPlaceholder', 'Search startup, role, or skill')}
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    aria-label={translate('hero.searchPlaceholder', 'Search startup, role, or skill')}
-                  />
+                <div className="ssc__hero-visual">
+                  <div className="ssc__hero-visual-panel">
+                    <div className="ssc__hero-visual-header">
+                      <div>
+                        <span>{translate('hero.pulse.title', 'Live talent pulse')}</span>
+                        <p>
+                          {translate(
+                            'hero.pulse.subtitle',
+                            'Real-time signals from the Swiss startup ecosystem'
+                          )}
+                        </p>
+                      </div>
+                      <Clock size={16} aria-hidden="true" />
+                    </div>
+                    <ul className="ssc__hero-pulse">
+                      {heroPulseItems.map((item, index) => (
+                        <li key={item.id} className="ssc__hero-pulse-item">
+                          <div className="ssc__hero-pulse-timeline" aria-hidden="true">
+                            <span className="ssc__hero-pulse-dot" />
+                            {index < heroPulseItems.length - 1 && <span className="ssc__hero-pulse-line" />}
+                          </div>
+                          <div className="ssc__hero-pulse-content">
+                            <span className="ssc__hero-pulse-label">{item.label}</span>
+                            <p>{item.detail}</p>
+                            <small>{item.time}</small>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="ssc__hero-visual-grid">
+                    {stats.map((stat) => (
+                      <article key={stat.id} className="ssc__hero-stat">
+                        <span className="ssc__hero-stat-value">
+                          {translate(`stats.${stat.id}.value`, stat.value)}
+                        </span>
+                        <span className="ssc__hero-stat-label">
+                          {translate(`stats.${stat.id}.label`, stat.label)}
+                        </span>
+                        <p>{translate(`stats.${stat.id}.detail`, stat.detail)}</p>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-                <button type="submit" className="ssc__search-btn">
-                  {translate('hero.searchButton', 'Find matches')}
-                </button>
-              </form>
-
-              <div className="ssc__stats">
-                {stats.map((stat) => (
-                  <article key={stat.id} className="ssc__stat-card">
-                    <span className="ssc__stat-value">
-                      {translate(`stats.${stat.id}.value`, stat.value)}
-                    </span>
-                    <span className="ssc__stat-label">
-                      {translate(`stats.${stat.id}.label`, stat.label)}
-                    </span>
-                    <p>{translate(`stats.${stat.id}.detail`, stat.detail)}</p>
-                  </article>
-                ))}
               </div>
-
-              <button
-                type="button"
-                className={`ssc__hero-scroll-indicator${hasScrolledPastHero ? ' is-hidden' : ''}`}
-                onClick={scrollToFilters}
-                aria-label={translate('hero.scrollAria', 'Scroll to filters')}
-              >
-                <ChevronDown size={22} />
-              </button>
             </div>
+
+            <button
+              type="button"
+              className={`ssc__hero-scroll-indicator${hasScrolledPastHero ? ' is-hidden' : ''}`}
+              onClick={scrollToFilters}
+              aria-label={translate('hero.scrollAria', 'Scroll to filters')}
+            >
+              <ChevronDown size={22} />
+            </button>
           </section>
         )}
 
